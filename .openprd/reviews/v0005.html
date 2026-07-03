@@ -42,6 +42,76 @@
         gap: 16px;
         margin-bottom: 16px;
       }
+      .review-stage-rail {
+        margin: 0 0 16px;
+        border: 1px solid var(--review-line);
+        border-radius: 14px;
+        background: var(--review-panel);
+        padding: 12px 18px;
+        overflow-x: auto;
+      }
+      .review-stage-rail ol {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        min-width: max-content;
+      }
+      .review-stage {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        color: var(--review-muted);
+        white-space: nowrap;
+      }
+      .review-stage + .review-stage::before {
+        content: '→';
+        margin-right: 6px;
+        color: var(--review-line);
+      }
+      .review-stage-dot {
+        display: inline-grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        border: 1px solid var(--review-line);
+        background: var(--review-panel-soft);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .review-stage.done .review-stage-dot {
+        border-color: #86efac;
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .review-stage.done .review-stage-name {
+        color: var(--review-text);
+      }
+      .review-stage.current {
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        color: var(--review-indigo);
+        font-weight: 800;
+      }
+      .review-stage.current .review-stage-dot {
+        border-color: var(--review-indigo);
+        background: var(--review-indigo);
+        color: #fff;
+      }
+      .review-stage-badge {
+        font-size: 11px;
+        font-weight: 800;
+        color: #fff;
+        background: var(--review-indigo);
+        border-radius: 999px;
+        padding: 2px 8px;
+      }
       .review-brand {
         display: inline-flex;
         align-items: center;
@@ -636,11 +706,121 @@
         box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
         transform: translateY(0);
       }
+      .review-directions {
+        margin-top: 28px;
+      }
+      .review-direction-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 18px;
+        margin-top: 14px;
+      }
+      .review-direction-card {
+        display: flex;
+        flex-direction: column;
+        background: var(--review-panel);
+        border: 1px solid var(--review-line);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        transition: border-color 160ms ease, box-shadow 160ms ease;
+      }
+      .review-direction-card.selected {
+        border-color: var(--review-indigo);
+        box-shadow: 0 0 0 2px var(--review-indigo), 0 12px 24px rgba(79, 70, 229, 0.16);
+      }
+      .review-direction-card.selected .review-direction-select {
+        border-color: var(--review-indigo);
+        background: var(--review-indigo);
+        color: #fff;
+      }
+      .review-direction-image {
+        display: block;
+        background: var(--review-panel-soft);
+        border-bottom: 1px solid var(--review-line);
+        aspect-ratio: 4 / 3;
+        overflow: hidden;
+      }
+      .review-direction-image img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .review-direction-image-missing {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--review-muted);
+        font-size: 14px;
+      }
+      .review-direction-body {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 16px;
+      }
+      .review-direction-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .review-direction-head h3 {
+        margin: 0;
+        font-size: 17px;
+      }
+      .review-direction-index {
+        flex-shrink: 0;
+        border: 1px solid #c7d2fe;
+        background: #eef2ff;
+        color: var(--review-indigo);
+        border-radius: 999px;
+        padding: 2px 10px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .review-direction-summary {
+        margin: 0;
+        color: var(--review-text);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .review-direction-tradeoff {
+        margin: 0;
+        color: var(--review-muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .review-direction-select {
+        cursor: pointer;
+        align-self: flex-start;
+        margin-top: 4px;
+        min-height: 38px;
+        border: 1px solid #c7d2fe;
+        border-radius: 10px;
+        padding: 0 16px;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 800;
+        background: #eef2ff;
+        color: var(--review-indigo);
+        transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+      }
+      .review-direction-select:hover,
+      .review-direction-select:focus-visible {
+        border-color: #a5b4fc;
+        background: #e0e7ff;
+        transform: translateY(-1px);
+        outline: none;
+      }
       @media (max-width: 860px) {
         .review-overview {
           grid-template-columns: 1fr;
         }
         .review-panel-grid {
+          grid-template-columns: 1fr;
+        }
+        .review-direction-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -687,6 +867,47 @@
         </div>
   
       </header>
+      
+      <nav class="review-stage-rail" aria-label="流程位置">
+        <ol>
+          
+        <li class="review-stage done">
+          <span class="review-stage-dot">✓</span>
+          <span class="review-stage-name">需求澄清</span>
+          
+        </li>
+
+        <li class="review-stage done">
+          <span class="review-stage-dot">✓</span>
+          <span class="review-stage-name">需求摘要</span>
+          
+        </li>
+
+        <li class="review-stage current">
+          <span class="review-stage-dot">3</span>
+          <span class="review-stage-name">评审确认</span>
+          <span class="review-stage-badge">你在这里</span>
+        </li>
+
+        <li class="review-stage pending">
+          <span class="review-stage-dot">4</span>
+          <span class="review-stage-name">任务拆解</span>
+          
+        </li>
+
+        <li class="review-stage pending">
+          <span class="review-stage-dot">5</span>
+          <span class="review-stage-name">实现执行</span>
+          
+        </li>
+
+        <li class="review-stage pending">
+          <span class="review-stage-dot">6</span>
+          <span class="review-stage-name">验证收口</span>
+          
+        </li>
+        </ol>
+      </nav>
       
     <section class="review-overview" aria-labelledby="reviewOverviewTitle">
       <div class="review-overview-copy">
@@ -739,6 +960,7 @@
       </div>
     </section>
   
+      
       
     <section class="review-map" aria-labelledby="reviewMapTitle">
       <div class="review-section-heading">
@@ -1095,10 +1317,34 @@ openprd review . --mark needs-revision --version &#39;v0005&#39; --digest &#39;7
               &quot;detail&quot;: &quot;避免把实现授权写成再次索取确认。&quot;
             }
           ]
+        },
+        &quot;designDirections&quot;: {
+          &quot;note&quot;: &quot;可选；只有需求涉及界面/页面/交互时提供。先用 imagegen 生成 3 个差异足够大的交互稿，再把图片路径写进来。&quot;,
+          &quot;directions&quot;: [
+            {
+              &quot;id&quot;: &quot;direction-1&quot;,
+              &quot;title&quot;: &quot;15 字以内方向名&quot;,
+              &quot;image&quot;: &quot;.openprd/design/active/direction-1.png&quot;,
+              &quot;summary&quot;: &quot;30 字以内一句话说明这个方向的核心体验&quot;,
+              &quot;tradeoff&quot;: &quot;30 字以内说明取舍或适用场景&quot;
+            }
+          ]
         }
       }
     },
     &quot;rules&quot;: [
+      {
+        &quot;id&quot;: &quot;review-design-direction-count&quot;,
+        &quot;area&quot;: &quot;交互方向评审&quot;,
+        &quot;target&quot;: &quot;方向数量&quot;,
+        &quot;action&quot;: &quot;涉及界面时提供 2 到 4 个差异足够大的方向（默认 3 个），写入 reviewPresentation.designDirections.directions[]。&quot;
+      },
+      {
+        &quot;id&quot;: &quot;review-design-direction-fields&quot;,
+        &quot;area&quot;: &quot;交互方向评审&quot;,
+        &quot;target&quot;: &quot;每个方向的字段&quot;,
+        &quot;action&quot;: &quot;每个方向必须有唯一 id、image 图片路径；title 15 字内、summary 30 字内、tradeoff 30 字内。&quot;
+      },
       {
         &quot;id&quot;: &quot;review-map-card-text&quot;,
         &quot;area&quot;: &quot;需求关系图 / 需求流程图&quot;,
@@ -1130,7 +1376,7 @@ openprd review . --mark needs-revision --version &#39;v0005&#39; --digest &#39;7
     ]
   },
   &quot;presentationFeedback&quot;: [],
-  &quot;exportedAt&quot;: &quot;2026-06-26T11:47:07.265Z&quot;
+  &quot;exportedAt&quot;: &quot;2026-07-03T16:12:33.412Z&quot;
 }" title="openprd review . --mark needs-revision --version &#39;v0005&#39; --digest &#39;7f0e2d2730982a2ae96647d2377f6204e54f8adadf1b18b05f4bc7167046c575&#39; --work-unit &#39;wu-20260602132835-695429e8&#39; --notes &#39;说明需要调整的点&#39;">
           需要调整
         </button>
@@ -1306,10 +1552,34 @@ openprd review . --mark confirmed --version &#39;v0005&#39; --digest &#39;7f0e2d
               &quot;detail&quot;: &quot;避免把实现授权写成再次索取确认。&quot;
             }
           ]
+        },
+        &quot;designDirections&quot;: {
+          &quot;note&quot;: &quot;可选；只有需求涉及界面/页面/交互时提供。先用 imagegen 生成 3 个差异足够大的交互稿，再把图片路径写进来。&quot;,
+          &quot;directions&quot;: [
+            {
+              &quot;id&quot;: &quot;direction-1&quot;,
+              &quot;title&quot;: &quot;15 字以内方向名&quot;,
+              &quot;image&quot;: &quot;.openprd/design/active/direction-1.png&quot;,
+              &quot;summary&quot;: &quot;30 字以内一句话说明这个方向的核心体验&quot;,
+              &quot;tradeoff&quot;: &quot;30 字以内说明取舍或适用场景&quot;
+            }
+          ]
         }
       }
     },
     &quot;rules&quot;: [
+      {
+        &quot;id&quot;: &quot;review-design-direction-count&quot;,
+        &quot;area&quot;: &quot;交互方向评审&quot;,
+        &quot;target&quot;: &quot;方向数量&quot;,
+        &quot;action&quot;: &quot;涉及界面时提供 2 到 4 个差异足够大的方向（默认 3 个），写入 reviewPresentation.designDirections.directions[]。&quot;
+      },
+      {
+        &quot;id&quot;: &quot;review-design-direction-fields&quot;,
+        &quot;area&quot;: &quot;交互方向评审&quot;,
+        &quot;target&quot;: &quot;每个方向的字段&quot;,
+        &quot;action&quot;: &quot;每个方向必须有唯一 id、image 图片路径；title 15 字内、summary 30 字内、tradeoff 30 字内。&quot;
+      },
       {
         &quot;id&quot;: &quot;review-map-card-text&quot;,
         &quot;area&quot;: &quot;需求关系图 / 需求流程图&quot;,
@@ -1341,7 +1611,7 @@ openprd review . --mark confirmed --version &#39;v0005&#39; --digest &#39;7f0e2d
     ]
   },
   &quot;presentationFeedback&quot;: [],
-  &quot;exportedAt&quot;: &quot;2026-06-26T11:47:07.265Z&quot;
+  &quot;exportedAt&quot;: &quot;2026-07-03T16:12:33.412Z&quot;
 }" title="openprd review . --mark confirmed --version &#39;v0005&#39; --digest &#39;7f0e2d2730982a2ae96647d2377f6204e54f8adadf1b18b05f4bc7167046c575&#39; --work-unit &#39;wu-20260602132835-695429e8&#39;">
           认可并继续
         </button>
@@ -1373,6 +1643,18 @@ openprd review . --mark confirmed --version &#39;v0005&#39; --digest &#39;7f0e2d
           button.addEventListener('click', async () => {
             await copyReviewText(button.dataset.copyValue || '');
             flashCopied(button);
+          });
+        });
+        document.querySelectorAll('.review-direction-select').forEach((button) => {
+          button.addEventListener('click', () => {
+            document.querySelectorAll('.review-direction-card').forEach((card) => {
+              card.classList.remove('selected');
+              const cardButton = card.querySelector('.review-direction-select');
+              if (cardButton && cardButton !== button) cardButton.textContent = '选这个方向';
+            });
+            const ownCard = button.closest('.review-direction-card');
+            if (ownCard) ownCard.classList.add('selected');
+            setTimeout(() => { button.textContent = '已选定，把复制内容发回给 Agent'; }, 1250);
           });
         });
       </script>

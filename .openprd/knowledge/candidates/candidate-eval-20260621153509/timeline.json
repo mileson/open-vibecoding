@@ -3,7 +3,7 @@
     "event": "doctor-green",
     "message": "doctor passed",
     "status": "pass",
-    "at": "2026-07-04 00:07:59"
+    "at": "2026-07-04 00:12:34"
   },
   {
     "event": "dev-check",
@@ -100,11 +100,5 @@
     "message": "quality production-ready",
     "status": "pass",
     "at": "2026-07-03 17:42:13"
-  },
-  {
-    "event": "dev-check",
-    "message": "dev-check attention=0, warning=4",
-    "status": "pass",
-    "at": "2026-07-03 17:36:13"
   }
 ]

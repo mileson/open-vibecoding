@@ -42,6 +42,76 @@
         gap: 16px;
         margin-bottom: 16px;
       }
+      .review-stage-rail {
+        margin: 0 0 16px;
+        border: 1px solid var(--review-line);
+        border-radius: 14px;
+        background: var(--review-panel);
+        padding: 12px 18px;
+        overflow-x: auto;
+      }
+      .review-stage-rail ol {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        min-width: max-content;
+      }
+      .review-stage {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        color: var(--review-muted);
+        white-space: nowrap;
+      }
+      .review-stage + .review-stage::before {
+        content: '→';
+        margin-right: 6px;
+        color: var(--review-line);
+      }
+      .review-stage-dot {
+        display: inline-grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        border: 1px solid var(--review-line);
+        background: var(--review-panel-soft);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .review-stage.done .review-stage-dot {
+        border-color: #86efac;
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .review-stage.done .review-stage-name {
+        color: var(--review-text);
+      }
+      .review-stage.current {
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        color: var(--review-indigo);
+        font-weight: 800;
+      }
+      .review-stage.current .review-stage-dot {
+        border-color: var(--review-indigo);
+        background: var(--review-indigo);
+        color: #fff;
+      }
+      .review-stage-badge {
+        font-size: 11px;
+        font-weight: 800;
+        color: #fff;
+        background: var(--review-indigo);
+        border-radius: 999px;
+        padding: 2px 8px;
+      }
       .review-brand {
         display: inline-flex;
         align-items: center;
@@ -798,6 +868,47 @@
   
       </header>
       
+      <nav class="review-stage-rail" aria-label="流程位置">
+        <ol>
+          
+        <li class="review-stage done">
+          <span class="review-stage-dot">✓</span>
+          <span class="review-stage-name">需求澄清</span>
+          
+        </li>
+
+        <li class="review-stage done">
+          <span class="review-stage-dot">✓</span>
+          <span class="review-stage-name">需求摘要</span>
+          
+        </li>
+
+        <li class="review-stage current">
+          <span class="review-stage-dot">3</span>
+          <span class="review-stage-name">评审确认</span>
+          <span class="review-stage-badge">你在这里</span>
+        </li>
+
+        <li class="review-stage pending">
+          <span class="review-stage-dot">4</span>
+          <span class="review-stage-name">任务拆解</span>
+          
+        </li>
+
+        <li class="review-stage pending">
+          <span class="review-stage-dot">5</span>
+          <span class="review-stage-name">实现执行</span>
+          
+        </li>
+
+        <li class="review-stage pending">
+          <span class="review-stage-dot">6</span>
+          <span class="review-stage-name">验证收口</span>
+          
+        </li>
+        </ol>
+      </nav>
+      
     <section class="review-overview" aria-labelledby="reviewOverviewTitle">
       <div class="review-overview-copy">
         <p class="review-kicker">需求概览</p>
@@ -1266,7 +1377,7 @@ openprd review . --mark needs-revision --version &#39;v0008&#39; --digest &#39;e
     ]
   },
   &quot;presentationFeedback&quot;: [],
-  &quot;exportedAt&quot;: &quot;2026-07-03T09:14:49.997Z&quot;
+  &quot;exportedAt&quot;: &quot;2026-07-03T16:12:33.416Z&quot;
 }" title="openprd review . --mark needs-revision --version &#39;v0008&#39; --digest &#39;e1f4ff20b3ea267615a18066166840f2a353a536579ec9e9d96aae033d2f0c8b&#39; --work-unit &#39;wu-20260703171417-ea36f6b6&#39; --notes &#39;说明需要调整的点&#39;">
           需要调整
         </button>
@@ -1502,7 +1613,7 @@ openprd review . --mark confirmed --version &#39;v0008&#39; --digest &#39;e1f4ff
     ]
   },
   &quot;presentationFeedback&quot;: [],
-  &quot;exportedAt&quot;: &quot;2026-07-03T09:14:49.997Z&quot;
+  &quot;exportedAt&quot;: &quot;2026-07-03T16:12:33.416Z&quot;
 }" title="openprd review . --mark confirmed --version &#39;v0008&#39; --digest &#39;e1f4ff20b3ea267615a18066166840f2a353a536579ec9e9d96aae033d2f0c8b&#39; --work-unit &#39;wu-20260703171417-ea36f6b6&#39;">
           认可并继续
         </button>

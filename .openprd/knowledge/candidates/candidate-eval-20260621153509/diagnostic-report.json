@@ -6,10 +6,10 @@
   "summary": {
     "title": "质量报告 eval-20260704000403",
     "status": "needs-attention",
-    "message": "本轮围绕 14 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 18 条回顾信号。"
+    "message": "本轮围绕 14 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 17 条回顾信号。"
   },
-  "problem": "本轮围绕 14 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 18 条回顾信号。",
-  "message": "本轮围绕 14 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 18 条回顾信号。",
+  "problem": "本轮围绕 14 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 17 条回顾信号。",
+  "message": "本轮围绕 14 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 17 条回顾信号。",
   "touchedFiles": [
     "test/openprd-quality-standards.test.js",
     "test/openprd-dev-check.test.js",
@@ -30,7 +30,7 @@
     {
       "id": "doctor-green",
       "kind": "doctor-green",
-      "at": "2026-07-04 00:07:59",
+      "at": "2026-07-04 00:12:34",
       "ok": true,
       "productionReady": null,
       "attentionGates": [],
@@ -371,24 +371,6 @@
         "src/benchmark/operations.js",
         "src/benchmark/registry.js"
       ]
-    },
-    {
-      "id": "dev-check",
-      "kind": "dev-check",
-      "at": "2026-07-03 17:36:13",
-      "ok": true,
-      "productionReady": null,
-      "attentionGates": [],
-      "summary": "dev-check attention=0, warning=4",
-      "touchedFiles": [
-        "src/guide.js",
-        "src/canvas-workspace.js",
-        "src/canvas-app.html.js",
-        "src/canvas-i18n.js",
-        "src/html-artifacts.js",
-        "src/agent-integration.js",
-        "test/openprd-guide-canvas.test.js"
-      ]
     }
   ],
   "abstraction": {
@@ -443,7 +425,7 @@
       "status": "pass",
       "message": "doctor passed",
       "touchedFiles": [],
-      "at": "2026-07-04 00:07:59"
+      "at": "2026-07-04 00:12:34"
     },
     {
       "eventName": "dev-check",
@@ -729,21 +711,6 @@
         "src/benchmark/registry.js"
       ],
       "at": "2026-07-03 17:42:13"
-    },
-    {
-      "eventName": "dev-check",
-      "status": "pass",
-      "message": "dev-check attention=0, warning=4",
-      "touchedFiles": [
-        "src/guide.js",
-        "src/canvas-workspace.js",
-        "src/canvas-app.html.js",
-        "src/canvas-i18n.js",
-        "src/html-artifacts.js",
-        "src/agent-integration.js",
-        "test/openprd-guide-canvas.test.js"
-      ],
-      "at": "2026-07-03 17:36:13"
     }
   ],
   "timeline": [
@@ -752,7 +719,7 @@
       "message": "doctor passed",
       "status": "pass",
       "line": null,
-      "at": "2026-07-04 00:07:59"
+      "at": "2026-07-04 00:12:34"
     },
     {
       "event": "dev-check",
@@ -865,13 +832,6 @@
       "status": "pass",
       "line": null,
       "at": "2026-07-03 17:42:13"
-    },
-    {
-      "event": "dev-check",
-      "message": "dev-check attention=0, warning=4",
-      "status": "pass",
-      "line": null,
-      "at": "2026-07-03 17:36:13"
     }
   ],
   "rootCauseCandidates": [],
@@ -885,7 +845,6 @@
     "dev-check attention=0, warning=3",
     "quality needs-attention",
     "dev-check attention=1, warning=5",
-    "dev-check attention=0, warning=4",
     "运行 openprd quality . --verify 并确认需要关注的门禁已经闭环。",
     "打开 HTML 报告，核对证据链、评估结论和后续动作是否一致。",
     "重新执行任务级 verify 命令，并把最终证据路径保留在质量报告里。"

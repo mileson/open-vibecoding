@@ -3,12 +3,12 @@
   "candidateId": "candidate-eval-20260621153509",
   "status": "pending-review",
   "createdAt": "2026-06-26 19:47:08",
-  "updatedAt": "2026-07-04 00:07:59",
+  "updatedAt": "2026-07-04 00:12:34",
   "sourceKind": "quality-report",
   "sourceRef": "candidate-eval-20260621153509",
   "evidenceOnly": false,
   "title": "质量报告 eval-20260704000403",
-  "summary": "本轮围绕 14 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 18 条回顾信号。",
+  "summary": "本轮围绕 14 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 17 条回顾信号。",
   "categories": [
     "hidden-debug-knowledge",
     "agent-misjudgment",
@@ -40,7 +40,7 @@
     {
       "id": "doctor-green",
       "kind": "doctor-green",
-      "at": "2026-07-04 00:07:59",
+      "at": "2026-07-04 00:12:34",
       "ok": true,
       "productionReady": null,
       "attentionGates": [],
@@ -381,24 +381,6 @@
         "src/benchmark/operations.js",
         "src/benchmark/registry.js"
       ]
-    },
-    {
-      "id": "dev-check",
-      "kind": "dev-check",
-      "at": "2026-07-03 17:36:13",
-      "ok": true,
-      "productionReady": null,
-      "attentionGates": [],
-      "summary": "dev-check attention=0, warning=4",
-      "touchedFiles": [
-        "src/guide.js",
-        "src/canvas-workspace.js",
-        "src/canvas-app.html.js",
-        "src/canvas-i18n.js",
-        "src/html-artifacts.js",
-        "src/agent-integration.js",
-        "test/openprd-guide-canvas.test.js"
-      ]
     }
   ],
   "abstraction": {
@@ -454,5 +436,5 @@
   },
   "suggestedLearnCommand": "openprd quality . --learn --from .openprd/knowledge/candidates/candidate-eval-20260621153509",
   "fingerprint": "c9116c14fd10b319",
-  "occurrences": 27
+  "occurrences": 28
 }
