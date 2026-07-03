@@ -1,0 +1,264 @@
+{
+  "versionNumber": 7,
+  "versionId": "v0007",
+  "createdAt": "2026-07-03 14:45:25",
+  "projectRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "workspaceRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd",
+  "schema": "prd-core",
+  "templatePack": "agent",
+  "productType": "agent",
+  "title": "文档反污染治理与界面需求3方向交互稿评审",
+  "owner": "Codex",
+  "status": "synthesized",
+  "sections": {
+    "meta": {
+      "title": "文档反污染治理与界面需求3方向交互稿评审",
+      "owner": "Codex",
+      "status": "clarifying",
+      "version": "v0007",
+      "productType": "agent",
+      "date": "2026-07-03"
+    },
+    "problem": {
+      "problemStatement": "OpenPrd 长期项目出现文档污染：docs/basic 巨行追加膨胀且顶层 PRD 失真（moticlaw backend-structure.md 57KB/119行、prd.md 落后约170个需求版本），.openprd 内部产物无保留策略（quality/reports 5118 份 5.2GB、active 280 个版本目录从未归档）；同时 L1/L2 界面类需求的 3 方向效果图只散落在聊天里，评审结果不可回溯、不进固定评审界面。",
+      "whyNow": "6-7 月 475 个 Codex 会话实测显示门禁执行率高但拦不住污染，写入型会话仅 37% 更新过 docs/basic；用户已明确要求按 OpenSpec delta+archive 与 Superpowers 可视评审最佳实践立项优化。",
+      "evidence": [
+        "moticlaw docs/basic 平均行长 440-477 字符、37 行超 500 字符；.openprd 总 5.8GB，quality/reports 5118 份；artifacts/active 280 个版本目录、archive 为 0；对照组 ClipReady/gifeasy 年轻项目文档健康。"
+      ]
+    },
+    "users": {
+      "primaryUsers": [
+        "使用 OpenPrd 管理项目的产品经理和 Agent（Codex / Claude Code / Cursor），尤其是长生命周期重度项目的维护者。"
+      ],
+      "secondaryUsers": [],
+      "stakeholders": [
+        "OpenPrd 维护者",
+        "在脏仓库或长程任务中依赖 loop 的项目协作者"
+      ]
+    },
+    "goals": {
+      "goals": [
+        "1) docs/basic 与 .openprd 不再随会话数复利膨胀：verify 能发现巨行与 stale，报告有 retention，change 收口默认归档；2) L1/L2 界面类需求评审时，imagegen 生成的 3 方向交互稿进入固定 review.html 评审区块，用户在评审界面选定方向并结构化写回 selected-direction。"
+      ],
+      "successMetrics": [
+        "standards --verify 能对巨行(单行>300字符)与 prd.md 版本落后给出明确报警；quality reports 数量按策略收敛（保留 latest+近30份）；change 收口后 active 目录不再积压；review.html 出现 designDirections 区块且选定结果写回 .openprd/design/active/selected-direction.md；本地 Codex CLI 跑一个桌面任务时新流程可用。"
+      ],
+      "acceptanceGoals": [
+        "在 openprd 自身仓库通过单元测试与 standards/quality/run verify；用 Codex CLI 在本地跑一个桌面任务实测新流程效果并留下证据。"
+      ]
+    },
+    "validation": {
+      "community": [],
+      "seedUsers": [],
+      "communityFit": [],
+      "currentAlternative": null,
+      "painEvidence": [],
+      "manualPath": [],
+      "manualPlaybook": [],
+      "commitmentSignals": [],
+      "firstValidationStep": "synthesize 生成 PRD 与 review.html 后走 change/tasks，再按任务实现并用 Codex CLI 本地桌面任务实测。",
+      "defaultAlivePlan": [],
+      "paymentProof": [],
+      "mvpSlice": null,
+      "weekendTest": null,
+      "smallestExecution": [],
+      "productizeGate": [],
+      "firstCustomerPath": [],
+      "pricingHypothesis": null,
+      "customerOneProfitability": null,
+      "growthDiscipline": [],
+      "reversibility": null,
+      "customerTruth": null,
+      "valuesFit": null
+    },
+    "scope": {
+      "inScope": [
+        "A1 standards verify 增加 docs/basic 巨行与 stale 质量检查；A2 quality/reports 与 harness 证据 retention 清理；A3 docs-compact 压缩建议工具与 change 收口默认归档；B1 review-presentation 合同新增 designDirections 区块（3 方向图 + 审美主张 + 避开项 + 选择状态）；B2 review.html 渲染 3 方向评审卡片并支持选定/驳回回写；同步更新 skills 生成源与 docs/basic 文档。"
+      ],
+      "outOfScope": [
+        "不改 Codex imagegen skill 本身；不做存量项目（moticlaw 等）的一次性人工清理，仅提供工具与报警；不新增 OpenPrd 自有生图 API；不改 canvas 桥接协议；不动无人值守 automation-safe 行为。"
+      ]
+    },
+    "scenarios": {
+      "primaryFlows": [
+        "文档治理流：Agent 改代码 -> dev-check/standards verify 报巨行与 stale -> docs-compact 给出压缩重写建议 -> change 收口自动归档 active 版本目录并按 retention 清理报告。设计评审流：L2 界面需求 -> design brief -> imagegen 3 方向交互稿 -> 登记 designDirections -> review-presentation 校验写入 -> review.html 展示 3 方向卡片 -> 用户选定 -> user-confirmed 写回 selected-direction.md -> 实现阶段 visual-compare 用选定方向做 reference。"
+      ],
+      "edgeCases": [
+        "非界面类 L2 需求不触发 designDirections 且 review 校验不因缺失阻塞；imagegen 不可用或限流时评审可先出文字方向卡占位并明确标注待补图；旧版本快照没有 designDirections 字段时渲染保持向后兼容；docs/basic 文件本来就短小的年轻项目不误报膨胀。"
+      ],
+      "failureModes": [
+        "retention 误删 latest 指针或在途报告导致 quality verify 失败；归档把进行中的 change 移走导致状态断裂；巨行检查阈值过严导致老项目 verify 永远红灯阻塞正常工作；review.html 选择回写通道失败导致方向确认丢失。"
+      ]
+    },
+    "requirements": {
+      "functional": [
+        "standards verify 新增 docsQuality 检查（巨行、平均行长、prd.md 版本落后）；新增 openprd docs-compact 命令输出压缩重写建议稿；quality verify 后按 retention 策略清理旧报告（保留 latest + 最近 N）；change --archive 在收口路径默认执行；review-presentation --template 输出含 designDirections 的模板；review.html 渲染 3 方向卡片区块。"
+      ],
+      "nonFunctional": [
+        "所有新检查默认 warning 级不阻塞存量项目，可通过 config 升级为 error；retention 清理幂等且不删 latest.json/index.json；review.html 保持零外部依赖单文件打开。"
+      ],
+      "businessRules": [
+        "designDirections 仅在需求被判定涉及界面场景时要求；方向选定必须以 user-confirmed 来源写回；落选方向归档不删除。"
+      ]
+    },
+    "businessGuardrails": {
+      "costDrivers": [
+        "imagegen 每方向一次调用，共 3 次；报告清理为本地文件操作无外部成本。"
+      ],
+      "usageLimits": [
+        "docs-compact 单次只处理 docs/basic 下的标准文档；retention 默认保留最近 30 份报告可配置。"
+      ],
+      "abusePrevention": [
+        "docs-compact 重写稿默认写到 sibling draft 待确认，不直接覆盖原文档；retention 不触碰 evidence 目录中被 latest 报告引用的文件。"
+      ],
+      "monitoringSignals": [
+        "standards verify 输出 docsQuality 结果；doctor 输出 .openprd 体积与报告数量提示。"
+      ],
+      "alertThresholds": [
+        "单行超 300 字符 warning；prd.md 落后最新版本超过 20 个版本 warning；quality/reports 超过 200 份提示清理。"
+      ],
+      "stopLossActions": [
+        "任一清理动作失败即中止并保留原状；归档失败回退为仅提示不移动。"
+      ]
+    },
+    "constraints": {
+      "technical": [
+        "改动集中在 src/standards.js、src/quality.js、src/openspec/change-lifecycle.js、src/review-presentation.js、src/html-artifacts.js，新增 src/docs-compact.js；skills 生成源同步 openprd-shared / openprd-frontend-design / command-catalog。"
+      ],
+      "compliance": [
+        "提交与状态写回不能泄露用户本地无关改动或敏感信息。"
+      ],
+      "dependencies": [
+        "Codex 原生 imagegen（生成 3 方向交互稿图片）；现有 review artifact 渲染与 hash 校验管线。"
+      ]
+    },
+    "risks": {
+      "assumptions": [
+        "imagegen 由 Codex 原生 Image 2 提供，OpenPrd 只消费图片路径；review.html 静态打开，选择结果通过现有 canvas/browser handoff 或 review --mark 通道回传；巨行阈值默认 300 字符可配置。"
+      ],
+      "risks": [
+        "存量污染项目首次 verify 会出现大量报警，需要以 warning 分级而非 error 硬阻塞；retention 清理属于删除类动作，默认 dry-run 并只在 verify/doctor 提示，实际清理需要显式命令。"
+      ],
+      "openQuestions": [
+        "designDirections 选择回写默认走 review artifact 手动确认还是 canvas handoff 自动回传（本期先支持 review --mark 附带 direction 参数，canvas 自动回传后续增强）。"
+      ]
+    },
+    "handoff": {
+      "owner": "Codex",
+      "nextStep": "synthesize 生成 PRD 与 review.html 后走 change/tasks，再按任务实现并用 Codex CLI 本地桌面任务实测。",
+      "targetSystem": "openprd CLI 自身仓库（harness-engineer/openprd）。"
+    },
+    "typeSpecific": {
+      "kind": "agent",
+      "title": "Agent 使用场景专项",
+      "fields": {
+        "humanAgentContract": "用户决定是否进入 loop、是否要求 commit、是否接受 override；Agent 负责在安全前提下创建隔离执行环境，并维护状态与证据闭环。",
+        "autonomyBoundary": "Agent 可以在 loop 运行前准备 worktree、检查脏状态并收集 touched files，但不能在用户未授权 commit 的情况下自动提交，也不能在高风险脏仓库里静默绕过门禁。",
+        "toolBoundary": "优先使用本地 Git 与 OpenPrd loop 状态完成这次能力，不引入新的远端托管或发布前置依赖。",
+        "stateModel": "change 进入 loop 后，先绑定隔离执行环境，再逐任务 run / verify / finish / commit，并把 worktree、branch、commit 与测试报告写回同一条状态链。",
+        "evalPlan": "通过 loop 单测、worktree / dirty repo 场景测试、状态持久化测试，以及一次真实隔离 worktree 的串行回归验证这次改动。"
+      }
+    }
+  },
+  "reviewPresentation": {
+    "diagram": {
+      "type": "map",
+      "note": "文档治理与设计评审两条线共享同一个需求版本，用关系图呈现。"
+    },
+    "mapNodes": {
+      "problem": {
+        "title": "问题定义",
+        "text": "长期项目文档巨行膨胀失真，界面评审图散落聊天不可回溯"
+      },
+      "goal": {
+        "title": "目标",
+        "text": "文档不再复利膨胀，3方向交互稿进固定评审界面"
+      },
+      "scope": {
+        "title": "范围",
+        "text": "verify质量检查、报告清理、归档、评审新增方向区块"
+      },
+      "flow": {
+        "title": "流程",
+        "text": "检查报警到压缩归档；生图登记到评审选定回写"
+      },
+      "risk": {
+        "title": "风险",
+        "text": "老项目首检大量报警，清理与归档需防误删"
+      }
+    },
+    "panels": {
+      "flow": [
+        {
+          "summary": "文档体检",
+          "detail": "收工检查时会指出文档里过长的段落和长期没更新的基础文档，提醒先整理再继续。"
+        },
+        {
+          "summary": "自动收纳",
+          "detail": "一次需求收尾后，过程稿自动归档，旧的检查报告按保留策略清理，工作区不再越用越大。"
+        },
+        {
+          "summary": "方向评审",
+          "detail": "涉及界面的新需求会生成 3 个方向的交互稿，放进评审页面供你直接挑选。"
+        },
+        {
+          "summary": "选定即生效",
+          "detail": "你在评审页面选定方向后，选择结果会记录下来，后续实现直接对着这个方向做。"
+        }
+      ],
+      "function": [
+        {
+          "summary": "文档质量报警",
+          "detail": "单段过长、基础文档长期未更新都会在检查结果里明确列出来。"
+        },
+        {
+          "summary": "压缩建议稿",
+          "detail": "新增整理命令会先生成一份精简重写稿给你确认，不会直接覆盖原文档。"
+        },
+        {
+          "summary": "报告保留策略",
+          "detail": "质量报告默认保留最新和最近一批，超出的旧报告可以一键清理。"
+        },
+        {
+          "summary": "3方向评审卡",
+          "detail": "评审页面新增方向卡片区，每个方向带交互稿图、设计主张和避开的坑。"
+        }
+      ],
+      "guardrail": [
+        {
+          "summary": "不动进行中内容",
+          "detail": "只归档已完成的需求过程稿，正在进行的工作不会被移动。"
+        },
+        {
+          "summary": "先建议后删除",
+          "detail": "清理动作先给出预览清单，确认后才真正删除，最新报告永远保留。"
+        },
+        {
+          "summary": "老项目不卡死",
+          "detail": "存量项目的文档报警只提醒不拦路，不会因为历史欠账阻塞当前工作。"
+        }
+      ],
+      "risk": [
+        {
+          "summary": "首检报警多",
+          "detail": "污染严重的老项目第一次检查会看到较多提醒，属于预期现象，可以分批整理。"
+        },
+        {
+          "summary": "生图不可用",
+          "detail": "生图服务临时不可用时，评审页面先用文字方向卡占位，补图后再更新。"
+        }
+      ]
+    }
+  },
+  "workUnitId": "wu-20260703144525-7ca0851c",
+  "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "content": "# 文档反污染治理与界面需求3方向交互稿评审\n> 语言规则：用户可见说明、PRD、spec 和 tasks 跟随用户当前主语言；无法判断时才使用简体中文兜底。PRD、OpenPrd、OpenSpec、API、SDK、CLI、TypeScript、JSON、HTTP、WebSocket、字段 key、命令名、品牌名、产品名和协议名等必要专有名词保留原文。\n- 版本: v0007\n- 负责人: Codex\n- 产品场景: 以 Agent 为主要使用场景\n- 场景模板: 以 Agent 为主要使用场景\n- 状态: synthesized\n- 生成时间: 2026-07-03 14:45:25\n## 元信息\n\n- 标题: 文档反污染治理与界面需求3方向交互稿评审\n- 负责人: Codex\n- 状态: clarifying\n- 版本: v0007\n- 产品场景: 以 Agent 为主要使用场景\n- 日期: 2026-07-03\n\n## 问题\n\n- 问题陈述: OpenPrd 长期项目出现文档污染：docs/basic 巨行追加膨胀且顶层 PRD 失真（moticlaw backend-structure.md 57KB/119行、prd.md 落后约170个需求版本），.openprd 内部产物无保留策略（quality/reports 5118 份 5.2GB、active 280 个版本目录从未归档）；同时 L1/L2 界面类需求的 3 方向效果图只散落在聊天里，评审结果不可回溯、不进固定评审界面。\n- 为什么是现在: 6-7 月 475 个 Codex 会话实测显示门禁执行率高但拦不住污染，写入型会话仅 37% 更新过 docs/basic；用户已明确要求按 OpenSpec delta+archive 与 Superpowers 可视评审最佳实践立项优化。\n- 证据:\n  - moticlaw docs/basic 平均行长 440-477 字符、37 行超 500 字符；.openprd 总 5.8GB，quality/reports 5118 份；artifacts/active 280 个版本目录、archive 为 0；对照组 ClipReady/gifeasy 年轻项目文档健康。\n\n## 用户与相关方\n\n- 主要用户:\n  - 使用 OpenPrd 管理项目的产品经理和 Agent（Codex / Claude Code / Cursor），尤其是长生命周期重度项目的维护者。\n- 次要用户:\n  - 待补充\n- 相关方:\n  - OpenPrd 维护者\n  - 在脏仓库或长程任务中依赖 loop 的项目协作者\n\n## 目标与成功标准\n\n- 目标:\n  - 1) docs/basic 与 .openprd 不再随会话数复利膨胀：verify 能发现巨行与 stale，报告有 retention，change 收口默认归档；2) L1/L2 界面类需求评审时，imagegen 生成的 3 方向交互稿进入固定 review.html 评审区块，用户在评审界面选定方向并结构化写回 selected-direction。\n- 成功指标:\n  - standards --verify 能对巨行(单行>300字符)与 prd.md 版本落后给出明确报警；quality reports 数量按策略收敛（保留 latest+近30份）；change 收口后 active 目录不再积压；review.html 出现 designDirections 区块且选定结果写回 .openprd/design/active/selected-direction.md；本地 Codex CLI 跑一个桌面任务时新流程可用。\n- 验收目标:\n  - 在 openprd 自身仓库通过单元测试与 standards/quality/run verify；用 Codex CLI 在本地跑一个桌面任务实测新流程效果并留下证据。\n\n## 验证与创业闭环\n\n- 可触达社区:\n  - 待补充\n- 第一批种子用户:\n  - 待补充\n- 社区契合与触达依据:\n  - 待补充\n- 当前替代方案: 待补充\n- 痛点与替代证据:\n  - 待补充\n- 手工交付路径:\n  - 待补充\n- 手工作战卡:\n  - 待补充\n- 承诺信号:\n  - 待补充\n- 首个低成本验证: synthesize 生成 PRD 与 review.html 后走 change/tasks，再按任务实现并用 Codex CLI 本地桌面任务实测。\n- 先活下来方案:\n  - 待补充\n- 付费验证信号:\n  - 待补充\n- 第一版只做一件事: 待补充\n- 周末级验证: 待补充\n- 最小工具桥接:\n  - 待补充\n- 产品化门槛:\n  - 待补充\n- 第一批客户路径:\n  - 待补充\n- 初始收费假设: 待补充\n- 客户 1 盈利路径: 待补充\n- 销售与增长纪律:\n  - 待补充\n- 可逆性判断: 待补充\n- 客户真问题校验: 待补充\n- 价值观一致性: 待补充\n\n## 范围与非目标\n\n- 范围内:\n  - A1 standards verify 增加 docs/basic 巨行与 stale 质量检查；A2 quality/reports 与 harness 证据 retention 清理；A3 docs-compact 压缩建议工具与 change 收口默认归档；B1 review-presentation 合同新增 designDirections 区块（3 方向图 + 审美主张 + 避开项 + 选择状态）；B2 review.html 渲染 3 方向评审卡片并支持选定/驳回回写；同步更新 skills 生成源与 docs/basic 文档。\n- 范围外:\n  - 不改 Codex imagegen skill 本身；不做存量项目（moticlaw 等）的一次性人工清理，仅提供工具与报警；不新增 OpenPrd 自有生图 API；不改 canvas 桥接协议；不动无人值守 automation-safe 行为。\n\n## 场景与流程\n\n- 主流程:\n  - 文档治理流：Agent 改代码 -> dev-check/standards verify 报巨行与 stale -> docs-compact 给出压缩重写建议 -> change 收口自动归档 active 版本目录并按 retention 清理报告。设计评审流：L2 界面需求 -> design brief -> imagegen 3 方向交互稿 -> 登记 designDirections -> review-presentation 校验写入 -> review.html 展示 3 方向卡片 -> 用户选定 -> user-confirmed 写回 selected-direction.md -> 实现阶段 visual-compare 用选定方向做 reference。\n- 边界情况:\n  - 非界面类 L2 需求不触发 designDirections 且 review 校验不因缺失阻塞；imagegen 不可用或限流时评审可先出文字方向卡占位并明确标注待补图；旧版本快照没有 designDirections 字段时渲染保持向后兼容；docs/basic 文件本来就短小的年轻项目不误报膨胀。\n- 失败模式:\n  - retention 误删 latest 指针或在途报告导致 quality verify 失败；归档把进行中的 change 移走导致状态断裂；巨行检查阈值过严导致老项目 verify 永远红灯阻塞正常工作；review.html 选择回写通道失败导致方向确认丢失。\n\n## 可视化图表\n\n### 产品流程\n\n```mermaid\nflowchart LR\n  entry[\"入口触发<br/>文档治理流：Agent 改代码 - dev-check/standards verify 报巨行与 stale - doc…\"]\n  experience[\"产品内步骤<br/>OpenPrd 长期项目出现文档污染：docs/basic 巨行追加膨胀且顶层 PRD 失真（moticlaw backend…\"]\n  decision{\"决策点<br/>非界面类 L2 需求不触发 designDirections 且 review 校验不因缺失阻塞；imagegen 不可用或限…\"}\n  success([\"成功结果<br/>standards --verify 能对巨行(单行 300字符)与 prd.md 版本落后给出明确报警；quality re…\"])\n  failure[[\"失败与恢复<br/>retention 误删 latest 指针或在途报告导致 quality verify 失败；归档把进行中的 change …\"]]\n  entry -->|\"文档治理流：Agent 改代码 - dev-check/standards ve…\"| experience\n  experience -->|\"系统处理请求\"| decision\n  decision -->|\"1) docs/basic 与 .openprd 不再随会话数复利膨胀：verif…\"| success\n  decision -.->|\"retention 误删 latest 指针或在途报告导致 quality ver…\"| failure\n```\n\n### 架构\n\n```mermaid\nflowchart LR\n  users[\"主要用户<br/>使用 OpenPrd 管理项目的产品经理和 Agent（Codex / Claude Code / Cursor），尤其是长生…\"]\n  subgraph solution[\"方案边界\"]\n    experience[\"Agent 使用场景层<br/>文档治理流：Agent 改代码 - dev-check/standards verify 报巨行与 stale - doc…\"]\n    core[\"核心产品逻辑<br/>OpenPrd 长期项目出现文档污染：docs/basic 巨行追加膨胀且顶层 PRD 失真（moticlaw backend…\"]\n    integrations[\"依赖与集成<br/>Codex 原生 imagegen（生成 3 方向交互稿图片）；现有 review artifact 渲染与 hash 校验管…\"]\n    governance[[\"约束与可靠性<br/>提交与状态写回不能泄露用户本地无关改动或敏感信息。\"]]\n    delivery[\"验证与交接<br/>standards --verify 能对巨行(单行 300字符)与 prd.md 版本落后给出明确报警；quality re…\"]\n  end\n  users -->|\"文档治理流：Agent 改代码 - dev-check/standards …\"| experience\n  experience -->|\"产品动作与编排\"| core\n  core -->|\"依赖与外部服务\"| integrations\n  core -.->|\"策略、可靠性与合规\"| governance\n  core -->|\"成功标准与交接\"| delivery\n  integrations -->|\"运营就绪\"| delivery\n  governance -.->|\"评审与确认\"| delivery\n```\n\n## 需求\n\n- 功能需求:\n  - standards verify 新增 docsQuality 检查（巨行、平均行长、prd.md 版本落后）；新增 openprd docs-compact 命令输出压缩重写建议稿；quality verify 后按 retention 策略清理旧报告（保留 latest + 最近 N）；change --archive 在收口路径默认执行；review-presentation --template 输出含 designDirections 的模板；review.html 渲染 3 方向卡片区块。\n- 非功能需求:\n  - 所有新检查默认 warning 级不阻塞存量项目，可通过 config 升级为 error；retention 清理幂等且不删 latest.json/index.json；review.html 保持零外部依赖单文件打开。\n- 业务规则:\n  - designDirections 仅在需求被判定涉及界面场景时要求；方向选定必须以 user-confirmed 来源写回；落选方向归档不删除。\n\n## 业务护栏\n\n- 成本来源:\n  - imagegen 每方向一次调用，共 3 次；报告清理为本地文件操作无外部成本。\n- 额度与限制:\n  - docs-compact 单次只处理 docs/basic 下的标准文档；retention 默认保留最近 30 份报告可配置。\n- 滥用防护:\n  - docs-compact 重写稿默认写到 sibling draft 待确认，不直接覆盖原文档；retention 不触碰 evidence 目录中被 latest 报告引用的文件。\n- 监控信号:\n  - standards verify 输出 docsQuality 结果；doctor 输出 .openprd 体积与报告数量提示。\n- 报警阈值:\n  - 单行超 300 字符 warning；prd.md 落后最新版本超过 20 个版本 warning；quality/reports 超过 200 份提示清理。\n- 止损动作:\n  - 任一清理动作失败即中止并保留原状；归档失败回退为仅提示不移动。\n\n## 约束、依赖与风险\n\n- 技术约束:\n  - 改动集中在 src/standards.js、src/quality.js、src/openspec/change-lifecycle.js、src/review-presentation.js、src/html-artifacts.js，新增 src/docs-compact.js；skills 生成源同步 openprd-shared / openprd-frontend-design / command-catalog。\n- 合规要求:\n  - 提交与状态写回不能泄露用户本地无关改动或敏感信息。\n- 依赖:\n  - Codex 原生 imagegen（生成 3 方向交互稿图片）；现有 review artifact 渲染与 hash 校验管线。\n- 假设:\n  - imagegen 由 Codex 原生 Image 2 提供，OpenPrd 只消费图片路径；review.html 静态打开，选择结果通过现有 canvas/browser handoff 或 review --mark 通道回传；巨行阈值默认 300 字符可配置。\n- 风险:\n  - 存量污染项目首次 verify 会出现大量报警，需要以 warning 分级而非 error 硬阻塞；retention 清理属于删除类动作，默认 dry-run 并只在 verify/doctor 提示，实际清理需要显式命令。\n- 开放问题:\n  - designDirections 选择回写默认走 review artifact 手动确认还是 canvas handoff 自动回传（本期先支持 review --mark 附带 direction 参数，canvas 自动回传后续增强）。\n\n## 类型专项模块\n\n- 类型: Agent 使用场景专项\n- humanAgentContract: 用户决定是否进入 loop、是否要求 commit、是否接受 override；Agent 负责在安全前提下创建隔离执行环境，并维护状态与证据闭环。\n- autonomyBoundary: Agent 可以在 loop 运行前准备 worktree、检查脏状态并收集 touched files，但不能在用户未授权 commit 的情况下自动提交，也不能在高风险脏仓库里静默绕过门禁。\n- toolBoundary: 优先使用本地 Git 与 OpenPrd loop 状态完成这次能力，不引入新的远端托管或发布前置依赖。\n- stateModel: change 进入 loop 后，先绑定隔离执行环境，再逐任务 run / verify / finish / commit，并把 worktree、branch、commit 与测试报告写回同一条状态链。\n- evalPlan: 通过 loop 单测、worktree / dirty repo 场景测试、状态持久化测试，以及一次真实隔离 worktree 的串行回归验证这次改动。\n\n## 交接\n\n- 负责人: Codex\n- 下一步: synthesize 生成 PRD 与 review.html 后走 change/tasks，再按任务实现并用 Codex CLI 本地桌面任务实测。\n- 目标系统: openprd CLI 自身仓库（harness-engineer/openprd）。\n",
+  "digest": "d7b80133987917a5b01dae9180e307af3bb27f07eec1a7b7c237c6ae3ab03466",
+  "reviewPresentationMeta": {
+    "validatedAt": "2026-07-03T06:45:54.956Z",
+    "source": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/tmp-review-presentation.json",
+    "presentationHash": "645400c1e29788bcf054a7ed972f9a00b861d15e165a256b99dbf087318f239a",
+    "violationsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "validator": "openprd review-presentation"
+  }
+}

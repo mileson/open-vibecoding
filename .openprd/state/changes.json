@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "activeChange": "loop-isolated-worktree-commit",
-  "updatedAt": "2026-06-07 13:11:18",
+  "activeChange": "vibe-coding-dev-check",
+  "updatedAt": "2026-07-03 18:28:13",
   "changes": {
     "verify-boundaries-and-historical-refresh": {
       "id": "verify-boundaries-and-historical-refresh",
@@ -27,6 +27,21 @@
       "id": "loop-isolated-worktree-commit",
       "status": "active",
       "activatedAt": "2026-06-07 13:11:18"
+    },
+    "docs-anti-pollution-and-design-direction-review": {
+      "id": "docs-anti-pollution-and-design-direction-review",
+      "status": "active",
+      "activatedAt": "2026-07-03 15:41:01"
+    },
+    "pm-human-in-the-loop": {
+      "id": "pm-human-in-the-loop",
+      "status": "active",
+      "activatedAt": "2026-07-03 17:14:50"
+    },
+    "vibe-coding-dev-check": {
+      "id": "vibe-coding-dev-check",
+      "status": "active",
+      "activatedAt": "2026-07-03 18:28:13"
     }
   }
 }

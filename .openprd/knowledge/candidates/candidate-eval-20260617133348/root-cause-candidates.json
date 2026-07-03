@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Inspect src/visual-compare.js"
+  },
+  {
+    "title": "Inspect src/quality-visual-review.js"
+  },
+  {
+    "title": "Inspect src/quality.js"
+  },
+  {
+    "title": "Inspect src/test-strategy.js"
+  },
+  {
+    "title": "Inspect src/agent-integration.js"
+  },
+  {
+    "title": "Inspect src/codex-hook-runner-template.mjs"
+  },
+  {
+    "title": "Inspect src/cli/args.js"
+  }
+]

@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 
 export const DEV_CHECK_WRAPUP_COPY_LIMIT = 20;
-const WRAPUP_FIELDS = ['规模信号', '预警原因', '本次处理结果', '后续建议'];
-const VALIDATE_USAGE = 'Usage: echo \'{"rows":[{"影响对象":"src/example.js","规模信号":"701 行（> 700 行/文件）","预警原因":"文件偏大，维护成本升","本次处理结果":"本轮小改，未扩职责","后续建议":"继续改前先拆小"}]}\' | node scripts/dev-check-wrapup-copy.mjs --validate';
+// 自动优化模式（默认）与仅推荐模式使用不同表头；字段别名成对等价。
+const WRAPUP_FIELD_ALIASES = [
+  ['源文件规模', '规模信号'],
+  ['优化原因', '预警原因'],
+  ['本次处理结果'],
+  ['后续建议'],
+];
+const VALIDATE_USAGE = 'Usage: echo \'{"rows":[{"影响对象":"src/example.js","源文件规模":"701 行（> 700 行/文件）","优化原因":"文件偏大，维护成本升","本次处理结果":"本轮小改，未扩职责","后续建议":"继续改前先拆小"}]}\' | node scripts/dev-check-wrapup-copy.mjs --validate（仅推荐模式对应字段为“规模信号 / 预警原因”）';
 
 function countChars(value) {
   return Array.from(String(value ?? ''));
@@ -11,14 +17,15 @@ function countChars(value) {
 function validateCompactRows(rows = [], limit = DEV_CHECK_WRAPUP_COPY_LIMIT) {
   for (const [index, row] of rows.entries()) {
     const rowLabel = row?.影响对象 ? String(row.影响对象) : (row?.影响位置 ? String(row.影响位置) : `第 ${index + 1} 行`);
-    for (const field of WRAPUP_FIELDS) {
-      const value = row?.[field];
-      if (typeof value !== 'string') {
-        throw new Error(`后续建议校验失败：${rowLabel} 缺少字段“${field}”。${VALIDATE_USAGE}`);
+    for (const aliases of WRAPUP_FIELD_ALIASES) {
+      const field = aliases.find((name) => typeof row?.[name] === 'string');
+      if (!field) {
+        throw new Error(`收口表格校验失败：${rowLabel} 缺少字段“${aliases.join('／')}”。${VALIDATE_USAGE}`);
       }
+      const value = row[field];
       const actual = countChars(value).length;
       if (actual > limit) {
-        throw new Error(`后续建议校验失败：${rowLabel} 的“${field}”有 ${actual} 个字，超过 ${limit} 字上限。当前内容：“${value}”。请缩短后重试。`);
+        throw new Error(`收口表格校验失败：${rowLabel} 的“${field}”有 ${actual} 个字，超过 ${limit} 字上限。当前内容：“${value}”。请缩短后重试。`);
       }
     }
   }
@@ -56,29 +63,45 @@ function reasonText(file) {
   return '待补充';
 }
 
-function currentResultText(file) {
-  if (file.status === 'warning') return '这次先完成需求，暂不拆分';
-  if (file.status === 'attention') return '本轮小改，未扩职责';
+function currentResultText(file, autoRefactor) {
+  if (file.status === 'warning') {
+    return autoRefactor ? '本轮执行拆分后回填' : '这次先完成需求，暂不拆分';
+  }
+  if (file.status === 'attention') {
+    return autoRefactor ? '按需小步拆分后回填' : '本轮小改，未扩职责';
+  }
   if (file.status === 'error') return '本轮失败，未收口';
   if (file.status === 'ok') return '本轮已回顾';
   return '待确认';
 }
 
-function followUpText(file) {
-  if (file.status === 'warning') return '优先拆出独立职责';
-  if (file.status === 'attention') return '继续改前先拆小';
+function followUpText(file, autoRefactor) {
+  if (file.status === 'warning') {
+    return autoRefactor ? '拆完重跑测试验证' : '优先拆出独立职责';
+  }
+  if (file.status === 'attention') {
+    return autoRefactor ? '保持职责边界清晰' : '继续改前先拆小';
+  }
   if (file.status === 'error') return '先修复后重跑';
   if (file.status === 'ok') return '无需额外动作';
   return '待确认';
 }
 
-export function buildCompactDevCheckWrapUpRows(files = []) {
-  return files.map((file) => ({
-    规模信号: thresholdText(file),
-    预警原因: reasonText(file),
-    本次处理结果: currentResultText(file),
-    后续建议: followUpText(file),
-  }));
+export function buildCompactDevCheckWrapUpRows(files = [], options = {}) {
+  const autoRefactor = Boolean(options.autoRefactor);
+  return files.map((file) => (autoRefactor
+    ? {
+      源文件规模: thresholdText(file),
+      优化原因: reasonText(file),
+      本次处理结果: currentResultText(file, autoRefactor),
+      后续建议: followUpText(file, autoRefactor),
+    }
+    : {
+      规模信号: thresholdText(file),
+      预警原因: reasonText(file),
+      本次处理结果: currentResultText(file, autoRefactor),
+      后续建议: followUpText(file, autoRefactor),
+    }));
 }
 
 async function readStdin() {
@@ -95,7 +118,9 @@ async function main() {
   const payload = raw.trim() ? JSON.parse(raw) : {};
   const rows = validateOnly
     ? (Array.isArray(payload.rows) ? payload.rows : [])
-    : buildCompactDevCheckWrapUpRows(Array.isArray(payload.files) ? payload.files : []);
+    : buildCompactDevCheckWrapUpRows(Array.isArray(payload.files) ? payload.files : [], {
+      autoRefactor: Boolean(payload.autoRefactor),
+    });
   validateCompactRows(rows);
   process.stdout.write(JSON.stringify({
     ok: true,

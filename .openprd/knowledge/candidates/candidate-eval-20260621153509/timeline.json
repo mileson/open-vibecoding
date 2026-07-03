@@ -1,0 +1,110 @@
+[
+  {
+    "event": "doctor-green",
+    "message": "doctor passed",
+    "status": "pass",
+    "at": "2026-07-04 00:07:59"
+  },
+  {
+    "event": "dev-check",
+    "message": "dev-check attention=7, warning=0",
+    "status": "pass",
+    "at": "2026-07-04 00:04:16"
+  },
+  {
+    "event": "quality-verify",
+    "message": "quality production-ready",
+    "status": "pass",
+    "at": "2026-07-04 00:04:04"
+  },
+  {
+    "event": "quality-verify",
+    "message": "quality production-ready",
+    "status": "pass",
+    "at": "2026-07-04 00:04:02"
+  },
+  {
+    "event": "dev-check",
+    "message": "dev-check attention=0, warning=0",
+    "status": "pass",
+    "at": "2026-07-04 00:00:08"
+  },
+  {
+    "event": "dev-check",
+    "message": "dev-check attention=1, warning=0",
+    "status": "pass",
+    "at": "2026-07-03 23:59:31"
+  },
+  {
+    "event": "dev-check",
+    "message": "dev-check attention=2, warning=0",
+    "status": "pass",
+    "at": "2026-07-03 23:57:13"
+  },
+  {
+    "event": "quality-verify",
+    "message": "quality production-ready",
+    "status": "pass",
+    "at": "2026-07-03 23:19:56"
+  },
+  {
+    "event": "quality-verify",
+    "message": "quality production-ready",
+    "status": "pass",
+    "at": "2026-07-03 23:19:21"
+  },
+  {
+    "event": "quality-verify",
+    "message": "quality production-ready",
+    "status": "pass",
+    "at": "2026-07-03 23:18:57"
+  },
+  {
+    "event": "dev-check",
+    "message": "dev-check attention=0, warning=3",
+    "status": "pass",
+    "at": "2026-07-03 23:18:44"
+  },
+  {
+    "event": "quality-verify",
+    "message": "quality production-ready",
+    "status": "pass",
+    "at": "2026-07-03 18:55:53"
+  },
+  {
+    "event": "quality-verify",
+    "message": "quality needs-attention",
+    "status": "needs-attention",
+    "at": "2026-07-03 18:54:17"
+  },
+  {
+    "event": "dev-check",
+    "message": "dev-check attention=1, warning=5",
+    "status": "pass",
+    "at": "2026-07-03 18:52:17"
+  },
+  {
+    "event": "quality-verify",
+    "message": "quality production-ready",
+    "status": "pass",
+    "at": "2026-07-03 17:42:31"
+  },
+  {
+    "event": "quality-verify",
+    "message": "quality production-ready",
+    "status": "pass",
+    "at": "2026-07-03 17:42:23"
+  },
+  {
+    "event": "quality-verify",
+    "message": "quality production-ready",
+    "status": "pass",
+    "at": "2026-07-03 17:42:13"
+  },
+  {
+    "event": "dev-check",
+    "message": "dev-check attention=0, warning=4",
+    "status": "pass",
+    "at": "2026-07-03 17:36:13"
+  }
+]

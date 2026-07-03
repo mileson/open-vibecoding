@@ -1,0 +1,35 @@
+[
+  {
+    "title": "Inspect src/canvas-workspace.js"
+  },
+  {
+    "title": "Inspect src/canvas-app.html.js"
+  },
+  {
+    "title": "Inspect src/canvas-i18n.js"
+  },
+  {
+    "title": "Inspect src/agent-integration.js"
+  },
+  {
+    "title": "Inspect test/openprd-canvas.test.js"
+  },
+  {
+    "title": "Inspect test/openprd-agent-integration.test.js"
+  },
+  {
+    "title": "Inspect docs/basic/app-flow.md"
+  },
+  {
+    "title": "Inspect docs/basic/backend-structure.md"
+  },
+  {
+    "title": "Inspect docs/basic/file-structure.md"
+  },
+  {
+    "title": "Inspect docs/basic/prd.md"
+  },
+  {
+    "title": "Inspect .openprd/harness/command-catalog.md"
+  }
+]

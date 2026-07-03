@@ -17,7 +17,7 @@ async function makeTempProject() {
 }
 
 async function writeLoopChangeFixture(projectRoot, changeId) {
-  const changeDir = path.join(projectRoot, 'openprd', 'changes', changeId);
+  const changeDir = path.join(projectRoot, '.openprd', 'changes', changeId);
   await fs.mkdir(path.join(changeDir, 'specs', changeId), { recursive: true });
   await fs.writeFile(path.join(changeDir, 'proposal.md'), [
     '# 变更提案',

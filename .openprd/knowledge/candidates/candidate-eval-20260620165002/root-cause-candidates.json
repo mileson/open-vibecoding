@@ -1,0 +1,35 @@
+[
+  {
+    "title": "Inspect package.json"
+  },
+  {
+    "title": "Inspect scripts/dev-check-wrapup-copy.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-codex-isolated-worker.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-dev-check.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-github-release-notes.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-review-presentation.mjs"
+  },
+  {
+    "title": "Inspect scripts/quality-perf-check.mjs"
+  },
+  {
+    "title": "Inspect src/agent-integration.js"
+  },
+  {
+    "title": "Inspect src/benchmark/constants.js"
+  },
+  {
+    "title": "Inspect src/benchmark/operations.js"
+  },
+  {
+    "title": "Inspect src/benchmark/registry.js"
+  }
+]

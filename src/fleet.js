@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { cjoin, exists, writeJson } from './fs-utils.js';
+import { hasLegacyOpenPrdArtifacts } from './openspec/migration.js';
 import { SOURCE_INVENTORY_IGNORE_DIRS } from './source-inventory.js';
 import { timestamp } from './time.js';
 import { readWorkspaceRegistry, upsertWorkspaceRegistryEntry } from './workspace-registry.js';
@@ -33,6 +34,7 @@ const FLEET_PROJECT_MARKERS = [
   'Makefile',
 ];
 const FLEET_AGENT_MARKERS = ['.codex', '.claude', '.cursor', 'AGENTS.md', 'CLAUDE.md'];
+const FLEET_LEGACY_OPENPRD_MARKER = 'openprd-legacy-artifacts';
 
 function normalizeCsvList(value) {
   if (!value) {
@@ -73,7 +75,7 @@ function pathWithinRoot(rootPath, candidatePath) {
 }
 
 function classifyFleetMarkers(markers) {
-  if (markers.includes('.openprd')) {
+  if (markers.includes('.openprd') || markers.includes(FLEET_LEGACY_OPENPRD_MARKER)) {
     return 'openprd-workspace';
   }
   if (markers.some((marker) => FLEET_AGENT_MARKERS.includes(marker))) {
@@ -107,7 +109,11 @@ function plannedFleetAction(category, options) {
 async function detectFleetMarkers(projectPath) {
   const entries = await fs.readdir(projectPath, { withFileTypes: true }).catch(() => []);
   const names = new Set(entries.map((entry) => entry.name));
-  return FLEET_PROJECT_MARKERS.filter((marker) => names.has(marker));
+  const markers = FLEET_PROJECT_MARKERS.filter((marker) => names.has(marker));
+  if (!markers.includes('.openprd') && await hasLegacyOpenPrdArtifacts(projectPath)) {
+    markers.push(FLEET_LEGACY_OPENPRD_MARKER);
+  }
+  return markers;
 }
 
 async function scanFleetProjects(rootPath, options = {}) {
@@ -199,7 +205,7 @@ async function collectRegistryFleetScope(rootPath, options, registry) {
       path: entry.workspaceRoot,
       relativePath: path.relative(root, entry.workspaceRoot) || '.',
       category: 'openprd-workspace',
-      markers: ['.openprd'],
+      markers: ['.openprd', ...(await hasLegacyOpenPrdArtifacts(entry.workspaceRoot) ? [FLEET_LEGACY_OPENPRD_MARKER] : [])],
       discoverySource: 'registry',
       registryKnown: true,
       registryEntry: entry,

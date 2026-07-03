@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Inspect src/design-starter.js"
+  },
+  {
+    "title": "Inspect src/design-starter-support.js"
+  },
+  {
+    "title": "Inspect src/agent-integration.js"
+  },
+  {
+    "title": "Inspect test/openprd.test.js"
+  }
+]

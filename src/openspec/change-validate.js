@@ -47,7 +47,7 @@ export async function resolveOpenSpecChangeId(projectRoot, requestedChange) {
     return changeDirs[0];
   }
   if (changeDirs.length === 0) {
-    throw new Error('openprd/changes 下没有找到 OpenPrd change。');
+    throw new Error('.openprd/changes 下没有找到 OpenPrd change。');
   }
   throw new Error(`找到多个 OpenPrd change；请传入 --change <id>。已找到: ${changeDirs.join(', ')}`);
 }

@@ -253,6 +253,10 @@ function defaultQualityConfig() {
       ledgerPath: OPENPRD_GROWTH_LEDGER,
       completionCheckpointRequired: true,
     },
+    reports: {
+      retentionMaxReports: 60,
+      retentionEnabled: true,
+    },
   };
 }
 
@@ -300,6 +304,10 @@ function normalizeQualityConfig(config = {}) {
     growth: {
       ...defaults.growth,
       ...(config.growth ?? {}),
+    },
+    reports: {
+      ...defaults.reports,
+      ...(config.reports ?? {}),
     },
   };
 }
@@ -442,8 +450,7 @@ async function readActiveChangeContext(projectRoot, activeChange) {
     return { activeChange: null, files: [], text: '' };
   }
   const roots = [
-    cjoin('openprd', 'changes', activeChange),
-    cjoin('openspec', 'changes', activeChange),
+    cjoin('.openprd', 'changes', activeChange),
   ];
   const files = [];
   async function walk(root, dir) {
@@ -904,7 +911,9 @@ async function readActiveTasks(projectRoot) {
     return { activeChange: null, total: 0, done: 0, pending: 0, blocked: 0, tasks: [] };
   }
   const taskFiles = [];
-  for (const root of [cjoin('openprd', 'changes', activeChange), cjoin('openspec', 'changes', activeChange)]) {
+  for (const root of [
+    cjoin('.openprd', 'changes', activeChange),
+  ]) {
     const dir = cjoin(projectRoot, root);
     const entries = await fs.readdir(dir).catch(() => []);
     for (const entry of entries) {
@@ -1283,7 +1292,35 @@ async function buildQualityReport(projectRoot, config, options = {}) {
   };
 }
 
-async function writeReport(projectRoot, report) {
+export async function pruneQualityReports(projectRoot, retainedReports, config) {
+  const retention = config?.reports ?? {};
+  if (retention.retentionEnabled === false) {
+    return { pruned: 0 };
+  }
+  const maxReports = Number.isInteger(retention.retentionMaxReports) && retention.retentionMaxReports > 0
+    ? retention.retentionMaxReports
+    : 60;
+  const reportsDir = qualityPath(projectRoot, QUALITY_REPORTS_DIR);
+  const entries = await fs.readdir(reportsDir).catch(() => []);
+  const keepBases = new Set(
+    retainedReports.slice(0, maxReports).map((item) => String(item.reportId ?? '').replace(/[^a-zA-Z0-9._-]/g, '_')),
+  );
+  let pruned = 0;
+  for (const name of entries) {
+    const match = name.match(/^(eval-[a-zA-Z0-9._-]+)\.(json|html)$/);
+    if (!match) {
+      continue;
+    }
+    if (keepBases.has(match[1])) {
+      continue;
+    }
+    await fs.rm(cjoin(reportsDir, name), { force: true }).catch(() => {});
+    pruned += 1;
+  }
+  return { pruned };
+}
+
+async function writeReport(projectRoot, report, config = null) {
   await ensureQualityDirs(projectRoot);
   const reportBase = report.id.replace(/[^a-zA-Z0-9._-]/g, '_');
   const jsonPath = qualityPath(projectRoot, cjoin(QUALITY_REPORTS_DIR, `${reportBase}.json`));
@@ -1304,7 +1341,8 @@ async function writeReport(projectRoot, report) {
     ...(Array.isArray(index.reports) ? index.reports.filter((item) => item.reportId !== report.id) : []),
   ].slice(0, 100);
   await writeJson(indexPath, { version: 1, updatedAt: timestamp(), reports });
-  return { jsonPath, htmlPath, indexPath };
+  const retention = await pruneQualityReports(projectRoot, reports, config ?? normalizeQualityConfig());
+  return { jsonPath, htmlPath, indexPath, prunedReports: retention.pruned };
 }
 
 export async function initQualityWorkspace(projectRoot, options = {}) {
@@ -1349,7 +1387,7 @@ export async function verifyQualityWorkspace(projectRoot, options = {}) {
   await ensureQualityDirs(projectRoot);
   const initialReport = await buildQualityReport(projectRoot, config);
   let report = initialReport;
-  let paths = await writeReport(projectRoot, report);
+  let paths = await writeReport(projectRoot, report, config);
   const knowledgeSignal = {
     kind: 'quality-verify',
     ok: report.readiness.productionReady,
@@ -1408,7 +1446,7 @@ export async function verifyQualityWorkspace(projectRoot, options = {}) {
       reason: 'reusable-knowledge-artifact-already-exists',
     };
   report = await buildQualityReport(projectRoot, config, { reportId: initialReport.id });
-  paths = await writeReport(projectRoot, report);
+  paths = await writeReport(projectRoot, report, config);
   const strict = options.strict === true;
   const blocking = (strict || config.enforcement === 'blocking') && !report.readiness.productionReady;
   const featureCoverageOnly = report.readiness.failingGates.length === 0

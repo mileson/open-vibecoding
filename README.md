@@ -217,7 +217,7 @@ openprd init /path/to/project --template-pack agent
 npx @openprd/cli@latest init /path/to/project --template-pack agent
 ```
 
-`init` 会创建 `.openprd/`、`docs/basic/`、`AGENTS.md`，并生成 Codex / Claude / Cursor 三端引导。Codex 项目会同时写入 `.codex/config.toml`、`.codex/hooks.json`、`.codex/hooks/openprd-hook.mjs`，并开启用户级 Codex `hooks = true`。
+`init` 会创建 `.openprd/`、`docs/basic/`、`AGENTS.md`，并生成 Codex / Claude / Cursor 三端引导。`.openprd/` 是项目内唯一的 OpenPrd 工作区；change、spec、task 和 archive 产物都会收敛到 `.openprd/changes/`、`.openprd/specs/` 和 `.openprd/archive/changes/`，不再在仓库根目录生成单独的 `openprd/` 目录。Codex 项目会同时写入 `.codex/config.toml`、`.codex/hooks.json`、`.codex/hooks/openprd-hook.mjs`，并开启用户级 Codex `hooks = true`。
 
 Codex hooks 默认使用 `lite` 模式：安装 `UserPromptSubmit`、轻量
 `PreToolUse` 写入门禁，以及轻量 `Stop` 收工回顾。明确提到 OpenPrd、PRD、深度调研、深度对标、复刻、
@@ -636,10 +636,12 @@ openprd loop /path/to/project --run --agent codex --dry-run
 
 `doctor` 会检查三端引导、Codex hooks 开关、项目标准化和 OpenPrd 工作区验证是否健康，同时展示像 Context7 / DeepWiki 这类可选增强建议。`update` 会从 OpenPrd 的统一源刷新这些生成文件，并保留用户自己已有的 hook 分组。
 
+新版本更新会自动识别旧项目遗留的根目录 `openprd/changes/`、`openprd/specs/` 和 `openprd/archive/changes/`，并把内容迁移到 `.openprd/` 对应位置；无冲突时会删除空的旧 `openprd/` 目录。若同名文件内容不同，旧文件会保留在原处并让本次更新失败，避免静默覆盖用户数据。
+
 `self-update` 只更新 OpenPrd CLI 自身，默认使用公开 npm 包。
 `upgrade` 会编排两层更新：先执行 `self-update`，再重新解析安装后的
 `openprd` 可执行文件，然后执行 `update <project>`；加 `--fleet` 时会执行
-`fleet <root> --update-openprd`，只刷新已有 `.openprd/` 的历史项目。两个入口都支持
+`fleet <root> --update-openprd`，刷新已有 `.openprd/` 的历史项目，并识别只有旧根目录 `openprd/` 工作产物的项目完成迁移。两个入口都支持
 `--dry-run`，预演时只打印安装和刷新命令，不修改 CLI、项目、registry 或 harness 状态。
 
 这套 harness 是有状态的，但 hook 重量由 profile 控制。默认 `lite` 保留轻量
@@ -707,10 +709,10 @@ OpenPrd 面向用户的时间统一使用上海时区的 `YYYY-MM-DD HH:mm:ss` �
 `T`、`Z` 或毫秒后缀。除命令、字段名、文件路径、API 名称、品牌名和产品名等必要
 专有术语外，生成文档、进度日志、proposal、prompt、测试报告，以及 Agent 产出的
 `spec.md` 与 tasks 默认跟随当前输入和 PRD 快照的主语言：中文语境使用简体中文，
-英文语境保持英文，无法判断时回退到简体中文。结构字段继续兼容历史 OpenSpec 英文
+英文语境保持英文，无法判断时回退到简体中文。结构字段继续兼容历史英文
 结构字段；明确要求 `zh-CN` 的图示和合同场景仍会强制使用中文。
 
-历史项目不要手写 shell 循环批量改。使用 `fleet` 先扫描报告；它现在会顺带提示全局 registry 里已经登记了多少 OpenPrd 工作区、当前 root 外还有多少已知项目。`--sync-registry` 用来把当前 root 下已初始化的 `.openprd/` 工作区回填到 `~/.openprd/registry/workspaces.jsonl`。`--update-openprd` 只刷新已经有 `.openprd/` 的项目，项目自身 standards 或 validate 缺口会作为“项目健康需关注”报告，但不阻断生成引导更新；只有 agent 配置或普通项目默认保持不变，除非显式用 `--setup-missing` 接管。
+历史项目不要手写 shell 循环批量改。使用 `fleet` 先扫描报告；它现在会顺带提示全局 registry 里已经登记了多少 OpenPrd 工作区、当前 root 外还有多少已知项目。`--sync-registry` 用来把当前 root 下已初始化的 `.openprd/` 工作区回填到 `~/.openprd/registry/workspaces.jsonl`。`--update-openprd` 会刷新已有 `.openprd/` 的项目，也会把只包含旧根目录 `openprd/changes/`、`openprd/specs/` 或 `openprd/archive/changes/` 的历史项目识别为 OpenPrd 工作区并迁移到 `.openprd/`；项目自身 standards 或 validate 缺口会作为“项目健康需关注”报告，但不阻断生成引导更新。只有 agent 配置或普通项目默认保持不变，除非显式用 `--setup-missing` 接管。
 
 ## 怎么看 `status` / `next`
 

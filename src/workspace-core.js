@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { buildSnapshotChangeSummary } from './change-summary.js';
 import { formatProductTypeDisplay, formatTemplatePackDisplay } from './product-type-copy.js';
 import { buildDiagramArtifact, renderDiagramMermaidFromModel } from './diagram-core.js';
+import { migrateLegacyOpenPrdArtifacts } from './openspec/migration.js';
 import { analyzePrdSnapshot, buildPrdSnapshot, formatVersionId, getRequiredFieldDescriptors, renderPrdMarkdown, summarizeSnapshot } from './prd-core.js';
 import { normalizeReleaseLedger } from './release-ledger.js';
 import { appendJsonl, appendText, cjoin, exists, readJson, readText, readYaml, stringifyYaml, writeJson, writeText, writeYaml } from './fs-utils.js';
@@ -130,16 +131,20 @@ const WORKSPACE_SEED_REFRESH_FILES = [
   'standards/folder-readme-template.md',
 ];
 const WORKSPACE_SEED_COPY_IGNORE = new Set([
+  'archive',
   'artifacts',
   'benchmarks/.DS_Store',
   'benchmarks/evidence',
   'benchmarks/inbox',
+  'changes',
   'discovery',
   'growth',
   'harness',
   'knowledge',
   'learning',
   'quality',
+  'reviews',
+  'specs',
   'state',
   'sessions',
   'exports',
@@ -157,6 +162,11 @@ const WORKSPACE_SEED_COPY_IGNORE = new Set([
   'engagements/active/review.html',
   'engagements/active/verification.md',
 ]);
+const OPERATIONAL_GITIGNORE_ENTRIES = [
+  '.openprd/harness/',
+  '.openprd/learning/',
+  '.openprd/quality/reports/',
+];
 
 const DEFAULT_DISCOVERY_CONFIG = {
   activeChange: null,
@@ -770,7 +780,67 @@ async function ensureWorkspaceSkeleton(projectRoot, options = {}) {
     }
   }
 
+  await ensureOperationalGitignore(projectRoot);
+
   return { workspaceRoot, created };
+}
+
+function normalizeIgnoreLine(line) {
+  const trimmed = String(line ?? '').trim();
+  if (!trimmed || trimmed.startsWith('#')) {
+    return '';
+  }
+  return trimmed
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '');
+}
+
+function missingOperationalGitignoreEntries(text) {
+  const present = new Set(String(text ?? '')
+    .split(/\r?\n/)
+    .map(normalizeIgnoreLine)
+    .filter(Boolean));
+  return OPERATIONAL_GITIGNORE_ENTRIES.filter((entry) => !present.has(normalizeIgnoreLine(entry)));
+}
+
+function gitignoreContainsOnlyOpenPrdOperationalEntries(text) {
+  const allowed = new Set(OPERATIONAL_GITIGNORE_ENTRIES.map(normalizeIgnoreLine));
+  const entries = String(text ?? '')
+    .split(/\r?\n/)
+    .map(normalizeIgnoreLine)
+    .filter(Boolean);
+  return entries.length > 0 && entries.every((entry) => allowed.has(entry));
+}
+
+async function readOperationalGitignoreStatus(projectRoot) {
+  const gitignorePath = cjoin(projectRoot, '.gitignore');
+  const text = await readText(gitignorePath).catch(() => '');
+  const missing = missingOperationalGitignoreEntries(text);
+  return {
+    ok: missing.length === 0,
+    path: '.gitignore',
+    missing,
+  };
+}
+
+async function ensureOperationalGitignore(projectRoot, changes = null) {
+  const gitignorePath = cjoin(projectRoot, '.gitignore');
+  const current = await readText(gitignorePath).catch(() => '');
+  const missing = missingOperationalGitignoreEntries(current);
+  if (missing.length === 0) {
+    changes?.push({ path: '.gitignore', status: 'unchanged' });
+    return { ok: true, path: '.gitignore', status: 'unchanged', missing: [] };
+  }
+
+  const prefix = current.trimEnd();
+  const next = `${prefix ? `${prefix}\n` : ''}${missing.join('\n')}\n`;
+  await writeText(gitignorePath, next);
+  changes?.push({
+    path: '.gitignore',
+    status: current ? 'updated' : 'created',
+    message: `added OpenPrd generated artifact ignores: ${missing.join(', ')}`,
+  });
+  return { ok: true, path: '.gitignore', status: current ? 'updated' : 'created', missing };
 }
 
 async function copySeedFileIfChanged(projectRoot, relativePath, changes) {
@@ -1022,6 +1092,12 @@ async function migrateWorkspaceSkeleton(projectRoot, options = {}) {
   await fs.mkdir(cjoin(workspaceRoot, 'benchmarks', 'evidence'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'engagements', 'active'), { recursive: true });
 
+  const legacyOpenPrdMigration = await migrateLegacyOpenPrdArtifacts(projectRoot);
+  changes.push(...legacyOpenPrdMigration.changes.map((change) => ({
+    ...change,
+    source: 'legacy-openprd-artifacts',
+  })));
+
   await migrateWorkspaceConfig(projectRoot, changes);
   await migrateStandardsConfig(projectRoot, changes);
   for (const relativePath of WORKSPACE_SEED_REFRESH_FILES) {
@@ -1072,21 +1148,28 @@ async function migrateWorkspaceSkeleton(projectRoot, options = {}) {
     await writeText(cjoin(projectRoot, '.openprd', 'benchmarks', 'index.md'), '# OpenPrd Benchmark Registry\n\n## 规则\n\n- 项目级 approved benchmark 优先于 OpenPrd 内置 Source Map。\n- `inbox/` 里的 candidate 只表示待确认线索，不表示长期最佳实践。\n- 每次只挑 1-3 个高相关来源；来源目录不是事实来源。\n\n## Approved Sources\n\n- 暂无已批准来源。\n\n## Candidate Sources\n\n- 暂无待确认来源。\n');
     changes.push({ path: cjoin('.openprd', 'benchmarks', 'index.md'), status: 'created' });
   }
+  await ensureOperationalGitignore(projectRoot, changes);
 
   const changedCount = changes.filter((change) => change.status !== 'unchanged').length;
   if (options.recordEvent && changedCount > 0) {
     const nextWs = await loadWorkspace(projectRoot);
     await appendWorkflowEvent(nextWs, 'workspace_migrated', {
       changed: changedCount,
+      legacyOpenPrdArtifacts: {
+        migrated: legacyOpenPrdMigration.migrated,
+        conflicts: legacyOpenPrdMigration.conflicts,
+      },
     });
   }
 
   return {
-    ok: true,
+    ok: legacyOpenPrdMigration.ok,
     action: 'migrate',
     projectRoot,
     workspaceRoot,
     changes,
+    legacyOpenPrdMigration,
+    errors: legacyOpenPrdMigration.errors,
   };
 }
 
@@ -1186,9 +1269,9 @@ async function loadWorkspace(projectRoot, options = {}) {
     standardsFileManualTemplate: cjoin(workspaceRoot, 'standards', 'file-manual-template.md'),
     standardsFolderReadmeTemplate: cjoin(workspaceRoot, 'standards', 'folder-readme-template.md'),
     exportsDir: cjoin(workspaceRoot, 'exports'),
-    openspecExportDir: cjoin(workspaceRoot, 'exports', 'openspec'),
-    openspecHandoffJson: cjoin(workspaceRoot, 'exports', 'openspec', 'handoff.json'),
-    openspecHandoffMd: cjoin(workspaceRoot, 'exports', 'openspec', 'handoff.md'),
+    openprdExportDir: cjoin(workspaceRoot, 'exports', 'openprd'),
+    openprdHandoffJson: cjoin(workspaceRoot, 'exports', 'openprd', 'handoff.json'),
+    openprdHandoffMd: cjoin(workspaceRoot, 'exports', 'openprd', 'handoff.md'),
   };
 
   const workspaceCurrentState = await readJson(paths.workspaceCurrentState).catch(() => null);
@@ -1888,6 +1971,11 @@ async function shouldIgnoreWorkspaceScenarioEntry(projectRoot, entry, managedPat
     return true;
   }
 
+  if (entry.isFile() && entry.name === '.gitignore') {
+    const content = await readText(path.join(projectRoot, entry.name)).catch(() => null);
+    return gitignoreContainsOnlyOpenPrdOperationalEntries(content);
+  }
+
   if (entry.isFile() && WORKSPACE_SCENARIO_BOOTSTRAP_FILE_MARKERS.has(entry.name)) {
     const marker = WORKSPACE_SCENARIO_BOOTSTRAP_FILE_MARKERS.get(entry.name);
     const content = await readText(path.join(projectRoot, entry.name)).catch(() => null);
@@ -2189,10 +2277,12 @@ export {
   loadWorkspace,
   migrateWorkspaceSkeleton,
   normalizeLaneSessionId,
+  OPERATIONAL_GITIGNORE_ENTRIES,
   normalizeVersionId,
   persistWorkspaceCurrentState,
   readVersionIndex,
   readActiveRequirementLane,
+  readOperationalGitignoreStatus,
   readVersionSnapshot,
   renderFlowDoc,
   renderHandoffDoc,

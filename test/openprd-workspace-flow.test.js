@@ -1119,7 +1119,7 @@ test('generated changes include business guardrail tasks for metered free usage'
   await reviewWorkspace(project, { mark: 'confirmed' });
   const result = await generateOpenSpecChangeWorkspace(project, { change: 'ai-image-trial' });
   assert.equal(result.validation.valid, true);
-  const tasks = await fs.readFile(path.join(project, 'openprd', 'changes', 'ai-image-trial', 'tasks.md'), 'utf8');
+  const tasks = await fs.readFile(path.join(project, '.openprd', 'changes', 'ai-image-trial', 'tasks.md'), 'utf8');
   assert.ok(tasks.includes('Verify Cost And Quota Guardrails'));
   assert.ok(tasks.includes('Verify Abuse And Privilege Escalation Paths'));
   assert.ok(tasks.includes('Verify Cost Monitoring, Alerts, And Stop-Loss'));

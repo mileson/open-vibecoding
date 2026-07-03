@@ -173,8 +173,8 @@ hook harness 还会写入：
 
 - 使用 `openprd tasks <path> --change <id>` 查看进度和下一个依赖已满足的任务
 - 当某项任务已经可以通过自己的 `verify` 命令完成时，使用 `openprd tasks <path> --change <id> --advance --verify --item <task-id>`
-- 使用 `openprd change <path> --apply --change <id>` 把完成的 change specs 推进到 `openprd/specs`
-- 使用 `openprd change <path> --archive --change <id>` 把完成的 change 文件移动到 `openprd/archive/changes`
+- 使用 `openprd change <path> --apply --change <id>` 把完成的 change specs 推进到 `.openprd/specs`
+- 使用 `openprd change <path> --archive --change <id>` 把完成的 change 文件移动到 `.openprd/archive/changes`
 - 当任务或 discovery pass 改动了基线文档、文件说明书或文件夹 README 时，运行 `openprd standards <path> --verify`
 - 在声明单个任务完成前，运行本任务最小足够验证并留下 evidence；在阶段收口或声明整体实现就绪前，运行 `openprd quality <path> --verify`；当某个已验证修复应该沉淀为项目级复用经验时，运行 `openprd quality <path> --learn --from <report>`
 - 如果任务被依赖阻塞，先完成更早的任务 id；不要人工跳过依赖顺序

@@ -96,9 +96,9 @@ function resolveTaskSelection(state, options = {}) {
 
   if (!task) {
     if (requestedId) {
-      throw new Error(`Unknown OpenSpec task: ${requestedId}`);
+      throw new Error(`Unknown OpenPrd task: ${requestedId}`);
     }
-    throw new Error('No ready OpenSpec task is available.');
+    throw new Error('No ready OpenPrd task is available.');
   }
 
   return task;

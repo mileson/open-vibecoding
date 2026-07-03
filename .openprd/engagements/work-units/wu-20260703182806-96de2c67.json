@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "workUnitId": "wu-20260703182806-96de2c67",
+  "title": "Vibe Coding 自动化三连：dev-check 自动重构、图标自动匹配、拼图证据入流",
+  "status": "confirmed",
+  "projectRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "workspaceRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd",
+  "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "latestVersionId": "v0012",
+  "latestVersionDigest": "ecce1dcbd85b8bd72e83bfde3d020e941c6c9691a934c28cbb148e9f892aa898",
+  "reviewPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/reviews/v0012.html",
+  "activeReviewPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/engagements/active/review.html",
+  "reviewArtifact": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/reviews/v0012.html",
+  "activeReviewArtifact": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/engagements/active/review.html",
+  "artifactBundle": null,
+  "createdAt": "2026-07-03 18:28:06",
+  "updatedAt": "2026-07-03 18:28:12"
+}

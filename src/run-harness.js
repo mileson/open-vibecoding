@@ -19,6 +19,9 @@ const OPENPRD_HARNESS_RUN_STATE = cjoin(OPENPRD_HARNESS_DIR, 'run-state.json');
 const OPENPRD_HARNESS_ITERATIONS = cjoin(OPENPRD_HARNESS_DIR, 'iterations.jsonl');
 const OPENPRD_HARNESS_LEARNINGS = cjoin(OPENPRD_HARNESS_DIR, 'learnings.md');
 const OPENPRD_HARNESS_LOOP_FEATURE_LIST = cjoin(OPENPRD_HARNESS_DIR, 'feature-list.json');
+const OPENPRD_HARNESS_INSTALL_MANIFEST = cjoin(OPENPRD_HARNESS_DIR, 'install-manifest.json');
+const OPENPRD_HARNESS_HOOK_STATE = cjoin(OPENPRD_HARNESS_DIR, 'hook-state.json');
+const OPENPRD_HARNESS_RUNTIME_ENVIRONMENT = cjoin(OPENPRD_HARNESS_DIR, 'runtime-environment.json');
 const OPENPRD_HARNESS_REQUIREMENT_GATE = cjoin(OPENPRD_HARNESS_DIR, 'requirement-gate.json');
 const OPENPRD_HARNESS_REQUIREMENT_GATES_DIR = cjoin(OPENPRD_HARNESS_DIR, 'requirement-gates');
 const OPENPRD_HARNESS_SESSION_BINDINGS_DIR = cjoin(OPENPRD_HARNESS_DIR, 'session-bindings');
@@ -80,6 +83,34 @@ async function ensureRunHarness(projectRoot) {
   if (!(await exists(learningsPath))) {
     await writeText(learningsPath, '# OpenPrd Harness Learnings\n\nReusable patterns discovered during hook-driven runs belong here.\n');
   }
+}
+
+async function readRuntimeEnvironmentContext(projectRoot) {
+  const [runtimeEnvironment, installManifest, hookState] = await Promise.all([
+    readJson(harnessFile(projectRoot, OPENPRD_HARNESS_RUNTIME_ENVIRONMENT)).catch(() => null),
+    readJson(harnessFile(projectRoot, OPENPRD_HARNESS_INSTALL_MANIFEST)).catch(() => null),
+    readJson(harnessFile(projectRoot, OPENPRD_HARNESS_HOOK_STATE)).catch(() => null),
+  ]);
+  const active = runtimeEnvironment?.active
+    ?? hookState?.runtimeEnvironment
+    ?? {
+      activeClient: 'unknown',
+      surface: 'unknown',
+      confidence: 0,
+      sessionId: null,
+      evidence: [],
+      observedCapabilities: [],
+    };
+  return {
+    active,
+    runtimeDetection: installManifest?.runtimeDetection ?? runtimeEnvironment?.runtimeDetection ?? null,
+    platformCapabilityPacks: installManifest?.platformCapabilityPacks ?? runtimeEnvironment?.platformCapabilityPacks ?? [],
+    files: {
+      runtimeEnvironment: OPENPRD_HARNESS_RUNTIME_ENVIRONMENT,
+      installManifest: OPENPRD_HARNESS_INSTALL_MANIFEST,
+      hookState: OPENPRD_HARNESS_HOOK_STATE,
+    },
+  };
 }
 
 async function readRunState(projectRoot) {
@@ -225,7 +256,7 @@ function executionGate() {
     confirmationChecklistRequired: true,
     allowedIntents: ['开发', '实现', '修复', '继续任务', '落地执行', '深度调研', '深度对标', '复刻落地', '提交'],
     readOnlyIntents: ['看看', '规划', '梳理', '分析', '评估', '预计动哪些文件', '怎么改', '代码审查'],
-    rule: '只有当用户当前明确要求实现、继续、深度调研、对标或提交时，才运行 executionCommand。单纯的“请帮我实现/继续实现”只表示有执行意图，不表示可以跳过 requirement 摘要确认、`capture/classify/synthesize` 写入路径或 review；只有用户明确表示“不需要进行任何确认”时，才允许静默走完整 requirement write path，并对当前精确匹配的稳定 review artifact 记录确认。若还需要向用户索取执行授权，先展示 executionConfirmationChecklist，再请求明确确认；规划、分析、文件影响范围和审查类请求保持只读，并基于证据回答。',
+    rule: '只有当用户当前明确要求实现、继续、深度调研、对标或提交时，才运行 executionCommand。单纯的“请帮我实现/继续实现”只表示有执行意图，不表示可以跳过 requirement 摘要确认、`capture/classify/synthesize` 写入路径或 review；只有用户明确表示“不需要进行任何确认”时，才允许静默走完整 requirement write path，并对当前精确匹配的稳定 review artifact 记录确认。即使用户授权实现，也不等于授权云端热修复、生产远端写入、业务兜底、写死逻辑或缓存补行；这些动作必须由当前用户明确批准，并说明如何同步回本地源码、配置或迁移。若还需要向用户索取执行授权，先展示 executionConfirmationChecklist，再请求明确确认；规划、分析、文件影响范围和审查类请求保持只读，并基于证据回答。',
   };
 }
 
@@ -251,6 +282,7 @@ function buildExecutionConfirmationChecklist(recommendation) {
     outOfScope: [
       '不会默认处理这次范围以外的历史问题。',
       '不会默认顺带做提交、发布或额外的全局调整。',
+      '不会默认做云端热修复、生产远端写入、业务兜底、写死逻辑或缓存补行。',
       '如果真的需要扩大范围，我会先单独说明。',
     ].filter(Boolean),
     verification: [
@@ -261,6 +293,7 @@ function buildExecutionConfirmationChecklist(recommendation) {
     risks: [
       '这一步会正式写入当前工作区。',
       '如果牵出和本次无关的历史遗留问题，我会单列说明，不把它混成本次失败。',
+      '如果确实需要临时兜底或线上热修复，我会先单独说明影响、回滚和本地同步计划，等你明确批准。',
       parallelPlan?.eligible ? '如果多人同时推进，我会避免范围互相踩踏。' : null,
     ],
     confirmationPrompt: '如果你希望我现在就按这次范围继续，我就直接往下做。',
@@ -1816,6 +1849,7 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
   await ensureRunHarness(projectRoot);
   const runState = await readRunState(projectRoot);
   const currentTurn = await readJson(harnessFile(projectRoot, OPENPRD_HARNESS_TURN_STATE)).catch(() => null);
+  const runtimeEnvironment = await readRuntimeEnvironmentContext(projectRoot);
   const currentTurnPrompt = String(currentTurn?.prompt ?? '').trim();
   const fallbackPrompt = !options.hookInject
     ? (inferPromptDrivenLightweightRecommendation(currentTurnPrompt) ? currentTurnPrompt : null)
@@ -1942,8 +1976,8 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
     activeChange,
     nextTaskTitle: nextTask?.title,
     relatedFiles: [
-      focusedChangeId ? `openprd/changes/${focusedChangeId}/tasks.md` : null,
-      activeChange ? `openprd/changes/${activeChange}` : null,
+      focusedChangeId ? `.openprd/changes/${focusedChangeId}/tasks.md` : null,
+      activeChange ? `.openprd/changes/${activeChange}` : null,
     ].filter(Boolean),
     limit: options.hookInject ? 4 : 3,
   }).catch(() => ({ matched: [], summary: { matched: 0 } }));
@@ -2035,6 +2069,7 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
       : null,
     lane,
     recommendation: effectiveRecommendation,
+    runtimeEnvironment,
     knowledgeSkills: {
       matched: renderedKnowledgeSkills,
       mandatoryCheck: knowledgeSkillMatches.mandatoryCheck ?? null,
@@ -2050,6 +2085,7 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
       runState: OPENPRD_HARNESS_RUN_STATE,
       iterations: OPENPRD_HARNESS_ITERATIONS,
       learnings: OPENPRD_HARNESS_LEARNINGS,
+      runtimeEnvironment: OPENPRD_HARNESS_RUNTIME_ENVIRONMENT,
     },
   };
 
@@ -2065,6 +2101,7 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
 async function recordRunHook(projectRoot, options = {}) {
   await ensureRunHarness(projectRoot);
   const state = await readRunState(projectRoot);
+  const runtimeEnvironment = await readRuntimeEnvironmentContext(projectRoot);
   const currentIteration = Number(state.currentIteration ?? 0) + 1;
   const event = {
     version: 1,
@@ -2075,6 +2112,7 @@ async function recordRunHook(projectRoot, options = {}) {
     risk: options.risk ?? 'unknown',
     outcome: options.outcome ?? 'unknown',
     preview: options.preview ?? null,
+    runtimeEnvironment: runtimeEnvironment.active,
   };
   await appendJsonl(harnessFile(projectRoot, OPENPRD_HARNESS_ITERATIONS), event);
   await writeRunState(projectRoot, {

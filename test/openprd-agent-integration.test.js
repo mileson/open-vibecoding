@@ -153,15 +153,41 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(manifest.managedFiles.some((file) => file.path === '.codex/hooks/openprd-hook.mjs'));
     assert.ok(manifest.managedFiles.some((file) => file.path === '.openprd/harness/command-catalog.md'));
     assert.ok(manifest.managedFiles.some((file) => file.path === '.codex/skills/openprd-frontend-design/SKILL.md'));
+    assert.equal(manifest.hooks.runtimeEnvironment, '.openprd/harness/runtime-environment.json');
+    assert.equal(manifest.runtimeDetection.version, 1);
+    assert.equal(manifest.runtimeDetection.activeEvidencePriority[0].id, 'hook-session-payload');
+    assert.equal(Array.isArray(manifest.platformCapabilityPacks), true);
+    const codexCapabilityPack = manifest.platformCapabilityPacks.find((pack) => pack.id === 'codex');
+    assert.ok(codexCapabilityPack);
+    assert.ok(codexCapabilityPack.capabilities.some((capability) => capability.id === 'native-image-generation'));
+    assert.ok(codexCapabilityPack.capabilities.some((capability) => capability.id === 'computer-use'));
+    assert.ok(codexCapabilityPack.capabilities.some((capability) => capability.id === 'conversation-canvas'));
+    const codexThreadRelay = codexCapabilityPack.capabilities.find((capability) => capability.id === 'codex-current-thread-relay');
+    assert.ok(codexThreadRelay);
+    assert.equal(codexThreadRelay.status, 'surface-dependent-agent-tool');
+    assert.ok(codexThreadRelay.evidence.includes('codex app-server turn/start'));
+    assert.ok(codexThreadRelay.evidence.includes('.openprd/harness/canvas-sessions/<session-key>/relays/*.status.json'));
+    assert.match(codexThreadRelay.note, /text \+ localImage/);
     assert.equal(Array.isArray(manifest.optionalCapabilities), true);
     assert.deepEqual(manifest.optionalCapabilities.map((capability) => capability.id), ['context7', 'deepwiki']);
     assert.ok(manifest.optionalCapabilities.every((capability) => capability.status === 'recommended'));
     assert.ok(manifest.optionalCapabilities.every((capability) => capability.checkedLocations.some((location) => location.path === '.codex/config.toml')));
+    const runtimeEnvironment = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'runtime-environment.json'), 'utf8'));
+    assert.equal(runtimeEnvironment.runtimeDetection.version, 1);
+    assert.ok(runtimeEnvironment.runtimeDetection.outputFields.includes('executionMode'));
+    assert.equal(runtimeEnvironment.active.executionMode, 'interactive');
+    assert.ok(runtimeEnvironment.platformCapabilityPacks.some((pack) => pack.id === 'codex'));
     const generatedAgents = await fs.readFile(path.join(project, 'AGENTS.md'), 'utf8');
     assert.ok(generatedAgents.includes('openprd dev-check . <file...>'));
+    assert.ok(generatedAgents.includes('无人值守自动化'));
+    assert.ok(generatedAgents.includes('Codex automation、Claude Code headless、cron、scheduled、unattended task'));
+    assert.ok(generatedAgents.includes('不要求 `openprd dev-check` / `quality` / `doctor`'));
+    assert.ok(generatedAgents.includes('显式启用 OpenPrd / enable OpenPrd / openprd-maintenance'));
+    assert.ok(generatedAgents.includes('automation-safe'));
     assert.ok(generatedAgents.includes('repo-local skills 和 hooks'));
     assert.ok(generatedAgents.includes('skills/openprd-router/SKILL.md'));
     assert.ok(generatedAgents.includes('.openprd/harness/command-catalog.md'));
+    assert.ok(generatedAgents.includes('.openprd/quality/reports/'));
     assert.ok(generatedAgents.includes('### Entry Points'));
     assert.ok(generatedAgents.includes('$openprd-requirement-intake'));
     assert.ok(generatedAgents.includes('$openprd-frontend-design'));
@@ -219,6 +245,8 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedAgents.includes('build、package、`openprd dev-check` 和单张原始截图不能替代视觉证据'));
     assert.ok(generatedAgents.includes('task-scoped Markdown/HTML 测试报告路径'));
     assert.ok(generatedAgents.includes('Markdown / HTML 测试报告'));
+    assert.ok(generatedAgents.includes('autonomy-risk'));
+    assert.ok(generatedAgents.includes('云端热修复、生产远端写入、业务兜底、写死逻辑'));
     assert.equal(generatedAgents.includes('## Skill Routing'), false);
     assert.equal(generatedAgents.includes('## Tool Reality'), false);
     assert.equal(generatedAgents.includes('## Working Principles'), false);
@@ -231,6 +259,8 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedHook.includes('Image 2 是工具路径，不是审美豁免'));
     assert.ok(generatedHook.includes('审美意图和记忆点'));
     assert.ok(generatedHook.includes('build、package 和 dev-check'));
+    assert.ok(generatedHook.includes('blocked-high-risk-autonomy'));
+    assert.ok(generatedHook.includes('允许这次云端热修复'));
 
     const commandCatalog = await fs.readFile(path.join(project, '.openprd', 'harness', 'command-catalog.md'), 'utf8');
     assert.ok(commandCatalog.includes('轻量 UI 可视优化'));
@@ -246,6 +276,9 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.equal(generatedAgents.includes('## 大量只读扫描调度'), false);
     assert.equal(generatedAgents.includes('spark-code-researcher'), false);
     const generatedRouterSkill = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-router', 'SKILL.md'), 'utf8');
+    assert.ok(generatedRouterSkill.includes('automation-safe mode'));
+    assert.ok(generatedRouterSkill.includes('不要运行 `openprd run . --context`'));
+    assert.ok(generatedRouterSkill.includes('按该自动化自己的 runbook、日志、测试和通知合同收口'));
     assert.ok(generatedRouterSkill.includes('.openprd/harness/command-catalog.md'));
     assert.ok(generatedRouterSkill.includes('$openprd-shared'));
     assert.ok(generatedRouterSkill.includes('$openprd-requirement-intake'));
@@ -404,9 +437,16 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedSharedSkill.includes('Image 2 是工具路径，不是审美豁免'));
     assert.ok(generatedSharedSkill.includes('视觉证据不仅检查位置'));
     assert.ok(generatedSharedSkill.includes('不要中途打断当前任务'));
+    assert.ok(generatedSharedSkill.includes('不要把 `.openprd/quality/reports/`'));
     assert.ok(generatedSharedSkill.includes('README_EN.md'));
     assert.ok(generatedSharedSkill.includes('代码扩展识别这类白名单工具补全'));
     assert.ok(generatedSharedSkill.includes('optionalCapabilities'));
+    assert.ok(generatedSharedSkill.includes('runtimeDetection'));
+    assert.ok(generatedSharedSkill.includes('runtimeDetection.executionMode'));
+    assert.ok(generatedSharedSkill.includes('无人值守自动化默认不要注入 OpenPrd context'));
+    assert.ok(generatedSharedSkill.includes('不要要求 `dev-check` / `quality` / `doctor`'));
+    assert.ok(generatedSharedSkill.includes('platformCapabilityPacks'));
+    assert.ok(generatedSharedSkill.includes('surface-dependent'));
     assert.ok(generatedSharedSkill.includes('非阻断式增强建议'));
     assert.ok(generatedSharedSkill.includes('创业验证闭环'));
     assert.ok(generatedSharedSkill.includes('第一批最容易触达的人群/社区'));
@@ -424,6 +464,9 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedSharedSkill.includes('.openprd/design/'));
     assert.ok(generatedSharedSkill.includes('direction-plan.md'));
     const generatedHarnessSkill = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-harness', 'SKILL.md'), 'utf8');
+    assert.ok(generatedHarnessSkill.includes('Codex automation、Claude Code headless、cron、scheduled、unattended task'));
+    assert.ok(generatedHarnessSkill.includes('不要要求 `openprd dev-check` / `quality` / `doctor`'));
+    assert.ok(generatedHarnessSkill.includes('automation-safe mode'));
     assert.ok(generatedHarnessSkill.includes('AGENTS.md` 只保留轻量合同'));
     assert.ok(generatedHarnessSkill.includes('外部证据不足就直接改第三方集成'));
     assert.ok(generatedHarnessSkill.includes('Context7、DeepWiki'));
@@ -448,6 +491,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedSharedSkill.includes('先判断新建界面还是修改既有界面'));
     assert.ok(generatedSharedSkill.includes('冷启动没有现有界面'));
     assert.ok(generatedHarnessSkill.includes('代码修改完成后、最终回复前'));
+    assert.ok(generatedHarnessSkill.includes('不要 repo-wide 搜 `.openprd/quality/reports/`'));
     assert.ok(generatedHarnessSkill.includes('代码扩展识别这类白名单工具补全'));
     assert.ok(generatedHarnessSkill.includes('收工时用 `openprd grow . --review`'));
     assert.ok(generatedHarnessSkill.includes('主动询问用户是否做成可成长配置'));
@@ -481,6 +525,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedHarnessSkill.includes('不能只要求用户回复一句确认'));
     assert.ok(generatedHarnessSkill.includes('先整理需求摘要给你确认'));
     assert.ok(generatedHarnessSkill.includes('你回我一句我就开始实现'));
+    assert.ok(generatedHarnessSkill.includes('不自动授权云端热修复'));
     assert.ok(generatedHarnessSkill.includes('这条经验只会保留在当前项目里'));
     const generatedCodexHook = await fs.readFile(path.join(project, '.codex', 'hooks', 'openprd-hook.mjs'), 'utf8');
     assert.ok(generatedCodexHook.includes('执行确认清单'));
@@ -709,6 +754,17 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(events.includes('allowed-high-risk'));
     assert.equal(events.includes('allowed-low-risk'), false);
     assert.equal(events.includes('tool-complete'), false);
+    const observedRuntimeEnvironment = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'runtime-environment.json'), 'utf8'));
+    assert.equal(observedRuntimeEnvironment.active.activeClient, 'codex');
+    assert.equal(observedRuntimeEnvironment.active.surface, 'codex-hook');
+    assert.ok(observedRuntimeEnvironment.active.confidence >= 0.9);
+    assert.ok(observedRuntimeEnvironment.active.evidence.includes('hook.cwd'));
+    assert.ok(observedRuntimeEnvironment.active.observedCapabilities.includes('codex-hooks'));
+    const hookState = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'hook-state.json'), 'utf8'));
+    assert.equal(hookState.runtimeEnvironment.activeClient, 'codex');
+    const runContext = await runWorkspace(project, { context: true });
+    assert.equal(runContext.runtimeEnvironment.active.activeClient, 'codex');
+    assert.equal(runContext.runtimeEnvironment.platformCapabilityPacks.some((pack) => pack.id === 'codex'), true);
 
     await fs.appendFile(path.join(project, '.codex', 'skills', 'openprd-harness', 'SKILL.md'), '\nmanual drift\n');
     const drifted = await doctorWorkspace(project, { tools: 'codex', enableUserCodexConfig: true, codexHome });
@@ -736,6 +792,56 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
       process.env.OPENPRD_HOME = previousOpenPrdHome;
     }
   }
+});
+
+test('doctor reports missing generated artifact ignores and update repairs them', async () => {
+  const project = await makeTempProject();
+  const setup = await setupAgentIntegrationWorkspace(project, {
+    tools: 'codex',
+    templatePack: 'agent',
+  });
+  assert.equal(setup.ok, true);
+
+  await fs.writeFile(path.join(project, '.gitignore'), 'node_modules/\n');
+  const doctor = await doctorWorkspace(project, { tools: 'codex' });
+  assert.equal(doctor.ok, false);
+  const ignoreCheck = doctor.agentIntegration.checks.find((check) => check.path === '.gitignore');
+  assert.equal(ignoreCheck?.ok, false);
+  assert.equal(ignoreCheck?.reason, 'missing-openprd-generated-artifact-ignores');
+  assert.ok(ignoreCheck?.message.includes('.openprd/quality/reports/'));
+
+  const updated = await updateAgentIntegrationWorkspace(project, { tools: 'codex' });
+  assert.equal(updated.ok, true);
+  assert.ok(updated.migration.changes.some((change) => change.path === '.gitignore' && change.status === 'updated'));
+  const gitignore = await fs.readFile(path.join(project, '.gitignore'), 'utf8');
+  assert.ok(gitignore.includes('.openprd/harness/'));
+  assert.ok(gitignore.includes('.openprd/learning/'));
+  assert.ok(gitignore.includes('.openprd/quality/reports/'));
+});
+
+test('update migrates legacy root openprd artifacts into the hidden workspace', async () => {
+  const project = await makeTempProject();
+  await initWorkspace(project, { templatePack: 'agent' });
+
+  const legacyChange = path.join(project, 'openprd', 'changes', 'legacy-ui');
+  await fs.mkdir(path.join(legacyChange, 'specs', 'legacy-ui'), { recursive: true });
+  await fs.writeFile(path.join(legacyChange, 'proposal.md'), '# Legacy UI\n');
+  await fs.writeFile(path.join(legacyChange, 'tasks.md'), '- [ ] T001.01 Move legacy task\n');
+  await fs.writeFile(path.join(legacyChange, 'specs', 'legacy-ui', 'spec.md'), '# Legacy spec\n');
+  await fs.mkdir(path.join(project, 'openprd', 'specs', 'legacy-ui'), { recursive: true });
+  await fs.writeFile(path.join(project, 'openprd', 'specs', 'legacy-ui', 'spec.md'), '# Accepted legacy spec\n');
+  await fs.mkdir(path.join(project, 'openprd', 'archive', 'changes', 'archived-ui'), { recursive: true });
+  await fs.writeFile(path.join(project, 'openprd', 'archive', 'changes', 'archived-ui', 'tasks.md'), '- [x] T001.01 Archived task\n');
+
+  const updated = await updateAgentIntegrationWorkspace(project, { tools: 'codex' });
+
+  assert.equal(updated.ok, true);
+  assert.equal(updated.migration.legacyOpenPrdMigration.ok, true);
+  assert.equal(await pathExists(path.join(project, '.openprd', 'changes', 'legacy-ui', 'tasks.md')), true);
+  assert.equal(await pathExists(path.join(project, '.openprd', 'specs', 'legacy-ui', 'spec.md')), true);
+  assert.equal(await pathExists(path.join(project, '.openprd', 'archive', 'changes', 'archived-ui', 'tasks.md')), true);
+  assert.equal(await pathExists(path.join(project, 'openprd')), false);
+  assert.ok(updated.migration.changes.some((change) => change.source === 'legacy-openprd-artifacts' && change.path === path.join('.openprd', 'changes')));
 });
 
 test('setup emits Windows-safe Codex hook commands with double-quoted paths', async () => {
@@ -774,6 +880,77 @@ test('setup emits Windows-safe Codex hook commands with double-quoted paths', as
       process.env.OPENPRD_CODEX_HOME = previousCodexHome;
     }
   }
+});
+
+test('Codex hook blocks unapproved cloud hotfixes and business fallbacks', async () => {
+  const project = await makeTempProject();
+  const codexHome = path.join(project, 'codex-home');
+  await setupAgentIntegrationWorkspace(project, {
+    tools: 'codex',
+    templatePack: 'agent',
+    enableUserCodexConfig: true,
+    codexHome,
+  });
+
+  const hookPath = path.join(project, '.codex', 'hooks', 'openprd-hook.mjs');
+  const runHook = (eventName, input) => {
+    const result = spawnSync(process.execPath, [hookPath, eventName], {
+      cwd: project,
+      input: JSON.stringify({
+        cwd: project,
+        hook_event_name: eventName,
+        ...input,
+      }),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        OPENPRD_CLI: path.resolve('openprd/bin/openprd.js'),
+      },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    return JSON.parse(result.stdout);
+  };
+
+  const patchPayload = {
+    tool_name: 'apply_patch',
+    tool_input: {
+      patch: [
+        '*** Begin Patch',
+        '*** Update File: src/entitlements.js',
+        '@@',
+        '+const fallbackMembership = { entitlement: "unlimited", membership: "pro" };',
+        '*** End Patch',
+        '',
+      ].join('\n'),
+    },
+  };
+
+  runHook('UserPromptSubmit', {
+    prompt: '请直接修复会员权益，但除非我明确要求，不要写兜底或写死逻辑。',
+  });
+  const blockedFallback = runHook('PreToolUse', patchPayload);
+  assert.equal(blockedFallback.decision, 'block');
+  assert.ok(blockedFallback.reason.includes('业务兜底/写死逻辑'));
+  assert.ok(blockedFallback.reason.includes('当前用户消息只授权了本轮实现范围'));
+
+  runHook('UserPromptSubmit', {
+    prompt: '请直接修复会员权益，这次明确允许临时兜底，后续同步回服务端配置。',
+  });
+  const allowedFallback = runHook('PreToolUse', patchPayload);
+  assert.equal(allowedFallback.continue, true);
+  assert.equal(allowedFallback.decision, undefined);
+
+  runHook('UserPromptSubmit', {
+    prompt: '请直接修复线上问题，但不要未经确认自己云端热修复。',
+  });
+  const blockedCloudHotfix = runHook('PreToolUse', {
+    tool_input: {
+      cmd: 'ssh prod "node scripts/fix-entitlement.js"',
+    },
+  });
+  assert.equal(blockedCloudHotfix.decision, 'block');
+  assert.ok(blockedCloudHotfix.reason.includes('云端/生产远端写入'));
+  assert.ok(blockedCloudHotfix.reason.includes('允许这次云端热修复'));
 });
 
 test('doctor reports optional capabilities without making them blocking and detects configured locations', async () => {

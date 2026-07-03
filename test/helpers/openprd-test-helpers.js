@@ -207,18 +207,6 @@ export async function writeFakeCodexBin(project) {
 
 export async function writeLoopProject(project, changeId = 'loop-demo') {
   await initWorkspace(project, { templatePack: 'consumer' });
-  const gitignorePath = path.join(project, '.gitignore');
-  const gitignoreText = await fs.readFile(gitignorePath, 'utf8').catch(() => '');
-  const requiredIgnores = [
-    '.openprd/harness/',
-    '.openprd/learning/',
-    '.openprd/quality/reports/',
-  ];
-  const missingIgnores = requiredIgnores.filter((entry) => !gitignoreText.includes(entry));
-  if (missingIgnores.length > 0) {
-    const nextGitignore = `${gitignoreText.trimEnd()}\n${missingIgnores.join('\n')}\n`;
-    await fs.writeFile(gitignorePath, nextGitignore);
-  }
   await writeConcreteBasicDocs(project, 'src/api/handler.js');
   await fs.writeFile(path.join(project, 'package.json'), `${JSON.stringify({
     type: 'module',
@@ -249,7 +237,7 @@ export async function writeLoopProject(project, changeId = 'loop-demo') {
     '- extreme: large-data stress fixture passed',
     '',
   ].join('\n'));
-  const changeDir = path.join(project, 'openprd', 'changes', changeId);
+  const changeDir = path.join(project, '.openprd', 'changes', changeId);
   await fs.mkdir(path.join(changeDir, 'specs', changeId), { recursive: true });
   await fs.writeFile(path.join(changeDir, 'proposal.md'), [
     '# Proposal',
@@ -372,7 +360,7 @@ export async function writeMinimalChange(project, changeId, {
   taskTitle = title,
   verifyCommand = 'node -e "process.exit(0)"',
 } = {}) {
-  const changeDir = path.join(project, 'openprd', 'changes', changeId);
+  const changeDir = path.join(project, '.openprd', 'changes', changeId);
   const capability = changeId.split('-').slice(0, 2).join('-') || changeId;
   await fs.mkdir(path.join(changeDir, 'specs', capability), { recursive: true });
   await fs.writeFile(path.join(changeDir, 'proposal.md'), [

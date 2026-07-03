@@ -71,6 +71,9 @@ function printReviewResult(result, json) {
   if (result.marked) {
     console.log(`状态已从 ${result.previousStatus} 更新为 ${result.status}`);
   }
+  if (result.designDirection) {
+    console.log(`选定交互方向: ${result.designDirection.id}（${result.designDirection.title}）`);
+  }
   if (result.opened) {
     console.log('已打开确认页面');
   }

@@ -483,6 +483,77 @@ describe('Codex requirement gate', () => {
     assert.equal(staleReadOnlyPatchPayload.continue, true);
   });
 
+  test('Codex hook bypasses OpenPrd context and gates for unattended automation sessions', async () => {
+    const { project } = await makeCodexHookProject();
+    const sessionId = '019f01b1-64c4-78e1-93ea-automation01';
+    const eventsPath = path.join(project, '.openprd', 'harness', 'events.jsonl');
+    const eventsBefore = await fs.readFile(eventsPath, 'utf8');
+
+    const automationPrompt = runCodexHook(project, 'UserPromptSubmit', {
+      session_id: sessionId,
+      prompt: [
+        'Automation: Nightly content maintenance',
+        'Automation ID: nightly-content-maintenance',
+        'Automation memory: /tmp/nightly-content-maintenance.md',
+        '',
+        '无人值守自动任务：请直接修复支付回调和订单状态同步失败的问题。',
+      ].join('\n'),
+    });
+    assert.deepEqual(automationPrompt, { continue: true });
+    assert.equal(await pathExists(path.join(project, '.openprd', 'harness', 'requirement-gate.json')), false);
+    assert.equal(await pathExists(path.join(project, '.openprd', 'harness', 'requirement-gates', `${sessionId}.json`)), false);
+
+    const automationPatch = runCodexHook(project, 'PreToolUse', {
+      session_id: sessionId,
+      tool_name: 'apply_patch',
+      tool_input: '*** Begin Patch\n*** Update File: src/app.ts\n@@\n+// unattended automation write\n*** End Patch',
+    });
+    assert.deepEqual(automationPatch, { continue: true });
+
+    const automationStop = runCodexHook(project, 'Stop', {
+      session_id: sessionId,
+    });
+    assert.deepEqual(automationStop, { continue: true });
+    assert.equal(await fs.readFile(eventsPath, 'utf8'), eventsBefore);
+
+    const registry = await readSessionRegistry({ openprdHome: process.env.OPENPRD_HOME });
+    const entry = registry.entries.find((item) => item.sessionId === sessionId);
+    assert.ok(entry);
+    assert.equal(entry.workspaceRoot, project);
+    assert.equal(entry.laneKind, 'automation');
+    assert.equal(entry.gateStatus, 'automation-safe-mode');
+    assert.equal(entry.gateActive, false);
+
+    const laterHumanPrompt = runCodexHook(project, 'UserPromptSubmit', {
+      session_id: sessionId,
+      prompt: '请直接修复支付回调和订单状态同步失败的问题，涉及登录态、订单回调和退款分支。',
+    });
+    assert.equal(laterHumanPrompt.continue, true);
+    assert.ok(laterHumanPrompt.hookSpecificOutput.additionalContext.includes('requirement intake gate'));
+  });
+
+  test('Codex hook keeps OpenPrd gates enabled when automation explicitly opts in', async () => {
+    const { project } = await makeCodexHookProject();
+    const sessionId = '019f01b1-64c4-78e1-93ea-openprd01';
+
+    const optInPrompt = runCodexHook(project, 'UserPromptSubmit', {
+      session_id: sessionId,
+      prompt: [
+        'Automation: OpenPrd maintenance',
+        'Automation ID: openprd-maintenance',
+        'Automation memory: /tmp/openprd-maintenance.md',
+        '',
+        '这是 OpenPrd 维护任务，显式启用 OpenPrd。请直接修复支付回调和订单状态同步失败的问题，涉及登录态、订单回调和退款分支。',
+      ].join('\n'),
+    });
+    assert.equal(optInPrompt.continue, true);
+    assert.ok(optInPrompt.hookSpecificOutput.additionalContext.includes('requirement intake gate'));
+
+    const gate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'requirement-gates', `${sessionId}.json`), 'utf8'));
+    assert.equal(gate.active, true);
+    assert.equal(gate.status, 'requires-clarification');
+  });
+
   test('Codex hook blocks semantic requirement writes before summary confirmation and allows them after confirmation', async () => {
     const { project } = await makeCodexHookProject();
 
@@ -1468,7 +1539,7 @@ test('Codex hook supports silent-record review lanes when the user opts out of e
     const { project } = await makeCodexHookProject();
 
     const changeId = 'account-achievements-user-type-v1';
-    const changeDir = path.join(project, 'openprd', 'changes', changeId);
+    const changeDir = path.join(project, '.openprd', 'changes', changeId);
     await fs.mkdir(path.join(changeDir, 'specs', 'agent-requirements'), { recursive: true });
     await fs.writeFile(path.join(changeDir, 'proposal.md'), [
       '# 我的成就与 AI探索者用户类型',

@@ -8,15 +8,24 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 
 - `bin/`: CLI 可执行入口。
 - `src/`: OpenPrd CLI 源码。
-- `src/cli/`: 命令行参数解析和终端输出渲染；`print.js` 作为稳定 barrel，对外汇总 `basic/ workflow/ doctor/ run/ quality/ growth/ change/ benchmark` 各分域输出模块。
+- `src/cli/`: 命令行参数解析和终端输出渲染；`print.js` 作为稳定 barrel，对外汇总 `basic/ workflow/ doctor/ run/ quality/ growth/ change/ benchmark/ canvas` 各分域输出模块。
 - `src/cli/benchmark-print.js`: Benchmark 子命令的人类可读输出，避免继续扩大通用 `print.js`。
-- `src/codex-hook-runner-template.mjs`: 生成到项目 `.codex/hooks/openprd-hook.mjs` 的自包含 Codex hook runner 模板，承接运行态门禁逻辑源码，并把“生成图片/封面图/配图/海报/插画/图标/贴纸/头像/banner/主视觉/KV/运营图/效果图/视觉稿/mockup”识别为 Image 2 优先的图片内容请求；对大界面改动额外注入 Computer Use 截产品内图、Image 2 生成 3 方向效果图、横向拼图评审的实现前流程提醒。该模板还负责把“用户刚刚确认了 L1 mini-plan / 范围边界”与“还要再次向用户要确认”分开，要求后续承接写成“已确认，我按这个继续”而不是模糊的二次确认。
+- `src/codex-hook-runner-template.mjs`: 生成到项目 `.codex/hooks/openprd-hook.mjs` 的自包含 Codex hook runner 模板，承接运行态门禁逻辑源码。
+  - 把“生成图片/封面图/配图/海报/插画/图标/贴纸/头像/banner/主视觉/KV/运营图/效果图/视觉稿/mockup”识别为 Image 2 优先的图片内容请求。
+  - 对大界面改动额外注入 Computer Use 截产品内图、Image 2 生成 3 方向效果图、横向拼图评审的实现前流程提醒。
+  - 把“用户刚刚确认了 L1 mini-plan / 范围边界”与“还要再次向用户要确认”分开，要求后续承接写成“已确认，我按这个继续”而不是模糊的二次确认。
 - `src/dev-standards.js`: 研发期 touched code files 标准层，当前提供代码文件行数状态和下一步动作建议。
+- `src/docs-compact.js`: `openprd docs-compact` 的 `docs/basic/` 压缩分析层，逐文档列出巨行、字符数和拆分建议，只读不写。
+- `src/guide.js`: `openprd guide` 的 PM 流程指引层，按工作区状态推断 7 步流程（澄清 → 摘要 → 评审 → 方向 → 任务 → 实现 → 收口）中的当前位置和下一步动作，只读不写。
 - `src/growth.js`: 自我成长标准层，记录、审查、应用或拒绝执行中发现的配置、规则和 user-local 偏好候选。
 - `src/benchmark.js`: Benchmark 子系统薄入口，对外汇总 add / observe / list / approve / verify 和 registry 渲染能力。
 - `src/benchmark/`: Benchmark 分域模块，拆分 constants、source、storage、operations、verify、render 和 registry 职责。
+- `src/canvas-workspace.js`: `openprd canvas` 的本地服务、daemon 生命周期、thread/session ID 与展示标题绑定、scene/assets/exports/ops/server/relays 文件存储，以及 Agent 图片/卡片操作队列、图片回填、选区交接导出元数据、下载到系统下载目录、Codex handoff 记录、默认 app-server thread relay 和 Codex Agent 兜底接力 outbox。
+- `src/codex-app-server-relay.js`: 画布后台 relay worker，读取会话内 handoff payload，通过本机 Codex app-server `thread/resume -> turn/start` 把文本和本地图片路径提交到绑定的 Codex 线程，并持续写入 status/log 便于排查；它是画布点击“发送给 Codex”的默认自动投递通道。
+- `src/canvas-app.html.js`: 对话协同画布的最小 Excalidraw embed 页面，负责浏览器端 scene 保存、图片替换、空白卡片、AI 生图模板占位卡、选区导出、选中图片下载、中文/英文界面切换和“发送给 Codex”交接面板；该面板会写入 handoff 记录，并在 Codex thread binding 可用时优先触发 app-server 自动 relay。
+- `src/canvas-i18n.js`: 画布浏览器壳的语言包、默认语言和 locale 归一化规则；默认面向中文用户，系统或浏览器首选语言为英文时自动切换英文，并把用户选择交给浏览器缓存持久化。
 - `src/execution-strategy.js`: Worker lane 执行策略核心规则，负责 `serial / parallel-workers / parallel-workers-isolated` 推导、worker 合同元数据格式化与校验。
-- `src/openspec/`: OpenPrd change、spec、task 的结构化文件操作。
+- `src/openspec/`: OpenPrd change、spec、task 的结构化文件操作；新工作产物写入 `.openprd/changes/`、`.openprd/specs/` 和 `.openprd/archive/changes/`，旧根目录 `openprd/` 工作产物只由 update / setup / fleet 的自动迁移逻辑读取。
 - `src/diagram-workspace.js`: diagram 命令的 artifact 生成、评审状态和浏览器打开逻辑。
 - `src/discovery.js`: discovery 运行、覆盖矩阵、claims 和验证逻辑。
 - `src/fleet.js`: 历史项目扫描和批量 setup/update/doctor/work-unit backfill 编排。
@@ -45,6 +54,10 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `.github/workflows/github-release.yml`: GitHub Release 自动发布工作流，在版本 tag push 或手动触发时创建或更新匹配版本的 GitHub Release。
 - `.openprd/engagements/active/intake-reflection.md`: 复杂或模糊需求在进入澄清问题前的需求入口自省记录。
 - `.openprd/engagements/work-units/`: 工具无关的需求工作单元绑定，每个文件记录 work unit id、目标根目录、版本、摘要指纹和稳定评审 artifact，避免多 Agent 或多对话共用 `active` 时串到其他需求。
+- `.openprd/changes/`: 当前正在推进的 change、proposal、spec 和 tasks 文件；这是唯一的 active change 根目录。
+- `.openprd/specs/`: 已接受 spec 的归档目录。
+- `.openprd/archive/changes/`: 已归档 change 的目录。
+- `.openprd/artifacts/active/`: 版本化评审 artifact bundle；`review-presentation --write` 收口时只保留最新 12 个版本，更早的自动移入 `.openprd/artifacts/archive/`。
 - `.openprd/quality/`: 质量基线配置和回归测试报告归档。
 - `.openprd/benchmarks/`: 项目级 benchmark registry；`sources.yaml` 存 approved 来源，`inbox/` 存 candidate 来源，`evidence/` 存来源说明和采纳证据摘要。
 - `.openprd/design/`: 前端设计框架层；`lenses/` 放设计视角，`themes/` 放主题 token，`layouts/` 放页面骨架，`components/` 放高频组件说明，`recipes/` 放任务配方，`checklists/` 放界面质量门，`assets/` 放内置表面素材/背景策略，`templates/` 放空白工作区可直接套用的页面起步模板，`active/` 放本轮界面任务的事实、素材、图片前置和方向合同。
@@ -53,6 +66,9 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `.openprd/harness/feature-list.json`: loop 任务清单；每个任务包含 `taskHandle`、标题、依赖、verify 命令、测试策略、执行策略、可选 `oracle` 对照基准和状态。
 - `.openprd/harness/session-bindings/`: repo-local session 镜像；每个会话保存当前 lane 的 change/task/work-unit、review 和 gate 摘要，供本工作区恢复使用。
 - `.openprd/harness/session-states/`: session-scoped `currentState` 草稿，保证不同对话/需求线不会共用同一份工作流状态。
+- `.openprd/harness/canvas-sessions/`: 对话协同画布归档；每个 thread/session 一个目录。
+  - 保存 `session.json`、`scene.json`、`ops.json`、`server.json`、`server.log`、`assets/`、`exports/` 和 `relays/`。
+  - `session.json` 的 binding 记录 thread/session ID、可选标题和来源，用于回顾聊天、画布标注、后台服务状态、Agent 生成图、选区导出图片、handoff 记录、app-server 自动 relay 状态、Codex Agent 兜底接力状态和交接提示之间的关系。
 - `.openprd/harness/failed-approaches.md`: loop 死路账本，记录 reference/oracle 偏差、失败尝试及其原因，避免跨会话重复踩坑。
 - `.openprd/harness/agent-sessions.jsonl`: loop prompt / run / finish 的结构化事件日志，包含 `taskHandle` 与任务标题，便于跨会话续接。
 - `.openprd/harness/loop-state.json`: 当前 loop 任务 id、任务句柄、任务标题和最近一次 Agent 会话状态。
@@ -60,7 +76,9 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `~/.openprd/registry/sessions.jsonl`: 全局 session 归属表，把 sessionId 映射到 workspaceRoot、lane 元数据和 repo-local 绑定路径，供跨项目恢复与隔离执行决策使用。
 - `skills/`: OpenPrd 自带 agent skills。
 - `skills/openprd-frontend-design/`: 界面、页面、视觉和前端体验任务的前端设计框架 skill，负责 facts/asset/image/direction 这四类前置门与 `.openprd/design/` 资产层读取。
-- `test/`: Node test runner 测试用例，按 benchmark/quality/agent-integration/run-workflow/discovery/workspace-flow 等领域拆分；共享 helper 放在 `test/node_modules/openprd-test-helpers/`，避免被 `node --test` 误识别为测试文件。
+- `test/`: Node test runner 测试用例，按 benchmark/quality/agent-integration/run-workflow/discovery/workspace-flow 等领域拆分。
+  - dev-check 与 Stop hook 相关用例在 `openprd-dev-check.test.js`，visual-prepare/visual-compare 证据板用例在 `openprd-visual-evidence.test.js`。
+  - 共享 helper 放在 `test/node_modules/openprd-test-helpers/`，避免被 `node --test` 误识别为测试文件。
 
 ## 文件组织规则
 

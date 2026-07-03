@@ -16,6 +16,7 @@ use_when: Use when the current task overlaps this draft project experience and y
 - 这次修复已经带有验证或收尾证据，适合尽快抽象成项目级研发经验。
 - doctor-green: doctor passed
 - quality-verify: quality production-ready | touched: README.md, package.json, scripts/dev-check-wrapup-copy.mjs, scripts/openprd-codex-isolated-worker.mjs, scripts/openprd-dev-check.mjs, scripts/openprd-github-release-notes.mjs
+- dev-check: dev-check attention=5, warning=9 | touched: package-lock.json, package.json, src/agent-integration.js, src/brainstorm-artifacts.js, src/brainstorm-presentation.js, src/brainstorm.js
 
 ## 适用范围
 
@@ -28,7 +29,7 @@ use_when: Use when the current task overlaps this draft project experience and y
 - 任务场景: 质量门禁收口
 - 相关文件: package.json、scripts/dev-check-wrapup-copy.mjs、scripts/openprd-codex-isolated-worker.mjs、scripts/openprd-dev-check.mjs、scripts/openprd-github-release-notes.mjs、scripts/openprd-review-presentation.mjs
 - 已有证据类型: quality-report
-- 验证信号: doctor-green、quality-verify
+- 验证信号: doctor-green、quality-verify、dev-check
 
 ## 典型输出
 
@@ -50,7 +51,7 @@ use_when: Use when the current task overlaps this draft project experience and y
 - `src/benchmark/constants.js`
 - `src/benchmark/operations.js`
 - `src/benchmark/registry.js`
-- `.openprd/quality/reports/eval-20260612184349.json`
+- `.openprd/quality/reports/eval-20260613111050.json`
 
 ## 不要直接套用
 
@@ -66,6 +67,7 @@ use_when: Use when the current task overlaps this draft project experience and y
 
 - doctor passed
 - quality production-ready
+- dev-check attention=5, warning=9
 - 运行 openprd quality . --verify 并确认需要关注的门禁已经闭环。
 - 打开 HTML 报告，核对证据链、评估结论和后续动作是否一致。
 - 重新执行任务级 verify 命令，并把最终证据路径保留在质量报告里。

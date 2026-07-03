@@ -298,7 +298,7 @@ export function buildPrdSnapshot(ws, options = {}) {
     handoff: {
       owner: pickValue(options.handoffOwner, state.handoffOwner, owner),
       nextStep: pickValue(options.nextStep, state.nextStep, '评审已生成的 PRD，并准备交接。'),
-      targetSystem: pickValue(options.targetSystem, state.targetSystem, 'OpenSpec'),
+      targetSystem: pickValue(options.targetSystem, state.targetSystem, 'OpenPrd'),
     },
     typeSpecific: buildTypeSpecificSection(productType, state, options),
   };

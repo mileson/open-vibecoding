@@ -33,6 +33,7 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
    - 只读命令：`status`、`validate`、`next`、`history`、`diff`、`interview`、`doctor`
    - 写入命令：`init`、`setup`、`update`、`classify`、`synthesize`、`diagram`、`release`、`freeze`、`handoff`
    - 执行命令：`loop --run`、`tasks --advance`、`discovery --advance`、`loop --finish --commit`、git commit、git push，必须有当前用户明确执行意图。
+   - 实现授权不包含云端热修复、生产远端写入、业务兜底、写死逻辑、客户端/服务端补业务数据或缓存补行；这些动作需要当前用户单独明确批准，并给出本地源码/配置/迁移同步与回滚计划。
 3. 不要虚构 OpenPrd 命令或产物类型。
    - 不确定时先对照 `openprd --help`。
 4. 共用规则放在这里，领域规则放到对应 skill。
@@ -64,6 +65,8 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
    - 用户给出会话 ID 并要求继续时，按工具无关的历史会话精确续接；不要要求工具专属 ID，也不要用当前 active change、相似历史或 requirement gate 替代指定会话。
    - 用户没有给 ID、但明确描述了某个已有需求、change、task 或 work unit 时，先按描述解析对应对象；只有解析不出来时，才把当前工作区状态当作背景继续看。
    - 使用 `.openprd/harness/install-manifest.json`、`hook-state.json`、`events.jsonl` 和 `drift-report.json` 判断生成引导是否健康。
+   - 使用 `.openprd/harness/runtime-environment.json` 判断最近 hook/session 观察到的当前对话环境；协议和能力清单看 `.openprd/harness/install-manifest.json` 的 `runtimeDetection` / `platformCapabilityPacks`。
+   - 判断当前用户正在和 Codex、Claude Code 还是 Cursor 对话时，按 hook/session payload > 显式 launcher > SDK/headless session > 子进程 env > config/CLI probe > agent 自述的优先级处理。Codex 原生 Image 2、Computer Use、Codex-owned browser window、对话协同画布和当前线程文本桥接属于 surface-dependent 能力，只有当前工具面或 hook/session 证据明确支持时才使用；当前线程桥接只在 Codex App 明确提供线程发送工具时使用，画布图片仍以导出路径或 Markdown 图片引用作为证据；不要仅凭 Codex CLI、`.codex/config.toml` 或 `CODEX_HOME` 推断可用。
    - 前端体验任务进入实现前，优先读取 `skills/openprd-frontend-design/SKILL.md` 与 `.openprd/design/`，先锁定 lens、theme、layout 和组件，再决定是否实现。
    - 使用 `.openprd/harness/visual-reviews/` 承接用户已经确认纳入后续对比的 reference-set、选中方向、实现后视觉对比证据、局部焦点证据板、并行实验证据板、截图实测证据板和对齐辅助线证据板；候选效果图默认不要直接登记进去。
    - 使用 `.openprd/quality/config.json`、`.openprd/quality/reports/` 和 `.openprd/knowledge/` 判断实现就绪、当前场景必需 EVO 证据和可复用经验。
@@ -107,13 +110,14 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
 15. 把文档与结构回顾视为实现的一部分，而不是开工前的噪声。
    - 代码修改完成后、最终回复前，针对本轮实际新增或修改的 code files 运行 `openprd dev-check . <file...>` 或 `node scripts/openprd-dev-check.mjs . <file...>`。
    - dev-check 默认是收工回顾，不是开工许可证；只有用户明确询问影响文件、拆分边界，或你已经判断需要先设计拆分范围时，才在开发前额外运行。
-   - 行数状态按研发期标准解读：700 行以内正常；701-1500 行需留意；超过 1500 行说明后续改动成本较高。若出现需要关注的文件，最终回复必须以 **后续建议** 为标题，用 Markdown 表格列出影响位置、关注程度、规模信号、为什么需要关注、本次处理和后续建议，并按 🔴 → 🟠 → 🟡 排序；若只是窄 bugfix 或小修且暂不拆，要在表格里说明本次处理边界并留下后续拆分建议。
+   - 行数状态按研发期标准解读：700 行以内正常；701-1500 行需留意；超过 1500 行说明后续改动成本较高。自动优化开启（默认）时，命中需要关注的文件先在本轮直接完成高内聚低耦合拆分（不丢功能、行为不变），最终回复以 **OpenPRD 自动优化报告** 为标题复用 dev-check 表格（列：影响对象、问题级别、源文件规模、优化原因、本次处理结果、后续建议）并附开关确认；关闭后以 **后续建议** 为标题输出推荐表格（列：影响对象、关注程度、规模信号、预警原因、本次处理结果、后续建议）。两种模式都按 🔴 → 🟠 → 🟡 排序；若只是窄 bugfix 或小修且暂不拆，要在表格里说明本次处理边界并留下后续拆分建议。
    - 如果 dev-check 或执行过程发现可沉淀项，不要中途打断当前任务。高置信工具识别补全可自动固化并简短说明；用户偏好、项目协作规矩或 OpenPrd 默认行为先记录为候选，收工时运行 `openprd grow . --review` 集中确认。
    - 维护 OpenPrd 本身时，只要新增或修改配置类能力（阈值、规则、识别、豁免、命令别名、环境差异、用户偏好或策略开关），都要做 grow-aware 自检：高置信应可成长时默认纳入 `openprd grow`；不确定时主动问用户；明确一次性或固定规则时才保持静态配置。
    - 新增或修改文件时，检查 `docs/basic/`、文件说明书和文件夹 README 是否缺失或已过期。
    - 当职责、流程、结构、依赖或产品行为变化时，补齐缺失文档并更新已有文档。
    - 涉及后端、脚本、Agent、工具链、服务或数据处理变更时，把 CLI 与 API 视为同级接入面；检查命令入口、参数、输出契约、`help`/`doctor`/`dry-run`/`status` 与接口协议、返回结构、身份边界是否受影响，并同步更新 `docs/basic/backend-structure.md`；若某一面不适用也要明确写原因。
    - `.openprd/harness/install-manifest.json` 的 `optionalCapabilities` 用来记录非阻断式增强建议，例如 Context7、DeepWiki。当前任务明显受益但状态仍是 `recommended` 时，在后续建议里解释它能帮什么、附官方文档和 GitHub 链接，并可顺手提出“如果你愿意，我可以按当前客户端帮你补配置”；不要因为它未配置就阻断当前任务。
+   - `.openprd/harness/install-manifest.json` 的 `runtimeDetection` 和 `platformCapabilityPacks` 用来拆开不同 agent 平台的专属能力；Agent 应先识别当前对话客户端，再启用对应能力包，不要把 Codex、Claude Code、Cursor 的工具路径混在一套固定规则里。
 16. hook 重量要和任务风险匹配。
    - 默认 Codex hook profile 是 `lite`：`UserPromptSubmit` 注入上下文，轻量 `PreToolUse` 写入门禁阻断过早实现，`Stop` 在本轮结束前回顾是否值得沉淀项目经验。明确的 OpenPrd / 深度工作提示词，以及新的产品、模块、流程需求都会注入上下文。
    - 只有项目明确需要完整 hook 遥测或临时深度诊断时才使用 `full`。

@@ -131,6 +131,11 @@ function printRunResult(result, json) {
 
   console.log('当前进展参考');
   console.log(`当前项目: ${result.projectRoot}`);
+  if (result.runtimeEnvironment?.active?.activeClient && result.runtimeEnvironment.active.activeClient !== 'unknown') {
+    const active = result.runtimeEnvironment.active;
+    const confidence = typeof active.confidence === 'number' ? `，置信度 ${active.confidence}` : '';
+    console.log(`当前 Agent 环境: ${active.activeClient}${active.surface ? ` / ${active.surface}` : ''}${confidence}`);
+  }
   console.log(`基础检查: ${result.validation.valid ? '通过' : '失败'}`);
   if (result.lane?.summary) {
     console.log(`当前处理路径: ${result.lane.summary}`);

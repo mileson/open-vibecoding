@@ -80,6 +80,37 @@ function ensureHarness(root) {
   if (!fs.existsSync(eventsPath)) {
     fs.writeFileSync(eventsPath, '');
   }
+  const runtimePath = path.join(dir, 'runtime-environment.json');
+  if (!fs.existsSync(runtimePath)) {
+    writeJsonSync(runtimePath, {
+      version: 1,
+      active: {
+        activeClient: 'unknown',
+        surface: 'unknown',
+        executionMode: 'interactive',
+        confidence: 0,
+        sessionId: null,
+        turnId: null,
+        agentType: null,
+        model: null,
+        evidence: [],
+        observedCapabilities: [],
+      },
+      runtimeDetection: {
+        version: 1,
+        activeEvidencePriority: [
+          'hook-session-payload',
+          'explicit-launcher',
+          'sdk-or-headless-session',
+          'child-process-env',
+          'config-or-cli-probe',
+          'agent-self-report',
+        ],
+      },
+      platformCapabilityPacks: [],
+      updatedAt: null,
+    });
+  }
 }
 
 function readJsonSync(filePath, fallback) {
@@ -98,6 +129,98 @@ function writeJsonSync(filePath, value) {
 function appendEvent(root, event) {
   ensureHarness(root);
   fs.appendFileSync(path.join(harnessDir(root), 'events.jsonl'), JSON.stringify({ at: now(), ...event }) + '\n');
+}
+
+function runtimeEnvironmentPath(root) {
+  return path.join(harnessDir(root), 'runtime-environment.json');
+}
+
+function compactString(value) {
+  const text = String(value ?? '').trim();
+  return text || null;
+}
+
+function runtimeEvidenceForPayload(eventName, payload) {
+  const evidence = ['hook.event_name'];
+  const addIfPresent = (key, label = key) => {
+    if (payload && payload[key] !== undefined && payload[key] !== null && String(payload[key]).trim() !== '') {
+      evidence.push(`hook.${label}`);
+    }
+  };
+  addIfPresent('session_id', 'session_id');
+  addIfPresent('sessionId', 'sessionId');
+  addIfPresent('transcript_path', 'transcript_path');
+  addIfPresent('transcriptPath', 'transcriptPath');
+  addIfPresent('cwd', 'cwd');
+  addIfPresent('model', 'model');
+  addIfPresent('turn_id', 'turn_id');
+  addIfPresent('turnId', 'turnId');
+  addIfPresent('agent_type', 'agent_type');
+  addIfPresent('agentType', 'agentType');
+  addIfPresent('tool_name', 'tool_name');
+  addIfPresent('toolName', 'toolName');
+  if (eventName) {
+    evidence.push(`event.${eventName}`);
+  }
+  return [...new Set(evidence)];
+}
+
+function observedCodexCapabilities(payload) {
+  const observed = ['codex-hooks'];
+  const tool = toolName(payload).toLowerCase();
+  const haystack = `${tool}\n${payloadText(payload)}`;
+  if (/\b(imagegen|image_gen|image-generation|image_generation)\b/i.test(haystack)) {
+    observed.push('native-image-generation');
+  }
+  if (/\b(computer-use|computer_use|browser|chrome)\b/i.test(haystack)) {
+    observed.push('computer-use');
+  }
+  return [...new Set(observed)];
+}
+
+function recordRuntimeEnvironment(root, eventName, payload, sessionId) {
+  ensureHarness(root);
+  const current = readJsonSync(runtimeEnvironmentPath(root), {});
+  const executionSignals = detectExecutionSignals(eventName, payload);
+  const evidence = [...new Set([
+    ...runtimeEvidenceForPayload(eventName, payload),
+    ...executionSignals.evidence,
+    ...executionSignals.optInEvidence,
+  ])];
+  const active = {
+    activeClient: 'codex',
+    surface: 'codex-hook',
+    executionMode: executionSignals.executionMode,
+    confidence: evidence.some((item) => item === 'hook.session_id' || item === 'hook.sessionId' || item === 'hook.transcript_path' || item === 'hook.transcriptPath') ? 0.95 : 0.9,
+    sessionId: sessionId ?? null,
+    turnId: compactString(payload?.turn_id ?? payload?.turnId),
+    agentType: compactString(payload?.agent_type ?? payload?.agentType),
+    model: compactString(payload?.model),
+    evidence,
+    observedCapabilities: observedCodexCapabilities(payload),
+  };
+  const entry = {
+    version: 1,
+    ...current,
+    active,
+    lastEventName: eventName,
+    updatedAt: now(),
+    recentObservations: [
+      ...(Array.isArray(current.recentObservations) ? current.recentObservations : []),
+      {
+        at: now(),
+        eventName,
+        activeClient: active.activeClient,
+        surface: active.surface,
+        executionMode: active.executionMode,
+        sessionId: active.sessionId,
+        evidence: active.evidence,
+        observedCapabilities: active.observedCapabilities,
+      },
+    ].slice(-20),
+  };
+  writeJsonSync(runtimeEnvironmentPath(root), entry);
+  return entry;
 }
 
 function turnStatePath(root) {
@@ -338,6 +461,9 @@ function updateHookState(root, event) {
   if (event.fingerprint) {
     state.recentFingerprints[event.fingerprint] = Date.now();
   }
+  if (event.runtimeEnvironment) {
+    state.runtimeEnvironment = event.runtimeEnvironment;
+  }
   for (const [fingerprint, seenAt] of Object.entries(state.recentFingerprints)) {
     if (Date.now() - Number(seenAt) > 300000) {
       delete state.recentFingerprints[fingerprint];
@@ -478,6 +604,203 @@ function openprdHome() {
 
 function sessionRegistryPath() {
   return path.join(openprdHome(), 'registry', 'sessions.jsonl');
+}
+
+function truthyFlag(value) {
+  return /^(1|true|yes|on)$/i.test(String(value ?? '').trim());
+}
+
+function normalizedMode(value) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function compactPayloadField(payload, keys) {
+  for (const key of keys) {
+    const value = payload?.[key];
+    if (value === undefined || value === null || value === false) {
+      continue;
+    }
+    const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    if (text.trim()) {
+      return { key, value: text.trim() };
+    }
+  }
+  return null;
+}
+
+function automationPromptHeader(prompt) {
+  const header = String(prompt || '').split(/\r?\n/).slice(0, 12).join('\n');
+  if (/^\s*Automation\s*:/im.test(header) && /^\s*Automation\s+(ID|memory)\s*:/im.test(header)) {
+    return 'prompt.automation-header';
+  }
+  if (/^\s*(Scheduled|Cron|Unattended)\s+(task|automation)\s*:/im.test(header)) {
+    return 'prompt.scheduled-header';
+  }
+  return null;
+}
+
+function explicitOpenPrdOptInEvidence(payload) {
+  const evidence = [];
+  const mode = normalizedMode(process.env.OPENPRD_EXECUTION_MODE);
+  if (['openprd', 'openprd-maintenance', 'maintenance'].includes(mode)) {
+    evidence.push(`env.OPENPRD_EXECUTION_MODE=${mode}`);
+  }
+  if (truthyFlag(process.env.OPENPRD_AUTOMATION_OPT_IN) || truthyFlag(process.env.OPENPRD_ENABLE_IN_AUTOMATION)) {
+    evidence.push('env.OPENPRD_AUTOMATION_OPT_IN');
+  }
+  const explicitField = compactPayloadField(payload, [
+    'openprd_automation_opt_in',
+    'openprdAutomationOptIn',
+    'openprd_opt_in',
+    'openprdOptIn',
+    'enable_openprd',
+    'enableOpenPrd',
+  ]);
+  if (explicitField) {
+    evidence.push(`payload.${explicitField.key}`);
+  }
+  const text = `${promptText(payload)}\n${payloadText(payload)}`;
+  const negative = /(不要|不需要|无需|禁止|别|不是|非|不要执行|不要调用|do\s+not|don't|never|without|no|not)\s+.{0,24}\bopen\s*prd\b/i
+    .test(text)
+    || /(不要|不需要|无需|禁止|别|不是|非).{0,24}OpenPrd/i.test(text);
+  if (!negative && /(OpenPrd\s*(维护任务|maintenance|maintain|opt[- ]?in)|显式启用\s*OpenPrd|启用\s*OpenPrd|使用\s*OpenPrd|运行\s*OpenPrd|enable\s+OpenPrd|use\s+OpenPrd|openprd-maintenance)/i.test(text)) {
+    evidence.push('prompt.openprd-opt-in');
+  }
+  return [...new Set(evidence)];
+}
+
+function detectExecutionSignals(eventName, payload) {
+  const evidence = [];
+  const mode = normalizedMode(process.env.OPENPRD_EXECUTION_MODE);
+  if (['automation', 'cron', 'scheduled', 'headless', 'unattended'].includes(mode)) {
+    evidence.push(`env.OPENPRD_EXECUTION_MODE=${mode}`);
+  }
+  if (truthyFlag(process.env.OPENPRD_AUTOMATION)) {
+    evidence.push('env.OPENPRD_AUTOMATION');
+  }
+  if (compactString(process.env.CODEX_AUTOMATION_ID)) {
+    evidence.push('env.CODEX_AUTOMATION_ID');
+  }
+  if (truthyFlag(process.env.CLAUDE_CODE_HEADLESS)) {
+    evidence.push('env.CLAUDE_CODE_HEADLESS');
+  }
+  const field = compactPayloadField(payload, [
+    'automation_id',
+    'automationId',
+    'automation_name',
+    'automationName',
+    'automation',
+    'scheduled_task',
+    'scheduledTask',
+    'cron',
+    'rrule',
+    'headless',
+    'unattended',
+    'is_automation',
+    'isAutomation',
+  ]);
+  if (field) {
+    evidence.push(`payload.${field.key}`);
+  }
+  const runMode = compactPayloadField(payload, [
+    'run_kind',
+    'runKind',
+    'execution_mode',
+    'executionMode',
+    'surface',
+    'agent_surface',
+    'agentSurface',
+  ]);
+  if (runMode && /(automation|cron|scheduled|headless|unattended)/i.test(runMode.value)) {
+    evidence.push(`payload.${runMode.key}=${runMode.value}`);
+  }
+  const agentType = compactString(payload?.agent_type ?? payload?.agentType);
+  if (agentType && /(automation|cron|scheduled|headless|unattended)/i.test(agentType)) {
+    evidence.push(`payload.agentType=${agentType}`);
+  }
+  const promptHeader = automationPromptHeader(promptText(payload));
+  if (promptHeader) {
+    evidence.push(promptHeader);
+  }
+  const transcript = compactString(payload?.transcript_path ?? payload?.transcriptPath);
+  if (transcript && /(?:^|[/-])(automation|automations|cron|scheduled|headless)(?:[/-]|$)/i.test(transcript)) {
+    evidence.push('payload.transcript_path.automation');
+  }
+  const optInEvidence = explicitOpenPrdOptInEvidence(payload);
+  return {
+    eventName,
+    isAutomation: evidence.length > 0,
+    explicitOpenPrdOptIn: optInEvidence.length > 0,
+    evidence: [...new Set(evidence)],
+    optInEvidence,
+    executionMode: optInEvidence.length > 0
+      ? 'automation-openprd-opt-in'
+      : evidence.length > 0
+        ? 'automation'
+        : 'interactive',
+  };
+}
+
+function latestSessionRegistryEntry(root, sessionId) {
+  if (!sessionId) {
+    return null;
+  }
+  const filePath = sessionRegistryPath();
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  const workspaceRoot = path.resolve(root);
+  let latest = null;
+  for (const line of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
+    if (!line.trim()) {
+      continue;
+    }
+    try {
+      const entry = JSON.parse(line);
+      if (entry?.sessionId !== sessionId) {
+        continue;
+      }
+      const entryRoot = entry?.workspaceRoot ? path.resolve(String(entry.workspaceRoot)) : null;
+      if (entryRoot && entryRoot !== workspaceRoot) {
+        continue;
+      }
+      latest = entry;
+    } catch {}
+  }
+  return latest;
+}
+
+function rememberAutomationMode(root, sessionId, payload, signals, laneKind) {
+  if (!sessionId) {
+    return null;
+  }
+  return writeSessionRegistryEntry(root, sessionId, {
+    laneKind,
+    tool: 'openprd-hook',
+    promptPreview: preview(promptText(payload) || payloadText(payload), 500),
+    gateActive: false,
+    gateStatus: laneKind === 'automation' ? 'automation-safe-mode' : 'openprd-opt-in',
+    title: laneKind === 'automation'
+      ? 'Unattended automation bypassed OpenPrd'
+      : 'Unattended automation explicitly enabled OpenPrd',
+    executionEvidence: signals.evidence,
+    optInEvidence: signals.optInEvidence,
+  });
+}
+
+function automationBypassDecision(root, eventName, payload, sessionId) {
+  const signals = detectExecutionSignals(eventName, payload);
+  if (signals.explicitOpenPrdOptIn) {
+    return { bypass: false, optIn: true, remembered: false, signals };
+  }
+  if (signals.isAutomation) {
+    return { bypass: true, optIn: false, remembered: false, signals };
+  }
+  const remembered = eventName === 'UserPromptSubmit' ? null : latestSessionRegistryEntry(root, sessionId);
+  if (remembered?.laneKind === 'automation' && remembered?.gateStatus === 'automation-safe-mode') {
+    return { bypass: true, optIn: false, remembered: true, signals };
+  }
+  return { bypass: false, optIn: false, remembered: false, signals };
 }
 
 function sessionStatePath(root, sessionId = null) {
@@ -963,9 +1286,8 @@ function isPatchModeFocusAttempt(root, payload, gate) {
 
 function findChangeDir(root, changeId) {
   const candidates = [
-    path.join(root, 'openprd', 'changes', changeId),
-    path.join(root, 'openspec', 'changes', changeId),
-    path.join(root, 'openprd', 'archive', 'changes', changeId),
+    path.join(root, '.openprd', 'changes', changeId),
+    path.join(root, '.openprd', 'archive', 'changes', changeId),
   ];
   return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0];
 }
@@ -2231,6 +2553,86 @@ function isMutationPayload(payload, risk) {
     || /\*\*\* Begin Patch/.test(text);
 }
 
+function isRuntimeAutonomyRiskFile(file) {
+  const normalized = String(file || '').split(path.sep).join('/');
+  if (!normalized) {
+    return true;
+  }
+  if (/^(docs|test|tests|__tests__|fixtures|examples|templates?)\//i.test(normalized)) {
+    return false;
+  }
+  if (/(^|\/)(AGENTS|CLAUDE|README|CHANGELOG|SKILL)\.md$/i.test(normalized)) {
+    return false;
+  }
+  if (/\.(?:md|mdx|txt|rst)$/i.test(normalized)) {
+    return false;
+  }
+  return true;
+}
+
+function hasExplicitAutonomyRiskApproval(intent = null) {
+  const text = String(intent?.promptText || '');
+  if (!text.trim()) {
+    return false;
+  }
+  const riskTerms = /(云端|线上|生产环境|远端|热修复|hotfix|兜底|临时兜底|fallback|fall\s*back|写死|硬编码|hardcode|hard-coded|hard coded)/i;
+  if (!riskTerms.test(text)) {
+    return false;
+  }
+  const negatedRisk = /(不要|禁止|不允许|不得|不能|避免|默认不|未明确|未经|除非).{0,48}(云端|线上|生产环境|远端|热修复|hotfix|兜底|临时兜底|fallback|fall\s*back|写死|硬编码|hardcode|hard-coded|hard coded)|(云端|线上|生产环境|远端|热修复|hotfix|兜底|临时兜底|fallback|fall\s*back|写死|硬编码|hardcode|hard-coded|hard coded).{0,48}(不要|禁止|不允许|不得|不能|避免|默认不|未明确|未经|除非)/i;
+  if (negatedRisk.test(text)) {
+    return false;
+  }
+  return /(明确)?(允许|批准|同意|确认|可以|请|直接|必须|这次|现在).{0,40}(云端|线上|生产环境|远端|热修复|hotfix|兜底|临时兜底|fallback|fall\s*back|写死|硬编码|hardcode|hard-coded|hard coded)|(云端|线上|生产环境|远端|热修复|hotfix|兜底|临时兜底|fallback|fall\s*back|写死|硬编码|hardcode|hard-coded|hard coded).{0,40}(允许|批准|同意|确认|可以|直接|必须|这次|现在)/i.test(text);
+}
+
+function detectHighRiskAutonomyMutation(root, payload, intent, risk) {
+  if (!isMutationPayload(payload, risk)) {
+    return null;
+  }
+  const command = commandText(payload);
+  const text = [
+    toolName(payload),
+    command,
+    payloadText(payload),
+  ].filter(Boolean).join('\n');
+  const touched = extractTouchedFiles(root, payload);
+  const runtimeTarget = touched.length === 0 || touched.some((file) => isRuntimeAutonomyRiskFile(file));
+  const cloudMutation = /(?:\b(?:ssh|scp|rsync)\b[^\n]*(?:prod|production|线上|生产|云端|server|remote)|\b(?:kubectl|helm)\b[^\n]*(?:apply|patch|set|delete|rollout|scale|exec)[^\n]*(?:prod|production|线上|生产|云端|cluster)|\b(?:vercel|wrangler|fly|flyctl|railway|firebase)\b[^\n]*(?:deploy|up)[^\n]*(?:--prod|prod|production|线上|生产)|\bsupabase\s+db\s+push\b[^\n]*(?:--linked|--db-url|prod|production|线上|生产)|\bcurl\b[^\n]*(?:-X|--request)\s*(?:POST|PUT|PATCH|DELETE)\b[^\n]*(?:prod|production|线上|生产|云端|api\.))/i.test(text);
+  if (cloudMutation) {
+    return {
+      kind: 'cloud-hotfix',
+      title: '云端/生产远端写入',
+      details: preview(command || text, 260),
+    };
+  }
+  if (!runtimeTarget) {
+    return null;
+  }
+  const businessTerms = /(业务|权益|会员|额度|价格|计费|权限|订阅|套餐|角色|配置|服务端|服务器|客户端|缓存|entitlement|membership|billing|quota|plan|price|permission|role|subscription|feature|server|client|cache|storage|localstorage|config)/i;
+  const fallbackTerms = /(兜底|fallback|fall\s*back|临时补|临时插入|补行|补进|本地补|客户端补|服务端补|缓存补|默认插入|补一条|补数据)/i;
+  const hardcodeTerms = /(写死|硬编码|hardcode|hard-coded|hard coded)/i;
+  const fixedBusinessValue = /(unlimited|premium|pro|vip|admin|owner|free|trial|quota|limit|count_limit|free_limit|权益|会员).{0,80}(?:=|:).{0,80}(?:unlimited|premium|pro|vip|admin|owner|free|true|false|999999|Infinity)/i;
+  if ((businessTerms.test(text) && (fallbackTerms.test(text) || hardcodeTerms.test(text))) || fixedBusinessValue.test(text)) {
+    return {
+      kind: 'hardcoded-fallback',
+      title: '业务兜底/写死逻辑',
+      details: preview(touched.length > 0 ? `${touched.join(', ')}\n${command || text}` : command || text, 260),
+    };
+  }
+  return null;
+}
+
+function formatHighRiskAutonomyBlock(detection) {
+  return [
+    `OpenPrd blocked a high-risk autonomy action: ${detection.title}.`,
+    '当前用户消息只授权了本轮实现范围，不等于授权 Agent 私自做云端热修复、生产远端写入、业务兜底、写死逻辑或缓存补行。',
+    detection.details ? `Matched action: ${detection.details}` : null,
+    '默认路径：先改本地源码、配置、迁移或数据修复脚本，让本地与云端保持同一事实源；完成后再按正常发布/部署路径验证。',
+    '如果这次确实必须临时处理，请先让用户明确说“允许这次云端热修复”或“允许这次临时兜底/写死”，并说明影响范围、回滚方式和如何同步回本地源码/配置/迁移。',
+  ].filter(Boolean).join('\n');
+}
+
 const LIGHTWEIGHT_UI_VISUAL_SIGNAL_PATTERN = /(按钮|文案|颜色|圆角|位置|间距|留白|边距|内边距|外边距|宽度|高度|卡片|字号|字体|行高|图标|标题|空格|标点|对齐|密度|阴影|边框|层级|组件|输入框|菜单|侧栏|表格|列表|头像|badge|label|copy|toast|placeholder|padding|margin|spacing|gap|太宽|太窄|太挤|拥挤|松散|留得多|留着有点多|没对齐|好看|美观|审美|气质|记忆点|高级|太丑|丑|视觉风格|上架图|截图优化)/i;
 
 function hasLightweightUiVisualSignal(text = '') {
@@ -2311,7 +2713,7 @@ function frontendDesignPreflightIssues(root, intent, implementationFiles) {
   if (shouldRequireAssetSpec(intent) && designArtifactHasPlaceholder(root, 'asset-spec.md')) {
     issues.push({
       file: 'asset-spec.md',
-      reason: '进入实现前先冻结资产口径；没有官方资产也要写“缺失 / 暂无 / 不适用”，不要留模板占位。',
+      reason: '进入实现前先冻结资产口径；没有官方资产也要写“缺失 / 暂无 / 不适用”，不要留模板占位。新功能出现新入口、按钮、tab、卡片或空态时，同步补“功能图标”行：先复用项目已有图标体系，缺失时按最佳实践路由（Phosphor / Lucide / Tabler / React Icons / LobeHub / Tech Icons / iconfont）选型并登记图标名、来源、用途，不等用户要求。',
     });
   }
   if (shouldRequireImagePreflight(intent) && designArtifactHasPlaceholder(root, 'image-preflight.md')) {
@@ -2607,7 +3009,9 @@ function productCopyMessage(intent) {
   return [
     'OpenPrd 产品内文案提醒:',
     '先检查项目是否已有 i18n、locales、translations、Localizable 或其他语言资源；若已有，多语言要同步维护。',
-    '用户可见文案默认面向普通用户，优先写结果和下一步，不要把 API、SDK、模型、数据库、缓存、错误码或其他实现细节直接暴露给用户。',
+    '产品界面上用户能看到的文案必须站在当前用户视角写：说明用户现在能做什么、会发生什么、为什么值得点、下一步怎么走。',
+    '除非这是面向开发者或专业技术人员的技术型产品，否则默认用普通人能看懂的语言写结果、状态、限制和行动，不要把 API、SDK、模型、数据库、缓存、错误码或其他实现细节直接暴露给用户。',
+    '快速正反例：不要写“适合想保留全部工具入口的用户”，改成“首页会显示所有工具入口，你可以直接选择需要的功能”；不要写“API 请求失败，错误码 500”，改成“暂时保存失败，请稍后再试”。技术型产品可以保留必要术语，但仍要写清用户动作、影响和修复路径。',
   ].join('\n');
 }
 
@@ -2714,13 +3118,25 @@ function devCheckWrapUpMessage(root, turnState) {
   if (!parsed?.wrapUp?.required || !parsed.wrapUp.markdownTable) {
     return null;
   }
+  const autoMode = parsed.wrapUp.mode === 'auto-refactor';
   return [
-    'OpenPrd 后续建议：本轮有改动对象需要主动说明。',
-    '最终回复必须直接复用下面的 Markdown 表格，按 🔴 → 🟠 → 🟡 的顺序帮助产品或业务理解影响对象、本次处理结果和后续建议；不要只用工具名或一段话带过。',
-    '如果你改写了“预警原因 / 本次处理结果 / 后续建议”，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。',
-    '不要把“关注程度”列改写成纯 emoji；必须保留例如“🟠 中风险｜建议优先关注”这类完整标签。',
+    autoMode
+      ? 'OpenPRD 自动优化报告：本轮有超行改动对象，自动优化默认开启。'
+      : 'OpenPrd 后续建议：本轮有改动对象需要主动说明。',
+    autoMode
+      ? '先在本轮按 dev-check 给出的动作完成高内聚低耦合拆分（不丢任何功能、行为不变，拆完重跑测试与 dev-check），把每行“本次处理结果”回填为真实优化产出；最终回复必须以 **OpenPRD 自动优化报告** 为标题直接复用下面的 Markdown 表格，按 🔴 → 🟠 → 🟡 排序，并附一句：“如果下次不需要自动优化代码结构，回复关闭自动优化即可”。用户确认关闭后运行 `openprd dev-check . --auto-refactor off`。'
+      : '最终回复必须以 **后续建议** 为标题直接复用下面的 Markdown 表格，按 🔴 → 🟠 → 🟡 的顺序帮助产品或业务理解影响对象、本次处理结果和后续建议；不要只用工具名或一段话带过。',
+    autoMode
+      ? '如果你改写了“源文件规模 / 优化原因 / 本次处理结果 / 后续建议”，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。'
+      : '如果你改写了“规模信号 / 预警原因 / 本次处理结果 / 后续建议”，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。',
+    autoMode
+      ? '不要把“问题级别”列改写成纯 emoji；必须保留例如“🟠 中风险｜建议优先关注”这类完整标签。'
+      : '不要把“关注程度”列改写成纯 emoji；必须保留例如“🟠 中风险｜建议优先关注”这类完整标签。',
     parsed.wrapUp.markdownBlock ?? parsed.wrapUp.markdownTable,
-  ].join('\n');
+    parsed.visualEvidence?.required
+      ? `视觉证据提醒：${parsed.visualEvidence.reason} 建议命令：${(parsed.visualEvidence.suggestedCommands ?? []).join('；')}。${parsed.visualEvidence.chatEmbedHint ?? ''}`
+      : null,
+  ].filter(Boolean).join('\n');
 }
 
 function shouldRunDoctorForHighRisk(payload) {
@@ -2870,6 +3286,7 @@ function requirementGateMessage(intent, gate) {
       'OpenPrd requirement intake gate is active only for implementation writes.',
       'The user is asking for an image asset such as a cover image, poster, illustration, icon, sticker, visual mockup, or effect image, not code implementation.',
       'For logo, icon, avatar, badge, and similar development assets, default to a standalone asset: full-frame single subject with no extra UI frame, card shell, device mockup, or presentation container unless the user explicitly asked for one.',
+      'If the final development asset should be transparent for UI use, use an icon-asset pipeline: generate three visibly different standalone candidates first, each on a solid #00ff00 chroma-key background with no text, no UI container, centered subject, and enough padding; do not write project files before the user chooses one. After selection, verify the selected source or contact sheet, keep the green-screen source, run remove_chroma_key.py to produce a transparent PNG/WebP, crop and center it, export 384px or required sizes, tune the display ratio per real UI placement, and record the source, transparent output, integration point, and verification in asset-spec.md / selected-direction.md before claiming completion.',
       'Do not create temporary HTML/SVG/CSS files for this image unless the user explicitly requested that format.',
       'Use `imagegen`, which is Codex native Image 2, to generate the image; Image 2 is the tool path, not an aesthetic exemption, so first state the purpose, audience, intended tone, constraints, and memory point, then put them into the image prompt.',
       'Before generation, do a quick anti-slop check: without brand or reference support, avoid default purple/blue-purple gradients, generic font taste, white card piles, and context-free decoration.',
@@ -2926,8 +3343,7 @@ function visualMockupMessage(intent) {
     '默认直接调用 `imagegen`，也就是 Codex 原生 Image 2，来生成图片；Image 2 是工具路径，不是审美豁免；生图前先写清用途、受众、气质、约束和记忆点，并把这些写进 prompt。',
     '生图前用 `.openprd/design/anti-slop.md` 做快速自检：没有品牌或参考图依据时，不要默认紫白/蓝紫渐变、通用字体、白底卡片堆叠或无语境装饰。',
     '除非用户明确指定 HTML、SVG、CSS、Canvas、代码稿或可编辑矢量/source artifact，不要改用临时 HTML/SVG/CSS 再截图。',
-    '对 logo、icon、avatar、badge 等开发素材，如果用户没有明确要求 mockup、场景图、设备框、卡片承载、名片/包装展示或参考界面复刻，默认按独立素材输出（standalone asset）处理：使用全画布单主体，不额外添加 UI frame、卡片、设备壳、名片、桌面陈列、手持实拍或其他展示容器。',
-    '对 logo、icon、avatar、badge、贴纸、空态插画、单物件 UI 位图等开发素材，如果最终要接入 UI 并需要透明背景，默认走“候选评审 -> 资产工程化 -> 接入验证”的图标资产链路：先生成 3 个差异足够大的独立素材候选，使用纯 `#00ff00` 绿幕、无文字、无 UI 容器、主体居中且留足裁切边距；用户选定前不写项目文件。选定后定位源图或 contact sheet，保留绿幕源图，用 `remove_chroma_key.py` 抠透明 PNG/WebP，裁切居中并导出 384px 或多尺寸资产，再按真实 UI 场景分别调显示比例，写回 `.openprd/design/active/asset-spec.md` 和 `selected-direction.md`。',
+    '对 logo、icon、avatar、badge 等开发素材，如果用户没有明确要求 mockup、场景图、设备框、卡片承载、名片/包装展示或参考界面复刻，默认按独立素材输出（standalone asset）处理：使用全画布单主体，不额外添加 UI frame、卡片、设备壳、名片、桌面陈列、手持实拍或其他展示容器；如果最终要接入 UI 并需要透明背景，先生成 3 个差异足够大的纯 `#00ff00` 绿幕候选方向，用户选定前不写项目文件，选定后再保留源图、抠透明、裁切居中、导出 384px 或多尺寸资产，按真实 UI 场景调显示比例，并把源图、透明产物、接入位置和验证结果写回 `asset-spec.md` / `selected-direction.md`。',
     '只有当用户明确要求 mockup、场景化效果图、容器化呈现，或参考图本身就包含这些承载结构时，才生成对应的容器或场景。',
     '只有在实际发生 `imagegen` 调用后，才能汇报生图结果、失败或限流；未调用 `imagegen` 前，不要声称“生图限流”或“生图失败”。',
     '把 `imagegen` 结果先当成候选效果图，不要默认登记到 `.openprd/harness/visual-reviews/`，也不要自动当成后续验收参考；看图时不仅判断是否生成成功，还要判断气质、层级、字体/色彩/表面角色和记忆点是否成立。',
@@ -3133,9 +3549,8 @@ function contextMessage(cwd, intent = null, gate = null, progress = null) {
         requirementRoutingSummary(),
         '如果用户只是要求看看、规划、分析、审查、解释影响或列出文件，请保持只读并基于证据回答；不要运行 OpenPrd loop、任务推进、discovery 推进、commit 或其他写入命令。',
         '只有当用户当前明确要求开发、实现、修复、继续任务、深度调研、对标复刻或提交时，才运行 openprd loop --run、openprd tasks --advance、openprd discovery --advance、commit/push 等执行命令。',
-        '代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 openprd dev-check . <file...>；若出现需要关注的文件，最终回复必须以 **后续建议** 为标题，直接复用 dev-check 生成的 Markdown 表格，列出影响对象、关注程度、规模信号、预警原因、本次处理结果和后续建议，并按 🔴 → 🟠 → 🟡 排序；不要把“关注程度”列改写成纯 emoji，必须保留例如“🟠 中风险｜建议优先关注”这类完整标签；如果你改写了“预警原因 / 本次处理结果 / 后续建议”，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。',
+        '代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 openprd dev-check . <file...>；若出现需要关注的文件：自动优化开启（默认）时，先在本轮完成高内聚低耦合拆分（不丢功能、行为不变、拆完重跑测试），最终回复以 **OpenPRD 自动优化报告** 为标题直接复用 dev-check 生成的 Markdown 表格（列：影响对象、问题级别、源文件规模、优化原因、本次处理结果、后续建议），并附自动优化开关确认一句话；自动优化关闭时，以 **后续建议** 为标题复用表格（列：影响对象、关注程度、规模信号、预警原因、本次处理结果、后续建议）。两种模式都按 🔴 → 🟠 → 🟡 排序；不要把“问题级别／关注程度”列改写成纯 emoji，必须保留例如“🟠 中风险｜建议优先关注”这类完整标签；如果你改写了表格文案，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。',
         '大界面改动的效果图先当候选效果图；出图后主动确认是否符合预期、是否纳入后续效果图/实现截图对比、是否按此继续实现。只有确认后，才把选定方向、整张图或其中子图整理到 `.openprd/harness/visual-reviews/` 并进入大 UI 实现。',
-        '图标、头像、徽标、贴纸、空态插画或单物件 UI 位图若最终要透明接入 UI，先走 3 个纯 `#00ff00` 绿幕独立候选；用户选定前不写项目文件，选定后保留源图、抠透明、裁切居中、导出 384px 或多尺寸资产，并把源图、透明产物、接入位置和验证结果写回 active design artifacts。',
         '涉及界面、页面、视觉、样式或前端体验时，已有确认参考图才运行 openprd visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en>；如果一张参考图里有多个子图/对象/网格，先运行 openprd visual-prepare . --reference <效果图> --grid <列>x<行> 或 --boxes <plan.json>，确认 contact sheet 后再逐项对比。没有明确参考图时先判断新建还是修改：新建界面走实现前 3 方向方案评审；修改既有界面则动手前先截修改前截图，完成后运行 openprd visual-compare . --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>；如果并行试了多个优化方向，再补一份 openprd visual-compare . --board <parallel-board.json> --locale <zh-CN|en>。普通截图、Computer/Browser/Playwright 实测截图只能作为原始素材，收口前要补 openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en> 的截图实测证据板。新开发或修改同构列表、卡片、网格、表格时，或用户反馈没对齐/排版漂移时，还要补 openprd visual-compare . --board <alignment-board.json> --locale <zh-CN|en> 的对齐辅助线证据板，同时量测容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位的 x/y/宽高/baseline spread。单个素材/图标/头像/徽标/按钮图形/图片内部居中、偏心或视觉重心判断时，还要补 openprd visual-compare . --board <centering-board.json> --locale <zh-CN|en> 的内部居中证据板，同时量测画布中心、主体外接框中心和视觉重心偏移。用户后续如果说“跟效果图”“不一致”“好丑”“复刻”，不能只口头说对比过了，至少产出一份 visual-compare / focus-board / parallel-board / verification-board / alignment-board / centering-board 证据图。',
         '发现可沉淀项时不要中途打断任务：代码扩展识别这类白名单工具补全会自动应用并记录；用户偏好、项目协作规矩和 OpenPrd 默认行为先记录为候选，收工时运行 openprd grow . --review 集中确认。',
         '维护 OpenPrd 本身且涉及配置类能力时，先判断是否应纳入 openprd grow；高置信可成长默认纳入，不确定则主动询问用户。',
@@ -3156,9 +3571,8 @@ function contextMessage(cwd, intent = null, gate = null, progress = null) {
       requirementRoutingSummary(),
       '如果用户只是要求看看、规划、分析、审查、解释影响或列出文件，请保持只读并基于证据回答；不要运行 OpenPrd loop、任务推进、discovery 推进、commit 或其他写入命令。',
       '只有当用户当前明确要求开发、实现、修复、继续任务、深度调研、对标复刻或提交时，才运行 openprd loop --run、openprd tasks --advance、openprd discovery --advance、commit/push 等执行命令。',
-      '代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 openprd dev-check . <file...>；若出现需要关注的文件，最终回复必须以 **后续建议** 为标题，直接复用 dev-check 生成的 Markdown 表格，列出影响对象、关注程度、规模信号、预警原因、本次处理结果和后续建议，并按 🔴 → 🟠 → 🟡 排序；不要把“关注程度”列改写成纯 emoji，必须保留例如“🟠 中风险｜建议优先关注”这类完整标签；如果你改写了“预警原因 / 本次处理结果 / 后续建议”，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。',
+      '代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 openprd dev-check . <file...>；若出现需要关注的文件：自动优化开启（默认）时，先在本轮完成高内聚低耦合拆分（不丢功能、行为不变、拆完重跑测试），最终回复以 **OpenPRD 自动优化报告** 为标题直接复用 dev-check 生成的 Markdown 表格（列：影响对象、问题级别、源文件规模、优化原因、本次处理结果、后续建议），并附自动优化开关确认一句话；自动优化关闭时，以 **后续建议** 为标题复用表格（列：影响对象、关注程度、规模信号、预警原因、本次处理结果、后续建议）。两种模式都按 🔴 → 🟠 → 🟡 排序；不要把“问题级别／关注程度”列改写成纯 emoji，必须保留例如“🟠 中风险｜建议优先关注”这类完整标签；如果你改写了表格文案，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。',
       '大界面改动的效果图先当候选效果图；出图后主动确认是否符合预期、是否纳入后续效果图/实现截图对比、是否按此继续实现。只有确认后，才把选定方向、整张图或其中子图整理到 `.openprd/harness/visual-reviews/` 并进入大 UI 实现。',
-      '图标、头像、徽标、贴纸、空态插画或单物件 UI 位图若最终要透明接入 UI，先走 3 个纯 `#00ff00` 绿幕独立候选；用户选定前不写项目文件，选定后保留源图、抠透明、裁切居中、导出 384px 或多尺寸资产，并把源图、透明产物、接入位置和验证结果写回 active design artifacts。',
       '涉及界面、页面、视觉、样式或前端体验时，已有确认参考图才运行 openprd visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en>；如果一张参考图里有多个子图/对象/网格，先运行 openprd visual-prepare . --reference <效果图> --grid <列>x<行> 或 --boxes <plan.json>，确认 contact sheet 后再逐项对比。没有明确参考图时先判断新建还是修改：新建界面走实现前 3 方向方案评审；修改既有界面则动手前先截修改前截图，完成后运行 openprd visual-compare . --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>；如果并行试了多个优化方向，再补一份 openprd visual-compare . --board <parallel-board.json> --locale <zh-CN|en>。普通截图、Computer/Browser/Playwright 实测截图只能作为原始素材，收口前要补 openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en> 的截图实测证据板。新开发或修改同构列表、卡片、网格、表格时，或用户反馈没对齐/排版漂移时，还要补 openprd visual-compare . --board <alignment-board.json> --locale <zh-CN|en> 的对齐辅助线证据板，同时量测容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位的 x/y/宽高/baseline spread。单个素材/图标/头像/徽标/按钮图形/图片内部居中、偏心或视觉重心判断时，还要补 openprd visual-compare . --board <centering-board.json> --locale <zh-CN|en> 的内部居中证据板，同时量测画布中心、主体外接框中心和视觉重心偏移。用户后续如果说“跟效果图”“不一致”“好丑”“复刻”，不能只口头说对比过了，至少产出一份 visual-compare / focus-board / parallel-board / verification-board / alignment-board / centering-board 证据图。',
       '发现可沉淀项时不要中途打断任务：代码扩展识别这类白名单工具补全会自动应用并记录；用户偏好、项目协作规矩和 OpenPrd 默认行为先记录为候选，收工时运行 openprd grow . --review 集中确认。',
       '维护 OpenPrd 本身且涉及配置类能力时，先判断是否应纳入 openprd grow；高置信可成长默认纳入，不确定则主动询问用户。',
@@ -3182,7 +3596,7 @@ function contextMessage(cwd, intent = null, gate = null, progress = null) {
     largeUiVisualDirectionMessage(intent),
     requirementRoutingSummary(),
     'OpenPrd 下一步只是建议。规划、分析、审查类请求保持只读；只有用户当前明确要求开发、深度调研、对标复刻或继续任务时才执行。',
-    '代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 openprd dev-check . <file...>；若出现需要关注的文件，最终回复必须以 **后续建议** 为标题，直接复用 dev-check 生成的 Markdown 表格，列出影响对象、关注程度、规模信号、预警原因、本次处理结果和后续建议，并按 🔴 → 🟠 → 🟡 排序；不要把“关注程度”列改写成纯 emoji，必须保留例如“🟠 中风险｜建议优先关注”这类完整标签；如果你改写了“预警原因 / 本次处理结果 / 后续建议”，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。',
+    '代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 openprd dev-check . <file...>；若出现需要关注的文件：自动优化开启（默认）时，先在本轮完成高内聚低耦合拆分（不丢功能、行为不变、拆完重跑测试），最终回复以 **OpenPRD 自动优化报告** 为标题直接复用 dev-check 生成的 Markdown 表格（列：影响对象、问题级别、源文件规模、优化原因、本次处理结果、后续建议），并附自动优化开关确认一句话；自动优化关闭时，以 **后续建议** 为标题复用表格（列：影响对象、关注程度、规模信号、预警原因、本次处理结果、后续建议）。两种模式都按 🔴 → 🟠 → 🟡 排序；不要把“问题级别／关注程度”列改写成纯 emoji，必须保留例如“🟠 中风险｜建议优先关注”这类完整标签；如果你改写了表格文案，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。',
     '发现可沉淀项时不要中途打断任务：代码扩展识别这类白名单工具补全会自动应用并记录；用户偏好、项目协作规矩和 OpenPrd 默认行为先记录为候选，收工时运行 openprd grow . --review 集中确认。',
     '维护 OpenPrd 本身且涉及配置类能力时，先判断是否应纳入 openprd grow；高置信可成长默认纳入，不确定则主动询问用户。',
     '涉及后端、脚本、Agent、工具链、服务或数据处理变更时，把 CLI 与 API 视为同级接入面，并同步更新 docs/basic/backend-structure.md 或明确写不适用原因。',
@@ -3264,6 +3678,11 @@ function classifyRisk(payload) {
     /yarn\s+npm\s+publish/,
     /gh\s+release/,
     /rm\s+-rf/,
+    /\b(?:ssh|scp|rsync)\b[^\n]*(?:prod|production|线上|生产|云端|server|remote)/,
+    /\b(?:kubectl|helm)\b[^\n]*(?:apply|patch|set|delete|rollout|scale|exec)[^\n]*(?:prod|production|线上|生产|云端|cluster)/,
+    /\b(?:vercel|wrangler|fly|flyctl|railway|firebase)\b[^\n]*(?:deploy|up)[^\n]*(?:--prod|prod|production|线上|生产)/,
+    /\bsupabase\s+db\s+push\b[^\n]*(?:--linked|--db-url|prod|production|线上|生产)/,
+    /\bcurl\b[^\n]*(?:-x|--request)\s*(?:post|put|patch|delete)\b[^\n]*(?:prod|production|线上|生产|云端|api\.)/,
     /openprd\s+freeze\b/,
     /openprd\s+handoff\b/,
     /openprd\s+change\s+.*--apply/,
@@ -3556,21 +3975,32 @@ function blockHook(reason) {
 
 function handle(eventName, cwd, payload) {
   const root = findProjectRoot(cwd);
+  const sessionId = sessionIdFor(payload);
+  const automationDecision = automationBypassDecision(root, eventName, payload, sessionId);
+  if (automationDecision.optIn) {
+    rememberAutomationMode(root, sessionId, payload, automationDecision.signals, 'openprd-maintenance');
+  } else if (automationDecision.bypass) {
+    rememberAutomationMode(root, sessionId, payload, automationDecision.signals, 'automation');
+    return allowHook();
+  }
   ensureHarness(root);
   const risk = classifyRisk(payload);
   const fingerprint = fingerprintFor(eventName, payload, risk);
   const duplicate = isDuplicate(root, fingerprint);
-  const sessionId = sessionIdFor(payload);
+  const runtimeEnvironment = recordRuntimeEnvironment(root, eventName, payload, sessionId);
   const baseEvent = {
     eventName,
     risk,
     fingerprint,
     duplicate,
     sessionId,
+    runtimeEnvironment: runtimeEnvironment.active,
     preview: preview(payloadText(payload)),
   };
 
   if (eventName === 'SessionStart') {
+    appendEvent(root, { ...baseEvent, outcome: 'session-start' });
+    updateHookState(root, baseEvent);
     return allowHook();
   }
 
@@ -3739,6 +4169,13 @@ function handle(eventName, cwd, payload) {
         'Use the `secrets-vault` skill first and only read the minimum required fields; do not read the original vault file directly.',
       ].join('\n'));
     }
+    const autonomyRisk = detectHighRiskAutonomyMutation(root, payload, turnIntent, risk);
+    if (autonomyRisk && !hasExplicitAutonomyRiskApproval(turnIntent)) {
+      appendEvent(root, { ...baseEvent, outcome: 'blocked-high-risk-autonomy', autonomyRisk });
+      recordRunHook(root, baseEvent, 'blocked-high-risk-autonomy');
+      updateHookState(root, baseEvent);
+      return blockHook(formatHighRiskAutonomyBlock(autonomyRisk));
+    }
     if (isBlockingRequirementGate(gate) && isMutationPayload(payload, risk) && !isAllowedDuringRequirementGate(root, payload, gate, sessionId)) {
       const reviewMark = parseReviewMarkCommand(commandText(payload));
       const approvalPolicy = requirementApprovalPolicy(gate);
@@ -3867,7 +4304,7 @@ function handle(eventName, cwd, payload) {
       recordRunHook(root, baseEvent, 'allowed-medium-risk');
       updateHookState(root, baseEvent);
       recordTouchedFiles(root, payload);
-      return allowHook('OpenPrd 检测到写入动作。本轮写入完成后、最终回复前，请针对实际 touched code files 运行 openprd dev-check . <file...>；如出现需要关注的文件，最终回复必须以 **后续建议** 为标题，直接复用 dev-check 生成的 Markdown 表格，说明影响对象、关注程度、规模信号、预警原因、本次处理结果和后续建议，并按 🔴 → 🟠 → 🟡 排序；不要把“关注程度”列改写成纯 emoji，必须保留例如“🟠 中风险｜建议优先关注”这类完整标签；如果你改写了“预警原因 / 本次处理结果 / 后续建议”，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试；如涉及界面视觉，包括卡片宽度、间距、留白、对齐、颜色、圆角、字号等轻量可视优化，build、package 和 dev-check 只能证明代码或构建状态，不能替代视觉证据；写入前先说明本次审美意图和记忆点，视觉证据也要检查气质、层级、颜色、字号、间距和表面角色是否成立；已有参考效果图并进入实现阶段时，阶段性完成后运行 openprd visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en> 并查看 JPG 对比图；如果参考图来自本轮或前序 `imagegen`，先确认用户已接受它作为后续对比参考；若一张图里有多个子图、对象或网格，先运行 openprd visual-prepare . --reference <效果图> --grid <列>x<行> 或 --boxes <plan.json>，确认 contact sheet 后再逐项对比。若局部细节更重要，再补 openprd visual-compare . --board <focus-board.json> --locale <zh-CN|en>；如无参考图，先判断新建界面还是修改既有界面：新建界面应先完成 3 方向方案评审，修改既有界面确认已先截修改前截图，并在完成后运行 openprd visual-compare . --before <修改前截图> --after <修改后截图> --locale <zh-CN|en> 查看 JPG 自检图；若并行试了多个优化方向，再补 openprd visual-compare . --board <parallel-board.json> --locale <zh-CN|en>；若普通截图、Computer/Browser/Playwright 实测截图被用作证据，再补 openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en> 的截图实测证据板；若新开发或修改同构列表、卡片、网格、表格，或用户反馈没对齐/排版漂移，再补 openprd visual-compare . --board <alignment-board.json> --locale <zh-CN|en> 的对齐辅助线证据板，截真实页面、叠辅助线，同时量容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位的 x/y/宽高/baseline spread；只量外框、列宽或行顶不算完整对齐验收；当用户说“跟效果图”“不一致”“好丑”“复刻”时，至少给出一份视觉证据图，不要只口头判断。发现可沉淀项时不要中途打断任务，代码扩展识别这类白名单工具补全会自动应用并记录，用户偏好、项目协作规矩和 OpenPrd 默认行为留到收工时用 openprd grow . --review 集中确认；维护 OpenPrd 本身且涉及配置类能力时，先判断是否应纳入 openprd grow；声明就绪前，请同步维护 docs/basic、文件说明书、文件夹 README，以及相关 OpenPrd change/task 状态；如果涉及后端、脚本、Agent、工具链、服务或数据处理变更，还要把 CLI 与 API 视为同级接入面并更新 docs/basic/backend-structure.md。');
+      return allowHook('OpenPrd 检测到写入动作。本轮写入完成后、最终回复前，请针对实际 touched code files 运行 openprd dev-check . <file...>；如出现需要关注的文件：自动优化开启（默认）时先在本轮完成高内聚低耦合拆分（不丢功能、行为不变），最终回复以 **OpenPRD 自动优化报告** 为标题复用 dev-check 表格（列：影响对象、问题级别、源文件规模、优化原因、本次处理结果、后续建议）并附开关确认；关闭时以 **后续建议** 为标题复用表格（列：影响对象、关注程度、规模信号、预警原因、本次处理结果、后续建议）。两种模式都按 🔴 → 🟠 → 🟡 排序；不要把“问题级别／关注程度”列改写成纯 emoji，必须保留例如“🟠 中风险｜建议优先关注”这类完整标签；如果你改写了表格文案，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试；如涉及界面视觉，包括卡片宽度、间距、留白、对齐、颜色、圆角、字号等轻量可视优化，build、package 和 dev-check 只能证明代码或构建状态，不能替代视觉证据；写入前先说明本次审美意图和记忆点，视觉证据也要检查气质、层级、颜色、字号、间距和表面角色是否成立；已有参考效果图并进入实现阶段时，阶段性完成后运行 openprd visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en> 并查看 JPG 对比图；如果参考图来自本轮或前序 `imagegen`，先确认用户已接受它作为后续对比参考；若一张图里有多个子图、对象或网格，先运行 openprd visual-prepare . --reference <效果图> --grid <列>x<行> 或 --boxes <plan.json>，确认 contact sheet 后再逐项对比。若局部细节更重要，再补 openprd visual-compare . --board <focus-board.json> --locale <zh-CN|en>；如无参考图，先判断新建界面还是修改既有界面：新建界面应先完成 3 方向方案评审，修改既有界面确认已先截修改前截图，并在完成后运行 openprd visual-compare . --before <修改前截图> --after <修改后截图> --locale <zh-CN|en> 查看 JPG 自检图；若并行试了多个优化方向，再补 openprd visual-compare . --board <parallel-board.json> --locale <zh-CN|en>；若普通截图、Computer/Browser/Playwright 实测截图被用作证据，再补 openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en> 的截图实测证据板；若新开发或修改同构列表、卡片、网格、表格，或用户反馈没对齐/排版漂移，再补 openprd visual-compare . --board <alignment-board.json> --locale <zh-CN|en> 的对齐辅助线证据板，截真实页面、叠辅助线，同时量容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位的 x/y/宽高/baseline spread；只量外框、列宽或行顶不算完整对齐验收；当用户说“跟效果图”“不一致”“好丑”“复刻”时，至少给出一份视觉证据图，不要只口头判断。发现可沉淀项时不要中途打断任务，代码扩展识别这类白名单工具补全会自动应用并记录，用户偏好、项目协作规矩和 OpenPrd 默认行为留到收工时用 openprd grow . --review 集中确认；维护 OpenPrd 本身且涉及配置类能力时，先判断是否应纳入 openprd grow；声明就绪前，请同步维护 docs/basic、文件说明书、文件夹 README，以及相关 OpenPrd change/task 状态；如果涉及后端、脚本、Agent、工具链、服务或数据处理变更，还要把 CLI 与 API 视为同级接入面并更新 docs/basic/backend-structure.md。');
     }
     return allowHook();
   }

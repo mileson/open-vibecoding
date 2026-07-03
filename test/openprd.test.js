@@ -504,6 +504,10 @@ test('init creates a workspace and validate passes', async () => {
   assert.ok(initResult.templatePackGuidance.message.includes('仍可按用户确认调整产品场景'));
   assert.equal(initResult.agentIntegration.ok, true);
   assert.deepEqual(initResult.agentIntegration.tools, ['codex', 'claude', 'cursor']);
+  const gitignore = await fs.readFile(path.join(project, '.gitignore'), 'utf8');
+  assert.ok(gitignore.includes('.openprd/harness/'));
+  assert.ok(gitignore.includes('.openprd/learning/'));
+  assert.ok(gitignore.includes('.openprd/quality/reports/'));
 
   const { report } = await validateWorkspace(project);
   assert.equal(report.valid, true);

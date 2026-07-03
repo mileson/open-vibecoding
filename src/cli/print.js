@@ -30,6 +30,7 @@ import {
   printValidation,
 } from './basic-print.js';
 import { printBenchmarkResult } from './benchmark-print.js';
+import { printCanvasResult } from './canvas-print.js';
 import {
   printAcceptedSpecsResult,
   printOpenPrdChangeActionResult,
@@ -115,4 +116,5 @@ export {
   printOpenPrdChangeActionResult,
   printAcceptedSpecsResult,
   printBenchmarkResult,
+  printCanvasResult,
 };

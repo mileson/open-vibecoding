@@ -1,5 +1,5 @@
 {
-  "activeChange": "loop-isolated-worktree-commit",
+  "activeChange": "vibe-coding-dev-check",
   "taskSharding": {
     "maxItemsPerFile": 25,
     "handoffRequired": true,

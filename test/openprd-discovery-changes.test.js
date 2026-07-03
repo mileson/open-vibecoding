@@ -162,7 +162,7 @@ test('openprd discovery ignores dependency folders and enforces task shards', as
   await fs.mkdir(path.join(project, '.venv', 'lib'), { recursive: true });
   await fs.mkdir(path.join(project, '.venv-release311', 'lib'), { recursive: true });
   await fs.mkdir(path.join(project, 'src'), { recursive: true });
-  await fs.mkdir(path.join(project, 'openprd', 'changes', 'large-change'), { recursive: true });
+  await fs.mkdir(path.join(project, '.openprd', 'changes', 'large-change'), { recursive: true });
   await fs.mkdir(path.join(project, '.openprd', 'discovery'), { recursive: true });
   await fs.writeFile(path.join(project, '.venv', 'lib', 'dependency.py'), 'print("dependency")\n');
   await fs.writeFile(path.join(project, '.venv-release311', 'lib', 'dependency.py'), 'print("dependency")\n');
@@ -173,7 +173,7 @@ test('openprd discovery ignores dependency folders and enforces task shards', as
     }
   }, null, 2) + '\n');
   await fs.writeFile(
-    path.join(project, 'openprd', 'changes', 'large-change', 'tasks.md'),
+    path.join(project, '.openprd', 'changes', 'large-change', 'tasks.md'),
     Array.from({ length: 41 }, (_, index) => `- [ ] ${index + 1}. Task ${index + 1}`).join('\n') + '\n'
   );
   await initWorkspace(project, { templatePack: 'agent' });
@@ -188,7 +188,7 @@ test('openprd discovery ignores dependency folders and enforces task shards', as
   assert.ok(failed.verification.errors.some((error) => error.includes('不超过 2 个')));
 
   await fs.writeFile(
-    path.join(project, 'openprd', 'changes', 'large-change', 'tasks.md'),
+    path.join(project, '.openprd', 'changes', 'large-change', 'tasks.md'),
     [
       '- [ ] 1. First shard task',
       '- [ ] Continue with `tasks-002.md` after completing this file.',
@@ -196,7 +196,7 @@ test('openprd discovery ignores dependency folders and enforces task shards', as
     ].join('\n')
   );
   await fs.writeFile(
-    path.join(project, 'openprd', 'changes', 'large-change', 'tasks-002.md'),
+    path.join(project, '.openprd', 'changes', 'large-change', 'tasks-002.md'),
     '- [ ] 2. Second shard task\n'
   );
 
@@ -209,13 +209,13 @@ test('openprd discovery ignores dependency folders and enforces task shards', as
 test('openprd discovery verifies structured task metadata and dependencies', async () => {
   const project = await makeTempProject();
   await fs.mkdir(path.join(project, 'src'), { recursive: true });
-  await fs.mkdir(path.join(project, 'openprd', 'changes', 'structured-change'), { recursive: true });
+  await fs.mkdir(path.join(project, '.openprd', 'changes', 'structured-change'), { recursive: true });
   await fs.writeFile(path.join(project, 'src', 'app.ts'), 'export const app = true;\n');
   await initWorkspace(project, { templatePack: 'agent' });
   await openspecDiscoveryWorkspace(project, {});
 
   await fs.writeFile(
-    path.join(project, 'openprd', 'changes', 'structured-change', 'tasks.md'),
+    path.join(project, '.openprd', 'changes', 'structured-change', 'tasks.md'),
     [
       '- [ ] T001.01 Prepare database import contract',
       '  - done: contract covers counts, conflicts, skipped items, and warnings',
@@ -237,7 +237,7 @@ test('openprd discovery verifies structured task metadata and dependencies', asy
   assert.ok(structuredTaskCheck.includes('执行策略显式 0 个、推导 2 个'));
 
   await fs.writeFile(
-    path.join(project, 'openprd', 'changes', 'structured-change', 'tasks.md'),
+    path.join(project, '.openprd', 'changes', 'structured-change', 'tasks.md'),
     [
       '- [ ] T001.01 评审生成的 spec 覆盖',
       '  - type: governance',
@@ -260,9 +260,10 @@ test('openprd discovery verifies structured task metadata and dependencies', asy
   assert.ok(failed.verification.errors.some((error) => error.includes('只做了 change 结构校验')));
 });
 
-test('openprd validates change structure without external openspec cli', async () => {
+test('openprd validates change structure without external spec cli', async () => {
   const project = await makeTempProject();
-  const changeDir = path.join(project, 'openspec', 'changes', 'desktop-rebuild');
+  await initWorkspace(project, { templatePack: 'agent' });
+  const changeDir = path.join(project, '.openprd', 'changes', 'desktop-rebuild');
   await fs.mkdir(path.join(changeDir, 'specs', 'desktop-shell'), { recursive: true });
   await fs.writeFile(path.join(changeDir, '.openprd.yaml'), 'schema: openprd.change.v1\n');
   await fs.writeFile(path.join(changeDir, 'proposal.md'), [
@@ -300,7 +301,7 @@ test('openprd validates change structure without external openspec cli', async (
     '## 新增需求',
     '',
     '### 需求：桌面壳校验通过 OpenPrd 执行',
-    '桌面壳校验应由 OpenPrd 内置能力完成，不依赖第三方 OpenSpec CLI。',
+    '桌面壳校验应由 OpenPrd 内置能力完成，不依赖第三方 spec CLI。',
     '',
     '#### 场景：Agent 检查变更',
     '- **当** Agent 运行 OpenPrd 校验',
@@ -317,7 +318,7 @@ test('openprd validates change structure without external openspec cli', async (
     '## 新增需求',
     '',
     '### 需求：桌面壳校验通过 OpenPrd 执行',
-    '桌面壳校验应由 OpenPrd 内置能力完成，不依赖第三方 OpenSpec CLI。',
+    '桌面壳校验应由 OpenPrd 内置能力完成，不依赖第三方 spec CLI。',
     '',
   ].join('\n'));
 
@@ -328,7 +329,8 @@ test('openprd validates change structure without external openspec cli', async (
 
 test('openprd validates spec structure without enforcing body language policy', async () => {
   const project = await makeTempProject();
-  const changeDir = path.join(project, 'openprd', 'changes', 'desktop-rebuild');
+  await initWorkspace(project, { templatePack: 'consumer' });
+  const changeDir = path.join(project, '.openprd', 'changes', 'desktop-rebuild');
   await fs.mkdir(path.join(changeDir, 'specs', 'desktop-shell'), { recursive: true });
   await fs.writeFile(path.join(changeDir, 'proposal.md'), [
     '## 背景与原因',
@@ -355,7 +357,7 @@ test('openprd validates spec structure without enforcing body language policy', 
     '## ADDED Requirements',
     '',
     '### Requirement: Desktop shell SHALL validate through OpenPrd',
-    'The shell validation SHALL not require a third-party OpenSpec CLI.',
+    'The shell validation SHALL not require a third-party spec CLI.',
     '',
     '#### Scenario: Agent 检查变更',
     '- **WHEN** Agent 运行 OpenPrd 校验',
@@ -410,18 +412,18 @@ test('openprd generates a change from the latest prd snapshot', async () => {
   const result = await generateOpenSpecChangeWorkspace(project, { change: 'signup-flow' });
   assert.equal(result.ok, true);
   assert.equal(result.changeId, 'signup-flow');
-  assert.ok(result.files.includes(path.join('openprd', 'changes', 'signup-flow', 'proposal.md')));
+  assert.ok(result.files.includes(path.join('.openprd', 'changes', 'signup-flow', 'proposal.md')));
   assert.ok(result.files.some((file) => file.endsWith(path.join('specs', 'consumer-requirements', 'spec.md'))));
   assert.equal(result.validation.valid, true);
 
-  const specText = await fs.readFile(path.join(project, 'openprd', 'changes', 'signup-flow', 'specs', 'consumer-requirements', 'spec.md'), 'utf8');
+  const specText = await fs.readFile(path.join(project, '.openprd', 'changes', 'signup-flow', 'specs', 'consumer-requirements', 'spec.md'), 'utf8');
   assert.match(specText, /^## New Requirements$/m);
   assert.match(specText, /^### Requirement: /m);
   assert.match(specText, /^#### Scenario: /m);
   assert.match(specText, /^- \*\*When\*\*/m);
   assert.match(specText, /^- \*\*Then\*\*/m);
   assert.doesNotMatch(specText, /^## 新增需求$|^### 需求：|^\- \*\*当\*\*|^\- \*\*则\*\*/m);
-  const tasksText = await fs.readFile(path.join(project, 'openprd', 'changes', 'signup-flow', 'tasks.md'), 'utf8');
+  const tasksText = await fs.readFile(path.join(project, '.openprd', 'changes', 'signup-flow', 'tasks.md'), 'utf8');
   assert.match(tasksText, /^# Tasks$/m);
   assert.match(tasksText, /Review Generated Spec Coverage/);
   assert.match(tasksText, /execution-mode: /);
@@ -490,13 +492,13 @@ test('openprd applies accepted specs and archives changes', async () => {
   const specs = await listAcceptedSpecsWorkspace(project);
   assert.equal(specs.specs.length, 1);
   assert.equal(specs.specs[0].capability, 'consumer-requirements');
-  assert.ok(specs.specs[0].specPath.endsWith(path.join('openprd', 'specs', 'consumer-requirements', 'spec.md')));
+  assert.ok(specs.specs[0].specPath.endsWith(path.join('.openprd', 'specs', 'consumer-requirements', 'spec.md')));
 
   const archived = await archiveOpenPrdChangeWorkspace(project, { change: 'checkout-flow' });
   assert.equal(archived.ok, true);
   assert.equal(archived.removedSource, true);
-  assert.ok(await fs.stat(path.join(project, 'openprd', 'archive', 'changes', 'checkout-flow')).then(() => true));
-  assert.equal(await fs.stat(path.join(project, 'openprd', 'changes', 'checkout-flow')).then(() => true).catch(() => false), false);
+  assert.ok(await fs.stat(path.join(project, '.openprd', 'archive', 'changes', 'checkout-flow')).then(() => true));
+  assert.equal(await fs.stat(path.join(project, '.openprd', 'changes', 'checkout-flow')).then(() => true).catch(() => false), false);
 });
 
 test('openprd exposes natural change task and specs cli commands', async () => {
@@ -547,11 +549,11 @@ test('openprd exposes natural change task and specs cli commands', async () => {
     console.log = originalLog;
   }
   assert.ok(logs.some((line) => line.includes('已生成 OpenPrd change: profile-settings')));
-  const generatedProposal = await fs.readFile(path.join(project, 'openprd', 'changes', 'profile-settings', 'proposal.md'), 'utf8');
+  const generatedProposal = await fs.readFile(path.join(project, '.openprd', 'changes', 'profile-settings', 'proposal.md'), 'utf8');
   assert.ok(generatedProposal.includes('## Background And Rationale'));
   assert.ok(generatedProposal.includes('## Change Scope'));
   assert.ok(generatedProposal.includes('## Impact'));
-  const generatedTasks = await fs.readFile(path.join(project, 'openprd', 'changes', 'profile-settings', 'tasks.md'), 'utf8');
+  const generatedTasks = await fs.readFile(path.join(project, '.openprd', 'changes', 'profile-settings', 'tasks.md'), 'utf8');
   assert.ok(generatedTasks.includes('  - type: implementation'));
   assert.ok(generatedTasks.includes('  - type: documentation'));
   assert.ok(generatedTasks.includes('docs/basic'));
@@ -573,7 +575,7 @@ test('openprd exposes natural change task and specs cli commands', async () => {
 
 test('openprd task evidence gate records task evidence without quality report churn', async () => {
   const project = await makeTempProject();
-  const changeDir = path.join(project, 'openspec', 'changes', 'evidence-gate');
+  const changeDir = path.join(project, '.openprd', 'changes', 'evidence-gate');
   await fs.mkdir(changeDir, { recursive: true });
   await fs.writeFile(path.join(changeDir, 'tasks.md'), [
     '- [ ] T001.01 Wire focused task evidence',
@@ -603,7 +605,7 @@ test('openprd task evidence gate records task evidence without quality report ch
 
 test('legacy per-task run verify is redirected to task evidence without quality churn', async () => {
   const project = await makeTempProject();
-  const changeDir = path.join(project, 'openspec', 'changes', 'legacy-full-verify');
+  const changeDir = path.join(project, '.openprd', 'changes', 'legacy-full-verify');
   await fs.mkdir(changeDir, { recursive: true });
   await fs.writeFile(path.join(changeDir, 'tasks.md'), [
     '- [ ] T001.01 Complete legacy generated task',
@@ -632,7 +634,7 @@ test('legacy per-task run verify is redirected to task evidence without quality 
 
 test('openprd advances tasks by dependency order and verify command', async () => {
   const project = await makeTempProject();
-  const changeDir = path.join(project, 'openspec', 'changes', 'desktop-rebuild');
+  const changeDir = path.join(project, '.openprd', 'changes', 'desktop-rebuild');
   await fs.mkdir(changeDir, { recursive: true });
   await fs.writeFile(path.join(changeDir, 'tasks.md'), [
     '- [ ] T001.01 Prepare shell entry',
@@ -866,7 +868,7 @@ test('loop finish commit scopes files inside an isolated worktree and records co
   assert.equal(finish.workspace.branch, 'loop/isolation-test');
   assert.equal(finish.commit.branch, 'loop/isolation-test');
   assert.equal(finish.commit.worktreePath, await fs.realpath(worktreePath));
-  assert.equal(finish.commit.commitPlan.stagedPaths.includes(path.join('openprd', 'changes', 'loop-isolated-commit', 'tasks.md')), true);
+  assert.equal(finish.commit.commitPlan.stagedPaths.includes(path.join('.openprd', 'changes', 'loop-isolated-commit', 'tasks.md')), true);
   assert.equal(finish.commit.commitPlan.excludedPaths.length, 0);
 
   const loopState = JSON.parse(await fs.readFile(path.join(worktreePath, '.openprd', 'harness', 'loop-state.json'), 'utf8'));
@@ -888,7 +890,7 @@ test('loop finish commit scopes files inside an isolated worktree and records co
   const commitFiles = spawnSync('git', ['show', '--pretty=', '--name-only', 'HEAD'], { cwd: worktreePath, encoding: 'utf8' });
   assert.equal(commitFiles.status, 0, commitFiles.stderr || commitFiles.stdout);
   const normalizedFiles = commitFiles.stdout.trim().split(/\r?\n/).filter(Boolean);
-  assert.equal(normalizedFiles.includes(path.join('openprd', 'changes', 'loop-isolated-commit', 'tasks.md')), true);
+  assert.equal(normalizedFiles.includes(path.join('.openprd', 'changes', 'loop-isolated-commit', 'tasks.md')), true);
   const status = spawnSync('git', ['status', '--short'], { cwd: worktreePath, encoding: 'utf8' });
   assert.equal(status.status, 0, status.stderr || status.stdout);
   assert.equal(status.stdout.trim(), '');
@@ -1032,7 +1034,7 @@ test('loop repair-agent explicitly repairs Codex then launches the child session
 test('loop finish blocks the final task when EVO quality is not production-ready', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
-  const changeDir = path.join(project, 'openprd', 'changes', 'loop-evo');
+  const changeDir = path.join(project, '.openprd', 'changes', 'loop-evo');
   await fs.mkdir(path.join(changeDir, 'specs', 'loop-evo'), { recursive: true });
   await fs.writeFile(path.join(changeDir, 'proposal.md'), [
     '# Proposal',

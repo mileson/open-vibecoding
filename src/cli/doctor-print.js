@@ -104,6 +104,25 @@ function printCodexRuntimeResult(codexRuntime, prefix = '') {
   }
 }
 
+function printRuntimeEnvironmentSummary(agentIntegration) {
+  const active = agentIntegration?.runtimeEnvironment?.active;
+  if (active?.activeClient && active.activeClient !== 'unknown') {
+    const confidence = typeof active.confidence === 'number' ? `，置信度 ${active.confidence}` : '';
+    const capabilities = Array.isArray(active.observedCapabilities) && active.observedCapabilities.length > 0
+      ? `，已观察能力 ${active.observedCapabilities.join(', ')}`
+      : '';
+    console.log(`当前 Agent 环境: ${active.activeClient}${active.surface ? ` / ${active.surface}` : ''}${confidence}${capabilities}`);
+  } else {
+    console.log('当前 Agent 环境: 未观察到当前会话 hook/session 证据');
+  }
+  const packs = Array.isArray(agentIntegration?.platformCapabilityPacks)
+    ? agentIntegration.platformCapabilityPacks
+    : [];
+  if (packs.length > 0) {
+    console.log(`平台能力包: ${packs.map((pack) => pack.name ?? pack.id).join('，')}`);
+  }
+}
+
 function printDoctorResult(result, json) {
   if (json) {
     console.log(JSON.stringify(result, null, 2));
@@ -116,6 +135,7 @@ function printDoctorResult(result, json) {
   if (result.agentIntegration.hookProfile) {
     console.log(`Hook 模式: ${result.agentIntegration.hookProfile}`);
   }
+  printRuntimeEnvironmentSummary(result.agentIntegration);
   console.log(`标准化: ${result.standards.ok ? '通过' : '失败'}`);
   console.log(`工作区验证: ${result.validation.valid ? '通过' : '失败'}`);
   if (result.agentIntegration.drift) {

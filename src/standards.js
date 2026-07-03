@@ -773,6 +773,42 @@ export async function initStandardsWorkspace(projectRoot, options = {}) {
   };
 }
 
+export const DOC_MEGA_LINE_CHARS = 300;
+export const DOC_AVG_LINE_CHARS = 200;
+export const DOC_STALE_VERSION_THRESHOLD = 20;
+
+export function analyzeDocQuality(relativePath, text) {
+  const lines = text.split('\n');
+  const contentLines = lines.filter((line) => line.trim().length > 0);
+  const megaLines = contentLines.filter((line) => line.length > DOC_MEGA_LINE_CHARS);
+  const totalChars = contentLines.reduce((sum, line) => sum + line.length, 0);
+  const avgLineChars = contentLines.length > 0 ? Math.round(totalChars / contentLines.length) : 0;
+  const maxLineChars = contentLines.reduce((max, line) => Math.max(max, line.length), 0);
+  return {
+    path: relativePath,
+    lines: lines.length,
+    contentLines: contentLines.length,
+    megaLines: megaLines.length,
+    avgLineChars,
+    maxLineChars,
+    bytes: Buffer.byteLength(text, 'utf8'),
+  };
+}
+
+export async function analyzeDocStaleness(projectRoot, docMtimeMs) {
+  const versionsDir = cjoin(projectRoot, '.openprd', 'state', 'versions');
+  const entries = await fs.readdir(versionsDir).catch(() => []);
+  const versionFiles = entries.filter((name) => /^v\d+\.json$/.test(name)).sort();
+  let versionsBehind = 0;
+  for (const name of versionFiles) {
+    const stat = await fs.stat(cjoin(versionsDir, name)).catch(() => null);
+    if (stat && stat.mtimeMs > docMtimeMs) {
+      versionsBehind += 1;
+    }
+  }
+  return { totalVersions: versionFiles.length, versionsBehind };
+}
+
 export async function checkStandardsWorkspace(projectRoot, options = {}) {
   const errors = [];
   const warnings = [];
@@ -838,6 +874,7 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
     ...externalReferenceIgnorePatterns(projectRoot, config ?? {}),
   ];
   const requiredDocs = [];
+  const docsQuality = [];
   const sourceFiles = await collectSourceFiles(projectRoot, projectRoot, [], ignorePatterns);
   const hasProjectSource = sourceFiles.length > 0;
   const openPrdToolProject = await isOpenPrdToolProject(projectRoot);
@@ -859,6 +896,28 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
     }
     if (hasProjectSource && !openPrdToolProject && options.docsContent !== false && DOC_PLACEHOLDER_PATTERNS.some((pattern) => pattern.test(text))) {
       errors.push(`${relativePath} 仍包含模板占位内容，必须更新为当前项目事实。`);
+    }
+
+    if (options.docsQuality !== false) {
+      const quality = analyzeDocQuality(relativePath, text);
+      if (quality.megaLines > 0) {
+        warnings.push(`${relativePath} 存在 ${quality.megaLines} 行超过 ${DOC_MEGA_LINE_CHARS} 字符的巨行（最长 ${quality.maxLineChars} 字符），疑似 append-only 污染，建议运行 openprd docs-compact . 查看压缩建议。`);
+      }
+      if (quality.contentLines >= 10 && quality.avgLineChars > DOC_AVG_LINE_CHARS) {
+        warnings.push(`${relativePath} 平均行长 ${quality.avgLineChars} 字符（阈值 ${DOC_AVG_LINE_CHARS}），文档结构疑似退化为长段落堆叠，建议拆分为结构化小节。`);
+      }
+      if (doc.fileName === 'prd.md') {
+        const docStat = await fs.stat(docPath).catch(() => null);
+        if (docStat) {
+          const staleness = await analyzeDocStaleness(projectRoot, docStat.mtimeMs);
+          quality.versionsBehind = staleness.versionsBehind;
+          quality.totalVersions = staleness.totalVersions;
+          if (staleness.versionsBehind > DOC_STALE_VERSION_THRESHOLD) {
+            warnings.push(`${relativePath} 自上次更新后已产生 ${staleness.versionsBehind} 个 requirement 版本（阈值 ${DOC_STALE_VERSION_THRESHOLD}），基线 PRD 已陈旧，需要回填最新已确认需求。`);
+          }
+        }
+      }
+      docsQuality.push(quality);
     }
   }
 
@@ -901,6 +960,10 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
 
   checks.push(`Standards docs root: ${STANDARD_DOCS_ROOT.replaceAll(path.sep, '/')}`);
   checks.push(`Required docs: ${requiredDocs.filter((doc) => doc.exists).length}/${STANDARD_DOCS.length}.`);
+  if (docsQuality.length > 0) {
+    const pollutedDocs = docsQuality.filter((doc) => doc.megaLines > 0).length;
+    checks.push(`Docs quality: ${docsQuality.length} docs analyzed, ${pollutedDocs} with mega-lines > ${DOC_MEGA_LINE_CHARS} chars.`);
+  }
   checks.push(`Manual templates: ${templateFiles.filter((file) => file.exists).length}/${STANDARD_TEMPLATE_FILES.length}.`);
   const lineConfig = config?.developmentStandards?.codeFileLines ?? DEFAULT_DEVELOPMENT_STANDARDS.codeFileLines;
   checks.push(`Development standards: code files ok <= ${lineConfig.okMax} lines, attention <= ${lineConfig.attentionMax} lines.`);
@@ -916,6 +979,7 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
     warnings,
     checks,
     requiredDocs,
+    docsQuality,
     templateFiles,
     manualReport,
   };

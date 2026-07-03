@@ -622,7 +622,7 @@ async function buildEvidenceManifest(ws, snapshot, options = {}) {
   ];
 
   if (changeId) {
-    const changeRoot = path.join(ws.projectRoot, 'openprd', 'changes', changeId);
+    const changeRoot = path.join(ws.projectRoot, '.openprd', 'changes', changeId);
     candidateDefs.push(
       makeEvidenceCandidate({
         id: 'change-proposal',

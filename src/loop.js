@@ -550,7 +550,7 @@ async function syncLoopIsolationArtifacts(sourceRoot, targetRoot, options = {}) 
     LOOP_STATE,
     LOOP_BOOTSTRAP,
     RELEASE_LEDGER,
-    options.change ? path.join('openprd', 'changes', options.change) : null,
+    options.change ? path.join('.openprd', 'changes', options.change) : null,
   ].filter(Boolean);
   for (const relativePath of relativePaths) {
     if (await copyRelativePath(sourceRoot, targetRoot, relativePath, { force: Boolean(options.force) })) {

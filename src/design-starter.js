@@ -408,6 +408,7 @@ function buildGenericAssetSpec(context) {
 | logo | ${normalizePathForMarkdown(context.noBrandAssets ? '无外部 logo，优先用文字字标' : '待补品牌字标或官方 logo')} | ${context.noBrandAssets ? 'n/a' : '待确认'} | ${context.noBrandAssets ? 'not-needed' : 'defined'} | ${normalizePathForMarkdown(assetLine)} |
 | 产品图 | ${normalizePathForMarkdown(context.noBrandAssets ? '无' : '按任务需要补产品图')} | ${context.noBrandAssets ? 'n/a' : '待确认'} | ${context.noBrandAssets ? 'not-needed' : 'defined'} | ${normalizePathForMarkdown(imageLine)} |
 | UI 图 | ${normalizePathForMarkdown(context.starterId === 'ops-dashboard' ? '如需现有界面截图再补' : '无必需 UI 截图')} | ${context.starterId === 'ops-dashboard' ? '待确认' : 'n/a'} | ${context.starterId === 'ops-dashboard' ? 'defined' : 'not-needed'} |  |
+| 功能图标 | ${normalizePathForMarkdown('新入口/按钮/空态默认配图标；先复用项目已有图标体系，缺失时按最佳实践路由自动补')} | ${normalizePathForMarkdown('UI 图标 Phosphor；实现库 Lucide/Tabler/React Icons；AI 品牌 LobeHub；技术栈 Tech Icons')} | defined | 接入后把图标名与用途登记到本行备注，不等用户要求 |
 | 摄影 / 插图 | ${normalizePathForMarkdown(context.noRealImages ? '无' : '按任务需要补真实图片或插图')} | ${context.noRealImages ? 'n/a' : '待确认'} | ${context.noRealImages ? 'not-needed' : 'defined'} | ${normalizePathForMarkdown(imageLine)} |
 | 色板 / 字体 | ${normalizePathForMarkdown(`${context.defaults.theme ?? 'starter-default'} 对应的默认 tokens`)} | implementation | defined | 先锁定 starter 默认组合，再按页面细化 |
 | 动效节奏 | ${normalizePathForMarkdown('一段关键 reveal / 状态反馈 / 滚动节奏，按审美主张控制复杂度')} | implementation | defined | 不到处散落无意义 hover |

@@ -1,0 +1,458 @@
+{
+  "version": 1,
+  "candidateId": "candidate-eval-20260621153509",
+  "status": "pending-review",
+  "createdAt": "2026-06-26 19:47:08",
+  "updatedAt": "2026-07-04 00:07:59",
+  "sourceKind": "quality-report",
+  "sourceRef": "candidate-eval-20260621153509",
+  "evidenceOnly": false,
+  "title": "质量报告 eval-20260704000403",
+  "summary": "本轮围绕 14 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 18 条回顾信号。",
+  "categories": [
+    "hidden-debug-knowledge",
+    "agent-misjudgment",
+    "high-impact-fix"
+  ],
+  "reasons": [
+    "本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。",
+    "这次改动直接影响 Agent / harness / hook / skill 行为，后续很容易再次踩到同类判断问题。",
+    "这次修复已经带有验证或收尾证据，适合尽快抽象成项目级研发经验。"
+  ],
+  "touchedFiles": [
+    "test/openprd-quality-standards.test.js",
+    "test/openprd-dev-check.test.js",
+    "test/openprd-visual-evidence.test.js",
+    "src/agent-integration.js",
+    "src/agent-canonical-content.js",
+    "src/visual-compare.js",
+    "src/visual-compare-core.js",
+    "src/visual-compare-centering.js",
+    "src/openprd.js",
+    "src/cli/quality-commands.js",
+    "src/codex-hook-runner-template.mjs",
+    "docs/basic/backend-structure.md",
+    "docs/basic/file-structure.md",
+    ".openprd/standards/config.json"
+  ],
+  "touchedFileSource": "recent-signals",
+  "reviewSignals": [
+    {
+      "id": "doctor-green",
+      "kind": "doctor-green",
+      "at": "2026-07-04 00:07:59",
+      "ok": true,
+      "productionReady": null,
+      "attentionGates": [],
+      "summary": "doctor passed",
+      "touchedFiles": []
+    },
+    {
+      "id": "dev-check",
+      "kind": "dev-check",
+      "at": "2026-07-04 00:04:16",
+      "ok": true,
+      "productionReady": null,
+      "attentionGates": [],
+      "summary": "dev-check attention=7, warning=0",
+      "touchedFiles": [
+        "test/openprd-quality-standards.test.js",
+        "test/openprd-dev-check.test.js",
+        "test/openprd-visual-evidence.test.js",
+        "src/agent-integration.js",
+        "src/agent-canonical-content.js",
+        "src/visual-compare.js",
+        "src/visual-compare-core.js",
+        "src/visual-compare-centering.js",
+        "src/openprd.js",
+        "src/cli/quality-commands.js",
+        "src/codex-hook-runner-template.mjs",
+        "docs/basic/backend-structure.md",
+        "docs/basic/file-structure.md",
+        ".openprd/standards/config.json"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-04 00:04:04",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/agent-canonical-content.js",
+        "src/agent-integration.js",
+        "src/benchmark/constants.js",
+        "src/benchmark/operations.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-04 00:04:02",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/agent-canonical-content.js",
+        "src/agent-integration.js",
+        "src/benchmark/constants.js",
+        "src/benchmark/operations.js"
+      ]
+    },
+    {
+      "id": "dev-check",
+      "kind": "dev-check",
+      "at": "2026-07-04 00:00:08",
+      "ok": true,
+      "productionReady": null,
+      "attentionGates": [],
+      "summary": "dev-check attention=0, warning=0",
+      "touchedFiles": [
+        "src/codex-hook-runner-template.mjs"
+      ]
+    },
+    {
+      "id": "dev-check",
+      "kind": "dev-check",
+      "at": "2026-07-03 23:59:31",
+      "ok": true,
+      "productionReady": null,
+      "attentionGates": [],
+      "summary": "dev-check attention=1, warning=0",
+      "touchedFiles": [
+        "src/openprd.js"
+      ]
+    },
+    {
+      "id": "dev-check",
+      "kind": "dev-check",
+      "at": "2026-07-03 23:57:13",
+      "ok": true,
+      "productionReady": null,
+      "attentionGates": [],
+      "summary": "dev-check attention=2, warning=0",
+      "touchedFiles": [
+        "src/visual-compare.js",
+        "src/visual-compare-core.js",
+        "src/visual-compare-centering.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-03 23:19:56",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/agent-integration.js",
+        "src/benchmark/constants.js",
+        "src/benchmark/operations.js",
+        "src/benchmark/registry.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-03 23:19:21",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/agent-integration.js",
+        "src/benchmark/constants.js",
+        "src/benchmark/operations.js",
+        "src/benchmark/registry.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-03 23:18:57",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/agent-integration.js",
+        "src/benchmark/constants.js",
+        "src/benchmark/operations.js",
+        "src/benchmark/registry.js"
+      ]
+    },
+    {
+      "id": "dev-check",
+      "kind": "dev-check",
+      "at": "2026-07-03 23:18:44",
+      "ok": true,
+      "productionReady": null,
+      "attentionGates": [],
+      "summary": "dev-check attention=0, warning=3",
+      "touchedFiles": [
+        "src/dev-standards.js",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "src/cli/quality-print.js",
+        "src/codex-hook-runner-template.mjs",
+        "src/agent-integration.js",
+        "test/openprd-vibe-automation.test.js",
+        "test/openprd-quality-standards.test.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-03 18:55:53",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/agent-integration.js",
+        "src/benchmark/constants.js",
+        "src/benchmark/operations.js",
+        "src/benchmark/registry.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-03 18:54:17",
+      "ok": false,
+      "productionReady": false,
+      "attentionGates": [
+        "feature-coverage"
+      ],
+      "summary": "quality needs-attention",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/agent-integration.js",
+        "src/benchmark/constants.js",
+        "src/benchmark/operations.js",
+        "src/benchmark/registry.js"
+      ]
+    },
+    {
+      "id": "dev-check",
+      "kind": "dev-check",
+      "at": "2026-07-03 18:52:17",
+      "ok": true,
+      "productionReady": null,
+      "attentionGates": [],
+      "summary": "dev-check attention=1, warning=5",
+      "touchedFiles": [
+        "src/dev-standards.js",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "src/cli/args.js",
+        "src/openprd.js",
+        "src/cli/quality-print.js",
+        "src/visual-compare.js",
+        "src/design-starter.js",
+        "src/agent-integration.js",
+        "src/codex-hook-runner-template.mjs",
+        "test/openprd-vibe-automation.test.js",
+        "test/openprd-quality-standards.test.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-03 17:42:31",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/agent-integration.js",
+        "src/benchmark/constants.js",
+        "src/benchmark/operations.js",
+        "src/benchmark/registry.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-03 17:42:23",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/agent-integration.js",
+        "src/benchmark/constants.js",
+        "src/benchmark/operations.js",
+        "src/benchmark/registry.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-03 17:42:13",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/agent-integration.js",
+        "src/benchmark/constants.js",
+        "src/benchmark/operations.js",
+        "src/benchmark/registry.js"
+      ]
+    },
+    {
+      "id": "dev-check",
+      "kind": "dev-check",
+      "at": "2026-07-03 17:36:13",
+      "ok": true,
+      "productionReady": null,
+      "attentionGates": [],
+      "summary": "dev-check attention=0, warning=4",
+      "touchedFiles": [
+        "src/guide.js",
+        "src/canvas-workspace.js",
+        "src/canvas-app.html.js",
+        "src/canvas-i18n.js",
+        "src/html-artifacts.js",
+        "src/agent-integration.js",
+        "test/openprd-guide-canvas.test.js"
+      ]
+    }
+  ],
+  "abstraction": {
+    "triggerConditions": [
+      "本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。",
+      "这次改动直接影响 Agent / harness / hook / skill 行为，后续很容易再次踩到同类判断问题。",
+      "这次修复已经带有验证或收尾证据，适合尽快抽象成项目级研发经验。",
+      "doctor-green: doctor passed",
+      "dev-check: dev-check attention=7, warning=0 | touched: test/openprd-quality-standards.test.js, test/openprd-dev-check.test.js, test/openprd-visual-evidence.test.js, src/agent-integration.js, src/agent-canonical-content.js, src/visual-compare.js",
+      "quality-verify: quality production-ready | touched: README.md, package.json, scripts/dev-check-wrapup-copy.mjs, scripts/openprd-codex-isolated-worker.mjs, scripts/openprd-dev-check.mjs, scripts/openprd-github-release-notes.mjs",
+      "dev-check: dev-check attention=0, warning=0 | touched: src/codex-hook-runner-template.mjs",
+      "dev-check: dev-check attention=1, warning=0 | touched: src/openprd.js"
+    ],
+    "applicability": [
+      "抽象模式: 质量缺口反复出现，通常是因为可观测性、护栏、测试与复盘知识被分散维护，没有进入同一套项目级诊断闭环。",
+      "适用于项目源码或核心流程已经落地、需要把实现经验固化为项目知识的任务。",
+      "适用于本轮补过验证或测试夹具，后续同类需求需要同步复用验证方式的任务。",
+      "适用于这轮改动同时影响 docs/basic、CLI 契约或实现说明，需要把文档同步经验一起沉淀的任务。",
+      "特别适用于 Agent、hook、harness、quality 或 growth 工作流改动，避免下次再次靠聊天上下文兜底。"
+    ],
+    "verificationSteps": [
+      "doctor passed",
+      "dev-check attention=7, warning=0",
+      "quality production-ready",
+      "dev-check attention=0, warning=0",
+      "dev-check attention=1, warning=0",
+      "dev-check attention=2, warning=0",
+      "dev-check attention=0, warning=3",
+      "quality needs-attention"
+    ],
+    "typicalInputs": [
+      "任务场景: 质量门禁收口",
+      "相关文件: test/openprd-quality-standards.test.js、test/openprd-dev-check.test.js、test/openprd-visual-evidence.test.js、src/agent-integration.js、src/agent-canonical-content.js、src/visual-compare.js",
+      "已有证据类型: quality-report",
+      "验证信号: doctor-green、dev-check、quality-verify"
+    ],
+    "typicalOutputs": [
+      "项目经验候选与诊断包",
+      "待确认的项目经验草案",
+      "验证结论: doctor passed",
+      "可复用的验证链路与收尾动作"
+    ],
+    "antiPatterns": [
+      "如果只是文件名、路径或个别词相似，但当前目标和验证方式不同，不要直接套用。",
+      "如果当前任务还没进入验证或收尾阶段，不要把这条经验当成通用实现模板。",
+      "如果本轮已经有更新的现场证据，先核对新证据，再决定是否复用旧经验。"
+    ]
+  },
+  "files": {
+    "candidate": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260621153509/candidate.json",
+    "candidateDir": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260621153509",
+    "draftSkill": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260621153509/SKILL.md"
+  },
+  "suggestedLearnCommand": "openprd quality . --learn --from .openprd/knowledge/candidates/candidate-eval-20260621153509",
+  "fingerprint": "c9116c14fd10b319",
+  "occurrences": 27
+}

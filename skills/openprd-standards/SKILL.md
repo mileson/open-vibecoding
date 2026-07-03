@@ -15,7 +15,7 @@ OpenPrd standards 管三件事：
 - `.openprd/standards/file-manual-template.md` 定义的文件说明书规则
 - `.openprd/standards/folder-readme-template.md` 定义的文件夹 README 规则
 
-研发期还包含一个轻量标准层：`openprd dev-check <path> <file...>` 或 `node scripts/openprd-dev-check.mjs <path> <file...>`，用于 Agent 在代码修改完成后、最终回复前回顾本轮 touched code files 的行数状态和下一步动作建议。
+研发期还包含一个轻量标准层：`openprd dev-check <path> <file...>` 或 `node scripts/openprd-dev-check.mjs <path> <file...>`，用于 Agent 在代码修改完成后、最终回复前回顾本轮 touched code files 的行数状态和下一步动作建议。自动优化默认开启（`developmentStandards.autoRefactor.enabled`，`--auto-refactor on|off` 切换）：命中 attention/warning 时 Agent 在本轮直接完成高内聚低耦合拆分（不丢功能、行为不变、拆完重跑测试与 dev-check），最终回复以“OpenPRD 自动优化报告”呈现优化完成的结果（列：影响对象、问题级别、源文件规模、优化原因、本次处理结果、后续建议）并附开关确认一句话；关闭后回到“后续建议”推荐模式（列名回到关注程度、规模信号、预警原因）。dev-check 同时检测本轮是否触达界面文件：最近 24 小时没有拼图证据板时输出视觉证据提醒，附建议命令与对话流嵌入提示。
 
 自我成长标准层位于 `.openprd/growth/`：当 dev-check 高置信识别出新的代码扩展名时，可自动补齐识别规则并记录，减少后续重复提醒；执行中发现豁免路径、项目规矩、OpenPrd 默认行为或用户偏好需要增量时，先记录候选，收工时再运行 `openprd grow <path> --review` 集中确认。
 
@@ -48,7 +48,7 @@ OpenPrd standards 要求以下文档存在：
 ## 执行规则
 
 - 声称某个 change 就绪前，先运行 `openprd standards <path> --verify`
-- 代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 `openprd dev-check <path> <file...>`；700 行以内正常，701-1500 行需留意，超过 1500 行说明后续改动成本较高。若出现需要关注的文件，最终回复必须以 **后续建议** 为标题，用 Markdown 表格列出影响位置、关注程度、规模信号、为什么需要关注、本次处理和后续建议，并按 🔴 → 🟠 → 🟡 排序
+- 代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 `openprd dev-check <path> <file...>`；700 行以内正常，701-1500 行需留意，超过 1500 行说明后续改动成本较高。自动优化开启（默认）时，命中需要关注的文件先在本轮直接完成拆分，再以 **OpenPRD 自动优化报告** 为标题复用 dev-check 表格（列：影响对象、问题级别、源文件规模、优化原因、本次处理结果、后续建议）并附开关确认；用户要求关闭后运行 `openprd dev-check <path> --auto-refactor off`，之后以 **后续建议** 为标题输出推荐表格（列名回到关注程度、规模信号、预警原因）。两种模式都按 🔴 → 🟠 → 🟡 排序
 - dev-check 或执行过程产生自我成长项时，区分处理：高置信工具识别补全可以自动固化；用户偏好、项目协作规矩和 OpenPrd 默认行为只作为待确认候选，收工时集中 review
 - 新增配置类能力时同步评审 grow-aware 入口：候选类型、scope、review/apply 行为、拒绝后不重复提示，以及 user-local 与项目共享配置的边界
 - OpenPrd 自动生成的 change tasks 应包含 standards 维护任务
@@ -61,6 +61,8 @@ OpenPrd standards 要求以下文档存在：
 - 功能变更影响代码文件职责时，更新对应文件说明书
 - 功能变更影响文件夹职责或文件布局时，更新对应文件夹 README
 - 如果最终不需要改文档，也要说明已经做过影响检查，以及为什么现有文档依然准确
+- 更新 `docs/basic/` 时禁止 append-only 堆叠：同一事实只保留一处最新版本，过时段落直接删除或改写，不要写“更新：/补充：”式追加；单行不要超过 300 字符，长内容拆成分点或小节
+- `openprd standards <path> --verify` 会做文档质量体检：出现巨行（>300 字符）、平均行长退化（>200 字符）或 `prd.md` 落后超过 20 个 requirement 版本的警告时，先运行 `openprd docs-compact <path>` 查看按行号给出的压缩建议，压缩回填后再收口
 
 ## 文档影响检查
 

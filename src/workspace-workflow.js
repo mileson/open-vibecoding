@@ -5,7 +5,7 @@ import { analyzePrdSnapshot, buildPrdSnapshot, diffSnapshots, formatVersionId, r
 import { formatProductTypeDisplay, formatProductTypeOptions, formatProductTypeQuestion, formatProductTypeSentence, formatTemplatePackDisplay } from './product-type-copy.js';
 import { getDiagramReviewState } from './diagram-workspace.js';
 import { exists, parseYamlText, readJson, readText, writeJson, writeText } from './fs-utils.js';
-import { artifactBundlePaths, canonicalReviewPath, defaultReviewArtifactPath, openArtifactInBrowser, renderPlaygroundArtifact, renderPlaygroundMarkdown, renderPlaygroundPatch, renderReviewArtifact, renderReviewEntryHtml, writeHtmlArtifact } from './html-artifacts.js';
+import { artifactBundlePaths, canonicalReviewPath, defaultReviewArtifactPath, openArtifactInBrowser, renderPlaygroundArtifact, renderPlaygroundMarkdown, renderPlaygroundPatch, renderReviewArtifact, renderReviewEntryHtml, reviewDesignDirections, writeHtmlArtifact } from './html-artifacts.js';
 import { buildReleaseLedgerSummary } from './release-ledger.js';
 import { assertReviewPresentationReady, getReviewPresentationGate } from './review-presentation.js';
 import { syncSessionBindingFromReview, syncSessionBindingFromSnapshot } from './session-binding.js';
@@ -1765,6 +1765,44 @@ async function reviewWorkspace(projectRoot, options = {}) {
       requiredCommand: presentationGate.requiredCommand,
     };
   }
+  let selectedDesignDirection = null;
+  if (options.direction) {
+    if (!options.mark) {
+      return {
+        ok: false,
+        action: 'review',
+        projectRoot,
+        versionId: snapshot.versionId,
+        workUnitId: snapshot.workUnitId ?? null,
+        status: 'blocked',
+        errors: ['--direction 需要配合 --mark 一起使用，例如 --mark confirmed --direction direction-1。'],
+      };
+    }
+    const directions = reviewDesignDirections(snapshot)?.directions ?? [];
+    const found = directions.find((item) => `${item?.id ?? ''}`.trim() === `${options.direction}`.trim());
+    if (!found) {
+      return {
+        ok: false,
+        action: 'review',
+        projectRoot,
+        versionId: snapshot.versionId,
+        workUnitId: snapshot.workUnitId ?? null,
+        status: 'blocked',
+        errors: [
+          directions.length === 0
+            ? '当前版本没有 designDirections 交互方向，无法记录 --direction 选择。'
+            : `未找到交互方向 ${options.direction}；可选: ${directions.map((item) => item?.id).filter(Boolean).join(', ')}。`,
+        ],
+      };
+    }
+    selectedDesignDirection = {
+      id: `${found.id}`.trim(),
+      title: `${found.title ?? found.id}`.trim(),
+      image: found.image ?? null,
+      selectedAt: timestamp(),
+    };
+  }
+
   const reviewFiles = await writeReviewFiles(ws, snapshot, { writeEntry: isLatest });
   const bindingBefore = await readWorkUnitBinding(ws, snapshot.workUnitId);
   const before = isLatest
@@ -1796,6 +1834,10 @@ async function reviewWorkspace(projectRoot, options = {}) {
           stableArtifact: reviewFiles.canonicalReview,
           updatedAt: timestamp(),
           notes: options.notes ?? null,
+          designDirection: selectedDesignDirection
+            ?? (ws.data.currentState?.reviewStatus?.versionId === snapshot.versionId
+              ? ws.data.currentState?.reviewStatus?.designDirection ?? null
+              : null),
         },
       };
       await persistWorkspaceCurrentState(ws, currentState);
@@ -1811,11 +1853,13 @@ async function reviewWorkspace(projectRoot, options = {}) {
       versionId: snapshot.versionId,
       workUnitId: snapshot.workUnitId ?? null,
       status,
+      designDirection: selectedDesignDirection?.id ?? null,
     });
     await appendProgress(ws, [
       `PRD 评审状态: ${status}。`,
       `版本: ${snapshot.versionId}。`,
       snapshot.workUnitId ? `工作单元: ${snapshot.workUnitId}。` : null,
+      selectedDesignDirection ? `选定交互方向: ${selectedDesignDirection.id}（${selectedDesignDirection.title}）。` : null,
     ]);
     await syncSessionBindingFromReview(projectRoot, snapshot, {
       sessionId: ws.data.currentSessionId ?? null,
@@ -1849,6 +1893,7 @@ async function reviewWorkspace(projectRoot, options = {}) {
     status: after.status,
     previousStatus: before.status,
     marked,
+    designDirection: selectedDesignDirection ?? null,
     reviewArtifact: after.entryArtifact ?? reviewFiles.activeReviewEntry,
     stableReviewArtifact: after.artifact,
     reviewPath: after.artifact,

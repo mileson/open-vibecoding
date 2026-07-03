@@ -33,7 +33,8 @@ import { doctorOpenPrdAgentIntegration, setupOpenPrdAgentIntegration, updateOpen
 import { finishLoopWorkspace, initLoopWorkspace, nextLoopWorkspace, planLoopWorkspace, promptLoopWorkspace, runLoopWorkspace, statusLoopWorkspace, verifyLoopWorkspace } from './loop.js';
 import { timestamp } from './time.js';
 import { parseCommandArgs, usage } from './cli/args.js';
-import { printAcceptedSpecsResult, printAgentIntegrationResult, printBenchmarkResult, printBrainstormResult, printCaptureResult, printClarifyResult, printClassifyResult, printDesignStarterResult, printDevelopmentStandardsResult, printDiagramResult, printDiffResult, printDoctorResult, printFleetResult, printFreezeResult, printGrowthResult, printHandoffResult, printHistoryResult, printInitResult, printInterviewResult, printKnowledgeResult, printLearningResult, printLoopResult, printNextResult, printOpenPrdChangeActionResult, printOpenPrdChangesResult, printOpenSpecChangeValidationResult, printOpenSpecDiscoveryResult, printOpenSpecGenerateResult, printOpenSpecTaskResult, printPlaygroundResult, printQualityResult, printReleaseResult, printReviewResult, printRunResult, printSelfUpdateResult, printStandardsResult, printStatus, printSynthesizeResult, printUpgradeResult, printValidation, printVisualCompareResult, printVisualPrepareResult } from './cli/print.js';
+import { runQualityCommand } from './cli/quality-commands.js';
+import { printAcceptedSpecsResult, printAgentIntegrationResult, printBenchmarkResult, printBrainstormResult, printCanvasResult, printCaptureResult, printClarifyResult, printClassifyResult, printDesignStarterResult, printDevelopmentStandardsResult, printDiagramResult, printDiffResult, printDoctorResult, printFleetResult, printFreezeResult, printGrowthResult, printHandoffResult, printHistoryResult, printInitResult, printInterviewResult, printKnowledgeResult, printLearningResult, printLoopResult, printNextResult, printOpenPrdChangeActionResult, printOpenPrdChangesResult, printOpenSpecChangeValidationResult, printOpenSpecDiscoveryResult, printOpenSpecGenerateResult, printOpenSpecTaskResult, printPlaygroundResult, printQualityResult, printReleaseResult, printReviewResult, printRunResult, printSelfUpdateResult, printStandardsResult, printStatus, printSynthesizeResult, printUpgradeResult, printValidation, printVisualCompareResult, printVisualPrepareResult } from './cli/print.js';
 import { cjoin, exists, readJson, writeJson, writeText, writeYaml } from './fs-utils.js';
 import { diagramWorkspace } from './diagram-workspace.js';
 import { createOpenSpecDiscoveryWorkspace } from './discovery.js';
@@ -64,6 +65,7 @@ import {
 import { brainstormWorkspace } from './brainstorm.js';
 import { buildBrainstormPresentationTemplatePayload, brainstormPresentationWorkspace } from './brainstorm-presentation.js';
 import { designStarterWorkspace } from './design-starter.js';
+import { canvasWorkspace } from './canvas-workspace.js';
 import { buildReviewPresentationTemplatePayload, reviewPresentationWorkspace } from './review-presentation.js';
 import { analyzeWorkspaceRegistryHygiene } from './registry-hygiene.js';
 import { syncSessionBindingFromChange } from './session-binding.js';
@@ -191,7 +193,16 @@ async function setupAgentIntegrationWorkspace(projectRoot, options = {}) {
     platform: options.platform,
     hookProfile: options.hookProfile,
   });
-  return { ...agentIntegration, initialized: false, migration, standards, quality, growth };
+  return {
+    ...agentIntegration,
+    ok: agentIntegration.ok && migration.ok,
+    initialized: false,
+    migration,
+    standards,
+    quality,
+    growth,
+    errors: [...(agentIntegration.errors ?? []), ...(migration.errors ?? [])],
+  };
 }
 
 async function updateAgentIntegrationWorkspace(projectRoot, options = {}) {
@@ -209,7 +220,15 @@ async function updateAgentIntegrationWorkspace(projectRoot, options = {}) {
     platform: options.platform,
     hookProfile: options.hookProfile,
   });
-  return { ...agentIntegration, migration, standards, quality, growth };
+  return {
+    ...agentIntegration,
+    ok: agentIntegration.ok && migration.ok,
+    migration,
+    standards,
+    quality,
+    growth,
+    errors: [...(agentIntegration.errors ?? []), ...(migration.errors ?? [])],
+  };
 }
 
 async function doctorWorkspace(projectRoot, options = {}) {
@@ -917,139 +936,34 @@ export async function main(argv = process.argv.slice(2)) {
       return result.ok ? 0 : 1;
     }
 
-    if (command === 'standards') {
-      const result = flags.init
-        ? await initStandardsWorkspace(projectPath, { force: flags.force })
-        : flags.classifyExternal !== null
-          ? await classifyExternalReferenceWorkspace(projectPath, { externalReference: flags.classifyExternal })
-          : await checkStandardsWorkspace(projectPath);
-      printStandardsResult(result, flags.json);
-      return result.ok ? 0 : 1;
-    }
-
-    if (command === 'quality') {
-      const result = await qualityWorkspace(projectPath, {
-        init: flags.init,
-        verify: flags.verify,
-        report: flags.report,
-        html: flags.html,
-        learn: Boolean(flags.learn),
-        review: flags.review,
-        from: flags.from,
-        force: flags.force,
-      });
-      printQualityResult(result, flags.json);
-      return result.ok ? 0 : 1;
-    }
-
-    if (command === 'knowledge') {
-      const subcommand = positionals[0] ?? 'candidates';
-      const firstArgIsProjectPath = !flags.path && positionals.length > 1 && await isDirectoryPath(positionals[1]);
-      const knowledgeProjectPath = path.resolve(flags.path ?? (firstArgIsProjectPath ? positionals[1] : process.cwd()));
-      let result;
-      if (subcommand === 'candidates' || subcommand === 'list') {
-        result = await listKnowledgeCandidates(knowledgeProjectPath, {
-          status: flags.status ?? 'pending-review',
-        });
-      } else if (subcommand === 'reject') {
-        result = await rejectKnowledgeCandidate(knowledgeProjectPath, {
-          id: flags.id ?? positionals[1] ?? null,
-          reason: flags.reason ?? flags.notes,
-        });
-      } else if (subcommand === 'archive') {
-        result = await archiveKnowledgeCandidate(knowledgeProjectPath, {
-          id: flags.id ?? positionals[1] ?? null,
-          reason: flags.reason ?? flags.notes,
-        });
-      } else if (subcommand === 'restore') {
-        result = await restoreKnowledgeCandidate(knowledgeProjectPath, {
-          id: flags.id ?? positionals[1] ?? null,
-        });
-      } else {
-        console.log('Usage: openprd knowledge <candidates|reject|archive|restore> [path-or-id] [--status <pending-review|all|rejected|archived|promoted|merged>] [--id <candidate-id>] [--reason <text>] [--json]');
-        return 1;
-      }
-      printKnowledgeResult(result, flags.json);
-      return result.ok ? 0 : 1;
-    }
-
-    if (command === 'visual-prepare') {
-      const result = await visualPrepareWorkspace(projectPath, {
-        reference: flags.reference,
-        grid: flags.grid,
-        boxes: flags.boxes,
-        include: flags.include,
+    if (command === 'canvas') {
+      const result = await canvasWorkspace(projectPath, {
+        thread: flags.thread,
+        threadTitle: flags.threadTitle,
+        conversationTitle: flags.conversationTitle,
+        session: flags.session,
+        sessionTitle: flags.sessionTitle,
+        host: flags.host,
+        port: flags.port,
+        daemon: flags.daemon,
+        stop: flags.stop,
+        bridgeOutbox: flags.bridgeOutbox,
+        bridgeSent: flags.bridgeSent,
+        bridgeFailed: flags.bridgeFailed,
+        claim: flags.claim,
         id: flags.id,
-        title: flags.title,
-        out: flags.out,
+        reason: flags.reason,
+        open: flags.open,
+        openTarget: flags.openTarget,
+        dryRun: flags.dryRun,
       });
-      printVisualPrepareResult(result, flags.json);
+      printCanvasResult(result, flags.json);
       return result.ok ? 0 : 1;
     }
 
-    if (command === 'visual-compare') {
-      const result = await visualCompareWorkspace(projectPath, {
-        reference: flags.reference,
-        actual: flags.actual,
-        before: flags.before,
-        after: flags.after,
-        board: flags.board,
-        out: flags.out,
-        format: flags.format,
-        quality: flags.quality,
-        maxPanelWidth: flags.maxPanelWidth,
-        referenceLabel: flags.referenceLabel,
-        actualLabel: flags.actualLabel,
-        locale: flags.locale,
-      });
-      printVisualCompareResult(result, flags.json);
-      return result.ok ? 0 : 1;
-    }
-
-    if (command === 'design-starter') {
-      const result = await designStarterWorkspace(projectPath, {
-        starter: flags.starter,
-        out: flags.out,
-        title: flags.title,
-        brief: flags.brief,
-        sections: flags.sections,
-        noExternalFacts: flags.noExternalFacts,
-        noBrandAssets: flags.noBrandAssets,
-        noRealImages: flags.noRealImages,
-        force: flags.force,
-      });
-      printDesignStarterResult(result, flags.json);
-      return result.ok ? 0 : 1;
-    }
-
-    if (command === 'grow') {
-      const firstArgIsProjectPath = !flags.path && positionals.length > 0 && await isDirectoryPath(positionals[0]);
-      const growthProjectPath = path.resolve(flags.path ?? (firstArgIsProjectPath ? positionals[0] : process.cwd()));
-      let result;
-      if (flags.init) {
-        result = await initGrowthWorkspace(growthProjectPath);
-      } else if (flags.apply) {
-        result = await applyGrowthCandidateWorkspace(growthProjectPath, { id: flags.id });
-      } else if (flags.reject) {
-        result = await rejectGrowthCandidateWorkspace(growthProjectPath, { id: flags.id, notes: flags.notes });
-      } else if (flags.check) {
-        result = await checkGrowthWorkspace(growthProjectPath);
-      } else {
-        result = await reviewGrowthWorkspace(growthProjectPath);
-      }
-      printGrowthResult(result, flags.json);
-      return result.ok ? 0 : 1;
-    }
-
-    if (command === 'dev-check') {
-      const firstArgIsProjectPath = !flags.path && positionals.length > 1 && await isDirectoryPath(positionals[0]);
-      const devProjectPath = path.resolve(flags.path ?? (firstArgIsProjectPath ? positionals[0] : process.cwd()));
-      const files = flags.path
-        ? positionals
-        : (firstArgIsProjectPath ? positionals.slice(1) : positionals);
-      const result = await checkDevelopmentStandardsWorkspace(devProjectPath, { files });
-      printDevelopmentStandardsResult(result, flags.json);
-      return result.ok ? 0 : 1;
+    const qualityCommandExit = await runQualityCommand(command, { projectPath, flags, positionals });
+    if (qualityCommandExit !== null) {
+      return qualityCommandExit;
     }
 
     if (command === 'benchmark') {
@@ -1192,6 +1106,7 @@ export async function main(argv = process.argv.slice(2)) {
         version: flags.version,
         digest: flags.digest,
         workUnit: flags.workUnit,
+        direction: flags.direction,
       });
       printReviewResult(result, flags.json);
       return result.ok ? 0 : 1;
@@ -1475,6 +1390,7 @@ export {
   fleetWorkspace,
   backfillWorkUnitsWorkspace,
   runWorkspace,
+  canvasWorkspace,
   initLoopWorkspace,
   planLoopWorkspace,
   statusLoopWorkspace,

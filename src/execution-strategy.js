@@ -85,7 +85,7 @@ function inferParallelGroup(text, type, phase) {
 
 function inferWriteScope(parallelGroup) {
   const scopeByGroup = {
-    governance: ['openprd/changes/**', '.openprd/**'],
+    governance: ['.openprd/changes/**', '.openprd/**'],
     contracts: ['src/**', 'test/**', 'docs/basic/backend-structure.md'],
     domain: ['src/**', 'test/**'],
     surface: ['src/cli/**', 'src/**', 'test/**'],

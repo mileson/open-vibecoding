@@ -3,7 +3,7 @@ import path from 'node:path';
 import { analyzePrdSnapshot, buildPrdSnapshot, formatVersionId } from './prd-core.js';
 import { formatProductTypeDisplay } from './product-type-copy.js';
 import { analyzeOpenSpecTaskVolumes } from './openspec/tasks.js';
-import { legacyOpenSpecDiscoveryDir, openPrdDiscoveryDir, readDiscoveryConfig } from './openspec/paths.js';
+import { openPrdDiscoveryDir, readDiscoveryConfig } from './openspec/paths.js';
 import { appendJsonl, cjoin, exists, readJson, readJsonl, writeJson, writeText } from './fs-utils.js';
 import { collectSourceInventory, shouldIgnoreSourceDirectory } from './source-inventory.js';
 import { compactTimestamp, timestamp } from './time.js';
@@ -391,13 +391,7 @@ async function openspecDiscoveryWorkspaceImpl(projectRoot, options = {}, depende
 }
 
 async function loadOpenSpecDiscoveryRun(projectRoot) {
-  let discoveryRoot = openPrdDiscoveryDir(projectRoot);
-  if (!(await exists(cjoin(discoveryRoot, 'current.json')))) {
-    const legacyRoot = legacyOpenSpecDiscoveryDir(projectRoot);
-    if (await exists(cjoin(legacyRoot, 'current.json'))) {
-      discoveryRoot = legacyRoot;
-    }
-  }
+  const discoveryRoot = openPrdDiscoveryDir(projectRoot);
   const currentPath = cjoin(discoveryRoot, 'current.json');
   if (!(await exists(currentPath))) {
     throw new Error(`Missing OpenPrd discovery state: ${currentPath}`);

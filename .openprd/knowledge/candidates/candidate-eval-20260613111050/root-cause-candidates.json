@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Inspect src/codex-hook-runner-template.mjs"
+  },
+  {
+    "title": "Inspect src/agent-integration.js"
+  },
+  {
+    "title": "Inspect test/requirement-gate.test.js"
+  },
+  {
+    "title": "Inspect test/openprd-agent-integration.test.js"
+  }
+]

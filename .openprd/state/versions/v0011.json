@@ -1,0 +1,184 @@
+{
+  "versionNumber": 11,
+  "versionId": "v0011",
+  "createdAt": "2026-07-03 18:27:40",
+  "projectRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "workspaceRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd",
+  "schema": "prd-core",
+  "templatePack": "agent",
+  "productType": "agent",
+  "title": "PM 流程引导与画布评审协同（Human-in-the-loop 升级）",
+  "owner": "Codex",
+  "status": "synthesized",
+  "sections": {
+    "meta": {
+      "title": "PM 流程引导与画布评审协同（Human-in-the-loop 升级）",
+      "owner": "Codex",
+      "status": "synthesized",
+      "version": "v0011",
+      "productType": "agent",
+      "date": "2026-07-03"
+    },
+    "problem": {
+      "problemStatement": "OpenPrd 三项 Vibe Coding 自动化能力不足：1) dev-check 超行提醒停留在后续建议表格，用户不知如何处理，价值鸡肋；2) 开发新功能时图标最佳实践路由几乎从不自动触发（415 个图标相关会话仅 1 次真实接入图标库）；3) 拼图/网格对齐证据板真实触发率低，证据图不在对话流中可视化，AI 自我审查作用未发挥。",
+      "whyNow": "用户明确反馈不少人用了 OpenPrd 觉得疑惑它到底是干嘛的，希望有一套软件工程视角的标准流程引导；画布做了一半，需要继续对标白板工具补齐人机协同能力。",
+      "evidence": [
+        "moticlaw docs/basic 平均行长 440-477 字符、37 行超 500 字符；.openprd 总 5.8GB，quality/reports 5118 份；artifacts/active 280 个版本目录、archive 为 0；对照组 ClipReady/gifeasy 年轻项目文档健康。"
+      ]
+    },
+    "users": {
+      "primaryUsers": [
+        "用 Vibe Coding 方式做产品的产品经理"
+      ],
+      "secondaryUsers": [],
+      "stakeholders": [
+        "OpenPrd 维护者",
+        "在脏仓库或长程任务中依赖 loop 的项目协作者"
+      ]
+    },
+    "goals": {
+      "goals": [
+        "产品经理任何时刻都能一眼看到自己处在 7 步标准流程的哪一步和下一步动作",
+        "画布接入评审方向导入与流程位置提示，让 PM 在白板上完成方向标注并把结论发回 Agent"
+      ],
+      "successMetrics": [
+        "openprd guide 在需求前/评审中/实现中/收口后各阶段输出正确的当前步骤与下一步",
+        "review.html 顶部展示流程位置条",
+        "画布可一键导入当前评审的 designDirections 方向图卡片"
+      ],
+      "acceptanceGoals": [
+        "在 openprd 自身仓库通过单元测试与 standards/quality/run verify；用 Codex CLI 在本地跑一个桌面任务实测新流程效果并留下证据。"
+      ]
+    },
+    "validation": {
+      "community": [],
+      "seedUsers": [],
+      "communityFit": [],
+      "currentAlternative": null,
+      "painEvidence": [],
+      "manualPath": [],
+      "manualPlaybook": [],
+      "commitmentSignals": [],
+      "firstValidationStep": "synthesize 生成 PRD 与 review.html 后走 change/tasks，再按任务实现并用 Codex CLI 本地桌面任务实测。",
+      "defaultAlivePlan": [],
+      "paymentProof": [],
+      "mvpSlice": null,
+      "weekendTest": null,
+      "smallestExecution": [],
+      "productizeGate": [],
+      "firstCustomerPath": [],
+      "pricingHypothesis": null,
+      "customerOneProfitability": null,
+      "growthDiscipline": [],
+      "reversibility": null,
+      "customerTruth": null,
+      "valuesFit": null
+    },
+    "scope": {
+      "inScope": [
+        "dev-check 自动重构模式：默认开启，命中 attention/warning 时指示 Agent 本轮直接执行高内聚低耦合拆分（不丢功能），输出改为本次额外处理结果，并支持 --auto-refactor on/off 开关与收口确认话术",
+        "图标最佳实践自动触发：asset-spec 增加功能图标行，design-starter/skills/catalog/hook 把新功能自动配图标写为默认行为",
+        "拼图证据板强化：visual-compare 输出对话流嵌入 markdown，dev-check 对 UI 文件补视觉证据提醒，skills/catalog 把网格对齐证据板写为界面布局场景默认动作"
+      ],
+      "outOfScope": [
+        "画布实时多人协作",
+        "重写画布为独立前端工程",
+        "改动 Codex 线程桥接协议"
+      ]
+    },
+    "scenarios": {
+      "primaryFlows": [
+        "PM 打开终端或让 Agent 运行 openprd guide，看到 7 步流程和当前位置，按提示进入下一步",
+        "PM 打开 review.html，顶部流程条显示当前在评审确认步；确认后进入方向选择",
+        "PM 打开画布点导入评审方向，3 个方向图变成卡片，圈选标注后用发送给 Codex 把结论发回"
+      ],
+      "edgeCases": [
+        "工作区还没有任何需求版本时 guide 显示第 1 步并给出起步动作",
+        "当前评审没有 designDirections 时画布导入按钮提示暂无可导入方向"
+      ],
+      "failureModes": [
+        "方向图片文件缺失时导入跳过该方向并提示，不中断其他方向导入"
+      ]
+    },
+    "requirements": {
+      "functional": [
+        "guide 命令基于工作区状态推断 7 步流程位置",
+        "review.html 渲染 stepper",
+        "canvas /api/review-directions 返回方向元数据与图片",
+        "canvas 前端导入方向卡片组"
+      ],
+      "nonFunctional": [
+        "不新增外部依赖",
+        "guide 与画布 API 只读工作区状态，不写状态",
+        "全部文案用 PM 能看懂的普通语言"
+      ],
+      "businessRules": [
+        "designDirections 仅在需求被判定涉及界面场景时要求；方向选定必须以 user-confirmed 来源写回；落选方向归档不删除。"
+      ]
+    },
+    "businessGuardrails": {
+      "costDrivers": [
+        "imagegen 每方向一次调用，共 3 次；报告清理为本地文件操作无外部成本。"
+      ],
+      "usageLimits": [
+        "docs-compact 单次只处理 docs/basic 下的标准文档；retention 默认保留最近 30 份报告可配置。"
+      ],
+      "abusePrevention": [
+        "docs-compact 重写稿默认写到 sibling draft 待确认，不直接覆盖原文档；retention 不触碰 evidence 目录中被 latest 报告引用的文件。"
+      ],
+      "monitoringSignals": [
+        "standards verify 输出 docsQuality 结果；doctor 输出 .openprd 体积与报告数量提示。"
+      ],
+      "alertThresholds": [
+        "单行超 300 字符 warning；prd.md 落后最新版本超过 20 个版本 warning；quality/reports 超过 200 份提示清理。"
+      ],
+      "stopLossActions": [
+        "任一清理动作失败即中止并保留原状；归档失败回退为仅提示不移动。"
+      ]
+    },
+    "constraints": {
+      "technical": [
+        "改动集中在 src/standards.js、src/quality.js、src/openspec/change-lifecycle.js、src/review-presentation.js、src/html-artifacts.js，新增 src/docs-compact.js；skills 生成源同步 openprd-shared / openprd-frontend-design / command-catalog。"
+      ],
+      "compliance": [
+        "提交与状态写回不能泄露用户本地无关改动或敏感信息。"
+      ],
+      "dependencies": [
+        "Codex 原生 imagegen（生成 3 方向交互稿图片）；现有 review artifact 渲染与 hash 校验管线。"
+      ]
+    },
+    "risks": {
+      "assumptions": [
+        "imagegen 由 Codex 原生 Image 2 提供，OpenPrd 只消费图片路径；review.html 静态打开，选择结果通过现有 canvas/browser handoff 或 review --mark 通道回传；巨行阈值默认 300 字符可配置。"
+      ],
+      "risks": [
+        "流程步骤定义与既有 lane/gate 概念不完全一一对应，guide 只做展示层推断，不改门禁行为"
+      ],
+      "openQuestions": [
+        "画布方向卡片是否需要内置投票/评分组件，留到下一轮看使用反馈"
+      ]
+    },
+    "handoff": {
+      "owner": "Codex",
+      "nextStep": "synthesize 生成 PRD 与 review.html 后走 change/tasks，再按任务实现并用 Codex CLI 本地桌面任务实测。",
+      "targetSystem": "openprd CLI 自身仓库（harness-engineer/openprd）。"
+    },
+    "typeSpecific": {
+      "kind": "agent",
+      "title": "Agent 使用场景专项",
+      "fields": {
+        "humanAgentContract": "用户决定是否进入 loop、是否要求 commit、是否接受 override；Agent 负责在安全前提下创建隔离执行环境，并维护状态与证据闭环。",
+        "autonomyBoundary": "Agent 可以在 loop 运行前准备 worktree、检查脏状态并收集 touched files，但不能在用户未授权 commit 的情况下自动提交，也不能在高风险脏仓库里静默绕过门禁。",
+        "toolBoundary": "优先使用本地 Git 与 OpenPrd loop 状态完成这次能力，不引入新的远端托管或发布前置依赖。",
+        "stateModel": "change 进入 loop 后，先绑定隔离执行环境，再逐任务 run / verify / finish / commit，并把 worktree、branch、commit 与测试报告写回同一条状态链。",
+        "evalPlan": "通过 loop 单测、worktree / dirty repo 场景测试、状态持久化测试，以及一次真实隔离 worktree 的串行回归验证这次改动。"
+      }
+    }
+  },
+  "reviewPresentation": null,
+  "reviewPresentationMeta": null,
+  "workUnitId": "wu-20260703182740-23297ef0",
+  "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "content": "# PM 流程引导与画布评审协同（Human-in-the-loop 升级）\n> 语言规则：用户可见说明、PRD、spec 和 tasks 跟随用户当前主语言；无法判断时才使用简体中文兜底。PRD、OpenPrd、OpenSpec、API、SDK、CLI、TypeScript、JSON、HTTP、WebSocket、字段 key、命令名、品牌名、产品名和协议名等必要专有名词保留原文。\n- 版本: v0011\n- 负责人: Codex\n- 产品场景: 以 Agent 为主要使用场景\n- 场景模板: 以 Agent 为主要使用场景\n- 状态: synthesized\n- 生成时间: 2026-07-03 18:27:40\n## 元信息\n\n- 标题: PM 流程引导与画布评审协同（Human-in-the-loop 升级）\n- 负责人: Codex\n- 状态: synthesized\n- 版本: v0011\n- 产品场景: 以 Agent 为主要使用场景\n- 日期: 2026-07-03\n\n## 问题\n\n- 问题陈述: OpenPrd 三项 Vibe Coding 自动化能力不足：1) dev-check 超行提醒停留在后续建议表格，用户不知如何处理，价值鸡肋；2) 开发新功能时图标最佳实践路由几乎从不自动触发（415 个图标相关会话仅 1 次真实接入图标库）；3) 拼图/网格对齐证据板真实触发率低，证据图不在对话流中可视化，AI 自我审查作用未发挥。\n- 为什么是现在: 用户明确反馈不少人用了 OpenPrd 觉得疑惑它到底是干嘛的，希望有一套软件工程视角的标准流程引导；画布做了一半，需要继续对标白板工具补齐人机协同能力。\n- 证据:\n  - moticlaw docs/basic 平均行长 440-477 字符、37 行超 500 字符；.openprd 总 5.8GB，quality/reports 5118 份；artifacts/active 280 个版本目录、archive 为 0；对照组 ClipReady/gifeasy 年轻项目文档健康。\n\n## 用户与相关方\n\n- 主要用户:\n  - 用 Vibe Coding 方式做产品的产品经理\n- 次要用户:\n  - 待补充\n- 相关方:\n  - OpenPrd 维护者\n  - 在脏仓库或长程任务中依赖 loop 的项目协作者\n\n## 目标与成功标准\n\n- 目标:\n  - 产品经理任何时刻都能一眼看到自己处在 7 步标准流程的哪一步和下一步动作\n  - 画布接入评审方向导入与流程位置提示，让 PM 在白板上完成方向标注并把结论发回 Agent\n- 成功指标:\n  - openprd guide 在需求前/评审中/实现中/收口后各阶段输出正确的当前步骤与下一步\n  - review.html 顶部展示流程位置条\n  - 画布可一键导入当前评审的 designDirections 方向图卡片\n- 验收目标:\n  - 在 openprd 自身仓库通过单元测试与 standards/quality/run verify；用 Codex CLI 在本地跑一个桌面任务实测新流程效果并留下证据。\n\n## 验证与创业闭环\n\n- 可触达社区:\n  - 待补充\n- 第一批种子用户:\n  - 待补充\n- 社区契合与触达依据:\n  - 待补充\n- 当前替代方案: 待补充\n- 痛点与替代证据:\n  - 待补充\n- 手工交付路径:\n  - 待补充\n- 手工作战卡:\n  - 待补充\n- 承诺信号:\n  - 待补充\n- 首个低成本验证: synthesize 生成 PRD 与 review.html 后走 change/tasks，再按任务实现并用 Codex CLI 本地桌面任务实测。\n- 先活下来方案:\n  - 待补充\n- 付费验证信号:\n  - 待补充\n- 第一版只做一件事: 待补充\n- 周末级验证: 待补充\n- 最小工具桥接:\n  - 待补充\n- 产品化门槛:\n  - 待补充\n- 第一批客户路径:\n  - 待补充\n- 初始收费假设: 待补充\n- 客户 1 盈利路径: 待补充\n- 销售与增长纪律:\n  - 待补充\n- 可逆性判断: 待补充\n- 客户真问题校验: 待补充\n- 价值观一致性: 待补充\n\n## 范围与非目标\n\n- 范围内:\n  - dev-check 自动重构模式：默认开启，命中 attention/warning 时指示 Agent 本轮直接执行高内聚低耦合拆分（不丢功能），输出改为本次额外处理结果，并支持 --auto-refactor on/off 开关与收口确认话术\n  - 图标最佳实践自动触发：asset-spec 增加功能图标行，design-starter/skills/catalog/hook 把新功能自动配图标写为默认行为\n  - 拼图证据板强化：visual-compare 输出对话流嵌入 markdown，dev-check 对 UI 文件补视觉证据提醒，skills/catalog 把网格对齐证据板写为界面布局场景默认动作\n- 范围外:\n  - 画布实时多人协作\n  - 重写画布为独立前端工程\n  - 改动 Codex 线程桥接协议\n\n## 场景与流程\n\n- 主流程:\n  - PM 打开终端或让 Agent 运行 openprd guide，看到 7 步流程和当前位置，按提示进入下一步\n  - PM 打开 review.html，顶部流程条显示当前在评审确认步；确认后进入方向选择\n  - PM 打开画布点导入评审方向，3 个方向图变成卡片，圈选标注后用发送给 Codex 把结论发回\n- 边界情况:\n  - 工作区还没有任何需求版本时 guide 显示第 1 步并给出起步动作\n  - 当前评审没有 designDirections 时画布导入按钮提示暂无可导入方向\n- 失败模式:\n  - 方向图片文件缺失时导入跳过该方向并提示，不中断其他方向导入\n\n## 可视化图表\n\n### 产品流程\n\n```mermaid\nflowchart LR\n  entry[\"入口触发<br/>PM 打开终端或让 Agent 运行 openprd guide，看到 7 步流程和当前位置，按提示进入下一步\"]\n  experience[\"产品内步骤<br/>PM 打开 review.html，顶部流程条显示当前在评审确认步；确认后进入方向选择\"]\n  decision{\"决策点<br/>工作区还没有任何需求版本时 guide 显示第 1 步并给出起步动作\"}\n  success([\"成功结果<br/>openprd guide 在需求前/评审中/实现中/收口后各阶段输出正确的当前步骤与下一步\"])\n  failure[[\"失败与恢复<br/>方向图片文件缺失时导入跳过该方向并提示，不中断其他方向导入\"]]\n  entry -->|\"PM 打开终端或让 Agent 运行 openprd guide，看到 7 步流程…\"| experience\n  experience -->|\"PM 打开 review.html，顶部流程条显示当前在评审确认步；确认后进入方向…\"| decision\n  decision -->|\"产品经理任何时刻都能一眼看到自己处在 7 步标准流程的哪一步和下一步动作\"| success\n  decision -.->|\"方向图片文件缺失时导入跳过该方向并提示，不中断其他方向导入\"| failure\n```\n\n### 架构\n\n```mermaid\nflowchart LR\n  users[\"主要用户<br/>用 Vibe Coding 方式做产品的产品经理\"]\n  subgraph solution[\"方案边界\"]\n    experience[\"Agent 使用场景层<br/>PM 打开终端或让 Agent 运行 openprd guide，看到 7 步流程和当前位置，按提示进入下一步 · PM 打开…\"]\n    core[\"核心产品逻辑<br/>OpenPrd 三项 Vibe Coding 自动化能力不足：1) dev-check 超行提醒停留在后续建议表格，用户不知如…\"]\n    integrations[\"依赖与集成<br/>Codex 原生 imagegen（生成 3 方向交互稿图片）；现有 review artifact 渲染与 hash 校验管…\"]\n    governance[[\"约束与可靠性<br/>提交与状态写回不能泄露用户本地无关改动或敏感信息。\"]]\n    delivery[\"验证与交接<br/>openprd guide 在需求前/评审中/实现中/收口后各阶段输出正确的当前步骤与下一步 · review.html 顶部…\"]\n  end\n  users -->|\"PM 打开终端或让 Agent 运行 openprd guide，看到 7 步…\"| experience\n  experience -->|\"产品动作与编排\"| core\n  core -->|\"依赖与外部服务\"| integrations\n  core -.->|\"策略、可靠性与合规\"| governance\n  core -->|\"成功标准与交接\"| delivery\n  integrations -->|\"运营就绪\"| delivery\n  governance -.->|\"评审与确认\"| delivery\n```\n\n## 需求\n\n- 功能需求:\n  - guide 命令基于工作区状态推断 7 步流程位置\n  - review.html 渲染 stepper\n  - canvas /api/review-directions 返回方向元数据与图片\n  - canvas 前端导入方向卡片组\n- 非功能需求:\n  - 不新增外部依赖\n  - guide 与画布 API 只读工作区状态，不写状态\n  - 全部文案用 PM 能看懂的普通语言\n- 业务规则:\n  - designDirections 仅在需求被判定涉及界面场景时要求；方向选定必须以 user-confirmed 来源写回；落选方向归档不删除。\n\n## 业务护栏\n\n- 成本来源:\n  - imagegen 每方向一次调用，共 3 次；报告清理为本地文件操作无外部成本。\n- 额度与限制:\n  - docs-compact 单次只处理 docs/basic 下的标准文档；retention 默认保留最近 30 份报告可配置。\n- 滥用防护:\n  - docs-compact 重写稿默认写到 sibling draft 待确认，不直接覆盖原文档；retention 不触碰 evidence 目录中被 latest 报告引用的文件。\n- 监控信号:\n  - standards verify 输出 docsQuality 结果；doctor 输出 .openprd 体积与报告数量提示。\n- 报警阈值:\n  - 单行超 300 字符 warning；prd.md 落后最新版本超过 20 个版本 warning；quality/reports 超过 200 份提示清理。\n- 止损动作:\n  - 任一清理动作失败即中止并保留原状；归档失败回退为仅提示不移动。\n\n## 约束、依赖与风险\n\n- 技术约束:\n  - 改动集中在 src/standards.js、src/quality.js、src/openspec/change-lifecycle.js、src/review-presentation.js、src/html-artifacts.js，新增 src/docs-compact.js；skills 生成源同步 openprd-shared / openprd-frontend-design / command-catalog。\n- 合规要求:\n  - 提交与状态写回不能泄露用户本地无关改动或敏感信息。\n- 依赖:\n  - Codex 原生 imagegen（生成 3 方向交互稿图片）；现有 review artifact 渲染与 hash 校验管线。\n- 假设:\n  - imagegen 由 Codex 原生 Image 2 提供，OpenPrd 只消费图片路径；review.html 静态打开，选择结果通过现有 canvas/browser handoff 或 review --mark 通道回传；巨行阈值默认 300 字符可配置。\n- 风险:\n  - 流程步骤定义与既有 lane/gate 概念不完全一一对应，guide 只做展示层推断，不改门禁行为\n- 开放问题:\n  - 画布方向卡片是否需要内置投票/评分组件，留到下一轮看使用反馈\n\n## 类型专项模块\n\n- 类型: Agent 使用场景专项\n- humanAgentContract: 用户决定是否进入 loop、是否要求 commit、是否接受 override；Agent 负责在安全前提下创建隔离执行环境，并维护状态与证据闭环。\n- autonomyBoundary: Agent 可以在 loop 运行前准备 worktree、检查脏状态并收集 touched files，但不能在用户未授权 commit 的情况下自动提交，也不能在高风险脏仓库里静默绕过门禁。\n- toolBoundary: 优先使用本地 Git 与 OpenPrd loop 状态完成这次能力，不引入新的远端托管或发布前置依赖。\n- stateModel: change 进入 loop 后，先绑定隔离执行环境，再逐任务 run / verify / finish / commit，并把 worktree、branch、commit 与测试报告写回同一条状态链。\n- evalPlan: 通过 loop 单测、worktree / dirty repo 场景测试、状态持久化测试，以及一次真实隔离 worktree 的串行回归验证这次改动。\n\n## 交接\n\n- 负责人: Codex\n- 下一步: synthesize 生成 PRD 与 review.html 后走 change/tasks，再按任务实现并用 Codex CLI 本地桌面任务实测。\n- 目标系统: openprd CLI 自身仓库（harness-engineer/openprd）。\n",
+  "digest": "c79abbd6ff06c02edcc219570657a56a2cfe677f0fc322d4225a0295fdf9b759"
+}

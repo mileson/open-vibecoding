@@ -99,8 +99,115 @@
         box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
       }
       .review-overview {
-        display: block;
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+        gap: 24px;
+        align-items: start;
         padding: 24px;
+      }
+      .review-goal {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 8px;
+        max-width: 760px;
+        margin: 14px 0 0;
+        color: var(--review-text);
+        font-size: 15px;
+        line-height: 1.7;
+      }
+      .review-goal-label {
+        flex-shrink: 0;
+        padding: 2px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(37,99,235,0.3);
+        background: rgba(37,99,235,0.06);
+        color: var(--review-blue);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .review-agenda {
+        padding: 16px 18px;
+        border-radius: 14px;
+        border: 1px solid var(--review-line);
+        background: var(--review-panel-soft);
+      }
+      .review-agenda-title {
+        margin: 0;
+        color: var(--review-text);
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .review-agenda-list {
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 6px;
+        counter-reset: agenda;
+      }
+      .review-agenda-list li { counter-increment: agenda; }
+      .review-agenda-list a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        color: var(--review-text);
+        text-decoration: none;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .review-agenda-list a::before {
+        content: counter(agenda);
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: rgba(37,99,235,0.1);
+        color: var(--review-blue);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .review-agenda-list a:hover {
+        border-color: var(--review-line);
+        background: #ffffff;
+      }
+      .review-agenda-name { flex: 1; min-width: 0; }
+      .review-agenda-count {
+        flex-shrink: 0;
+        color: var(--review-blue);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .review-agenda-count.empty { color: var(--review-muted); font-weight: 400; }
+      .review-agenda-foot {
+        margin: 12px 0 0;
+        color: var(--review-muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .review-panel-count {
+        flex-shrink: 0;
+        margin-left: auto;
+        padding: 3px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(37,99,235,0.25);
+        background: rgba(37,99,235,0.06);
+        color: var(--review-blue);
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .review-panel-count.empty {
+        border-color: var(--review-line);
+        background: var(--review-panel-soft);
+        color: var(--review-muted);
+        font-weight: 400;
       }
       .review-overview-copy,
       .review-panel {
@@ -126,6 +233,83 @@
         font-size: 16px;
         line-height: 1.75;
         overflow-wrap: anywhere;
+      }
+      .review-gap {
+        margin-top: 18px;
+        padding: 18px 20px;
+        border-radius: 16px;
+        border: 1px solid var(--review-line);
+        background: var(--review-panel);
+        box-shadow: 0 10px 24px rgba(23,32,51,0.05);
+      }
+      .review-gap-clear {
+        border-color: rgba(21,128,61,0.3);
+        background: #f2fbf5;
+      }
+      .review-gap-pending {
+        border-color: rgba(180,83,9,0.3);
+        background: #fffaf2;
+      }
+      .review-gap-headline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 10px;
+        font-size: 16px;
+      }
+      .review-gap-headline strong {
+        color: var(--review-text);
+        font-size: 17px;
+      }
+      .review-gap-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        align-self: center;
+      }
+      .review-gap-clear .review-gap-dot { background: var(--review-green); }
+      .review-gap-pending .review-gap-dot { background: var(--review-amber); }
+      .review-gap-sub {
+        color: var(--review-muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .review-gap-list {
+        margin: 14px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 8px;
+      }
+      .review-gap-item {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(180,83,9,0.16);
+        background: rgba(255,255,255,0.75);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .review-gap-item strong { color: var(--review-text); }
+      .review-gap-hint { color: var(--review-muted); }
+      .review-gap-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--review-line);
+        background: #ffffff;
+        color: var(--review-muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .review-gap-tag-key {
+        border-color: rgba(220,38,38,0.35);
+        color: var(--review-red);
+        background: rgba(220,38,38,0.06);
       }
       .review-map {
         margin-top: 18px;
@@ -498,8 +682,8 @@
         
         <div class="review-project-version" aria-label="项目版本">
           <span class="review-project-version-label">项目版本</span>
-          <strong class="review-project-version-value">0.1.10</strong>
-          <span class="review-project-version-meta">当前版本 · 1 条变化</span>
+          <strong class="review-project-version-value">0.1.15</strong>
+          <span class="review-project-version-meta">当前版本 · 3 条变化</span>
         </div>
   
       </header>
@@ -509,7 +693,63 @@
         <p class="review-kicker">需求概览</p>
         <h1 id="reviewOverviewTitle">Verify 边界与历史项目刷新</h1>
         <p class="review-problem">修复 OpenPrd verify 边界，避免外部参考目录和 reference discovery 污染主验证，并刷新历史项目生成物。</p>
+        <p class="review-goal"><span class="review-goal-label">这次的目标</span>让主验证只关注当前项目源码和当前实现门禁</p>
       </div>
+      
+      <aside class="review-agenda" aria-label="评审清单">
+        <p class="review-agenda-title">这次评审要确认 4 块内容</p>
+        <ol class="review-agenda-list">
+          
+          <li>
+            <a href="#review-panel-flow">
+              <span class="review-agenda-name">主流程与边界情况</span>
+              <span class="review-agenda-count">4 条</span>
+            </a>
+          </li>
+          <li>
+            <a href="#review-panel-function">
+              <span class="review-agenda-name">功能与约束</span>
+              <span class="review-agenda-count empty">暂无内容</span>
+            </a>
+          </li>
+          <li>
+            <a href="#review-panel-guardrail">
+              <span class="review-agenda-name">业务成本与滥用护栏</span>
+              <span class="review-agenda-count empty">暂无内容</span>
+            </a>
+          </li>
+          <li>
+            <a href="#review-panel-risk">
+              <span class="review-agenda-name">开放问题与风险</span>
+              <span class="review-agenda-count">1 条</span>
+            </a>
+          </li>
+        </ol>
+        <p class="review-agenda-foot">逐块看完后，用页面底部的按钮告诉我结论就可以。</p>
+      </aside>
+  
+    </section>
+  
+      
+    <section class="review-gap review-gap-pending" aria-label="信息完整度">
+      <div class="review-gap-headline">
+        <span class="review-gap-dot" aria-hidden="true"></span>
+        <strong>确认前还差 2 件事</strong>
+        <span class="review-gap-sub">都不是拦路的问题，但确认前补上会更稳。</span>
+      </div>
+      <ol class="review-gap-list">
+        
+        <li class="review-gap-item">
+          <span class="review-gap-tag">建议</span>
+          <strong>功能需求</strong>
+          <span class="review-gap-hint">还没列出必须交付的功能</span>
+        </li>
+        <li class="review-gap-item">
+          <span class="review-gap-tag">建议</span>
+          <strong>边界情况</strong>
+          <span class="review-gap-hint">还没考虑特殊情况怎么处理</span>
+        </li>
+      </ol>
     </section>
   
       
@@ -577,13 +817,14 @@
   
       <section class="review-panel-grid" aria-label="固定评审项">
         
-    <section class="review-panel review-panel-flow">
+    <section class="review-panel review-panel-flow" id="review-panel-flow">
       <header class="review-panel-head">
         <span class="review-icon review-icon-flow" aria-hidden="true"><svg viewBox="0 0 24 24" role="img" aria-label="流程"><path d="M5 6.5h6.4a3.6 3.6 0 0 1 3.6 3.6v.8" /><path d="M15 17.5H8.6A3.6 3.6 0 0 1 5 13.9v-.8" /><path d="m12 8.5 3-3 3 3" /><path d="m8 15.5-3 3-3-3" /></svg></span>
         <div>
           <h3>主流程与边界情况</h3>
           <p>确认用户旅程、关键步骤和恢复路径是否已经讲清楚，能否进入实现前确认</p>
         </div>
+        <span class="review-panel-count" aria-label="条目数">4 条</span>
       </header>
       <div class="review-chip-row" aria-label="主流程与边界情况重点摘要">
         <span class="review-chip">优化维护者运行 openprd</span><span class="review-chip">优化仍然混入 run cont</span><span class="review-chip">优化继续被 research</span><span class="review-chip">调整后历史项目仍保留旧的 ve</span>
@@ -643,13 +884,14 @@
     </section>
   
 
-    <section class="review-panel review-panel-function">
+    <section class="review-panel review-panel-function" id="review-panel-function">
       <header class="review-panel-head">
         <span class="review-icon review-icon-function" aria-hidden="true"><svg viewBox="0 0 24 24" role="img" aria-label="功能"><path d="M5 7h14" /><path d="M5 12h14" /><path d="M5 17h14" /><circle cx="8" cy="7" r="2" /><circle cx="16" cy="12" r="2" /><circle cx="11" cy="17" r="2" /></svg></span>
         <div>
           <h3>功能与约束</h3>
           <p>区分必须交付、非功能要求和当前依赖假设</p>
         </div>
+        <span class="review-panel-count empty" aria-label="条目数">暂无</span>
       </header>
       <div class="review-chip-row" aria-label="功能与约束重点摘要">
         <span class="review-chip empty">暂无功能、非功能要求或依赖约束。</span>
@@ -659,13 +901,14 @@
     </section>
   
 
-    <section class="review-panel review-panel-guardrail">
+    <section class="review-panel review-panel-guardrail" id="review-panel-guardrail">
       <header class="review-panel-head">
         <span class="review-icon review-icon-guardrail" aria-hidden="true"><svg viewBox="0 0 24 24" role="img" aria-label="护栏"><path d="M12 3 5 6v5c0 4.4 2.8 8.4 7 9.8 4.2-1.4 7-5.4 7-9.8V6l-7-3Z" /><path d="M9 12.2 11 14l4-4.4" /></svg></span>
         <div>
           <h3>业务成本与滥用护栏</h3>
           <p>涉及免费额度、消耗型成本或第三方调用时，先确认限制、报警和止损动作</p>
         </div>
+        <span class="review-panel-count empty" aria-label="条目数">暂无</span>
       </header>
       <div class="review-chip-row" aria-label="业务成本与滥用护栏重点摘要">
         <span class="review-chip empty">暂无业务成本或滥用护栏。</span>
@@ -675,13 +918,14 @@
     </section>
   
 
-    <section class="review-panel review-panel-risk">
+    <section class="review-panel review-panel-risk" id="review-panel-risk">
       <header class="review-panel-head">
         <span class="review-icon review-icon-risk" aria-hidden="true"><svg viewBox="0 0 24 24" role="img" aria-label="风险"><path d="M12 4 3.5 19h17L12 4Z" /><path d="M12 9v4" /><path d="M12 16.5h.01" /></svg></span>
         <div>
           <h3>开放问题与风险</h3>
           <p>需求定稿前还没关掉的问题要留在这里，不要默默假定解决</p>
         </div>
+        <span class="review-panel-count" aria-label="条目数">1 条</span>
       </header>
       <div class="review-chip-row" aria-label="开放问题与风险重点摘要">
         <span class="review-chip">调整只收敛默认边界</span>
@@ -985,7 +1229,7 @@ openprd review . --mark needs-revision --version &#39;v0001&#39; --digest &#39;d
       &quot;action&quot;: &quot;请写入 reviewPresentation.panels.risk[0]，格式例如 { \&quot;summary\&quot;: \&quot;修复误判\&quot;, \&quot;detail\&quot;: \&quot;避免把实现授权写成再次索取确认。\&quot; }。&quot;
     }
   ],
-  &quot;exportedAt&quot;: &quot;2026-06-08T02:07:26.190Z&quot;
+  &quot;exportedAt&quot;: &quot;2026-06-26T11:47:07.257Z&quot;
 }" title="openprd review . --mark needs-revision --version &#39;v0001&#39; --digest &#39;dc988d7a94c07d2a8070968a71ddacffb374eaeee12aa85eb93231e06dd7b077&#39; --work-unit &#39;wu-20260524015648-6d33ded7&#39; --notes &#39;说明需要调整的点&#39;">
           需要调整
         </button>
@@ -1282,7 +1526,7 @@ openprd review . --mark confirmed --version &#39;v0001&#39; --digest &#39;dc988d
       &quot;action&quot;: &quot;请写入 reviewPresentation.panels.risk[0]，格式例如 { \&quot;summary\&quot;: \&quot;修复误判\&quot;, \&quot;detail\&quot;: \&quot;避免把实现授权写成再次索取确认。\&quot; }。&quot;
     }
   ],
-  &quot;exportedAt&quot;: &quot;2026-06-08T02:07:26.190Z&quot;
+  &quot;exportedAt&quot;: &quot;2026-06-26T11:47:07.257Z&quot;
 }" title="openprd review . --mark confirmed --version &#39;v0001&#39; --digest &#39;dc988d7a94c07d2a8070968a71ddacffb374eaeee12aa85eb93231e06dd7b077&#39; --work-unit &#39;wu-20260524015648-6d33ded7&#39;">
           认可并继续
         </button>

@@ -1,0 +1,44 @@
+[
+  {
+    "title": "Inspect test/openprd-quality-standards.test.js"
+  },
+  {
+    "title": "Inspect test/openprd-dev-check.test.js"
+  },
+  {
+    "title": "Inspect test/openprd-visual-evidence.test.js"
+  },
+  {
+    "title": "Inspect src/agent-integration.js"
+  },
+  {
+    "title": "Inspect src/agent-canonical-content.js"
+  },
+  {
+    "title": "Inspect src/visual-compare.js"
+  },
+  {
+    "title": "Inspect src/visual-compare-core.js"
+  },
+  {
+    "title": "Inspect src/visual-compare-centering.js"
+  },
+  {
+    "title": "Inspect src/openprd.js"
+  },
+  {
+    "title": "Inspect src/cli/quality-commands.js"
+  },
+  {
+    "title": "Inspect src/codex-hook-runner-template.mjs"
+  },
+  {
+    "title": "Inspect docs/basic/backend-structure.md"
+  },
+  {
+    "title": "Inspect docs/basic/file-structure.md"
+  },
+  {
+    "title": "Inspect .openprd/standards/config.json"
+  }
+]

@@ -24,3 +24,6 @@ openprd-architecture-diagram-demo.png
 # temp / logs
 *.log
 coverage/
+
+# Sibling fork workspace, managed separately
+openloop/

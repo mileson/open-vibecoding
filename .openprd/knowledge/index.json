@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-12 18:44:19",
+  "updatedAt": "2026-07-04 00:07:59",
   "incidents": [
     {
       "incidentId": "incident-candidate-turn-1780116203372-5f266a79e968c758",
@@ -124,180 +124,172 @@
       "description": "由 OpenPrd 从 diagnostic-bundle 自动沉淀的项目级排查经验。目标是在相似问题再次出现时优先复用现有诊断证据，而不是临时补日志。",
       "summary": "本轮围绕 8 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。",
       "adoption": {
-        "hitCount": 79,
-        "referencedCount": 79,
+        "hitCount": 159,
+        "referencedCount": 159,
         "injectedCount": 0,
-        "lastHitAt": "2026-06-12 18:43:49",
-        "lastReferencedAt": "2026-06-12 18:43:49",
+        "lastHitAt": "2026-07-04 00:04:03",
+        "lastReferencedAt": "2026-07-04 00:04:03",
         "lastInjectedAt": null,
         "lastSource": "run-context",
         "recentEvents": [
           {
-            "at": "2026-06-12 18:43:49",
+            "at": "2026-07-04 00:04:03",
             "stage": "referenced",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 dev-check attention=2, warning=2 / dev-check attention=3, warning=5 / 运行态再次出现事件：run-verify, dev-check。",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
-              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "dev-check attention=2, warning=2",
+              "dev-check attention=3, warning=5",
+              "运行态再次出现事件：run-verify, dev-check。",
+              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe..."
             ]
           },
           {
-            "at": "2026-06-12 18:43:49",
+            "at": "2026-07-04 00:04:03",
             "stage": "hit",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 dev-check attention=2, warning=2 / dev-check attention=3, warning=5 / 运行态再次出现事件：run-verify, dev-check。",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
-              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "dev-check attention=2, warning=2",
+              "dev-check attention=3, warning=5",
+              "运行态再次出现事件：run-verify, dev-check。",
+              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe..."
             ]
           },
           {
-            "at": "2026-06-12 18:37:29",
+            "at": "2026-07-03 23:19:56",
             "stage": "referenced",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 dev-check attention=2, warning=2 / dev-check attention=3, warning=5 / 运行态再次出现事件：run-verify, dev-check。",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
-              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "dev-check attention=2, warning=2",
+              "dev-check attention=3, warning=5",
+              "运行态再次出现事件：run-verify, dev-check。",
+              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe..."
             ]
           },
           {
-            "at": "2026-06-12 18:37:29",
+            "at": "2026-07-03 23:19:56",
             "stage": "hit",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 dev-check attention=2, warning=2 / dev-check attention=3, warning=5 / 运行态再次出现事件：run-verify, dev-check。",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
-              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "dev-check attention=2, warning=2",
+              "dev-check attention=3, warning=5",
+              "运行态再次出现事件：run-verify, dev-check。",
+              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe..."
             ]
           },
           {
-            "at": "2026-06-12 13:43:59",
+            "at": "2026-07-03 23:18:56",
             "stage": "referenced",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 dev-check attention=2, warning=2 / dev-check attention=3, warning=5 / 运行态再次出现事件：run-verify, dev-check。",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
-              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "dev-check attention=2, warning=2",
+              "dev-check attention=3, warning=5",
+              "运行态再次出现事件：run-verify, dev-check。",
+              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe..."
             ]
           },
           {
-            "at": "2026-06-12 13:43:59",
+            "at": "2026-07-03 23:18:56",
             "stage": "hit",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 dev-check attention=2, warning=2 / dev-check attention=3, warning=5 / 运行态再次出现事件：run-verify, dev-check。",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
-              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "dev-check attention=2, warning=2",
+              "dev-check attention=3, warning=5",
+              "运行态再次出现事件：run-verify, dev-check。",
+              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe..."
             ]
           },
           {
-            "at": "2026-06-12 13:37:22",
+            "at": "2026-07-03 18:55:52",
             "stage": "referenced",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 dev-check attention=2, warning=2 / dev-check attention=3, warning=5 / 运行态再次出现事件：run-verify, dev-check。",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
-              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "dev-check attention=2, warning=2",
+              "dev-check attention=3, warning=5",
+              "运行态再次出现事件：run-verify, dev-check。",
+              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe..."
             ]
           },
           {
-            "at": "2026-06-12 13:37:22",
+            "at": "2026-07-03 18:55:52",
             "stage": "hit",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 dev-check attention=2, warning=2 / dev-check attention=3, warning=5 / 运行态再次出现事件：run-verify, dev-check。",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
-              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "dev-check attention=2, warning=2",
+              "dev-check attention=3, warning=5",
+              "运行态再次出现事件：run-verify, dev-check。",
+              "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe..."
             ]
           },
           {
-            "at": "2026-06-12 13:13:03",
+            "at": "2026-07-03 17:42:31",
             "stage": "referenced",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / Inspect src/loop.js",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
               "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "Inspect src/loop.js"
             ]
           },
           {
-            "at": "2026-06-12 13:13:03",
+            "at": "2026-07-03 17:42:31",
             "stage": "hit",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / Inspect src/loop.js",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
               "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "Inspect src/loop.js"
             ]
           },
           {
-            "at": "2026-06-12 12:50:38",
+            "at": "2026-07-03 17:42:22",
             "stage": "referenced",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / Inspect src/loop.js",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
               "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "Inspect src/loop.js"
             ]
           },
           {
-            "at": "2026-06-12 12:50:38",
+            "at": "2026-07-03 17:42:22",
             "stage": "hit",
             "source": "run-context",
             "sessionId": null,
             "promptPreview": null,
-            "matchSummary": "命中 openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758 / 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
+            "matchSummary": "命中 本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe... / Inspect src/loop.js",
             "matchedOn": [
-              "openprd-experience-diagnostic-candidate-turn-1780116203372-5f266a79e968c758",
               "本次症状包括：本轮项目回顾；本轮围绕 5 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 2 条回顾信号。；Inspect src/dev-standards.js；Inspe...",
-              "diagnostic-report: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/diagnostic-report.json`",
-              "root-cause-candidates: `.openprd/knowledge/candidates/candidate-turn-1780116203372-5f266a79e968c758/root-cause-candidat..."
+              "Inspect src/loop.js"
             ]
           }
         ]
@@ -318,6 +310,132 @@
   ],
   "candidates": [
     {
+      "candidateId": "candidate-eval-20260621153509",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260621153509/candidate.json",
+      "sourceKind": "quality-report",
+      "sourceRef": "candidate-eval-20260621153509",
+      "title": "质量报告 eval-20260704000403",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260621153509/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260628140351",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260628140351/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260628140351",
+      "title": "围绕 standards.js 等 11 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260628140351/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260628135235",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260628135235/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260628135235",
+      "title": "围绕 constants.js 等 10 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260628135235/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260620185705",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260620185705/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260620185705",
+      "title": "围绕 canvas-workspace.js 等 11 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260620185705/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260617151556",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260617151556/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260617151556",
+      "title": "围绕 canvas-app.html.js 等 3 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260617151556/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260612184349",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260612184349/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260612184349",
+      "title": "围绕 canvas-app.html.js 等 10 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260612184349/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260620165002",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260620165002/candidate.json",
+      "sourceKind": "quality-report",
+      "sourceRef": "candidate-eval-20260620165002",
+      "title": "质量报告 eval-20260620185549",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260620165002/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260617141449",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260617141449/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260617141449",
+      "title": "围绕 openprd-benchmark-knowledge.test.js 等 4 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260617141449/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260617133348",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260617133348/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260617133348",
+      "title": "围绕 visual-compare.js 等 7 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260617133348/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260617123229",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260617123229/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260617123229",
+      "title": "围绕 visual-compare.js 等 8 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260617123229/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260617115106",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260617115106/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260617115106",
+      "title": "围绕 visual-compare.js 等 7 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260617115106/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260614024546",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260614024546/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260614024546",
+      "title": "围绕 design-starter.js 等 4 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260614024546/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260613111050",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260613111050/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260613111050",
+      "title": "围绕 codex-hook-runner-template.mjs 等 4 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260613111050/SKILL.md"
+    },
+    {
+      "candidateId": "candidate-eval-20260612183730",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260612183730/candidate.json",
+      "sourceKind": "diagnostic-report",
+      "sourceRef": "candidate-eval-20260612183730",
+      "title": "围绕 visual-compare.js 等 8 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260612183730/SKILL.md"
+    },
+    {
       "candidateId": "candidate-eval-20260607125040",
       "status": "pending-review",
       "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260607125040/candidate.json",
@@ -325,15 +443,6 @@
       "sourceRef": "candidate-eval-20260607125040",
       "title": "围绕 package-lock.json 等 18 个文件的实现经验",
       "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260607125040/SKILL.md"
-    },
-    {
-      "candidateId": "candidate-eval-20260612183730",
-      "status": "pending-review",
-      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260612183730/candidate.json",
-      "sourceKind": "quality-report",
-      "sourceRef": "candidate-eval-20260612183730",
-      "title": "质量报告 eval-20260612184349",
-      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260612183730/SKILL.md"
     },
     {
       "candidateId": "candidate-eval-20260609141448",
@@ -575,15 +684,171 @@
   ],
   "drafts": [
     {
-      "skillName": "openprd-experience-diagnostic-candidate-eval-20260607125040",
-      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260607125040/SKILL.md",
-      "candidateId": "candidate-eval-20260607125040",
+      "skillName": "openprd-experience-quality-candidate-eval-20260621153509",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260621153509/SKILL.md",
+      "candidateId": "candidate-eval-20260621153509",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260621153509",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260621153509/SKILL.md",
+      "candidateId": "candidate-eval-20260621153509",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260628140351",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260628140351/SKILL.md",
+      "candidateId": "candidate-eval-20260628140351",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260628140351",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260628140351/SKILL.md",
+      "candidateId": "candidate-eval-20260628140351",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260628135235",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260628135235/SKILL.md",
+      "candidateId": "candidate-eval-20260628135235",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260628135235",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260628135235/SKILL.md",
+      "candidateId": "candidate-eval-20260628135235",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260620185705",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260620185705/SKILL.md",
+      "candidateId": "candidate-eval-20260620185705",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260620185705",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260620185705/SKILL.md",
+      "candidateId": "candidate-eval-20260620185705",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260617151556",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260617151556/SKILL.md",
+      "candidateId": "candidate-eval-20260617151556",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260612184349",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260612184349/SKILL.md",
+      "candidateId": "candidate-eval-20260612184349",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260620165002",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260620165002/SKILL.md",
+      "candidateId": "candidate-eval-20260620165002",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260617151556",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260617151556/SKILL.md",
+      "candidateId": "candidate-eval-20260617151556",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260617141449",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260617141449/SKILL.md",
+      "candidateId": "candidate-eval-20260617141449",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260617141449",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260617141449/SKILL.md",
+      "candidateId": "candidate-eval-20260617141449",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260617133348",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260617133348/SKILL.md",
+      "candidateId": "candidate-eval-20260617133348",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260617133348",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260617133348/SKILL.md",
+      "candidateId": "candidate-eval-20260617133348",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260617123229",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260617123229/SKILL.md",
+      "candidateId": "candidate-eval-20260617123229",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260617123229",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260617123229/SKILL.md",
+      "candidateId": "candidate-eval-20260617123229",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260617115106",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260617115106/SKILL.md",
+      "candidateId": "candidate-eval-20260617115106",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260617115106",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260617115106/SKILL.md",
+      "candidateId": "candidate-eval-20260617115106",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260614024546",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260614024546/SKILL.md",
+      "candidateId": "candidate-eval-20260614024546",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260614024546",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260614024546/SKILL.md",
+      "candidateId": "candidate-eval-20260614024546",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260613111050",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260613111050/SKILL.md",
+      "candidateId": "candidate-eval-20260613111050",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260613111050",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260613111050/SKILL.md",
+      "candidateId": "candidate-eval-20260613111050",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260612183730",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260612183730/SKILL.md",
+      "candidateId": "candidate-eval-20260612183730",
       "status": "pending-review"
     },
     {
       "skillName": "openprd-experience-quality-candidate-eval-20260612183730",
       "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260612183730/SKILL.md",
       "candidateId": "candidate-eval-20260612183730",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260612184349",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260612184349/SKILL.md",
+      "candidateId": "candidate-eval-20260612184349",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-diagnostic-candidate-eval-20260607125040",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260607125040/SKILL.md",
+      "candidateId": "candidate-eval-20260607125040",
       "status": "pending-review"
     },
     {

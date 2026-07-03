@@ -8,7 +8,8 @@ import { recordKnowledgeReviewSignal, reviewKnowledgeWorkspace } from './knowled
 
 const DEVELOPMENT_STANDARDS_CONFIG = cjoin('.openprd', 'standards', 'config.json');
 const DEV_CHECK_WRAPUP_COPY_SCRIPT = fileURLToPath(new URL('../scripts/dev-check-wrapup-copy.mjs', import.meta.url));
-const DEV_CHECK_WRAPUP_FIELDS = ['规模信号', '预警原因', '本次处理结果', '后续建议'];
+const DEV_CHECK_WRAPUP_FIELDS_AUTO = ['源文件规模', '优化原因', '本次处理结果', '后续建议'];
+const DEV_CHECK_WRAPUP_FIELDS_RECOMMEND = ['规模信号', '预警原因', '本次处理结果', '后续建议'];
 const CODE_FILE_EXTENSIONS = new Set([
   '.c',
   '.cc',
@@ -68,7 +69,24 @@ export const DEFAULT_DEVELOPMENT_STANDARDS = {
     attentionMax: 1500,
     appliesTo: 'agent-touched-code-files',
   },
+  autoRefactor: {
+    enabled: true,
+  },
 };
+
+const UI_FILE_EXTENSIONS = new Set([
+  '.css',
+  '.html',
+  '.jsx',
+  '.scss',
+  '.svelte',
+  '.tsx',
+  '.vue',
+  '.wxml',
+  '.wxss',
+]);
+const VISUAL_REVIEWS_DIR = cjoin('.openprd', 'harness', 'visual-reviews');
+const VISUAL_EVIDENCE_FRESH_MS = 24 * 60 * 60 * 1000;
 
 function normalizePathForReport(value) {
   return String(value ?? '').split(path.sep).join('/');
@@ -167,6 +185,7 @@ function normalizeLineConfig(config = {}) {
     exemptFilePatterns: [...EXEMPT_FILE_PATTERNS, ...customPatterns],
     growthEnabled: config?.growth?.enabled !== false,
     growthAutoApply: config?.growth?.autoApply,
+    autoRefactorEnabled: (config?.developmentStandards?.autoRefactor ?? config?.autoRefactor)?.enabled !== false,
   };
 }
 
@@ -212,13 +231,20 @@ function fileStatus(lineCount, lineConfig) {
 }
 
 function nextActionForStatus(status, lineConfig) {
+  const autoMode = lineConfig?.autoRefactorEnabled !== false;
   if (status === 'ok') {
     return `本轮没有显著维护风险；最终回复可简要说明已回顾本次改动文件。`;
   }
   if (status === 'attention') {
+    if (autoMode) {
+      return `本轮若为该文件新增了职责，直接按入口、状态、渲染或数据边界完成小步拆分（保持行为不变、测试通过）；若只是小修，说明没有继续扩展职责即可。`;
+    }
     return `本轮只做当前目标相关的小范围改动，并说明没有继续扩展该文件职责。`;
   }
   if (status === 'warning') {
+    if (autoMode) {
+      return `本轮直接执行拆分：先确认现有测试可保住行为，再按职责边界拆出独立模块（高内聚低耦合、不丢任何功能），拆完重跑测试与 dev-check，并把拆分产出写进最终回复的“OpenPRD 自动优化报告”。`;
+    }
     return `先判断这次是否新增职责；如果新增了，优先拆分或解耦后再收尾；如果只是小修，说明暂不拆的原因和后续拆分建议。`;
   }
   if (status === 'exempt') {
@@ -321,9 +347,10 @@ function countDisplayChars(value) {
   return Array.from(String(value ?? '')).length;
 }
 
-function buildCompactWrapUpRows(files) {
+function buildCompactWrapUpRows(files, options = {}) {
   const result = spawnSync(process.execPath, [DEV_CHECK_WRAPUP_COPY_SCRIPT], {
     input: JSON.stringify({
+      autoRefactor: Boolean(options.autoRefactor),
       files: files.map((file) => ({
         status: file.status,
         lineCount: file.lineCount,
@@ -351,8 +378,9 @@ function buildCompactWrapUpRows(files) {
   if (!rows || rows.length !== files.length) {
     throw new Error('Compact dev-check wrap-up copy returned an unexpected row count.');
   }
+  const expectedFields = options.autoRefactor ? DEV_CHECK_WRAPUP_FIELDS_AUTO : DEV_CHECK_WRAPUP_FIELDS_RECOMMEND;
   for (const row of rows) {
-    for (const field of DEV_CHECK_WRAPUP_FIELDS) {
+    for (const field of expectedFields) {
       if (typeof row[field] !== 'string') {
         throw new Error(`Compact dev-check wrap-up copy is missing field: ${field}`);
       }
@@ -364,29 +392,78 @@ function buildCompactWrapUpRows(files) {
   return rows;
 }
 
-function buildDevCheckWrapUp(files) {
-  const title = '后续建议';
-  const columns = ['影响对象', '关注程度', '规模信号', '预警原因', '本次处理结果', '后续建议'];
+function buildDevCheckWrapUp(files, lineConfig = {}) {
+  const autoMode = lineConfig?.autoRefactorEnabled !== false;
+  const title = autoMode ? 'OpenPRD 自动优化报告' : '后续建议';
+  const statusColumn = autoMode ? '问题级别' : '关注程度';
+  const columns = autoMode
+    ? ['影响对象', '问题级别', '源文件规模', '优化原因', '本次处理结果', '后续建议']
+    : ['影响对象', '关注程度', '规模信号', '预警原因', '本次处理结果', '后续建议'];
   const attentionFiles = files
     .filter((file) => ['attention', 'warning', 'error'].includes(file.status))
     .sort((left, right) => devCheckConcernRank(right) - devCheckConcernRank(left));
-  const compactRows = attentionFiles.length > 0 ? buildCompactWrapUpRows(attentionFiles) : [];
+  const compactRows = attentionFiles.length > 0
+    ? buildCompactWrapUpRows(attentionFiles, { autoRefactor: autoMode })
+    : [];
   const rows = attentionFiles.map((file, index) => ({
       影响对象: file.path,
-      关注程度: devCheckStatusLabel(file.status),
+      [statusColumn]: devCheckStatusLabel(file.status),
       ...compactRows[index],
     }));
   const markdownTable = renderMarkdownTable(columns, rows);
+  const switchHint = autoMode
+    ? '自动代码结构优化当前默认开启。如果下次不需要 Agent 自动优化，回复“关闭自动优化”，Agent 会运行 `openprd dev-check . --auto-refactor off` 转为仅推荐。'
+    : '自动代码结构优化当前已关闭（仅推荐模式）。要恢复 Agent 自动优化，运行 `openprd dev-check . --auto-refactor on`。';
   return {
     required: rows.length > 0,
+    mode: autoMode ? 'auto-refactor' : 'recommend',
     reason: rows.length > 0
-      ? '存在需要用户关注的影响对象；最终回复需要用“后续建议”说明本次处理结果和后续建议。'
+      ? (autoMode
+        ? '存在超行影响对象；本轮 Agent 应先按“本次处理结果”完成高内聚低耦合拆分（不丢功能、测试保住行为），再在最终回复用“OpenPRD 自动优化报告”呈现优化完成的结果，并附一句自动优化开关确认。'
+        : '存在需要用户关注的影响对象；最终回复需要用“后续建议”说明本次处理结果和后续建议。')
       : '本轮改动文件未触发影响范围提醒；最终回复可简要说明已完成改动对象回顾。',
     title,
     columns,
     rows,
     markdownTable,
     markdownBlock: markdownTable ? `**${title}**\n\n${markdownTable}` : '',
+    switchHint: rows.length > 0 ? switchHint : null,
+  };
+}
+
+async function buildVisualEvidenceReminder(projectRoot, files) {
+  const uiFiles = files
+    .filter((file) => file.status !== 'error' && UI_FILE_EXTENSIONS.has(path.extname(file.path).toLowerCase()))
+    .map((file) => file.path);
+  if (uiFiles.length === 0) {
+    return { required: false, uiFiles: [] };
+  }
+  const reviewsDir = cjoin(projectRoot, VISUAL_REVIEWS_DIR);
+  let freshEvidence = [];
+  const entries = await fs.readdir(reviewsDir).catch(() => []);
+  const now = Date.now();
+  for (const entry of entries) {
+    if (!/\.(jpe?g|png|webp)$/i.test(entry)) continue;
+    const stat = await fs.stat(path.join(reviewsDir, entry)).catch(() => null);
+    if (stat && now - stat.mtimeMs <= VISUAL_EVIDENCE_FRESH_MS) {
+      freshEvidence.push(normalizePathForReport(path.join(VISUAL_REVIEWS_DIR, entry)));
+    }
+  }
+  freshEvidence = freshEvidence.slice(-5);
+  const required = freshEvidence.length === 0;
+  return {
+    required,
+    uiFiles,
+    freshEvidence,
+    reason: required
+      ? '本轮触达界面文件，但最近 24 小时没有任何拼图证据板产出；用户可见变化需要视觉证据，不能只靠构建通过或单张截图。'
+      : '本轮触达界面文件，最近已有拼图证据板产出；确认它覆盖了本轮改动，并把证据图嵌入对话流。',
+    suggestedCommands: [
+      'openprd visual-compare . --before <改前截图> --after <改后截图>',
+      'openprd visual-compare . --board <alignment-board.json>（同构列表/卡片/网格/表格对齐，含容器轨道与内容槽位）',
+      'openprd visual-compare . --board <centering-board.json>（单素材内部居中/视觉重心）',
+    ],
+    chatEmbedHint: '生成后把证据图用 `![视觉证据](<输出路径>)` 直接嵌入最终回复，让用户在对话流里看到对齐效果。',
   };
 }
 
@@ -526,6 +603,10 @@ export async function checkDevelopmentStandardsWorkspace(projectRoot, options = 
     action: 'dev-check',
     projectRoot,
     enabled: lineConfig.enabled,
+    autoRefactor: {
+      enabled: lineConfig.autoRefactorEnabled,
+      mode: lineConfig.autoRefactorEnabled ? 'auto-refactor' : 'recommend',
+    },
     thresholds: {
       okMax: lineConfig.okMax,
       attentionMax: lineConfig.attentionMax,
@@ -538,8 +619,42 @@ export async function checkDevelopmentStandardsWorkspace(projectRoot, options = 
       warning: statusCounts.warning ?? 0,
     },
     files,
-    wrapUp: buildDevCheckWrapUp(files),
+    wrapUp: buildDevCheckWrapUp(files, lineConfig),
+    visualEvidence: await buildVisualEvidenceReminder(projectRoot, files),
     knowledgeReview,
     errors,
+  };
+}
+
+export async function setDevCheckAutoRefactor(projectRoot, enabled) {
+  const configPath = cjoin(projectRoot, DEVELOPMENT_STANDARDS_CONFIG);
+  const config = (await exists(configPath)) ? await readJson(configPath).catch(() => ({})) : {};
+  const developmentStandards = config.developmentStandards && typeof config.developmentStandards === 'object'
+    ? config.developmentStandards
+    : {};
+  const autoRefactor = developmentStandards.autoRefactor && typeof developmentStandards.autoRefactor === 'object'
+    ? developmentStandards.autoRefactor
+    : {};
+  const next = {
+    ...config,
+    developmentStandards: {
+      ...developmentStandards,
+      autoRefactor: {
+        ...autoRefactor,
+        enabled: Boolean(enabled),
+      },
+    },
+  };
+  await fs.mkdir(path.dirname(configPath), { recursive: true });
+  await fs.writeFile(configPath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+  return {
+    ok: true,
+    action: 'dev-check-auto-refactor',
+    projectRoot,
+    configPath: normalizePathForReport(path.relative(projectRoot, configPath)),
+    autoRefactor: {
+      enabled: Boolean(enabled),
+      mode: enabled ? 'auto-refactor' : 'recommend',
+    },
   };
 }

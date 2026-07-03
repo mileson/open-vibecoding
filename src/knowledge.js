@@ -3,6 +3,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { appendJsonl, cjoin, exists, readJson, readJsonl, writeJson, writeText } from './fs-utils.js';
 import { resolveQualityLearningSource } from './quality-learning.js';
+import {
+  buildSessionEvidenceReviewSource,
+  extractSessionEvidenceRecords,
+  filterGenericFrameworkTokens,
+  normalizeSessionEvidenceRecords,
+  sanitizeEvidenceText,
+} from './session-evidence.js';
 import { timestamp } from './time.js';
 
 const KNOWLEDGE_DIR = cjoin('.openprd', 'knowledge');
@@ -211,7 +218,7 @@ function normalizeSearchTokens(value) {
     .map((item) => item.trim())
     .filter((item) => item.length >= 3);
   const hanTokens = String(value ?? '').match(/[\u4e00-\u9fa5]{2,}/g) ?? [];
-  return uniq([...asciiTokens, ...hanTokens]);
+  return filterGenericFrameworkTokens(uniq([...asciiTokens, ...hanTokens]));
 }
 
 function sortByLength(items = []) {
@@ -253,16 +260,17 @@ function scoreQueryAgainstFields(queryText, queryTokens, fields = []) {
   let score = 0;
   const matchedOn = [];
   for (const field of fields) {
-    const text = String(field ?? '').trim();
+    const text = sanitizeEvidenceText(field);
     if (!text) continue;
     const normalized = normalizeSearchText(text);
     if (!normalized) continue;
+    const fieldTokens = normalizeSearchTokens(text);
+    if (fieldTokens.length === 0) continue;
     let matched = false;
     if (normalized.length >= 6 && queryText.includes(normalized)) {
       matched = true;
       score += normalized.length >= 18 ? 10 : 7;
     } else {
-      const fieldTokens = normalizeSearchTokens(text);
       const overlap = fieldTokens.filter((token) => queryTokens.includes(token));
       if (overlap.length > 0) {
         matched = true;
@@ -889,10 +897,11 @@ function buildTurnReviewTitle(raw, source, touchedFiles = []) {
     ?? '项目经验草案';
 }
 
-function knowledgeCandidateFingerprint(categories = [], touchedFiles = []) {
+function knowledgeCandidateFingerprint(categories = [], touchedFiles = [], sourceSeed = null) {
   const normalizedCategories = [...new Set((categories ?? []).map((item) => String(item ?? '').trim()).filter(Boolean))].sort();
   const normalizedFiles = [...new Set((touchedFiles ?? []).map((item) => String(item ?? '').trim()).filter(Boolean))].sort();
-  return crypto.createHash('sha256').update(JSON.stringify([normalizedCategories, normalizedFiles])).digest('hex').slice(0, 16);
+  const normalizedSourceSeed = String(sourceSeed ?? '').trim();
+  return crypto.createHash('sha256').update(JSON.stringify([normalizedCategories, normalizedFiles, normalizedSourceSeed])).digest('hex').slice(0, 16);
 }
 
 async function findPendingCandidateByFingerprint(projectRoot, fingerprint, excludeId) {
@@ -1195,6 +1204,7 @@ function buildKnowledgeCandidateMeta({
     updatedAt: timestamp(),
     sourceKind: source.kind,
     sourceRef: source.sourceId,
+    evidenceOnly: source.evidenceOnly === true,
     title,
     summary,
     categories,
@@ -1405,6 +1415,11 @@ export async function reviewKnowledgeWorkspace(projectRoot, options = {}) {
   const turnStateSource = (await exists(knowledgePath(projectRoot, OPENPRD_HARNESS_TURN_STATE))) ? OPENPRD_HARNESS_TURN_STATE : null;
   const from = firstString(options.from, turnStateSource, latestReportPath);
   const rawInput = from ? await loadRawReviewInput(projectRoot, from) : { sourcePath: null, raw: null };
+  const evidenceRecords = normalizeSessionEvidenceRecords([
+    ...normalizeSessionEvidenceRecords(options.evidenceRecords),
+    ...extractSessionEvidenceRecords(options.sessionEvents ?? []),
+  ]);
+  const cleanEvidenceRecords = evidenceRecords.filter((record) => record.sourceKind !== 'context-only');
   const resolved = from
     ? await resolveQualityLearningSource(projectRoot, {
       from,
@@ -1414,13 +1429,20 @@ export async function reviewKnowledgeWorkspace(projectRoot, options = {}) {
     : { ok: false, error: 'no-review-source' };
   const source = resolved.ok
     ? resolved.source
+    : (cleanEvidenceRecords.length > 0
+      ? buildSessionEvidenceReviewSource({
+        records: cleanEvidenceRecords,
+        sourceId: firstString(options.sourceId, options.title, cleanEvidenceRecords[0]?.text),
+        sourcePath: rawInput.sourcePath ?? latestReportPath ?? KNOWLEDGE_REVIEW_SIGNAL_LOG,
+        title: firstString(options.title, cleanEvidenceRecords.find((record) => record.sourceKind === 'user-direct')?.text),
+      })
     : buildSyntheticReviewSource(projectRoot, {
       signal: options.signal,
       recentSignals,
       touchedFiles: options.touchedFiles,
       sourcePath: rawInput.sourcePath ?? latestReportPath ?? KNOWLEDGE_REVIEW_SIGNAL_LOG,
       title: firstString(options.title, readJsonObject(rawInput.raw)?.title),
-    });
+    }));
   if (!resolved.ok && source.evidenceSources.length === 0 && source.rootCauseCandidates.length === 0) {
     return {
       ok: true,
@@ -1455,18 +1477,20 @@ export async function reviewKnowledgeWorkspace(projectRoot, options = {}) {
   const reviewSignals = reviewContext.reviewSignals;
   const categories = buildKnowledgeCategories({ source, touchedFiles: substantiveTouchedFiles, reviewSignals });
   const reasons = categories.map(categoryReason);
+  const allowEvidenceOnly = options.allowEvidenceOnly === true || source.evidenceOnly === true || source.kind === 'session-evidence-review';
   const hasStrongSignal = categories.length > 0
     || source.rootCauseCandidates.length > 0
     || source.symptoms.length > 1
     || source.kind === 'completion-review'
+    || source.kind === 'session-evidence-review'
     || reviewSignals.some((signal) => signal.ok === true || signal.productionReady === true);
 
-  if (substantiveTouchedFiles.length === 0 || !hasStrongSignal) {
+  if ((substantiveTouchedFiles.length === 0 && !allowEvidenceOnly) || !hasStrongSignal) {
     return {
       ok: true,
       action: 'quality-knowledge-review',
       skipped: true,
-      reason: substantiveTouchedFiles.length === 0 ? 'no-substantive-touched-files' : 'no-knowledge-signal',
+      reason: substantiveTouchedFiles.length === 0 && !allowEvidenceOnly ? 'no-substantive-touched-files' : 'no-knowledge-signal',
       sourceKind: source.kind,
       sourcePath: source.sourcePath,
     };
@@ -1477,7 +1501,11 @@ export async function reviewKnowledgeWorkspace(projectRoot, options = {}) {
   let candidateId = rawCandidateRef
     ? (rawCandidateRef.startsWith('candidate-') ? rawCandidateRef : `candidate-${slugify(rawCandidateRef, 'knowledge')}`)
     : `candidate-${slugify(source.sourceId ?? title, 'knowledge')}`;
-  const fingerprint = knowledgeCandidateFingerprint(categories, substantiveTouchedFiles);
+  const fingerprint = knowledgeCandidateFingerprint(
+    categories,
+    substantiveTouchedFiles,
+    allowEvidenceOnly ? firstString(source.sourceId, source.title, source.sourcePath) : null,
+  );
   const duplicateCandidate = await findPendingCandidateByFingerprint(projectRoot, fingerprint, candidateId);
   if (duplicateCandidate?.candidateId) {
     candidateId = duplicateCandidate.candidateId;
@@ -1493,11 +1521,15 @@ export async function reviewKnowledgeWorkspace(projectRoot, options = {}) {
   const existingCandidate = await readJson(candidatePath).catch(() => null);
   const relativeCandidateDir = path.relative(projectRoot, candidateDir).split(path.sep).join('/');
   const relativeDraftSkillPath = path.relative(projectRoot, draftSkillPath).split(path.sep).join('/');
+  const scopeSummary = substantiveTouchedFiles.length > 0
+    ? `本轮围绕 ${substantiveTouchedFiles.length} 个可沉淀文件生成回顾。`
+    : '本轮基于只读证据生成项目经验候选。';
   const reviewSummary = [
-    `本轮围绕 ${substantiveTouchedFiles.length} 个可沉淀文件生成回顾。`,
+    scopeSummary,
     reasons[0] ?? '这次实现已经具备项目级经验抽象价值。',
     reviewSignals.length > 0 ? `已记录 ${reviewSignals.length} 条回顾信号。` : null,
     touchedFileSource === 'inferred-recent-files' ? '本轮 touched files 来自最近修改文件推断。' : null,
+    allowEvidenceOnly && substantiveTouchedFiles.length === 0 ? '本轮没有把 AGENTS、system 或 tool schema 命中当成用户证据。' : null,
   ].filter(Boolean).join(' ');
   const draftCandidate = buildKnowledgeCandidateMeta({
     projectRoot,
@@ -1740,7 +1772,9 @@ function buildKnowledgeMatchQuery(options = {}) {
     options.activeChange,
     options.nextTaskTitle,
     ...(normalizeStringList(options.relatedFiles)),
-  ].filter(Boolean);
+  ]
+    .map((field) => sanitizeEvidenceText(field))
+    .filter(Boolean);
   const text = candidateFields.join('\n');
   return {
     text,

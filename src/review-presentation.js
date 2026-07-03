@@ -48,6 +48,32 @@ export const REVIEW_PRESENTATION_TEMPLATE = {
       USER_CHANGE_SUMMARY_GUIDE.panelExamples.risk,
     ],
   },
+  designDirections: {
+    note: '可选；只有需求涉及界面/页面/交互时提供。先用 imagegen 生成 3 个差异足够大的交互稿，把图片放到 .openprd/design/active/ 后写入路径；不涉及界面时删除本字段。',
+    directions: [
+      {
+        id: 'direction-1',
+        title: '15 字以内方向名',
+        image: '.openprd/design/active/direction-1.png',
+        summary: '30 字以内一句话说明这个方向的核心体验',
+        tradeoff: '30 字以内说明取舍或适用场景',
+      },
+      {
+        id: 'direction-2',
+        title: '15 字以内方向名',
+        image: '.openprd/design/active/direction-2.png',
+        summary: '30 字以内一句话说明这个方向的核心体验',
+        tradeoff: '30 字以内说明取舍或适用场景',
+      },
+      {
+        id: 'direction-3',
+        title: '15 字以内方向名',
+        image: '.openprd/design/active/direction-3.png',
+        summary: '30 字以内一句话说明这个方向的核心体验',
+        tradeoff: '30 字以内说明取舍或适用场景',
+      },
+    ],
+  },
 };
 
 export function buildReviewPresentationTemplatePayload() {
@@ -182,6 +208,39 @@ function stableStringify(value) {
   return JSON.stringify(value);
 }
 
+const ACTIVE_ARTIFACT_RETAIN_VERSIONS = 12;
+
+export async function archiveStaleActiveArtifacts(projectRoot, options = {}) {
+  const retain = Number.isInteger(options.retain) && options.retain > 0
+    ? options.retain
+    : ACTIVE_ARTIFACT_RETAIN_VERSIONS;
+  const activeDir = path.join(projectRoot, '.openprd', 'artifacts', 'active');
+  const archiveDir = path.join(projectRoot, '.openprd', 'artifacts', 'archive');
+  const entries = await fs.readdir(activeDir, { withFileTypes: true }).catch(() => []);
+  const versioned = entries
+    .filter((entry) => entry.isDirectory() && /^v\d{4}-/.test(entry.name))
+    .map((entry) => entry.name)
+    .sort();
+  const stale = versioned.slice(0, Math.max(0, versioned.length - retain));
+  if (stale.length === 0) {
+    return { archived: [] };
+  }
+  await fs.mkdir(archiveDir, { recursive: true });
+  const archived = [];
+  for (const name of stale) {
+    const from = path.join(activeDir, name);
+    const to = path.join(archiveDir, name);
+    try {
+      await fs.rm(to, { recursive: true, force: true });
+      await fs.rename(from, to);
+      archived.push(name);
+    } catch {
+      // 归档失败不阻断评审生成
+    }
+  }
+  return { archived };
+}
+
 async function renderValidatedReviewPresentation(projectRoot, snapshot) {
   const workspaceRoot = path.join(projectRoot, '.openprd');
   const canonicalReview = canonicalReviewPath({ workspaceRoot }, snapshot.versionId);
@@ -191,6 +250,7 @@ async function renderValidatedReviewPresentation(projectRoot, snapshot) {
     snapshot,
     projectRelease: buildReleaseLedgerSummary(releaseLedger.ledger),
   }));
+  await archiveStaleActiveArtifacts(projectRoot).catch(() => null);
 
   const versionIndexPath = path.join(workspaceRoot, 'state', 'version-index.json');
   const versionIndex = await readJson(versionIndexPath);

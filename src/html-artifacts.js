@@ -491,9 +491,33 @@ const REVIEW_PRESENTATION_CONTRACT = {
           USER_CHANGE_SUMMARY_GUIDE.panelExamples.risk,
         ],
       },
+      designDirections: {
+        note: '可选；只有需求涉及界面/页面/交互时提供。先用 imagegen 生成 3 个差异足够大的交互稿，再把图片路径写进来。',
+        directions: [
+          {
+            id: 'direction-1',
+            title: '15 字以内方向名',
+            image: '.openprd/design/active/direction-1.png',
+            summary: '30 字以内一句话说明这个方向的核心体验',
+            tradeoff: '30 字以内说明取舍或适用场景',
+          },
+        ],
+      },
     },
   },
   rules: [
+    {
+      id: 'review-design-direction-count',
+      area: '交互方向评审',
+      target: '方向数量',
+      action: '涉及界面时提供 2 到 4 个差异足够大的方向（默认 3 个），写入 reviewPresentation.designDirections.directions[]。',
+    },
+    {
+      id: 'review-design-direction-fields',
+      area: '交互方向评审',
+      target: '每个方向的字段',
+      action: '每个方向必须有唯一 id、image 图片路径；title 15 字内、summary 30 字内、tradeoff 30 字内。',
+    },
     {
       id: 'review-map-card-text',
       area: '需求关系图 / 需求流程图',
@@ -627,10 +651,123 @@ export function buildReviewPresentationFeedback(snapshot) {
     });
   });
 
+  validateReviewDesignDirections(snapshot, violations, addViolation);
+
   return {
     contract: REVIEW_PRESENTATION_CONTRACT,
     violations,
   };
+}
+
+export function reviewDesignDirections(snapshot) {
+  const block = snapshot?.reviewPresentation?.designDirections;
+  if (!block || typeof block !== 'object' || Array.isArray(block)) return null;
+  const directions = Array.isArray(block.directions) ? block.directions : [];
+  if (directions.length === 0) return null;
+  return { ...block, directions };
+}
+
+function validateReviewDesignDirections(snapshot, violations, addViolation) {
+  const rawBlock = snapshot?.reviewPresentation?.designDirections;
+  if (rawBlock == null) return;
+  if (typeof rawBlock !== 'object' || Array.isArray(rawBlock) || !Array.isArray(rawBlock.directions)) {
+    violations.push({
+      ruleId: 'review-design-direction-fields',
+      area: '交互方向评审',
+      target: 'designDirections 结构',
+      jsonPath: 'reviewPresentation.designDirections',
+      action: 'designDirections 必须是对象，且 directions 为数组。参考 openprd review-presentation . --template。',
+    });
+    return;
+  }
+  const directions = rawBlock.directions;
+  if (directions.length < 2 || directions.length > 4) {
+    violations.push({
+      ruleId: 'review-design-direction-count',
+      area: '交互方向评审',
+      target: '方向数量',
+      jsonPath: 'reviewPresentation.designDirections.directions',
+      action: `当前 ${directions.length} 个方向；请提供 2 到 4 个差异足够大的方向（默认 3 个）。`,
+    });
+  }
+  const seenIds = new Set();
+  directions.forEach((direction, index) => {
+    const basePath = `reviewPresentation.designDirections.directions[${index}]`;
+    if (!direction || typeof direction !== 'object' || Array.isArray(direction)) {
+      violations.push({
+        ruleId: 'review-design-direction-fields',
+        area: '交互方向评审',
+        target: `方向 ${index + 1}`,
+        jsonPath: basePath,
+        action: '每个方向必须是对象，包含 id、title、image、summary 字段。',
+      });
+      return;
+    }
+    if (/字以内/u.test(`${direction.title ?? ''}${direction.summary ?? ''}${direction.tradeoff ?? ''}`)) {
+      violations.push({
+        ruleId: 'review-design-direction-fields',
+        area: '交互方向评审',
+        target: `方向 ${index + 1}`,
+        jsonPath: basePath,
+        action: '仍是模板占位文案；请填入真实方向内容，或在不涉及界面时删除 designDirections 字段。',
+      });
+    }
+    const id = normalizedReviewVisibleText(direction.id);
+    if (!id) {
+      violations.push({
+        ruleId: 'review-design-direction-fields',
+        area: '交互方向评审',
+        target: `方向 ${index + 1} id`,
+        jsonPath: `${basePath}.id`,
+        action: '缺少方向 id；请使用 direction-1 这类稳定标识。',
+      });
+    } else if (seenIds.has(id)) {
+      violations.push({
+        ruleId: 'review-design-direction-fields',
+        area: '交互方向评审',
+        target: `方向 ${index + 1} id`,
+        jsonPath: `${basePath}.id`,
+        action: `方向 id ${id} 重复；每个方向必须使用唯一 id。`,
+      });
+    } else {
+      seenIds.add(id);
+    }
+    if (!normalizedReviewVisibleText(direction.image)) {
+      violations.push({
+        ruleId: 'review-design-direction-fields',
+        area: '交互方向评审',
+        target: `方向 ${index + 1} 图片`,
+        jsonPath: `${basePath}.image`,
+        action: '缺少 image 图片路径；请先用 imagegen 生成交互稿，再写入项目内相对路径。',
+      });
+    }
+    addViolation({
+      ruleId: 'review-design-direction-fields',
+      area: '交互方向评审',
+      target: `方向 ${index + 1} 名称`,
+      value: direction.title,
+      maxChars: 15,
+      jsonPath: `${basePath}.title`,
+    });
+    addViolation({
+      ruleId: 'review-design-direction-fields',
+      area: '交互方向评审',
+      target: `方向 ${index + 1} 卖点`,
+      value: direction.summary,
+      maxChars: 30,
+      jsonPath: `${basePath}.summary`,
+    });
+    if (direction.tradeoff != null) {
+      addViolation({
+        ruleId: 'review-design-direction-fields',
+        area: '交互方向评审',
+        target: `方向 ${index + 1} 取舍`,
+        value: direction.tradeoff,
+        maxChars: 30,
+        jsonPath: `${basePath}.tradeoff`,
+      });
+    }
+  });
 }
 
 function normalizedReviewVisibleText(value) {
@@ -869,6 +1006,31 @@ function renderReviewProjectVersion(projectRelease) {
   `;
 }
 
+function renderReviewStageRail(snapshot) {
+  const hasDirections = Boolean(reviewDesignDirections(snapshot));
+  const stages = [
+    { title: '需求澄清', status: 'done' },
+    { title: '需求摘要', status: 'done' },
+    { title: '评审确认', status: 'current' },
+    ...(hasDirections ? [{ title: '方向选择', status: 'pending' }] : []),
+    { title: '任务拆解', status: 'pending' },
+    { title: '实现执行', status: 'pending' },
+    { title: '验证收口', status: 'pending' },
+  ];
+  const items = stages.map((stage, index) => `
+        <li class="review-stage ${stage.status}">
+          <span class="review-stage-dot">${stage.status === 'done' ? '✓' : index + 1}</span>
+          <span class="review-stage-name">${escapeHtml(stage.title)}</span>
+          ${stage.status === 'current' ? '<span class="review-stage-badge">你在这里</span>' : ''}
+        </li>`);
+  return `
+      <nav class="review-stage-rail" aria-label="流程位置">
+        <ol>
+          ${items.join('\n')}
+        </ol>
+      </nav>`;
+}
+
 function renderReviewOverview(snapshot, sectionsData, agenda = []) {
   const problem = sectionsData.problem?.problemStatement || '尚未形成明确问题定义';
   const goal = reviewList(sectionsData.goals?.goals)[0] ?? null;
@@ -880,7 +1042,7 @@ function renderReviewOverview(snapshot, sectionsData, agenda = []) {
           <li>
             <a href="#review-panel-${escapeHtml(item.kind)}">
               <span class="review-agenda-name">${escapeHtml(item.title)}</span>
-              <span class="review-agenda-count${item.count === 0 ? ' empty' : ''}">${item.count === 0 ? '暂无内容' : `${item.count} 条`}</span>
+              <span class="review-agenda-count${item.count === 0 ? ' empty' : ''}">${item.count === 0 ? '暂无内容' : `${item.count} ${escapeHtml(item.unit || '条')}`}</span>
             </a>
           </li>`).join('')}
         </ol>
@@ -1336,7 +1498,7 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
-function reviewCommand(snapshot, status, notes = null) {
+function reviewCommand(snapshot, status, notes = null, extra = {}) {
   const parts = ['openprd review . --mark', status];
   if (snapshot.versionId) {
     parts.push('--version', shellQuote(snapshot.versionId));
@@ -1347,10 +1509,69 @@ function reviewCommand(snapshot, status, notes = null) {
   if (snapshot.workUnitId) {
     parts.push('--work-unit', shellQuote(snapshot.workUnitId));
   }
+  if (extra.direction) {
+    parts.push('--direction', shellQuote(extra.direction));
+  }
   if (notes) {
     parts.push('--notes', shellQuote(notes));
   }
   return parts.join(' ');
+}
+
+function reviewDirectionImageHref(imagePath) {
+  const text = String(imagePath ?? '').trim();
+  if (!text) return null;
+  if (/^(?:[a-z][a-z0-9+.-]*:|\/)/iu.test(text)) {
+    return text;
+  }
+  return `../../${text.split(path.sep).join('/')}`;
+}
+
+function renderReviewDesignDirections(snapshot) {
+  const block = reviewDesignDirections(snapshot);
+  if (!block) return '';
+  const cards = block.directions.map((direction, index) => {
+    const id = normalizedReviewVisibleText(direction.id) || `direction-${index + 1}`;
+    const title = normalizedReviewVisibleText(direction.title) || `方向 ${index + 1}`;
+    const summary = normalizedReviewVisibleText(direction.summary);
+    const tradeoff = normalizedReviewVisibleText(direction.tradeoff);
+    const href = reviewDirectionImageHref(direction.image);
+    const selectCommand = reviewCommand(snapshot, 'confirmed', null, { direction: id });
+    const selectCopy = reviewCopyBundle({
+      label: `选定交互方向：${title}`,
+      command: selectCommand,
+      payload: JSON.stringify({ versionId: snapshot.versionId, direction: id, title }, null, 2),
+      message: `我选定「${title}」这个交互方向，请按这个方向继续推进实现。`,
+    });
+    const image = href
+      ? `<a class="review-direction-image" href="${escapeHtml(href)}" target="_blank" rel="noopener"><img src="${escapeHtml(href)}" alt="${escapeHtml(title)} 交互稿" loading="lazy" /></a>`
+      : '<div class="review-direction-image review-direction-image-missing">交互稿图片待生成</div>';
+    return `
+        <article class="review-direction-card" data-direction="${escapeHtml(id)}">
+          ${image}
+          <div class="review-direction-body">
+            <div class="review-direction-head">
+              <span class="review-direction-index">方向 ${index + 1}</span>
+              <h3>${escapeHtml(title)}</h3>
+            </div>
+            ${summary ? `<p class="review-direction-summary">${escapeHtml(summary)}</p>` : ''}
+            ${tradeoff ? `<p class="review-direction-tradeoff">取舍：${escapeHtml(tradeoff)}</p>` : ''}
+            <button type="button" class="review-direction-select" data-copy-value="${escapeHtml(selectCopy)}" title="${escapeHtml(selectCommand)}">
+              选这个方向
+            </button>
+          </div>
+        </article>`;
+  });
+  return `
+      <section class="review-directions" id="review-panel-design-directions" aria-label="交互方向评审">
+        <div class="review-section-heading">
+          <h2>交互方向评审</h2>
+          <p>这是本次界面需求最重要的决定：${block.directions.length} 个交互稿方向选一个。点图片看大图，点“选这个方向”后把复制内容发回给 Agent 即可。</p>
+        </div>
+        <div class="review-direction-grid">
+          ${cards.join('\n')}
+        </div>
+      </section>`;
 }
 
 function renderReviewDecision(snapshot) {
@@ -1437,11 +1658,17 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
       items: riskPanelItems,
     },
   ];
-  const panelAgenda = panelSpecs.map((spec) => ({
-    kind: spec.kind,
-    title: spec.title,
-    count: Array.isArray(spec.items) ? spec.items.filter(Boolean).length : 0,
-  }));
+  const designDirectionsBlock = reviewDesignDirections(snapshot);
+  const panelAgenda = [
+    ...(designDirectionsBlock
+      ? [{ kind: 'design-directions', title: '交互方向评审（选一个方向）', count: designDirectionsBlock.directions.length, unit: '个方向' }]
+      : []),
+    ...panelSpecs.map((spec) => ({
+      kind: spec.kind,
+      title: spec.title,
+      count: Array.isArray(spec.items) ? spec.items.filter(Boolean).length : 0,
+    })),
+  ];
   const panels = panelSpecs.map((spec) => renderReviewPanel(spec));
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -1486,6 +1713,76 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
         flex-wrap: wrap;
         gap: 16px;
         margin-bottom: 16px;
+      }
+      .review-stage-rail {
+        margin: 0 0 16px;
+        border: 1px solid var(--review-line);
+        border-radius: 14px;
+        background: var(--review-panel);
+        padding: 12px 18px;
+        overflow-x: auto;
+      }
+      .review-stage-rail ol {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        min-width: max-content;
+      }
+      .review-stage {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        color: var(--review-muted);
+        white-space: nowrap;
+      }
+      .review-stage + .review-stage::before {
+        content: '→';
+        margin-right: 6px;
+        color: var(--review-line);
+      }
+      .review-stage-dot {
+        display: inline-grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        border: 1px solid var(--review-line);
+        background: var(--review-panel-soft);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .review-stage.done .review-stage-dot {
+        border-color: #86efac;
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .review-stage.done .review-stage-name {
+        color: var(--review-text);
+      }
+      .review-stage.current {
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        color: var(--review-indigo);
+        font-weight: 800;
+      }
+      .review-stage.current .review-stage-dot {
+        border-color: var(--review-indigo);
+        background: var(--review-indigo);
+        color: #fff;
+      }
+      .review-stage-badge {
+        font-size: 11px;
+        font-weight: 800;
+        color: #fff;
+        background: var(--review-indigo);
+        border-radius: 999px;
+        padding: 2px 8px;
       }
       .review-brand {
         display: inline-flex;
@@ -2081,11 +2378,121 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
         box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
         transform: translateY(0);
       }
+      .review-directions {
+        margin-top: 28px;
+      }
+      .review-direction-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 18px;
+        margin-top: 14px;
+      }
+      .review-direction-card {
+        display: flex;
+        flex-direction: column;
+        background: var(--review-panel);
+        border: 1px solid var(--review-line);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        transition: border-color 160ms ease, box-shadow 160ms ease;
+      }
+      .review-direction-card.selected {
+        border-color: var(--review-indigo);
+        box-shadow: 0 0 0 2px var(--review-indigo), 0 12px 24px rgba(79, 70, 229, 0.16);
+      }
+      .review-direction-card.selected .review-direction-select {
+        border-color: var(--review-indigo);
+        background: var(--review-indigo);
+        color: #fff;
+      }
+      .review-direction-image {
+        display: block;
+        background: var(--review-panel-soft);
+        border-bottom: 1px solid var(--review-line);
+        aspect-ratio: 4 / 3;
+        overflow: hidden;
+      }
+      .review-direction-image img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .review-direction-image-missing {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--review-muted);
+        font-size: 14px;
+      }
+      .review-direction-body {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 16px;
+      }
+      .review-direction-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .review-direction-head h3 {
+        margin: 0;
+        font-size: 17px;
+      }
+      .review-direction-index {
+        flex-shrink: 0;
+        border: 1px solid #c7d2fe;
+        background: #eef2ff;
+        color: var(--review-indigo);
+        border-radius: 999px;
+        padding: 2px 10px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .review-direction-summary {
+        margin: 0;
+        color: var(--review-text);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .review-direction-tradeoff {
+        margin: 0;
+        color: var(--review-muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .review-direction-select {
+        cursor: pointer;
+        align-self: flex-start;
+        margin-top: 4px;
+        min-height: 38px;
+        border: 1px solid #c7d2fe;
+        border-radius: 10px;
+        padding: 0 16px;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 800;
+        background: #eef2ff;
+        color: var(--review-indigo);
+        transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+      }
+      .review-direction-select:hover,
+      .review-direction-select:focus-visible {
+        border-color: #a5b4fc;
+        background: #e0e7ff;
+        transform: translateY(-1px);
+        outline: none;
+      }
       @media (max-width: 860px) {
         .review-overview {
           grid-template-columns: 1fr;
         }
         .review-panel-grid {
+          grid-template-columns: 1fr;
+        }
+        .review-direction-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -2126,8 +2533,10 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
         <div class="review-brand">OpenPrd / 评审面板</div>
         ${renderReviewProjectVersion(visibleProjectRelease)}
       </header>
+      ${renderReviewStageRail(snapshot)}
       ${renderReviewOverview(snapshot, sectionsData, panelAgenda)}
       ${renderReviewGapPanel(sectionsData)}
+      ${renderReviewDesignDirections(snapshot)}
       ${renderReviewFlowSvg(snapshot, sectionsData)}
       <section class="review-panel-grid" aria-label="固定评审项">
         ${panels.join('\n')}
@@ -2158,6 +2567,18 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
           button.addEventListener('click', async () => {
             await copyReviewText(button.dataset.copyValue || '');
             flashCopied(button);
+          });
+        });
+        document.querySelectorAll('.review-direction-select').forEach((button) => {
+          button.addEventListener('click', () => {
+            document.querySelectorAll('.review-direction-card').forEach((card) => {
+              card.classList.remove('selected');
+              const cardButton = card.querySelector('.review-direction-select');
+              if (cardButton && cardButton !== button) cardButton.textContent = '选这个方向';
+            });
+            const ownCard = button.closest('.review-direction-card');
+            if (ownCard) ownCard.classList.add('selected');
+            setTimeout(() => { button.textContent = '已选定，把复制内容发回给 Agent'; }, 1250);
           });
         });
       </script>

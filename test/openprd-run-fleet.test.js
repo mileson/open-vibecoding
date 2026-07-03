@@ -253,7 +253,7 @@ test('run exposes hook-stable context and records hook iterations', async () => 
   assert.equal(bareSessionContext.lane.kind, 'default');
   assert.notEqual(bareSessionContext.recommendation.type, 'session-continuation');
 
-  const tasksPath = path.join(project, 'openprd', 'changes', 'run-loop', 'tasks.md');
+  const tasksPath = path.join(project, '.openprd', 'changes', 'run-loop', 'tasks.md');
   const tasksText = await fs.readFile(tasksPath, 'utf8');
   await fs.writeFile(tasksPath, tasksText.replace(/- \[ \]/g, '- [x]'));
   await fs.writeFile(path.join(project, 'package.json'), `${JSON.stringify({
@@ -745,12 +745,12 @@ test('run verify validates the focused change instead of the global active chang
     action: 'list',
     projectRoot: project,
     changeId,
-    changeDir: path.join(project, 'openprd', 'changes', changeId),
+    changeDir: path.join(project, '.openprd', 'changes', changeId),
     tasks: [{
       id: 'T001.01',
       title,
       taskHandle: `${changeId}:T001.01:${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-      relativePath: `openprd/changes/${changeId}/tasks.md`,
+      relativePath: `.openprd/changes/${changeId}/tasks.md`,
       lineNumber: 1,
       checked: false,
       metadata: {
@@ -772,7 +772,7 @@ test('run verify validates the focused change instead of the global active chang
       id: 'T001.01',
       title,
       taskHandle: `${changeId}:T001.01:${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-      relativePath: `openprd/changes/${changeId}/tasks.md`,
+      relativePath: `.openprd/changes/${changeId}/tasks.md`,
       lineNumber: 1,
       metadata: {
         verify: 'node -e "process.exit(0)"',
@@ -790,12 +790,12 @@ test('run verify validates the focused change instead of the global active chang
         {
           id: 'hermes-playwright-chromium-oss',
           active: true,
-          changeDir: path.join(project, 'openprd', 'changes', 'hermes-playwright-chromium-oss'),
+          changeDir: path.join(project, '.openprd', 'changes', 'hermes-playwright-chromium-oss'),
         },
         {
           id: 'resource-layer-public-model-api',
           active: false,
-          changeDir: path.join(project, 'openprd', 'changes', 'resource-layer-public-model-api'),
+          changeDir: path.join(project, '.openprd', 'changes', 'resource-layer-public-model-api'),
         },
       ],
     }),
@@ -877,7 +877,7 @@ test('run context and verify ignore reference discovery by default', async () =>
   await reviewWorkspace(project, { mark: 'confirmed' });
   await generateOpenSpecChangeWorkspace(project, { change: 'reference-boundary' });
 
-  const tasksPath = path.join(project, 'openprd', 'changes', 'reference-boundary', 'tasks.md');
+  const tasksPath = path.join(project, '.openprd', 'changes', 'reference-boundary', 'tasks.md');
   const tasksText = await fs.readFile(tasksPath, 'utf8');
   await fs.writeFile(tasksPath, tasksText.replace(/- \[ \]/g, '- [x]'));
   await fs.writeFile(path.join(project, 'package.json'), `${JSON.stringify({
@@ -1041,6 +1041,40 @@ test('fleet sync-registry backfills known workspaces and reports registry scope 
   assert.equal(scopedDryRun.registry.knownTotal, 2);
   assert.equal(scopedDryRun.registry.scopedKnown, 1);
   assert.equal(scopedDryRun.registry.outsideRoot, 1);
+});
+
+test('fleet update discovers legacy root openprd artifacts and migrates them', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'openprd-fleet-legacy-root-test-'));
+  const legacyProject = path.join(root, 'legacy-openprd-project');
+  const legacyChange = path.join(legacyProject, 'openprd', 'changes', 'legacy-root-change');
+  await fs.mkdir(path.join(legacyChange, 'specs', 'legacy-root-change'), { recursive: true });
+  await fs.writeFile(path.join(legacyChange, 'proposal.md'), '# Legacy root change\n');
+  await fs.writeFile(path.join(legacyChange, 'tasks.md'), '- [ ] T001.01 Migrate legacy root\n');
+  await fs.writeFile(path.join(legacyChange, 'specs', 'legacy-root-change', 'spec.md'), '# Legacy root spec\n');
+
+  const dryRun = await fleetWorkspace(root, {
+    updateOpenprd: true,
+    dryRun: true,
+    maxDepth: 2,
+  });
+
+  assert.equal(dryRun.ok, true);
+  assert.equal(dryRun.summary.openprd, 1);
+  const planned = dryRun.projects.find((project) => project.relativePath === 'legacy-openprd-project');
+  assert.equal(planned.plannedAction, 'update');
+  assert.ok(planned.markers.includes('openprd-legacy-artifacts'));
+
+  const updated = await fleetWorkspace(root, {
+    updateOpenprd: true,
+    maxDepth: 2,
+  });
+
+  assert.equal(updated.ok, true);
+  assert.equal(updated.summary.updated, 1);
+  assert.equal(await pathExists(path.join(legacyProject, '.openprd', 'changes', 'legacy-root-change', 'tasks.md')), true);
+  assert.equal(await pathExists(path.join(legacyProject, 'openprd')), false);
+  const item = updated.projects.find((project) => project.relativePath === 'legacy-openprd-project');
+  assert.ok(item.changes.some((change) => change.source === 'workspace' && change.from?.includes(path.join('openprd', 'changes'))));
 });
 
 test('doctor reports registry hygiene warnings for overbroad and nested workspaces', async () => {

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "workUnitId": "wu-20260703144525-7ca0851c",
+  "title": "文档反污染治理与界面需求3方向交互稿评审",
+  "status": "confirmed",
+  "projectRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "workspaceRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd",
+  "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "latestVersionId": "v0007",
+  "latestVersionDigest": "d7b80133987917a5b01dae9180e307af3bb27f07eec1a7b7c237c6ae3ab03466",
+  "reviewPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/reviews/v0007.html",
+  "activeReviewPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/engagements/active/review.html",
+  "reviewArtifact": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/reviews/v0007.html",
+  "activeReviewArtifact": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/engagements/active/review.html",
+  "artifactBundle": null,
+  "createdAt": "2026-07-03 14:45:25",
+  "updatedAt": "2026-07-03 14:46:09"
+}

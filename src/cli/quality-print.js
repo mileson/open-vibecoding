@@ -86,10 +86,19 @@ function printDevelopmentStandardsResult(result, json) {
     return;
   }
 
-  console.log(`OpenPrd 后续建议: ${result.ok ? '完成' : '失败'}`);
+  if (result.action === 'dev-check-auto-refactor') {
+    console.log(`OpenPrd dev-check 自动优化: 已${result.autoRefactor?.enabled ? '开启' : '关闭'}`);
+    console.log(`当前模式: ${result.autoRefactor?.enabled ? '自动执行优化（OpenPRD 自动优化报告）' : '仅推荐（后续建议）'}`);
+    console.log(`配置文件: ${result.configPath}`);
+    return;
+  }
+
+  const autoMode = result.autoRefactor?.enabled !== false;
+  console.log(`OpenPrd ${autoMode ? '自动优化报告' : '后续建议'}: ${result.ok ? '完成' : '失败'}`);
+  console.log(`自动优化: ${autoMode ? '开启（超行文件本轮直接拆分，收口附开关确认）' : '关闭（仅输出拆分推荐）'}`);
   const attentionFiles = result.files.filter((file) => ['attention', 'warning', 'error'].includes(file.status));
   if (attentionFiles.length > 0) {
-    console.log(`关注程度: 🟡 低风险｜建议留意，🟠 中风险｜建议优先关注，🔴 高风险｜需要先处理。`);
+    console.log(`${autoMode ? '问题级别' : '关注程度'}: 🟡 低风险｜建议留意，🟠 中风险｜建议优先关注，🔴 高风险｜需要先处理。`);
   } else {
     console.log(`本轮已回顾 ${result.files.length} 个改动文件，暂未发现需要额外说明的影响对象。`);
   }
@@ -100,6 +109,19 @@ function printDevelopmentStandardsResult(result, json) {
   }
   if (result.wrapUp?.required && result.wrapUp.markdownTable) {
     console.log(result.wrapUp.markdownBlock ?? result.wrapUp.markdownTable);
+  }
+  if (result.wrapUp?.required && result.wrapUp.switchHint) {
+    console.log(`- 开关提示: ${result.wrapUp.switchHint}`);
+  }
+  if (result.visualEvidence?.required) {
+    console.log(`- 视觉证据提醒: ${result.visualEvidence.reason}`);
+    console.log(`  涉及界面文件: ${result.visualEvidence.uiFiles.join(', ')}`);
+    for (const command of result.visualEvidence.suggestedCommands ?? []) {
+      console.log(`  可选命令: ${command}`);
+    }
+    console.log(`  ${result.visualEvidence.chatEmbedHint}`);
+  } else if (result.visualEvidence?.uiFiles?.length > 0) {
+    console.log(`- 视觉证据: 最近 24 小时已有证据板（${result.visualEvidence.freshEvidence.join(', ')}）；确认覆盖本轮改动并把证据图嵌入对话流。`);
   }
   printKnowledgeReview(result.knowledgeReview);
   for (const error of result.errors ?? []) {
@@ -275,6 +297,10 @@ function printVisualCompareResult(result, json) {
   }
   if (Array.isArray(result.items) && result.items.length > 0) {
     console.log(`实验卡片: ${result.items.length}`);
+  }
+  if (result.chatEmbed?.markdown) {
+    console.log(`对话流嵌入: ${result.chatEmbed.markdown}`);
+    console.log(`  ${result.chatEmbed.hint}`);
   }
   for (const action of result.nextActions ?? []) {
     console.log(`- 下一步: ${action}`);

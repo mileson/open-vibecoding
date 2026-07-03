@@ -76,5 +76,83 @@
     "digest": "a3dbf01f4a3309d372002e417ffc2bc596b5e5c68a5a60c393547894ef72cefc",
     "workUnitId": "wu-20260607130707-4f012e44",
     "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+  },
+  {
+    "versionNumber": 7,
+    "versionId": "v0007",
+    "createdAt": "2026-07-03 14:45:25",
+    "title": "文档反污染治理与界面需求3方向交互稿评审",
+    "owner": "Codex",
+    "productType": "agent",
+    "templatePack": "agent",
+    "status": "synthesized",
+    "digest": "d7b80133987917a5b01dae9180e307af3bb27f07eec1a7b7c237c6ae3ab03466",
+    "workUnitId": "wu-20260703144525-7ca0851c",
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+  },
+  {
+    "versionNumber": 8,
+    "versionId": "v0008",
+    "createdAt": "2026-07-03 17:14:17",
+    "title": "PM 流程引导与画布评审协同（Human-in-the-loop 升级）",
+    "owner": "Codex",
+    "productType": "agent",
+    "templatePack": "agent",
+    "status": "synthesized",
+    "digest": "e1f4ff20b3ea267615a18066166840f2a353a536579ec9e9d96aae033d2f0c8b",
+    "workUnitId": "wu-20260703171417-ea36f6b6",
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+  },
+  {
+    "versionNumber": 9,
+    "versionId": "v0009",
+    "createdAt": "2026-07-03 18:26:19",
+    "title": "PM 流程引导与画布评审协同（Human-in-the-loop 升级）",
+    "owner": "Codex",
+    "productType": "agent",
+    "templatePack": "agent",
+    "status": "synthesized",
+    "digest": "b03167a5e7ad80ab1291055307d5e1a8d75747f2c521f53a1c1a48a624868c7e",
+    "workUnitId": "wu-20260703182619-46900486",
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+  },
+  {
+    "versionNumber": 10,
+    "versionId": "v0010",
+    "createdAt": "2026-07-03 18:27:33",
+    "title": "PM 流程引导与画布评审协同（Human-in-the-loop 升级）",
+    "owner": "Codex",
+    "productType": "agent",
+    "templatePack": "agent",
+    "status": "synthesized",
+    "digest": "fdc00ecd76e453dc9ecd1790b778c05ddcbb85220224c604ae1c973b1e21eee9",
+    "workUnitId": "wu-20260703182733-89ece1ae",
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+  },
+  {
+    "versionNumber": 11,
+    "versionId": "v0011",
+    "createdAt": "2026-07-03 18:27:40",
+    "title": "PM 流程引导与画布评审协同（Human-in-the-loop 升级）",
+    "owner": "Codex",
+    "productType": "agent",
+    "templatePack": "agent",
+    "status": "synthesized",
+    "digest": "c79abbd6ff06c02edcc219570657a56a2cfe677f0fc322d4225a0295fdf9b759",
+    "workUnitId": "wu-20260703182740-23297ef0",
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+  },
+  {
+    "versionNumber": 12,
+    "versionId": "v0012",
+    "createdAt": "2026-07-03 18:28:06",
+    "title": "Vibe Coding 自动化三连：dev-check 自动重构、图标自动匹配、拼图证据入流",
+    "owner": "Codex",
+    "productType": "agent",
+    "templatePack": "agent",
+    "status": "synthesized",
+    "digest": "ecce1dcbd85b8bd72e83bfde3d020e941c6c9691a934c28cbb148e9f892aa898",
+    "workUnitId": "wu-20260703182806-96de2c67",
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
   }
 ]
