@@ -1,7 +1,21 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-04 00:04:05",
+  "updatedAt": "2026-07-06 17:11:46",
   "reports": [
+    {
+      "reportId": "eval-20260706171144",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260706171144.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260706171144.html",
+      "generatedAt": "2026-07-06 17:11:46",
+      "status": "production-ready"
+    },
+    {
+      "reportId": "eval-20260706171141",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260706171141.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260706171141.html",
+      "generatedAt": "2026-07-06 17:11:44",
+      "status": "production-ready"
+    },
     {
       "reportId": "eval-20260704000403",
       "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260704000403.json",
@@ -686,20 +700,6 @@
       "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260608231916.json",
       "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260608231916.html",
       "generatedAt": "2026-06-08 23:19:17",
-      "status": "needs-attention"
-    },
-    {
-      "reportId": "eval-20260608185847",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260608185847.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260608185847.html",
-      "generatedAt": "2026-06-08 18:58:48",
-      "status": "needs-attention"
-    },
-    {
-      "reportId": "eval-20260608181514",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260608181514.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260608181514.html",
-      "generatedAt": "2026-06-08 18:15:15",
       "status": "needs-attention"
     }
   ]

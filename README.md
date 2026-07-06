@@ -315,13 +315,17 @@ openprd review /path/to/project --mark confirmed --version <id> --digest <sha256
 ```
 
 `review.html` 是当前 PRD 的稳定评审稿，但默认 approval policy 是
-`decision-points`，不是“每次都必须停在这里”。常规 lane 下，用户先看稳定
-artifact，再用页面复制出来的精确 `--version`、`--digest`、`--work-unit`
-记录确认；`silent-record` lane 只有在用户一开始已经明确要求直接做、并显式
-表示不需要额外评审或确认时，才允许直接记录当前这份精确 artifact。不要把
-实现授权当成给任意评审稿补确认，也不要把评审记录当成实现授权。当前 artifact
-记录完成后，再生成 OpenPrd change 和任务拆解；如果用户原始意图已明确要求
-实现，tasks 就绪后即可直接执行，否则等待一句明确的执行指令：
+`decision-points`，不是“每次都必须停在这里”。常规 lane 下，一句自然语言
+确认（例如“确认这版，继续”，容忍“确认 v0276 评审稿”这类版本号插写）就足够：
+hook 会自动把确认绑定到当前精确的 `--version`、`--digest`、`--work-unit`，
+Agent 不允许反过来向用户索要 digest、work-unit 或完整命令。当这句确认同时
+带有“继续执行”意图，或此前已确认过需求摘要时，一次确认会解锁整条链：评审
+记录、change、tasks 与实现全程直通，不再逐环节停下（一次确认合同）。
+`silent-record` lane 只有在用户一开始已经明确要求直接做、并显式表示不需要
+额外评审或确认时，才允许直接记录当前这份精确 artifact。不要把实现授权当成
+给任意评审稿补确认，也不要把评审记录当成实现授权。当前 artifact 记录完成后，
+再生成 OpenPrd change 和任务拆解；如果用户原始意图已明确要求实现，tasks
+就绪后即可直接执行，否则等待一句明确的执行指令：
 
 ```bash
 openprd change /path/to/project --generate --change <change-id>
@@ -448,6 +452,22 @@ OpenPrd 生成的 change 会包含标准化维护任务，change 校验也会检
 或已因本次变更过期。缺失的必须补齐；已有文档如果受到职责、流程、结构、依赖
 或产品行为变化影响，也必须同步更新。如果无需更新，应说明已经完成影响判定以及
 为什么现有文档仍然准确。
+
+## 生图路由：自动选对免费生图工具
+
+图片、封面图、效果图、图标等生图请求按三层路由自动选工具，不需要用户指定：
+
+1. **工具面判定**：Codex 环境用原生 `imagegen`（Image 2），Cursor 环境用内置
+   `GenerateImage`——两者都是对话工具内的免费能力，优先直接使用。
+2. **已存偏好**：都不可用或无法判断时，先读
+   `.openprd/harness/image-generation-preference.json` 里用户已确认的偏好，
+   有就直接用，不再重复询问。
+3. **询问并持久化**：没有偏好时才问用户一次，答复以 `user-confirmed` 来源
+   写回该文件，作为下次默认。
+
+成本护栏：任何情况下都不允许在用户未明确指定时，擅自调用用户本地或自有的
+付费生图 API（例如 OpenAI / Stability key）。路由协议由 install manifest 和
+`.openprd/harness/runtime-environment.json` 的 `imageGenerationRouting` 字段承载。
 
 ## 效果图与截图拼图对比，自动优化
 

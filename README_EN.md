@@ -365,16 +365,23 @@ openprd review /path/to/project --mark confirmed --version <id> --digest <sha256
 
 `review.html` is the stable review artifact for the current PRD, but the default
 approval policy is `decision-points`, not “always stop here”. In a normal lane,
-the user reviews that stable artifact first and then the exact copied
-`--version`, `--digest`, and `--work-unit` tuple is recorded. In a
-`silent-record` lane, OpenPrd can record the exact current artifact without an
-extra stop only when the user already made direct execution intent explicit and
-explicitly opted out of additional review confirmation. Do not treat
-implementation approval as permission to mark a different review artifact, and
-do not treat review recording as execution authorization. After the current
-artifact is recorded, generate the OpenPrd change and task breakdown. If the
-user originally asked to implement, execution can continue once tasks are ready;
-otherwise wait for an explicit execution request:
+one plain natural-language confirmation (for example “确认这版，继续”, including
+wording with an inline version id such as “确认 v0276 评审稿”) is enough: the
+hook binds it to the exact current `--version`, `--digest`, and `--work-unit`
+tuple automatically, and the agent must never ask the user to paste a digest,
+work-unit id, or a full command. When that confirmation also carries a
+continue-execution intent, or a requirement summary was already confirmed
+earlier, one confirmation authorizes the whole chain: review recording, change,
+tasks, and implementation proceed without further stops (the one-time
+confirmation contract). In a `silent-record` lane, OpenPrd can record the exact
+current artifact without an extra stop only when the user already made direct
+execution intent explicit and explicitly opted out of additional review
+confirmation. Do not treat implementation approval as permission to mark a
+different review artifact, and do not treat review recording as execution
+authorization. After the current artifact is recorded, generate the OpenPrd
+change and task breakdown. If the user originally asked to implement, execution
+can continue once tasks are ready; otherwise wait for an explicit execution
+request:
 
 ```bash
 openprd change /path/to/project --generate --change <change-id>
@@ -510,6 +517,25 @@ or stale. Missing docs must be created; existing docs should be updated whenever
 the change affects responsibilities, flows, structure, dependencies, or product
 behavior. If no documentation update is needed, agents should say the check was
 performed and why the existing docs still match the code.
+
+## Image-generation routing: pick the right free tool automatically
+
+Image requests (covers, mockups, icons, effect images) follow a three-layer
+routing protocol, so users never have to specify a provider:
+
+1. **Surface built-ins first**: Codex uses native `imagegen` (Image 2), Cursor
+   uses the built-in `GenerateImage` tool — both are free inside their surfaces.
+2. **Persisted preference**: when no built-in tool is available, OpenPrd reads
+   the user-confirmed preference from
+   `.openprd/harness/image-generation-preference.json` and reuses it silently.
+3. **Ask once, persist**: only when no preference exists does OpenPrd ask the
+   user once, then writes the answer back with a `user-confirmed` source as the
+   future default.
+
+Cost guardrail: OpenPrd never silently calls the user’s own paid image APIs
+(for example OpenAI or Stability keys) unless the user explicitly picked one.
+The routing contract ships in the install manifest and
+`.openprd/harness/runtime-environment.json` under `imageGenerationRouting`.
 
 ## Auto-optimized reference-to-screenshot comparison
 

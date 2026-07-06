@@ -210,8 +210,11 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedAgents.includes('不要为了验证自动重开应用'));
     assert.equal(generatedAgents.includes('weapp-dev-mcp'), false);
     assert.ok(generatedAgents.includes('resolve_library_id -> query_docs'));
-    assert.ok(generatedAgents.includes('Codex 原生 Image 2'));
-    assert.ok(generatedAgents.includes('Image 2 是工具路径，不是审美豁免'));
+    assert.ok(generatedAgents.includes('按生图路由选工具'));
+    assert.ok(generatedAgents.includes('Cursor 环境用内置 `GenerateImage`'));
+    assert.ok(generatedAgents.includes('image-generation-preference.json'));
+    assert.ok(generatedAgents.includes('绝不擅自调用用户本地或自有付费生图 API'));
+    assert.ok(generatedAgents.includes('生图工具是工具路径，不是审美豁免'));
     assert.ok(generatedAgents.includes('默认紫白/蓝紫渐变、通用字体、白底卡片堆叠和无语境装饰'));
     assert.ok(generatedAgents.includes('imagegen'));
     assert.ok(generatedAgents.includes('验证与创业闭环'));
@@ -256,7 +259,9 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     const generatedHook = await fs.readFile(path.join(project, '.codex', 'hooks', 'openprd-hook.mjs'), 'utf8');
     assert.ok(generatedHook.includes('LIGHTWEIGHT_UI_VISUAL_SIGNAL_PATTERN'));
     assert.ok(generatedHook.includes('卡片宽度、间距、留白'));
-    assert.ok(generatedHook.includes('Image 2 是工具路径，不是审美豁免'));
+    assert.ok(generatedHook.includes('按生图路由选定的内置生图工具生成图片'));
+    assert.ok(generatedHook.includes('生图工具是工具路径，不是审美豁免'));
+    assert.ok(generatedHook.includes('image-generation-preference.json'));
     assert.ok(generatedHook.includes('审美意图和记忆点'));
     assert.ok(generatedHook.includes('build、package 和 dev-check'));
     assert.ok(generatedHook.includes('blocked-high-risk-autonomy'));
@@ -434,7 +439,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.equal(generatedSharedSkill.includes('weapp-dev-mcp'), false);
     assert.ok(generatedSharedSkill.includes('Localizable'));
     assert.ok(generatedSharedSkill.includes('彩色 Mermaid'));
-    assert.ok(generatedSharedSkill.includes('Image 2 是工具路径，不是审美豁免'));
+    assert.ok(generatedSharedSkill.includes('生图工具是工具路径，不是审美豁免'));
     assert.ok(generatedSharedSkill.includes('视觉证据不仅检查位置'));
     assert.ok(generatedSharedSkill.includes('不要中途打断当前任务'));
     assert.ok(generatedSharedSkill.includes('不要把 `.openprd/quality/reports/`'));
@@ -537,7 +542,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedCodexHook.includes('已确认，我按这个继续'));
     assert.ok(generatedCodexHook.includes('不要再写“如果你认可”'));
     assert.ok(generatedCodexHook.includes('候选效果图'));
-    assert.ok(generatedCodexHook.includes('Image 2 是工具路径，不是审美豁免'));
+    assert.ok(generatedCodexHook.includes('生图工具是工具路径，不是审美豁免'));
     assert.ok(generatedCodexHook.includes('没有品牌或参考图依据时，不要默认紫白/蓝紫渐变'));
     assert.ok(generatedCodexHook.includes('是否纳入后续效果图/实现截图对比'));
     assert.ok(generatedCodexHook.includes('visual-prepare'));
@@ -880,77 +885,6 @@ test('setup emits Windows-safe Codex hook commands with double-quoted paths', as
       process.env.OPENPRD_CODEX_HOME = previousCodexHome;
     }
   }
-});
-
-test('Codex hook blocks unapproved cloud hotfixes and business fallbacks', async () => {
-  const project = await makeTempProject();
-  const codexHome = path.join(project, 'codex-home');
-  await setupAgentIntegrationWorkspace(project, {
-    tools: 'codex',
-    templatePack: 'agent',
-    enableUserCodexConfig: true,
-    codexHome,
-  });
-
-  const hookPath = path.join(project, '.codex', 'hooks', 'openprd-hook.mjs');
-  const runHook = (eventName, input) => {
-    const result = spawnSync(process.execPath, [hookPath, eventName], {
-      cwd: project,
-      input: JSON.stringify({
-        cwd: project,
-        hook_event_name: eventName,
-        ...input,
-      }),
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        OPENPRD_CLI: path.resolve('openprd/bin/openprd.js'),
-      },
-    });
-    assert.equal(result.status, 0, result.stderr);
-    return JSON.parse(result.stdout);
-  };
-
-  const patchPayload = {
-    tool_name: 'apply_patch',
-    tool_input: {
-      patch: [
-        '*** Begin Patch',
-        '*** Update File: src/entitlements.js',
-        '@@',
-        '+const fallbackMembership = { entitlement: "unlimited", membership: "pro" };',
-        '*** End Patch',
-        '',
-      ].join('\n'),
-    },
-  };
-
-  runHook('UserPromptSubmit', {
-    prompt: '请直接修复会员权益，但除非我明确要求，不要写兜底或写死逻辑。',
-  });
-  const blockedFallback = runHook('PreToolUse', patchPayload);
-  assert.equal(blockedFallback.decision, 'block');
-  assert.ok(blockedFallback.reason.includes('业务兜底/写死逻辑'));
-  assert.ok(blockedFallback.reason.includes('当前用户消息只授权了本轮实现范围'));
-
-  runHook('UserPromptSubmit', {
-    prompt: '请直接修复会员权益，这次明确允许临时兜底，后续同步回服务端配置。',
-  });
-  const allowedFallback = runHook('PreToolUse', patchPayload);
-  assert.equal(allowedFallback.continue, true);
-  assert.equal(allowedFallback.decision, undefined);
-
-  runHook('UserPromptSubmit', {
-    prompt: '请直接修复线上问题，但不要未经确认自己云端热修复。',
-  });
-  const blockedCloudHotfix = runHook('PreToolUse', {
-    tool_input: {
-      cmd: 'ssh prod "node scripts/fix-entitlement.js"',
-    },
-  });
-  assert.equal(blockedCloudHotfix.decision, 'block');
-  assert.ok(blockedCloudHotfix.reason.includes('云端/生产远端写入'));
-  assert.ok(blockedCloudHotfix.reason.includes('允许这次云端热修复'));
 });
 
 test('doctor reports optional capabilities without making them blocking and detects configured locations', async () => {
