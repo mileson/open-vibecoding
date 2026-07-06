@@ -649,3 +649,5 @@
 {"type":"review_marked","at":"2026-07-06 22:51:53","versionId":"v0014","workUnitId":"wu-20260706224920-24f85a4b","status":"confirmed","designDirection":null}
 {"type":"openprd_change_generated","at":"2026-07-06 22:52:06","changeId":"openprd-generated-change","taskCount":21,"valid":true}
 {"type":"next","at":"2026-07-07 00:09:56","nextAction":"diagram","reason":"The architecture diagram exists but is still pending confirmation before freeze.","missingRequiredFields":0}
+{"type":"work_units_backfilled","at":"2026-07-07 00:13:54","versions":14,"changedVersions":14}
+{"type":"work_units_backfilled","at":"2026-07-07 00:25:36","versions":14,"changedVersions":14}

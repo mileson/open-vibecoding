@@ -662,9 +662,9 @@
     },
     {
       "version": "0.1.19",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-07-07 00:02:07",
-      "updatedAt": "2026-07-07 00:02:09",
+      "updatedAt": "2026-07-07 00:11:20",
       "notes": null,
       "items": [
         {
@@ -727,5 +727,5 @@
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-07-07 00:02:09"
+  "updatedAt": "2026-07-07 00:11:20"
 }

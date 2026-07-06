@@ -3,7 +3,7 @@
     "event": "doctor-green",
     "message": "doctor passed",
     "status": "pass",
-    "at": "2026-07-07 00:10:15"
+    "at": "2026-07-07 00:25:38"
   },
   {
     "event": "quality-verify",
@@ -76,11 +76,5 @@
     "message": "quality production-ready",
     "status": "pass",
     "at": "2026-07-06 17:11:45"
-  },
-  {
-    "event": "quality-verify",
-    "message": "quality production-ready",
-    "status": "pass",
-    "at": "2026-07-06 17:11:43"
   }
 ]

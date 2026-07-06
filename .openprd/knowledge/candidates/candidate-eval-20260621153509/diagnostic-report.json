@@ -6,10 +6,10 @@
   "summary": {
     "title": "质量报告 eval-20260707000956",
     "status": "needs-attention",
-    "message": "本轮围绕 11 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 14 条回顾信号。"
+    "message": "本轮围绕 11 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 13 条回顾信号。"
   },
-  "problem": "本轮围绕 11 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 14 条回顾信号。",
-  "message": "本轮围绕 11 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 14 条回顾信号。",
+  "problem": "本轮围绕 11 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 13 条回顾信号。",
+  "message": "本轮围绕 11 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 13 条回顾信号。",
   "touchedFiles": [
     "package.json",
     "scripts/dev-check-wrapup-copy.mjs",
@@ -27,7 +27,7 @@
     {
       "id": "doctor-green",
       "kind": "doctor-green",
-      "at": "2026-07-07 00:10:15",
+      "at": "2026-07-07 00:25:38",
       "ok": true,
       "productionReady": null,
       "attentionGates": [],
@@ -296,29 +296,6 @@
         "src/benchmark/constants.js",
         "src/benchmark/operations.js"
       ]
-    },
-    {
-      "id": "quality-verify",
-      "kind": "quality-verify",
-      "at": "2026-07-06 17:11:43",
-      "ok": true,
-      "productionReady": true,
-      "attentionGates": [],
-      "summary": "quality production-ready",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/agent-canonical-content.js",
-        "src/agent-integration.js",
-        "src/benchmark/constants.js",
-        "src/benchmark/operations.js"
-      ]
     }
   ],
   "abstraction": {
@@ -371,7 +348,7 @@
       "status": "pass",
       "message": "doctor passed",
       "touchedFiles": [],
-      "at": "2026-07-07 00:10:15"
+      "at": "2026-07-07 00:25:38"
     },
     {
       "eventName": "quality-verify",
@@ -595,26 +572,6 @@
         "src/benchmark/operations.js"
       ],
       "at": "2026-07-06 17:11:45"
-    },
-    {
-      "eventName": "quality-verify",
-      "status": "pass",
-      "message": "quality production-ready",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/agent-canonical-content.js",
-        "src/agent-integration.js",
-        "src/benchmark/constants.js",
-        "src/benchmark/operations.js"
-      ],
-      "at": "2026-07-06 17:11:43"
     }
   ],
   "timeline": [
@@ -623,7 +580,7 @@
       "message": "doctor passed",
       "status": "pass",
       "line": null,
-      "at": "2026-07-07 00:10:15"
+      "at": "2026-07-07 00:25:38"
     },
     {
       "event": "quality-verify",
@@ -708,13 +665,6 @@
       "status": "pass",
       "line": null,
       "at": "2026-07-06 17:11:45"
-    },
-    {
-      "event": "quality-verify",
-      "message": "quality production-ready",
-      "status": "pass",
-      "line": null,
-      "at": "2026-07-06 17:11:43"
     }
   ],
   "rootCauseCandidates": [],
