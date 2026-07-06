@@ -1,14 +1,68 @@
 [
   {
-    "title": "Inspect test/requirement-gate.test.js"
+    "title": "Inspect package.json"
   },
   {
-    "title": "Inspect test/requirement-gate-review-authorization.test.js"
+    "title": "Inspect scripts/dev-check-wrapup-copy.mjs"
   },
   {
-    "title": "Inspect test/requirement-gate-safety-design.test.js"
+    "title": "Inspect scripts/openprd-codex-isolated-worker.mjs"
   },
   {
-    "title": "Inspect test/helpers/requirement-gate-helpers.js"
+    "title": "Inspect scripts/openprd-dev-check.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-github-release-notes.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-review-presentation.mjs"
+  },
+  {
+    "title": "Inspect scripts/quality-perf-check.mjs"
+  },
+  {
+    "title": "Inspect src/agent-canonical-content.js"
+  },
+  {
+    "title": "Inspect src/agent-integration.js"
+  },
+  {
+    "title": "Inspect src/benchmark/constants.js"
+  },
+  {
+    "title": "Inspect src/benchmark/operations.js"
+  },
+  {
+    "title": "Inspect package.json"
+  },
+  {
+    "title": "Inspect scripts/dev-check-wrapup-copy.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-codex-isolated-worker.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-dev-check.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-github-release-notes.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-review-presentation.mjs"
+  },
+  {
+    "title": "Inspect scripts/quality-perf-check.mjs"
+  },
+  {
+    "title": "Inspect src/agent-canonical-content.js"
+  },
+  {
+    "title": "Inspect src/agent-integration.js"
+  },
+  {
+    "title": "Inspect src/benchmark/constants.js"
+  },
+  {
+    "title": "Inspect src/benchmark/operations.js"
   }
 ]

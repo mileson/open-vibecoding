@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.1.16",
+  "currentVersion": "0.1.18",
   "versions": [
     {
       "version": "0.1.2",
@@ -565,9 +565,9 @@
     },
     {
       "version": "0.1.16",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-06-26 19:43:23",
-      "updatedAt": "2026-06-26 19:43:23",
+      "updatedAt": "2026-07-06 20:19:08",
       "notes": null,
       "items": [
         {
@@ -583,8 +583,84 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.1.18",
+      "status": "current",
+      "createdAt": "2026-07-06 20:19:09",
+      "updatedAt": "2026-07-06 20:19:27",
+      "notes": null,
+      "items": [
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "生图路由，Codex 用 imagegen、Cursor 用 GenerateImage，自动选免费内置生图工具，绝不擅用用户付费生图 API",
+          "sentence": "新增：生图路由，Codex 用 imagegen、Cursor 用 GenerateImage，自动选免费内置生图工具，绝不擅用用户付费生图 API",
+          "recordedAt": "2026-07-06 20:19:26",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783340366192"
+          }
+        },
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "生图偏好持久化，无内置工具时询问一次并保存为下次默认",
+          "sentence": "新增：生图偏好持久化，无内置工具时询问一次并保存为下次默认",
+          "recordedAt": "2026-07-06 20:19:26",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783340366461"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "一句自然语言确认即可授权评审记录、change、tasks 与实现整条链，不再逐环节反复确认",
+          "sentence": "优化：一句自然语言确认即可授权评审记录、change、tasks 与实现整条链，不再逐环节反复确认",
+          "recordedAt": "2026-07-06 20:19:26",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783340366724"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "门禁不再向用户索要 digest、work-unit 或完整命令，由 hook 自动绑定当前评审版本",
+          "sentence": "优化：门禁不再向用户索要 digest、work-unit 或完整命令，由 hook 自动绑定当前评审版本",
+          "recordedAt": "2026-07-06 20:19:27",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783340366994"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "连续确认自动升级放行，僵尸评审稿自愈，流程门禁三次拦截后熔断放行，减少无效阻塞",
+          "sentence": "优化：连续确认自动升级放行，僵尸评审稿自愈，流程门禁三次拦截后熔断放行，减少无效阻塞",
+          "recordedAt": "2026-07-06 20:19:27",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783340367284"
+          }
+        },
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "超大测试文件拆分为核心门禁、评审授权、安全与设计三个套件，回归更快更稳",
+          "sentence": "调整：超大测试文件拆分为核心门禁、评审授权、安全与设计三个套件，回归更快更稳",
+          "recordedAt": "2026-07-06 20:19:27",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783340367536"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-06-26 19:43:23"
+  "updatedAt": "2026-07-06 20:19:27"
 }

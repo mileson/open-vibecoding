@@ -31,7 +31,9 @@
   - PRD 场景视角前移到 clarify 阶段：面向个人消费者场景优先看首次场景、用户感受和回访动力；面向企业服务场景优先看拍板方、使用方、推进方和上线阻力；以 Agent 为主要使用场景时优先看自主边界、人工兜底和失败恢复。
   - hook/adapter 在 L2 lane 中先要求用户确认对话内 requirement 摘要里的 target、scope、out-of-scope 和 acceptance；只有摘要已确认，或用户明确表示“不需要进行任何确认”时，才允许继续 `capture/classify/synthesize` 写入路径。
   - 确认继承：同一 requirement gate 已记录一次摘要确认后，用户再次给出明确肯定或“继续落地”类回复时，hook 会把该 lane 自动升级为 `silent-record + auto-after-review-and-tasks`（`executionIntent.source = repeated-user-confirmation`），后续 review 记录、change 与 tasks 沿已确认范围静默推进，不再向用户反复索取同一轮确认；`needs-revision` 与显式 review 命令不触发该升级。
-  - 一次确认全链授权：自然语言评审确认容忍版本号插写（如“确认 v0276 评审稿”）；当该确认同句要求继续执行（`continueAfterReview`）或此前已有摘要确认时，hook 在授权 review 记录的同时把 lane 升级为 `silent-record + auto-after-review-and-tasks`，一句确认贯通评审记录、change、tasks 与实现。门禁指导语执行“一次确认合同”：在唯一的人工确认停顿点一次性说清后续自动推进的全部环节，并禁止 Agent 向用户索要 digest、work unit 或完整 openprd 命令——这些绑定值由 hook 自动填充或由 Agent 自行带入命令。
+  - 一次确认全链授权：自然语言评审确认容忍版本号插写（如“确认 v0276 评审稿”）。
+    - 当该确认同句要求继续执行（`continueAfterReview`）或此前已有摘要确认时，hook 在授权 review 记录的同时把 lane 升级为 `silent-record + auto-after-review-and-tasks`，一句确认贯通评审记录、change、tasks 与实现。
+    - 门禁指导语执行“一次确认合同”：在唯一的人工确认停顿点一次性说清后续自动推进的全部环节，并禁止 Agent 向用户索要 digest、work unit 或完整 openprd 命令——这些绑定值由 hook 自动填充或由 Agent 自行带入命令。
   - 僵尸稿自愈：session 级 gate 读取评审状态时，若 session binding 无本 lane 版本且全局 `current.json` 的 `laneSessionId` 属于其他会话，则该全局确认稿按“本轮缺稿”处理并在 progress reason 里标注已忽略的旧版本号，避免把其他需求的历史确认稿卡成本轮待确认死锁。
   - 既有资产降级：提示词命中“脚本 / CLI / 发布 / 上传 / 参数 / 配置文件 / 文档”等既有资产优化信号且没有结构/战略扩张信号时，即使出现“新增/增加/补一个”动词也按现有功能优化（L1）路由，不升 L2 重流程。
   - 流程门禁熔断：requirement-intake、external-evidence、frontend-design-preflight、patch-mode 这类流程型门禁在同一轮内阻断超过 3 次后自动降级为提醒放行（`PROCESS_GATE_FUSE_LIMIT`，计数存 turn-state `gateBlockCounts`，每轮重置），提醒 Agent 收口时补齐门禁产物并说明发生过熔断；云端写入、业务写死、secrets、skill 可视化等安全型门禁不参与熔断。
@@ -100,7 +102,10 @@
   - 业务兜底/写死判定只匹配真实业务权益与计费词汇（业务、权益、会员、额度、价格、计费、订阅、套餐、entitlement、membership、billing、quota、price、paywall、subscription、localStorage）；配置、服务端、客户端、缓存、feature 这类基础设施通用词不再叠加 fallback/兜底触发误拦，固定业务值直写（fixedBusinessValue）判定保持不变。
   - `src/run-harness.js` 在 `run --context` 与 `run --record-hook` 中读取并传播这份 runtime environment，同时把这类高风险自行动作列入执行确认清单的默认不做项。
   - 识别优先级固定为 hook/session payload、显式 launcher、SDK/headless session、子进程 env、config/CLI probe、agent 自述。
-  - 生图路由: install manifest 与 runtime-environment 携带 `imageGenerationRouting`（`IMAGE_GENERATION_ROUTING` 常量）。第一层按当前工具面选内置免费生图工具（Codex=`imagegen`/Image 2，Cursor=`GenerateImage`；Claude Code 无内置生图）；内置工具不可用时读 `.openprd/harness/image-generation-preference.json` 的用户已确认偏好；没有偏好时必须先询问用户并把答复以 `user-confirmed` 来源写回该文件作为下次默认；任何情况下都不允许在用户未明确指定时调用用户本地或自有付费生图 API。Codex hook 的图片请求上下文（`visualMockupMessage` / `imageGenerationRoutingLines`）会注入这三层路由、成本护栏和已保存偏好。
+  - 生图路由: install manifest 与 runtime-environment 携带 `imageGenerationRouting`（`IMAGE_GENERATION_ROUTING` 常量）。
+    - 第一层按当前工具面选内置免费生图工具（Codex=`imagegen`/Image 2，Cursor=`GenerateImage`；Claude Code 无内置生图）；内置工具不可用时读 `.openprd/harness/image-generation-preference.json` 的用户已确认偏好。
+    - 没有偏好时必须先询问用户并把答复以 `user-confirmed` 来源写回该文件作为下次默认；任何情况下都不允许在用户未明确指定时调用用户本地或自有付费生图 API。
+    - Codex hook 的图片请求上下文（`visualMockupMessage` / `imageGenerationRoutingLines`）会注入这三层路由、成本护栏和已保存偏好。
 - 研发期标准层: `src/dev-standards.js` 负责 touched code files 行数统计、问题级别分级、下一步动作建议和最终回复的 **OpenPRD 自动优化报告**（自动优化关闭时为 **后续建议**）表格。
   - 它读取 `.openprd/standards/config.json` 的 `developmentStandards`，但只检查本次传入的文件，不做全仓库阻断。
   - 需要关注的文件会进入 `wrapUp.rows`、`wrapUp.markdownTable` 和带标题的 `wrapUp.markdownBlock`，用于 CLI 文本输出和 Stop hook 最终回复提醒。
