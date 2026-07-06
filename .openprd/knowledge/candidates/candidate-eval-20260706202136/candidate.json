@@ -3,7 +3,7 @@
   "candidateId": "candidate-eval-20260706202136",
   "status": "pending-review",
   "createdAt": "2026-07-06 20:21:51",
-  "updatedAt": "2026-07-06 20:21:51",
+  "updatedAt": "2026-07-06 20:38:30",
   "sourceKind": "quality-report",
   "sourceRef": "candidate-eval-20260706202136",
   "evidenceOnly": false,
@@ -35,7 +35,7 @@
     {
       "id": "doctor-green",
       "kind": "doctor-green",
-      "at": "2026-07-06 20:21:51",
+      "at": "2026-07-06 20:38:30",
       "ok": true,
       "productionReady": null,
       "attentionGates": [],
@@ -314,5 +314,5 @@
   },
   "suggestedLearnCommand": "openprd quality . --learn --from .openprd/knowledge/candidates/candidate-eval-20260706202136",
   "fingerprint": "986bbd9555466da2",
-  "occurrences": 1
+  "occurrences": 2
 }

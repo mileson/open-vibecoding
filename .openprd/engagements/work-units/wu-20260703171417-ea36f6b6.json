@@ -2,17 +2,17 @@
   "version": 1,
   "workUnitId": "wu-20260703171417-ea36f6b6",
   "title": "PM 流程引导与画布评审协同（Human-in-the-loop 升级）",
-  "status": "confirmed",
+  "status": "pending-confirmation",
   "projectRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
   "workspaceRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd",
   "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
   "latestVersionId": "v0008",
   "latestVersionDigest": "e1f4ff20b3ea267615a18066166840f2a353a536579ec9e9d96aae033d2f0c8b",
   "reviewPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/reviews/v0008.html",
-  "activeReviewPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/engagements/active/review.html",
+  "activeReviewPath": null,
   "reviewArtifact": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/reviews/v0008.html",
-  "activeReviewArtifact": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/engagements/active/review.html",
+  "activeReviewArtifact": null,
   "artifactBundle": null,
   "createdAt": "2026-07-03 17:14:17",
-  "updatedAt": "2026-07-03 17:14:50"
+  "updatedAt": "2026-07-06 20:38:27"
 }

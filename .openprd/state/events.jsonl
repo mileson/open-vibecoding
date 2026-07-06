@@ -641,3 +641,4 @@
 {"type":"next","at":"2026-07-06 17:11:44","nextAction":"diagram","reason":"The architecture diagram exists but is still pending confirmation before freeze.","missingRequiredFields":0}
 {"type":"next","at":"2026-07-06 20:21:23","nextAction":"diagram","reason":"The architecture diagram exists but is still pending confirmation before freeze.","missingRequiredFields":0}
 {"type":"next","at":"2026-07-06 20:21:36","nextAction":"diagram","reason":"The architecture diagram exists but is still pending confirmation before freeze.","missingRequiredFields":0}
+{"type":"work_units_backfilled","at":"2026-07-06 20:38:27","versions":12,"changedVersions":12}

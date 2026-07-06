@@ -27,7 +27,7 @@
     {
       "id": "doctor-green",
       "kind": "doctor-green",
-      "at": "2026-07-06 20:21:51",
+      "at": "2026-07-06 20:38:30",
       "ok": true,
       "productionReady": null,
       "attentionGates": [],
@@ -305,7 +305,7 @@
       "status": "pass",
       "message": "doctor passed",
       "touchedFiles": [],
-      "at": "2026-07-06 20:21:51"
+      "at": "2026-07-06 20:38:30"
     },
     {
       "eventName": "quality-verify",
@@ -505,7 +505,7 @@
       "message": "doctor passed",
       "status": "pass",
       "line": null,
-      "at": "2026-07-06 20:21:51"
+      "at": "2026-07-06 20:38:30"
     },
     {
       "event": "quality-verify",
