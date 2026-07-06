@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.1.18",
+  "currentVersion": "0.1.19",
   "versions": [
     {
       "version": "0.1.2",
@@ -586,9 +586,9 @@
     },
     {
       "version": "0.1.18",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-07-06 20:19:09",
-      "updatedAt": "2026-07-06 20:19:27",
+      "updatedAt": "2026-07-07 00:02:07",
       "notes": null,
       "items": [
         {
@@ -659,8 +659,73 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.1.19",
+      "status": "current",
+      "createdAt": "2026-07-07 00:02:07",
+      "updatedAt": "2026-07-07 00:02:09",
+      "notes": null,
+      "items": [
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "画布结构化协同接口，GET /api/selection 读取选区元数据、POST /api/insert-image 以原图为 anchor 旁位插入新图",
+          "sentence": "新增：画布结构化协同接口，GET /api/selection 读取选区元数据、POST /api/insert-image 以原图为 anchor 旁位插入新图",
+          "recordedAt": "2026-07-07 00:02:07",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783353727886"
+          }
+        },
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "画布标注改图闭环，选区含原图+手绘标注时自动标记 annotation-edit，Agent 把标注当修改指令生成新图并放到原图旁对比",
+          "sentence": "新增：画布标注改图闭环，选区含原图+手绘标注时自动标记 annotation-edit，Agent 把标注当修改指令生成新图并放到原图旁对比",
+          "recordedAt": "2026-07-07 00:02:08",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783353728163"
+          }
+        },
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "生图尺寸契约，AI 生图占位卡宽高比作为 sizeContract 写入提示词与 handoff，回填不变形",
+          "sentence": "新增：生图尺寸契约，AI 生图占位卡宽高比作为 sizeContract 写入提示词与 handoff，回填不变形",
+          "recordedAt": "2026-07-07 00:02:08",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783353728607"
+          }
+        },
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "画布协同唤起机制，hook 识别画布/标注/改图类请求自动注入结构化读写与改图闭环指引",
+          "sentence": "新增：画布协同唤起机制，hook 识别画布/标注/改图类请求自动注入结构化读写与改图闭环指引",
+          "recordedAt": "2026-07-07 00:02:09",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783353728996"
+          }
+        },
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "canvas-workspace 拆分为 session-store/binding/codex-relay/scene 四个内聚模块，canvas-app.html 拆出样式与前端模块",
+          "sentence": "调整：canvas-workspace 拆分为 session-store/binding/codex-relay/scene 四个内聚模块，canvas-app.html 拆出样式与前端模块",
+          "recordedAt": "2026-07-07 00:02:09",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783353729396"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-07-06 20:19:27"
+  "updatedAt": "2026-07-07 00:02:09"
 }

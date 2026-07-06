@@ -537,6 +537,31 @@ Cost guardrail: OpenPrd never silently calls the user’s own paid image APIs
 The routing contract ships in the install manifest and
 `.openprd/harness/runtime-environment.json` under `imageGenerationRouting`.
 
+## Canvas collaboration: the annotation-to-revision loop
+
+`openprd canvas .` opens a local Excalidraw canvas bound to the current
+conversation. AI-generated images land on the canvas, you draw circles and
+notes directly on top of them, click “Send to Codex”, and the agent takes over:
+
+1. **Annotations become edit instructions**: when a selection contains both an
+   image and hand-drawn annotations, the handoff is tagged as an
+   annotation-edit request with structured metadata (source image IDs,
+   annotation IDs), and the agent treats the marks as revision instructions.
+2. **Side-by-side insertion, never overwriting**: the agent calls
+   `POST /api/insert-image` with the original image as the anchor to place the
+   revised image beside it (right/left/above/below), so you can compare both
+   versions and annotate the new one for another round.
+3. **Structured canvas reads**: `GET /api/selection` gives the agent the IDs,
+   coordinates, sizes, and text of whatever you selected — no more guessing
+   from screenshots.
+4. **Size contract**: placeholder card width/height/aspect ratio travel as a
+   `sizeContract` inside the generation prompt, so images come back at the
+   right ratio without distortion.
+
+To invoke it, just say things like “open the canvas” or “I annotated the image
+on the canvas, revise it accordingly” — the hook injects the collaboration
+guidance automatically. You can also run `openprd canvas . --daemon --open`.
+
 ## Auto-optimized reference-to-screenshot comparison
 
 When UI work already has a reference effect image, design image, user-provided

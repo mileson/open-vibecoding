@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-06 20:38:27",
-  "nextReadyNode": "freeze",
+  "generatedAt": "2026-07-07 00:09:56",
+  "nextReadyNode": "diagram",
   "workflow": [
     {
       "id": "brainstorm",
@@ -58,7 +58,7 @@
       "id": "diagram",
       "label": "diagram",
       "kind": "workflow-step",
-      "status": "done",
+      "status": "ready",
       "dependsOn": [
         "synthesize"
       ]
@@ -76,9 +76,10 @@
       "id": "freeze",
       "label": "freeze",
       "kind": "workflow-step",
-      "status": "ready",
+      "status": "blocked",
       "dependsOn": [
-        "validate"
+        "validate",
+        "diagram"
       ]
     },
     {
@@ -148,7 +149,7 @@
       "id": "architecture-diagram",
       "label": "architecture-diagram.html",
       "kind": "artifact",
-      "status": "ready",
+      "status": "done",
       "dependsOn": [
         "diagram"
       ]
@@ -274,7 +275,7 @@
       "id": "diagram",
       "label": "diagram",
       "kind": "workflow-step",
-      "status": "done",
+      "status": "ready",
       "dependsOn": [
         "synthesize"
       ]
@@ -292,9 +293,10 @@
       "id": "freeze",
       "label": "freeze",
       "kind": "workflow-step",
-      "status": "ready",
+      "status": "blocked",
       "dependsOn": [
-        "validate"
+        "validate",
+        "diagram"
       ]
     },
     {
@@ -362,7 +364,7 @@
       "id": "architecture-diagram",
       "label": "architecture-diagram.html",
       "kind": "artifact",
-      "status": "ready",
+      "status": "done",
       "dependsOn": [
         "diagram"
       ]

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "workUnitId": "wu-20260706224842-f12588b9",
+  "title": "画布协同闭环：标注改图、双向结构化工具、尺寸契约与唤起机制",
+  "status": "pending-confirmation",
+  "projectRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "workspaceRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd",
+  "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "latestVersionId": "v0013",
+  "latestVersionDigest": "58693e1f976a10361989aa9d3903233f89b0b02c0718b267d5a0a12f1620237f",
+  "reviewPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/reviews/v0013.html",
+  "activeReviewPath": null,
+  "reviewArtifact": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/reviews/v0013.html",
+  "activeReviewArtifact": null,
+  "artifactBundle": null,
+  "createdAt": "2026-07-06 22:48:42",
+  "updatedAt": "2026-07-06 22:48:42"
+}

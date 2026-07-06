@@ -215,6 +215,10 @@
   - 用户选择一个或多个元素后点击“发送给 Codex”，画布把选区保存为 PNG，调用 `/api/handoffs` 在 `ops.json` 里追加目标平台、transport、导出图路径、提示文本和当前 binding 标题；若当前 binding 是 Codex thread，默认通过 Codex app-server `thread/resume -> turn/start` 自动提交到绑定 thread，并追加 `handoff-relay` 状态记录。
   - 自动提交失败或被关闭时，才追加 `agent-foreground-relay` 待发送项，等待当前 Agent 用 `openprd canvas --bridge-outbox --claim next` 领取并调用 Codex App 线程工具发送；`--bridge-sent --id <bridge-id>` 和 `--bridge-failed --id <bridge-id> --reason <text>` 用于把兜底发送结果回写到同一 session。
   - 用户点击右侧 AI 生图模板时，画布在 scene 内创建占位卡、保存提示并追加 `canvas-ai-image-template` handoff 记录，供当前 Codex Agent 调用原生 `imagegen` / Image 2，再把结果回填到对应卡片；OpenPrd 不提供自己的生图 API。
+  - 画布结构化协同接口：`GET /api/selection` 返回当前选中元素的 ID、类型、坐标、尺寸、文本、`openprdRole` 和整体 bounds，让 Agent 不必靠截图猜选区；`POST /api/insert-image` 支持 `anchorElementId` + `placement`（right/left/below/above）+ 可选 `gap/width/height/aspectRatio`，把新图放到指定元素旁边并在 `ops.json` 记录 `box` 与 `sizeContract`；anchor 不存在时返回 404。
+  - 标注改图闭环：前端识别“选区同时包含图片元素和非图片标注元素”后，把 handoff 的 `selection` 标为 `annotation-edit`，携带 `sourceImageElementIds` / `annotationElementIds`，提示词自动附上“把标注当修改指令、生成新图后用 `POST /api/insert-image` 以原图为 anchor 放到旁边”的插入契约，支持原图与新版对比和多轮标注迭代。
+  - 生图尺寸契约：AI 生图模板 handoff 与提示词 JSON 都携带 `sizeContract`（width/height/aspectRatio），要求 Agent 按占位卡宽高比出图，避免回填变形；服务端 `normalizeCanvasSizeContract` 负责清洗该字段。
+  - 唤起机制：Codex hook 的 `analyzePromptIntent` 识别画布协同类请求（画布/canvas + 标注/协同/改图/回填等），通过 `canvasCollaborationMessage` 注入画布绑定、结构化读写接口、标注改图闭环和尺寸契约指引；canonical 指南同步下发相同契约。
   - 选区包含图片时，底部条可把当前选区导出为 PNG 并复制到系统下载文件夹。
   - 日常协同默认使用 `--daemon`，让服务在 Agent 当前工具会话结束后继续可访问；`--stop` 按同一 binding 停止后台进程。
 - 大界面改动视觉方案评审不新增 CLI 命令，由 agent guidance 编排 Codex Computer Use、`imagegen`（Codex 原生 Image 2）和 `.openprd/harness/visual-reviews/` 归档。该流程发生在实现前，用于用户选择设计方向；`visual-compare` 不能替代实现前方向评审，只负责实现后的参考图/实现图对比或修改前/修改后自检。

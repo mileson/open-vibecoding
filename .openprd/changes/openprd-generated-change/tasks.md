@@ -1,0 +1,357 @@
+# 任务
+
+- [x] T001.01 评审生成的 spec 覆盖
+  - type: governance
+  - done: 生成的 agent-requirements spec 符合 PRD 意图
+  - verify: openprd change . --validate --change openprd-generated-change
+  - test-layer: manual
+  - test-size: manual
+  - test-scope: governance
+  - evidence-plan: openprd change . --validate --change openprd-generated-change
+  - upgrade-reason: 治理任务以结构校验、评审确认和变更状态证据为主
+  - execution-mode: serial
+  - parallel-group: governance
+  - write-scope: .openprd/changes/**, .openprd/**
+  - owner-role: main-agent
+  - local-verify: openprd change . --validate --change openprd-generated-change
+  - integration-owner: main-agent
+
+- [x] T001.02 对齐共享契约与 Host API 调用边界
+  - type: implementation
+  - deps: T001.01
+  - done: 共享契约、Host API 和上下游调用边界已经对齐，后续功能可以直接接线。 涉及: 依赖 0.1.18 生图路由协议。
+  - verify: openprd tasks . --change openprd-generated-change --item T001.02 --evidence-required
+  - test-layer: integration, e2e
+  - test-size: large
+  - test-scope: visual-flow
+  - evidence-plan: 主流程自动化、截图或 visual-compare 证据 + 本任务 verify 命令；轻量 UI 可视优化也需要 before/after、verification-board 或 alignment-board 证据，同构卡片/列表要覆盖内部内容槽位
+  - upgrade-reason: 触达用户可见路径，需要端到端或视觉级证据；轻量 UI 可视优化不能只用构建或 dev-check 收口
+  - execution-mode: parallel-workers
+  - parallel-group: contracts
+  - write-scope: src/**, test/**, docs/basic/backend-structure.md
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.02 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.03 接通界面入口、导航与页面挂载
+  - type: implementation
+  - deps: T001.02
+  - done: 用户可以从正确入口进入对应界面，页面挂载与状态收尾已经接通。 涉及: 依赖 0.1.18 生图路由协议。
+  - verify: openprd tasks . --change openprd-generated-change --item T001.03 --evidence-required
+  - test-layer: integration, e2e
+  - test-size: large
+  - test-scope: visual-flow
+  - evidence-plan: 主流程自动化、截图或 visual-compare 证据 + 本任务 verify 命令；轻量 UI 可视优化也需要 before/after、verification-board 或 alignment-board 证据，同构卡片/列表要覆盖内部内容槽位
+  - upgrade-reason: 触达用户可见路径，需要端到端或视觉级证据；轻量 UI 可视优化不能只用构建或 dev-check 收口
+  - execution-mode: parallel-workers
+  - parallel-group: contracts
+  - write-scope: src/**, test/**, docs/basic/backend-structure.md
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.03 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.04 实现选区状态随画布保存并可查询
+  - type: implementation
+  - deps: T001.03
+  - done: 已完成：选区状态随画布保存并可查询
+  - verify: openprd tasks . --change openprd-generated-change --item T001.04 --evidence-required
+  - test-layer: integration, e2e
+  - test-size: large
+  - test-scope: visual-flow
+  - evidence-plan: 主流程自动化、截图或 visual-compare 证据 + 本任务 verify 命令；轻量 UI 可视优化也需要 before/after、verification-board 或 alignment-board 证据，同构卡片/列表要覆盖内部内容槽位
+  - upgrade-reason: 触达用户可见路径，需要端到端或视觉级证据；轻量 UI 可视优化不能只用构建或 dev-check 收口
+  - execution-mode: parallel-workers
+  - parallel-group: domain
+  - write-scope: src/**, test/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.04 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.05 实现插图 API 支持 left/right/below 摆放与 holder 替换
+  - type: implementation
+  - deps: T001.04
+  - done: 已完成：插图 API 支持 left/right/below 摆放与 holder 替换
+  - verify: openprd tasks . --change openprd-generated-change --item T001.05 --evidence-required
+  - test-layer: unit, integration
+  - test-size: medium
+  - test-scope: api-contract
+  - evidence-plan: 单元测试锁定规则 + 集成或命令行契约验证
+  - upgrade-reason: 触达 CLI/API/Agent 契约或生成物，需要中间层验证
+  - execution-mode: parallel-workers
+  - parallel-group: contracts
+  - write-scope: src/**, test/**, docs/basic/backend-structure.md
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.05 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.06 实现标注导出携带 annotationEdit 与源图形 ID 元数据
+  - type: implementation
+  - deps: T001.05
+  - done: 已完成：标注导出携带 annotationEdit 与源图形 ID 元数据
+  - verify: openprd tasks . --change openprd-generated-change --item T001.06 --evidence-required
+  - test-layer: unit, integration
+  - test-size: medium
+  - test-scope: cli-contract
+  - evidence-plan: 单元测试锁定规则 + 集成或命令行契约验证
+  - upgrade-reason: 触达 CLI/API/Agent 契约或生成物，需要中间层验证
+  - execution-mode: parallel-workers
+  - parallel-group: domain
+  - write-scope: src/**, test/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.06 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.07 实现生图占位卡 handoff 记录携带宽高与比例契约
+  - type: implementation
+  - deps: T001.06
+  - done: 已完成：生图占位卡 handoff 记录携带宽高与比例契约
+  - verify: openprd tasks . --change openprd-generated-change --item T001.07 --evidence-required
+  - test-layer: unit, integration
+  - test-size: medium
+  - test-scope: cli-contract
+  - evidence-plan: 单元测试锁定规则 + 集成或命令行契约验证
+  - upgrade-reason: 触达 CLI/API/Agent 契约或生成物，需要中间层验证
+  - execution-mode: parallel-workers
+  - parallel-group: contracts
+  - write-scope: src/**, test/**, docs/basic/backend-structure.md
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.07 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.08 实现hook 识别画布协同意图并注入闭环指引
+  - type: implementation
+  - deps: T001.07
+  - done: 已完成：hook 识别画布协同意图并注入闭环指引
+  - verify: openprd tasks . --change openprd-generated-change --item T001.08 --evidence-required
+  - test-layer: unit, integration
+  - test-size: medium
+  - test-scope: cli-contract
+  - evidence-plan: 单元测试锁定规则 + 集成或命令行契约验证
+  - upgrade-reason: 触达 CLI/API/Agent 契约或生成物，需要中间层验证
+  - execution-mode: serial
+  - parallel-group: integration
+  - write-scope: src/**, test/**, docs/basic/**
+  - owner-role: main-agent
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.08 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.09 打通主流程闭环：用户在画布圈选原图并批注，点“标注修改请求”，Agent 读标注生成修订图并放回原图右侧 等 4 项
+  - type: implementation
+  - deps: T001.08
+  - done: 主流程关键节点已经打通，用户可以按预期从入口走到结果收尾。 涉及: 用户在画布圈选原图并批注，点“标注修改请求”，Agent 读标注生成修订图并放回原图右侧 等 4 项。
+  - verify: openprd tasks . --change openprd-generated-change --item T001.09 --evidence-required
+  - test-layer: integration, e2e
+  - test-size: large
+  - test-scope: user-flow
+  - evidence-plan: 主流程自动化、截图或 visual-compare 证据 + 本任务 verify 命令；轻量 UI 可视优化也需要 before/after、verification-board 或 alignment-board 证据，同构卡片/列表要覆盖内部内容槽位
+  - upgrade-reason: 触达用户可见路径，需要端到端或视觉级证据；轻量 UI 可视优化不能只用构建或 dev-check 收口
+  - execution-mode: serial
+  - parallel-group: integration
+  - write-scope: src/**, test/**, docs/basic/**
+  - owner-role: main-agent
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.09 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.10 验证canvas 服务新增 GET /api/selection 与 POST /api/insert-image 且测试通过
+  - type: verification
+  - deps: T001.09
+  - done: 已验证：canvas 服务新增 GET /api/selection 与 POST /api/insert-image 且测试通过
+  - verify: openprd tasks . --change openprd-generated-change --item T001.10 --evidence-required
+  - test-layer: unit, integration
+  - test-size: medium
+  - test-scope: api-contract
+  - evidence-plan: 单元测试锁定规则 + 集成或命令行契约验证
+  - upgrade-reason: 触达 CLI/API/Agent 契约或生成物，需要中间层验证
+  - execution-mode: parallel-workers
+  - parallel-group: verification
+  - write-scope: test/**, .openprd/harness/test-reports/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.10 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.11 验证标注导出带 annotationEdit 元数据并能被 hook 指引消费
+  - type: verification
+  - deps: T001.10
+  - done: 已验证：标注导出带 annotationEdit 元数据并能被 hook 指引消费
+  - verify: openprd tasks . --change openprd-generated-change --item T001.11 --evidence-required
+  - test-layer: unit, integration
+  - test-size: medium
+  - test-scope: cli-contract
+  - evidence-plan: 单元测试锁定规则 + 集成或命令行契约验证
+  - upgrade-reason: 触达 CLI/API/Agent 契约或生成物，需要中间层验证
+  - execution-mode: parallel-workers
+  - parallel-group: verification
+  - write-scope: test/**, .openprd/harness/test-reports/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.11 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.12 验证hook 对画布协同意图注入引导语
+  - type: verification
+  - deps: T001.11
+  - done: 已验证：hook 对画布协同意图注入引导语
+  - verify: openprd tasks . --change openprd-generated-change --item T001.12 --evidence-required
+  - test-layer: unit, integration
+  - test-size: medium
+  - test-scope: cli-contract
+  - evidence-plan: 单元测试锁定规则 + 集成或命令行契约验证
+  - upgrade-reason: 触达 CLI/API/Agent 契约或生成物，需要中间层验证
+  - execution-mode: parallel-workers
+  - parallel-group: verification
+  - write-scope: test/**, .openprd/harness/test-reports/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.12 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.13 回归非功能约束：界面文案面向普通用户 / API 只监听本地回环地址
+  - type: verification
+  - deps: T001.12
+  - done: 非功能约束已经回归确认。 涉及: 界面文案面向普通用户 / API 只监听本地回环地址。
+  - verify: openprd tasks . --change openprd-generated-change --item T001.13 --evidence-required
+  - test-layer: integration, e2e
+  - test-size: large
+  - test-scope: user-flow
+  - evidence-plan: 主流程自动化、截图或 visual-compare 证据 + 本任务 verify 命令；轻量 UI 可视优化也需要 before/after、verification-board 或 alignment-board 证据，同构卡片/列表要覆盖内部内容槽位
+  - upgrade-reason: 触达用户可见路径，需要端到端或视觉级证据；轻量 UI 可视优化不能只用构建或 dev-check 收口
+  - execution-mode: parallel-workers
+  - parallel-group: verification
+  - write-scope: test/**, .openprd/harness/test-reports/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.13 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.14 回归非功能约束：新增代码有集成测试覆盖
+  - type: verification
+  - deps: T001.13
+  - done: 非功能约束已经回归确认。 涉及: 新增代码有集成测试覆盖。
+  - verify: openprd tasks . --change openprd-generated-change --item T001.14 --evidence-required
+  - test-layer: unit, integration
+  - test-size: medium
+  - test-scope: cli-contract
+  - evidence-plan: 单元测试锁定规则 + 集成或命令行契约验证
+  - upgrade-reason: 触达 CLI/API/Agent 契约或生成物，需要中间层验证
+  - execution-mode: parallel-workers
+  - parallel-group: verification
+  - write-scope: test/**, .openprd/harness/test-reports/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.14 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.15 回归边界条件与失败处理：边界情况：无选区时 selection API 返回空且 Agent 收到明确提示 等 5 项
+  - type: verification
+  - deps: T001.14
+  - done: 边界条件与失败处理已经回归确认。 涉及: 边界情况：无选区时 selection API 返回空且 Agent 收到明确提示 等 5 项。
+  - verify: openprd tasks . --change openprd-generated-change --item T001.15 --evidence-required
+  - test-layer: unit, integration
+  - test-size: medium
+  - test-scope: api-contract
+  - evidence-plan: 单元测试锁定规则 + 集成或命令行契约验证
+  - upgrade-reason: 触达 CLI/API/Agent 契约或生成物，需要中间层验证
+  - execution-mode: parallel-workers
+  - parallel-group: verification
+  - write-scope: test/**, .openprd/harness/test-reports/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.15 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.16 验证成本与额度护栏
+  - type: verification
+  - deps: T001.15
+  - done: 已验证免费、试用或低权限用户不能绕过额度、并发、频率或总量限制
+  - verify: openprd tasks . --change openprd-generated-change --item T001.16 --evidence-required
+  - test-layer: integration, security
+  - test-size: medium
+  - test-scope: security
+  - evidence-plan: 正向路径 + 越权、额度、并发或敏感信息负向验证
+  - upgrade-reason: 触达权限、安全、成本或滥用边界，需要至少集成级证据
+  - execution-mode: parallel-workers
+  - parallel-group: verification
+  - write-scope: test/**, .openprd/harness/test-reports/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.16 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.17 验证滥用与越权路径
+  - type: verification
+  - deps: T001.16
+  - done: 已覆盖重复请求、并发请求、越权身份和异常恢复等负向场景
+  - verify: openprd tasks . --change openprd-generated-change --item T001.17 --evidence-required
+  - test-layer: integration, security
+  - test-size: medium
+  - test-scope: security
+  - evidence-plan: 正向路径 + 越权、额度、并发或敏感信息负向验证
+  - upgrade-reason: 触达权限、安全、成本或滥用边界，需要至少集成级证据
+  - execution-mode: parallel-workers
+  - parallel-group: verification
+  - write-scope: test/**, .openprd/harness/test-reports/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.17 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.18 验证成本监控、报警和止损
+  - type: verification
+  - deps: T001.17
+  - done: 已确认用量或成本信号、报警阈值和人工/自动止损动作可执行
+  - verify: openprd tasks . --change openprd-generated-change --item T001.18 --evidence-required
+  - test-layer: integration, security
+  - test-size: medium
+  - test-scope: security
+  - evidence-plan: 正向路径 + 越权、额度、并发或敏感信息负向验证
+  - upgrade-reason: 触达权限、安全、成本或滥用边界，需要至少集成级证据
+  - execution-mode: parallel-workers
+  - parallel-group: verification
+  - write-scope: test/**, .openprd/harness/test-reports/**
+  - owner-role: worker
+  - local-verify: openprd tasks . --change openprd-generated-change --item T001.18 --evidence-required
+  - integration-owner: main-agent
+
+- [x] T001.19 维护 docs/basic 项目基础文档
+  - type: documentation
+  - deps: T001.18
+  - done: 已检查 docs/basic 是否缺失或因本次需求、流程、结构、依赖、产品行为变化而过期；若涉及后端、脚本、Agent 或工具链变更，已同步评估 CLI 与 API 接入面，并在 backend-structure.md 中记录事实或不适用原因；需要更新的基础文档已同步
+  - verify: openprd standards . --verify
+  - test-layer: manual
+  - test-size: manual
+  - test-scope: docs
+  - evidence-plan: openprd standards . --verify
+  - upgrade-reason: 文档任务以标准校验和人工审查证据为主
+  - execution-mode: parallel-workers
+  - parallel-group: docs
+  - write-scope: docs/basic/**, README*.md
+  - owner-role: worker
+  - local-verify: openprd standards . --verify
+  - integration-owner: main-agent
+
+- [x] T001.20 更新文件说明书和文件夹 README
+  - type: documentation
+  - deps: T001.19
+  - done: 本次变更涉及的文件说明书和文件夹 README 已检查；缺失的已补齐，过期的已更新
+  - verify: openprd standards . --verify
+  - test-layer: manual
+  - test-size: manual
+  - test-scope: docs
+  - evidence-plan: openprd standards . --verify
+  - upgrade-reason: 文档任务以标准校验和人工审查证据为主
+  - execution-mode: parallel-workers
+  - parallel-group: docs
+  - write-scope: docs/basic/**, README*.md
+  - owner-role: worker
+  - local-verify: openprd standards . --verify
+  - integration-owner: main-agent
+
+- [x] T001.21 运行 OpenPrd spec 校验
+  - type: governance
+  - deps: T001.20
+  - done: 生成的 change 通过 OpenPrd 校验
+  - verify: openprd change . --validate --change openprd-generated-change
+  - test-layer: manual
+  - test-size: manual
+  - test-scope: governance
+  - evidence-plan: openprd change . --validate --change openprd-generated-change
+  - upgrade-reason: 治理任务以结构校验、评审确认和变更状态证据为主
+  - execution-mode: serial
+  - parallel-group: governance
+  - write-scope: .openprd/changes/**, .openprd/**
+  - owner-role: main-agent
+  - local-verify: openprd change . --validate --change openprd-generated-change
+  - integration-owner: main-agent

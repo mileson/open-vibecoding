@@ -154,5 +154,31 @@
     "digest": "ecce1dcbd85b8bd72e83bfde3d020e941c6c9691a934c28cbb148e9f892aa898",
     "workUnitId": "wu-20260703182806-96de2c67",
     "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+  },
+  {
+    "versionNumber": 13,
+    "versionId": "v0013",
+    "createdAt": "2026-07-06 22:48:42",
+    "title": "画布协同闭环：标注改图、双向结构化工具、尺寸契约与唤起机制",
+    "owner": "OpenPrd",
+    "productType": "agent",
+    "templatePack": "agent",
+    "status": "synthesized",
+    "digest": "58693e1f976a10361989aa9d3903233f89b0b02c0718b267d5a0a12f1620237f",
+    "workUnitId": "wu-20260706224842-f12588b9",
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+  },
+  {
+    "versionNumber": 14,
+    "versionId": "v0014",
+    "createdAt": "2026-07-06 22:49:20",
+    "title": "画布协同闭环：标注改图、双向结构化工具、尺寸契约与唤起机制",
+    "owner": "OpenPrd",
+    "productType": "agent",
+    "templatePack": "agent",
+    "status": "synthesized",
+    "digest": "47217811dd6896b2cb3e03bb665375ae1a4af7469fb5ed00dd8332b205f4c027",
+    "workUnitId": "wu-20260706224920-24f85a4b",
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
   }
 ]

@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "activeChange": "vibe-coding-dev-check",
-  "updatedAt": "2026-07-03 18:28:13",
+  "activeChange": "openprd-generated-change",
+  "updatedAt": "2026-07-06 22:52:06",
   "changes": {
     "verify-boundaries-and-historical-refresh": {
       "id": "verify-boundaries-and-historical-refresh",
@@ -42,6 +42,11 @@
       "id": "vibe-coding-dev-check",
       "status": "active",
       "activatedAt": "2026-07-03 18:28:13"
+    },
+    "openprd-generated-change": {
+      "id": "openprd-generated-change",
+      "status": "active",
+      "activatedAt": "2026-07-06 22:52:06"
     }
   }
 }

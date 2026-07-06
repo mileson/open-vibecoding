@@ -469,6 +469,26 @@ OpenPrd 生成的 change 会包含标准化维护任务，change 校验也会检
 付费生图 API（例如 OpenAI / Stability key）。路由协议由 install manifest 和
 `.openprd/harness/runtime-environment.json` 的 `imageGenerationRouting` 字段承载。
 
+## 画布协同：标注改图闭环
+
+`openprd canvas .` 打开与当前对话绑定的本地 Excalidraw 画布后，AI 生成的图会
+直接落到画布上，你可以在图上直接画圈、写字做标注，然后点击“发送给 Codex”，
+剩下的交给 Agent：
+
+1. **标注即指令**：画布检测到选区里同时有原图和你的手绘标注时，会把这次交接
+   标记为标注改图请求，把标注截图和结构化元数据（原图 ID、标注 ID）一起交给
+   Agent，Agent 把标注当作修改指令生成新图。
+2. **旁位回填，不覆盖原图**：Agent 通过 `POST /api/insert-image` 用原图作 anchor
+   把新图放到旁边（右/左/上/下可选），你可以左右对比原图和新版，再继续在新图
+   上标注，形成多轮迭代闭环。
+3. **结构化读画布**：Agent 通过 `GET /api/selection` 读到你正在圈选哪些元素的
+   ID、坐标、尺寸和文本，不再只靠截图猜。
+4. **尺寸契约**：AI 生图占位卡的宽高和比例会作为 `sizeContract` 写进生图提示，
+   生成的图片按占位卡比例出图，回填不变形。
+
+唤起方式：在对话里自然地说“打开画布一起看”“我在画布上标注了，按标注改图”
+这类话，hook 会自动注入画布协同指引；也可以直接运行 `openprd canvas . --daemon --open`。
+
 ## 效果图与截图拼图对比，自动优化
 
 当界面任务已经有效果图、设计稿、用户给图或 Agent 自己生成的 mock 时，Agent

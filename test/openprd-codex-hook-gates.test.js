@@ -314,3 +314,31 @@ test('Codex hook routes image generation by surface and honors persisted user pr
   assert.ok(preferredText.includes('当前已保存的用户生图偏好'), preferredText.slice(0, 400));
   assert.ok(preferredText.includes('不要再重复询问'), preferredText.slice(0, 400));
 });
+
+test('Codex hook injects canvas collaboration guidance for annotation-driven requests', async () => {
+  const project = await makeTempProject();
+  const codexHome = path.join(project, 'codex-home');
+  await setupAgentIntegrationWorkspace(project, {
+    tools: 'codex',
+    templatePack: 'agent',
+    enableUserCodexConfig: true,
+    codexHome,
+  });
+
+  const hookPath = path.join(project, '.codex', 'hooks', 'openprd-hook.mjs');
+  const runHook = makeHookRunner(project, hookPath);
+
+  // 画布协同请求要注入结构化读写接口、标注改图闭环和尺寸契约指引。
+  const canvasContext = runHook('UserPromptSubmit', { prompt: '我在画布上给这张图画了标注，请按标注改图后放回画布' });
+  const canvasText = JSON.stringify(canvasContext);
+  assert.ok(canvasText.includes('画布协同'), canvasText.slice(0, 400));
+  assert.ok(canvasText.includes('/api/selection'), canvasText.slice(0, 400));
+  assert.ok(canvasText.includes('/api/insert-image'), canvasText.slice(0, 400));
+  assert.ok(canvasText.includes('annotation-edit'), canvasText.slice(0, 400));
+  assert.ok(canvasText.includes('sizeContract'), canvasText.slice(0, 400));
+
+  // 普通实现请求不应注入画布协同指引。
+  const plainContext = runHook('UserPromptSubmit', { prompt: '帮我修复登录页的按钮样式问题' });
+  const plainText = JSON.stringify(plainContext);
+  assert.ok(!plainText.includes('/api/insert-image'), plainText.slice(0, 400));
+});

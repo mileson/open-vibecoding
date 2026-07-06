@@ -100,6 +100,7 @@ const CANVAS_LOCALES = {
     aiTemplateOnCanvas: '比例 {ratio}，等待图片回填',
     aiImagePromptIntro: '请使用 Codex 原生生图能力生成一张图片，并回填到 OpenPrd Canvas 的这张 AI 生图卡片。',
     aiImagePromptMeta: '画布会话：{binding}；卡片比例：{ratio}；占位卡 ID：{placeholderId}',
+    aiImagePromptSize: '目标尺寸契约：宽 {width}px、高 {height}px、宽高比 {ratio}；生成图片请按这个比例出图，避免回填时变形。',
     aiImagePromptReturn: '生成完成后，请回填到当前画布里的这张占位卡，回填信息如下：',
     selectedCount: '已选中 {count} 个元素',
     sendBarHint: '预览选区截图，输入指令后发送给 Codex。',
@@ -131,6 +132,9 @@ const CANVAS_LOCALES = {
     codexPromptDefaultInstruction: '请根据这个画布选区继续协同。',
     codexPromptIntro: '画布选区截图：',
     codexPromptMeta: '来源：OpenPrd Canvas；选区元素：{count}；会话：{binding}',
+    annotationEditPromptIntro: '这是一次画布标注改图请求：截图里包含原图和用户手绘标注，请把标注当作修改指令，生成一张修改后的新图。',
+    annotationEditPromptMeta: '原图元素 ID：{sourceIds}；标注元素 ID：{annotationIds}',
+    annotationEditPromptReturn: '生成修改后的新图后，请调用画布接口把新图放到原图旁边（不要覆盖原图），插入信息如下：',
   },
   en: {
     appSubtitle: 'Conversation canvas',
@@ -210,6 +214,7 @@ const CANVAS_LOCALES = {
     aiTemplateOnCanvas: 'Ratio {ratio}, waiting for image',
     aiImagePromptIntro: 'Use Codex native image generation to create one image and fill this OpenPrd Canvas AI image card.',
     aiImagePromptMeta: 'Canvas session: {binding}; card ratio: {ratio}; placeholder ID: {placeholderId}',
+    aiImagePromptSize: 'Target size contract: width {width}px, height {height}px, aspect ratio {ratio}; generate the image at this ratio so it fills the card without distortion.',
     aiImagePromptReturn: 'When the image is ready, fill this placeholder card back into the current canvas with this information:',
     selectedCount: '{count} selected',
     sendBarHint: 'Preview the selection, add instructions, then send it to Codex.',
@@ -241,6 +246,9 @@ const CANVAS_LOCALES = {
     codexPromptDefaultInstruction: 'Please continue based on this canvas selection.',
     codexPromptIntro: 'Canvas selection image:',
     codexPromptMeta: 'Source: OpenPrd Canvas; selected elements: {count}; session: {binding}',
+    annotationEditPromptIntro: 'This is an annotation-driven image revision request: the screenshot contains the original image plus the user\'s hand-drawn annotations. Treat the annotations as edit instructions and generate a revised image.',
+    annotationEditPromptMeta: 'Source image element IDs: {sourceIds}; annotation element IDs: {annotationIds}',
+    annotationEditPromptReturn: 'After generating the revised image, call the canvas API to place it beside the original (do not overwrite the original). Insert with this information:',
   },
 };
 

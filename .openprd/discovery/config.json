@@ -1,5 +1,5 @@
 {
-  "activeChange": "vibe-coding-dev-check",
+  "activeChange": "openprd-generated-change",
   "taskSharding": {
     "maxItemsPerFile": 25,
     "handoffRequired": true,

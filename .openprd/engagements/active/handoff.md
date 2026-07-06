@@ -1,15 +1,15 @@
 # 交接
 
-- 本次内容: Vibe Coding 自动化三连：dev-check 自动重构、图标自动匹配、拼图证据入流
+- 本次内容: 画布协同闭环：标注改图、双向结构化工具、尺寸契约与唤起机制
 - 产品场景: 以 Agent 为主要使用场景
 - 场景模板: 以 Agent 为主要使用场景
-- 负责人: Codex
-- 下一步: synthesize 生成 PRD 与 review.html 后走 change/tasks，再按任务实现并用 Codex CLI 本地桌面任务实测。
-- 交接去向: openprd CLI 自身仓库（harness-engineer/openprd）。
+- 负责人: OpenPrd
+- 下一步: 生成 change 与任务拆解后按序实现
+- 交接去向: OpenPrd CLI 画布子系统
 
 ## 变化摘要
 
-- 新增：guide 命令基于工作区状态推断 7 步流程位置
-- 新增：review.html 渲染 stepper
-- 新增：canvas /api/review-directions 返回方向元数据与图片
-- 新增：canvas 前端导入方向卡片组
+- 新增：选区状态随画布保存并可查询
+- 新增：插图 API 支持 left/right/below 摆放与 holder 替换
+- 新增：标注导出携带 annotationEdit 与源图形 ID 元数据
+- 新增：生图占位卡 handoff 记录携带宽高与比例契约

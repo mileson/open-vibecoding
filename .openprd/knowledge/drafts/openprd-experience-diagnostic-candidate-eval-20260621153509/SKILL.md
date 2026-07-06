@@ -70,9 +70,9 @@ use_when: Use when the current task overlaps this draft project experience and y
 
 - run verify passed
 - quality production-ready
+- quality needs-attention
+- dev-check attention=4, warning=1
+- dev-check attention=2, warning=2
 - dev-check attention=4, warning=0
 - dev-check attention=3, warning=1
-- dev-check attention=7, warning=0
 - 复现一次同类路径，确认新的诊断包仍能导出 runtime-events、timeline、root-cause-candidates 和 diagnostic-report。
-- 重点核对 run-verify -> quality-verify -> dev-check 的顺序是否符合预期。
-- 修复后再次执行同一路径，确认时间线不再在历史失败断点中断。

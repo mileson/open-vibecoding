@@ -355,3 +355,19 @@
 - 已整理出一版可确认的需求稿。
 - 产品场景: 以 Agent 为主要使用场景。
 - 场景模板: 以 Agent 为主要使用场景。
+
+## 2026-07-06 22:48:32
+
+- Captured clarification for meta.title, meta.owner, meta.version, meta.status, meta.productType, problem.problemStatement, problem.whyNow, problem.evidence, users.primaryUsers, users.stakeholders, goals.goals, goals.successMetrics, goals.acceptanceGoals, scope.inScope, scope.outOfScope, scenarios.primaryFlows, scenarios.edgeCases, scenarios.failureModes, requirements.functional, requirements.nonFunctional, requirements.businessRules, constraints.technical, constraints.compliance, constraints.dependencies, businessGuardrails.costDrivers, businessGuardrails.usageLimits, businessGuardrails.abusePrevention, businessGuardrails.monitoringSignals, businessGuardrails.alertThresholds, businessGuardrails.stopLossActions, risks.assumptions, risks.risks, risks.openQuestions, handoff.owner, handoff.nextStep, handoff.targetSystem, typeSpecific.fields.humanAgentContract, typeSpecific.fields.autonomyBoundary, typeSpecific.fields.toolBoundary, typeSpecific.fields.stateModel, typeSpecific.fields.evalPlan.
+
+## 2026-07-06 22:48:42
+
+- 已整理出一版可确认的需求稿。
+- 产品场景: 以 Agent 为主要使用场景。
+- 场景模板: 以 Agent 为主要使用场景。
+
+## 2026-07-06 22:49:20
+
+- 已整理出一版可确认的需求稿。
+- 产品场景: 以 Agent 为主要使用场景。
+- 场景模板: 以 Agent 为主要使用场景。

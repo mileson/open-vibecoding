@@ -329,6 +329,139 @@ test('canvas local service stores images as conversation-scoped operations', asy
   }
 });
 
+test('canvas local service exposes structured selection and anchored image insertion', async () => {
+  const project = await makeTempProject();
+  const result = await canvasWorkspace(project, { session: 'structured-tools-test', port: 0 });
+  const tinyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
+  try {
+    const sceneResponse = await fetch(`${result.url}api/scene`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        type: 'openprd.canvas.scene.v1',
+        elements: [
+          {
+            id: 'img-1',
+            type: 'image',
+            x: 100,
+            y: 200,
+            width: 320,
+            height: 240,
+            fileId: 'file-img-1',
+            isDeleted: false,
+          },
+          {
+            id: 'note-1',
+            type: 'freedraw',
+            x: 150,
+            y: 260,
+            width: 80,
+            height: 40,
+            isDeleted: false,
+          },
+          {
+            id: 'other-1',
+            type: 'rectangle',
+            x: 900,
+            y: 900,
+            width: 50,
+            height: 50,
+            isDeleted: false,
+          },
+        ],
+        appState: {
+          selectedElementIds: { 'img-1': true, 'note-1': true },
+        },
+        files: {},
+      }),
+    });
+    assert.equal(sceneResponse.ok, true);
+
+    const selectionResponse = await fetch(`${result.url}api/selection`);
+    assert.equal(selectionResponse.ok, true);
+    const selection = await selectionResponse.json();
+    assert.equal(selection.ok, true);
+    assert.equal(selection.count, 2);
+    assert.deepEqual(selection.elements.map((element) => element.id).sort(), ['img-1', 'note-1']);
+    const imageSummary = selection.elements.find((element) => element.id === 'img-1');
+    assert.equal(imageSummary.type, 'image');
+    assert.equal(imageSummary.fileId, 'file-img-1');
+    assert.deepEqual(selection.bounds, { x: 100, y: 200, width: 320, height: 240 });
+
+    const insertResponse = await fetch(`${result.url}api/insert-image`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        dataUrl: tinyPng,
+        anchorElementId: 'img-1',
+        placement: 'right',
+        note: 'annotation-edit-revision',
+        sizeContract: { width: 320, height: 240, aspectRatio: 320 / 240 },
+      }),
+    });
+    assert.equal(insertResponse.ok, true);
+    const inserted = await insertResponse.json();
+    assert.equal(inserted.ok, true);
+    assert.equal(inserted.operation.type, 'image');
+    assert.equal(inserted.operation.anchorElementId, 'img-1');
+    assert.equal(inserted.operation.placement, 'right');
+    assert.equal(inserted.operation.note, 'annotation-edit-revision');
+    assert.deepEqual(inserted.operation.box, { x: 468, y: 200, width: 320, height: 240 });
+    assert.equal(inserted.operation.sizeContract.width, 320);
+    assert.equal(inserted.operation.sizeContract.height, 240);
+    assert.equal(inserted.anchor.id, 'img-1');
+    assert.match(inserted.asset.assetPath, /canvas-sessions/);
+
+    const missingAnchorResponse = await fetch(`${result.url}api/insert-image`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        dataUrl: tinyPng,
+        anchorElementId: 'does-not-exist',
+      }),
+    });
+    assert.equal(missingAnchorResponse.status, 404);
+  } finally {
+    await closeServer(result.server);
+  }
+});
+
+test('canvas local service keeps annotation-edit metadata and size contract on handoffs', async () => {
+  const project = await makeTempProject();
+  const result = await canvasWorkspace(project, { thread: 'annotation-edit-test', port: 0 });
+  try {
+    const handoffResponse = await fetch(`${result.url}api/handoffs`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        target: 'codex',
+        relayDryRun: true,
+        promptText: '请按标注修改这张图，并把新图放到原图旁边。',
+        instruction: '按红圈标注修改',
+        selection: 'annotation-edit',
+        selectedElementIds: ['img-1', 'note-1'],
+        sourceImageElementIds: ['img-1'],
+        annotationElementIds: ['note-1'],
+        sizeContract: { width: 480, height: 270, aspectRatio: 16 / 9 },
+        elementCount: 2,
+        locale: 'zh-CN',
+        note: 'canvas-annotation-edit',
+      }),
+    });
+    assert.equal(handoffResponse.ok, true);
+    const handoffResult = await handoffResponse.json();
+    assert.equal(handoffResult.ok, true);
+    assert.equal(handoffResult.operation.selection, 'annotation-edit');
+    assert.deepEqual(handoffResult.operation.sourceImageElementIds, ['img-1']);
+    assert.deepEqual(handoffResult.operation.annotationElementIds, ['note-1']);
+    assert.equal(handoffResult.operation.sizeContract.width, 480);
+    assert.equal(handoffResult.operation.sizeContract.height, 270);
+    assert.equal(handoffResult.operation.note, 'canvas-annotation-edit');
+  } finally {
+    await closeServer(result.server);
+  }
+});
+
 test('canvas local service stores Excalidraw library items and resolves download targets safely', async () => {
   const project = await makeTempProject();
   const downloadDir = await fs.mkdtemp(path.join(os.tmpdir(), 'openprd-canvas-downloads-'));

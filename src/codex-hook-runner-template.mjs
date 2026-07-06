@@ -1935,6 +1935,8 @@ function analyzePromptIntent(prompt) {
     && !codeVisualArtifactRequested;
   const learningMaterialIntent = detectLearningMaterialIntent(text);
   const learningMaterialRequest = learningMaterialIntent.requested;
+  const canvasCollaborationRequest = /(画布|canvas|excalidraw)/i.test(text)
+    && /(标注|批注|协同|改图|回填|贴到画布|放到画布|插入画布|插到画布|画布评审|画布反馈|一起看|openprd\s*canvas|annotation)/i.test(text);
   const visualReview = /效果图|实现截图|视觉对比|视觉评审|对标效果图|复刻|不一致|好丑|没对齐|对不上|不像/i.test(text);
   const directBugfixExecution = explicitExecution && bugfixOrDiagnostic;
   const newFeatureVerbMatched = /(新增|增加|新建)/.test(text);
@@ -2043,6 +2045,7 @@ function analyzePromptIntent(prompt) {
     learningMaterialRequest,
     learningGenre: learningMaterialIntent.genre,
     learningMaterialReason: learningMaterialIntent.reason,
+    canvasCollaborationRequest,
     shouldInject: requiresIntake
       || requirementTier === 'l1'
       || explicitExecution
@@ -2059,6 +2062,7 @@ function analyzePromptIntent(prompt) {
       || browserSafetyRequest
       || productCopyRequest
       || learningMaterialRequest
+      || canvasCollaborationRequest
       || /openprd/i.test(normalized)
       || /\bprd\b/i.test(normalized),
   };
@@ -3461,6 +3465,21 @@ function visualMockupMessage(intent, root = null) {
   ].join('\n');
 }
 
+function canvasCollaborationMessage(intent) {
+  if (!intent?.canvasCollaborationRequest) {
+    return null;
+  }
+  return [
+    '当前请求涉及 OpenPrd 画布协同（生图上画布、人在画布上标注、标注结果回到对话继续改）。',
+    '打开或复用画布：运行 `openprd canvas .`；无法自动识别当前对话时用 `--thread <id> --thread-title <name>` 或 `--session <id> --session-title <name>` 显式绑定，画布必须绑定当前对话。',
+    '结构化读画布：需要知道用户正在圈哪些元素时，优先 `GET /api/selection` 读取选中元素的 ID、类型、坐标、尺寸和文本，不要只靠截图猜；需要全量场景再读 `GET /api/scene`。',
+    '结构化写画布：把生成的新图放上画布时，优先 `POST /api/insert-image`，用 `anchorElementId` + `placement`（right/left/below/above）把新图放到指定元素旁边，不要覆盖原图；回填 AI 生图占位卡时继续用 `POST /api/images` 带 `placeholderId`。',
+    '标注改图闭环：如果交接记录（handoff）的 `selection` 是 `annotation-edit`，或带有 `sourceImageElementIds` / `annotationElementIds`，说明用户在原图上画了标注要求改图。把截图里的标注当修改指令，生成修改后的新图，再用 `POST /api/insert-image` 以原图为 anchor 放到旁边，方便用户对比原图和新版。',
+    '生图尺寸契约：handoff 或占位卡带 `sizeContract`（width/height/aspectRatio）时，生成图片必须按这个宽高比出图，避免回填时变形拉伸。',
+    '每轮改图后主动确认：新图是否符合标注意图、是否继续下一轮标注迭代；用户可以继续在新图上标注，形成多轮改图闭环。',
+  ].join('\n');
+}
+
 function learningGenreFlag(intent = null) {
   return intent?.learningGenre ? ` --genre ${intent.learningGenre}` : '';
 }
@@ -3651,6 +3670,7 @@ function contextMessage(cwd, intent = null, gate = null, progress = null) {
         'OpenPrd 上下文只是建议，不是自动执行指令。请先判断用户当前意图。',
         lightweightRequirementMessage(intent),
         visualMockupMessage(intent, cwd),
+        canvasCollaborationMessage(intent),
         learningReviewMessage(intent),
         largeUiVisualDirectionMessage(),
         visualLocalAdjustmentMessage(),
@@ -3673,6 +3693,7 @@ function contextMessage(cwd, intent = null, gate = null, progress = null) {
       'OpenPrd 上下文只是建议，不是自动执行指令。请先判断用户当前意图。',
       lightweightRequirementMessage(intent),
       visualMockupMessage(intent, cwd),
+      canvasCollaborationMessage(intent),
       learningReviewMessage(intent),
       largeUiVisualDirectionMessage(),
       visualLocalAdjustmentMessage(),
@@ -3700,6 +3721,7 @@ function contextMessage(cwd, intent = null, gate = null, progress = null) {
     gateMessage,
     lightweightRequirementMessage(intent),
     visualMockupMessage(intent, cwd),
+    canvasCollaborationMessage(intent),
     learningReviewMessage(intent),
     largeUiVisualDirectionMessage(intent),
     requirementRoutingSummary(),
