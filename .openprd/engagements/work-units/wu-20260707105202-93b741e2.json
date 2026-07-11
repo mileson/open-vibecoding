@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "workUnitId": "wu-20260707105202-93b741e2",
+  "title": "去会话追踪化：changes 为真相源 + 人话确认",
+  "status": "pending-confirmation",
+  "projectRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "workspaceRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd",
+  "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "latestVersionId": "v0016",
+  "latestVersionDigest": "ddb9b4bb6d7f695e70ebf4674607f7d9fe958a52bacc3347a1ed58ee3b3106ec",
+  "reviewPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/reviews/v0016.html",
+  "activeReviewPath": null,
+  "reviewArtifact": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/reviews/v0016.html",
+  "activeReviewArtifact": null,
+  "artifactBundle": null,
+  "createdAt": "2026-07-07 10:52:02",
+  "updatedAt": "2026-07-11 19:23:43"
+}

@@ -68,6 +68,7 @@ import { designStarterWorkspace } from './design-starter.js';
 import { canvasWorkspace } from './canvas-workspace.js';
 import { buildReviewPresentationTemplatePayload, reviewPresentationWorkspace } from './review-presentation.js';
 import { analyzeWorkspaceRegistryHygiene } from './registry-hygiene.js';
+import { ensureProjectManifest, readProjectManifest } from './kernel/index.js';
 import { syncSessionBindingFromChange } from './session-binding.js';
 import { readSessionRegistry } from './session-registry.js';
 import { visualCompareWorkspace } from './visual-compare.js';
@@ -75,6 +76,10 @@ import { visualPrepareWorkspace } from './visual-prepare.js';
 import { captureWorkspace, clarifyWorkspace, classifyWorkspace, computeWorkspaceGuidance, diffWorkspace, historyWorkspace, interviewWorkspace, nextWorkspace, playgroundWorkspace, reviewWorkspace, synthesizeWorkspace } from './workspace-workflow.js';
 import { appendDecision, appendProgress, appendVerification, appendWorkflowEvent, buildCurrentStateSnapshot, buildWorkflowTaskGraph, computeWorkspaceDigest, CORE_TEMPLATE_FILES, ensureWorkspaceSkeleton, isSupportedProductType, loadCurrentLaneSnapshot, loadLatestVersionSnapshot, loadWorkspace, migrateWorkspaceSkeleton, normalizeVersionId, persistWorkspaceCurrentState, readVersionIndex, resolveActiveTemplatePack, resolveCurrentProductType, validateWorkspace } from './workspace-core.js';
 import { readWorkspaceRegistry } from './workspace-registry.js';
+import { taskRuntimeWorkspace } from './runtime/workspace.js';
+import { printTaskRuntimeResult } from './cli/runtime-print.js';
+import { gateWorkspace } from './gates/workspace.js';
+import { printGateResult } from './cli/gate-print.js';
 
 function buildInitTemplatePackGuidance(templatePack, options = {}) {
   const label = formatTemplatePackDisplay(templatePack, { fallback: '通用产品或工程场景' });
@@ -94,6 +99,7 @@ function buildInitTemplatePackGuidance(templatePack, options = {}) {
 
 async function initWorkspace(projectRoot, options) {
   const ws = await ensureWorkspaceSkeleton(projectRoot, options);
+  const projectManifest = await ensureProjectManifest(projectRoot);
   const workspace = await loadWorkspace(projectRoot);
   const standards = await initStandardsWorkspace(projectRoot, { force: Boolean(options.force) });
   const quality = await initQualityWorkspace(projectRoot, { force: Boolean(options.force) });
@@ -108,6 +114,8 @@ async function initWorkspace(projectRoot, options) {
     openprdHome: options.openprdHome,
     platform: options.platform,
     hookProfile: options.hookProfile,
+    symlinkStrategy: options.symlinkStrategy,
+    installSafetyBackupRoot: options.installSafetyBackupRoot,
   });
   const config = workspace.data.config ?? {};
   if (options.templatePack) {
@@ -158,7 +166,7 @@ async function initWorkspace(projectRoot, options) {
     templatePackGuidance.message,
   ]);
 
-  return { ws: workspace, created: ws.created, currentState, templatePackGuidance, standards, quality, growth, agentIntegration };
+  return { ws: workspace, created: ws.created, currentState, templatePackGuidance, standards, quality, growth, agentIntegration, projectManifest };
 }
 
 async function setupAgentIntegrationWorkspace(projectRoot, options = {}) {
@@ -175,10 +183,12 @@ async function setupAgentIntegrationWorkspace(projectRoot, options = {}) {
         templatePack: initResult.currentState.templatePack,
       },
       growth: initResult.growth,
+      projectManifest: initResult.projectManifest,
     };
   }
 
   const migration = await migrateWorkspaceSkeleton(projectRoot, { recordEvent: true });
+  const projectManifest = await ensureProjectManifest(projectRoot);
   const standards = await initStandardsWorkspace(projectRoot, { force: Boolean(options.force) });
   const quality = await initQualityWorkspace(projectRoot, { force: false });
   const growth = await initGrowthWorkspace(projectRoot);
@@ -192,6 +202,8 @@ async function setupAgentIntegrationWorkspace(projectRoot, options = {}) {
     openprdHome: options.openprdHome,
     platform: options.platform,
     hookProfile: options.hookProfile,
+    symlinkStrategy: options.symlinkStrategy,
+    installSafetyBackupRoot: options.installSafetyBackupRoot,
   });
   return {
     ...agentIntegration,
@@ -201,12 +213,14 @@ async function setupAgentIntegrationWorkspace(projectRoot, options = {}) {
     standards,
     quality,
     growth,
+    projectManifest,
     errors: [...(agentIntegration.errors ?? []), ...(migration.errors ?? [])],
   };
 }
 
 async function updateAgentIntegrationWorkspace(projectRoot, options = {}) {
   const migration = await migrateWorkspaceSkeleton(projectRoot, { recordEvent: true });
+  const projectManifest = await ensureProjectManifest(projectRoot);
   const standards = await initStandardsWorkspace(projectRoot, { force: false });
   const quality = await initQualityWorkspace(projectRoot, { force: false });
   const growth = await initGrowthWorkspace(projectRoot);
@@ -219,6 +233,8 @@ async function updateAgentIntegrationWorkspace(projectRoot, options = {}) {
     openprdHome: options.openprdHome,
     platform: options.platform,
     hookProfile: options.hookProfile,
+    symlinkStrategy: options.symlinkStrategy,
+    installSafetyBackupRoot: options.installSafetyBackupRoot,
   });
   return {
     ...agentIntegration,
@@ -227,11 +243,20 @@ async function updateAgentIntegrationWorkspace(projectRoot, options = {}) {
     standards,
     quality,
     growth,
+    projectManifest,
     errors: [...(agentIntegration.errors ?? []), ...(migration.errors ?? [])],
   };
 }
 
 async function doctorWorkspace(projectRoot, options = {}) {
+  const projectManifest = await readProjectManifest(projectRoot, { mode: 'read' })
+    .then((manifest) => ({ ok: true, manifest }))
+    .catch((error) => ({
+      ok: false,
+      manifest: null,
+      code: error?.code ?? 'OPENPRD_MANIFEST_READ_FAILED',
+      error: error instanceof Error ? error.message : String(error),
+    }));
   const agentIntegration = await doctorOpenPrdAgentIntegration(projectRoot, {
     tools: options.tools ?? 'all',
     enableUserCodexConfig: Boolean(options.enableUserCodexConfig),
@@ -278,7 +303,7 @@ async function doctorWorkspace(projectRoot, options = {}) {
     ...((workspaceRegistry?.staleEntries ?? []).map((entry) => `registry: stale workspace ${entry.workspaceRoot} (${entry.reason})`)),
     ...((sessionRegistry?.staleEntries ?? []).map((entry) => `session-registry: stale session ${entry.sessionId} (${entry.reason})`)),
   ];
-  const doctorOk = agentIntegration.ok && (codexRuntime?.ok ?? true) && standards.ok && validation.valid;
+  const doctorOk = projectManifest.ok && agentIntegration.ok && (codexRuntime?.ok ?? true) && standards.ok && validation.valid;
   const latestQuality = await readJson(cjoin(projectRoot, '.openprd', 'quality', 'reports', 'latest.json')).catch(() => null);
   const doctorSignal = doctorOk
     ? {
@@ -332,6 +357,7 @@ async function doctorWorkspace(projectRoot, options = {}) {
     projectRoot,
     tools: agentIntegration.tools,
     agentIntegration,
+    projectManifest,
     codexRuntime,
     standards,
     validation,
@@ -345,6 +371,7 @@ async function doctorWorkspace(projectRoot, options = {}) {
     knowledgeReview,
     errors: [
       ...agentIntegration.errors,
+      ...(!projectManifest.ok ? [`project-manifest: ${projectManifest.error}`] : []),
       ...(codexRuntime?.errors ?? []).map((error) => `codex-runtime: ${error}`),
       ...(standards.errors ?? []).map((error) => `standards: ${error}`),
       ...(validation.errors ?? []).map((error) => `validate: ${error}`),
@@ -796,6 +823,8 @@ export async function main(argv = process.argv.slice(2)) {
         templatePack: flags.templatePack,
         tools: flags.tools,
         hookProfile: flags.hookProfile,
+        symlinkStrategy: flags.symlinkStrategy,
+        installSafetyBackupRoot: flags.installSafetyBackupRoot,
         enableUserCodexConfig: true,
       });
       printInitResult(result, flags.json);
@@ -808,6 +837,8 @@ export async function main(argv = process.argv.slice(2)) {
         templatePack: flags.templatePack,
         tools: flags.tools,
         hookProfile: flags.hookProfile,
+        symlinkStrategy: flags.symlinkStrategy,
+        installSafetyBackupRoot: flags.installSafetyBackupRoot,
         enableUserCodexConfig: true,
       });
       printAgentIntegrationResult(result, flags.json);
@@ -819,6 +850,8 @@ export async function main(argv = process.argv.slice(2)) {
         force: flags.force,
         tools: flags.tools,
         hookProfile: flags.hookProfile,
+        symlinkStrategy: flags.symlinkStrategy,
+        installSafetyBackupRoot: flags.installSafetyBackupRoot,
         enableUserCodexConfig: true,
       });
       printAgentIntegrationResult(result, flags.json);
@@ -895,6 +928,42 @@ export async function main(argv = process.argv.slice(2)) {
         message: flags.message,
       });
       printRunResult(result, flags.json);
+      return result.ok ? 0 : 1;
+    }
+
+    if (command === 'runtime') {
+      const result = await taskRuntimeWorkspace(projectPath, {
+        action: flags.runtimeAction ?? 'status',
+        lane: flags.lane,
+        task: flags.task,
+        title: flags.title,
+        claimId: flags.claimId,
+        client: flags.client ?? flags.agent,
+        session: flags.session,
+        thread: flags.thread,
+        worktree: flags.worktree,
+        branch: flags.branch,
+        baseCommit: flags.baseCommit,
+        leaseDurationMs: flags.leaseMs,
+        expectedRevision: flags.expectedRevision,
+        expectedLaneRevision: flags.expectedLaneRevision,
+        writeSet: flags.writeSet,
+        evidence: flags.evidence,
+        reason: flags.reason,
+        status: flags.status,
+      });
+      printTaskRuntimeResult(result, flags.json);
+      return result.ok ? 0 : 1;
+    }
+
+    if (command === 'gate') {
+      const result = await gateWorkspace(projectPath, {
+        action: flags.runtimeAction ?? 'status',
+        jsonFile: flags.jsonFile,
+        gateId: flags.gateId,
+        approvalId: flags.approvalId,
+      });
+      printGateResult(result, flags.json);
       return result.ok ? 0 : 1;
     }
 

@@ -543,6 +543,8 @@ openprd visual-compare /path/to/project \
 表格这类重复结构属于默认触发场景，不需要等用户先指出“没有对齐”；只量外框、
 列宽或行顶不算完整对齐验收。
 
+网格、基线和对齐辅助线只用于这条布局校验路径。普通 `before/after`、`reference/actual` 与 `verification-board` 不会自动叠加网格；它们默认使用紧凑的暖色结果画布，让截图和结论占据主要空间。
+
 如果要判断单个 logo、icon、avatar、badge、按钮图形或图片裁切内部是否居中，
 或者用户反馈“偏心”“视觉重心不对”，Agent 应先裁出目标元素，再生成内部居中证据板：
 

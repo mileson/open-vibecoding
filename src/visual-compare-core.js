@@ -544,15 +544,26 @@ export function lineSvg(lines, {
   )).join('');
 }
 
+export const VISUAL_BOARD_PALETTE = Object.freeze({
+  canvas: '#f4efe6',
+  surface: '#fffdf8',
+  ink: '#292722',
+  muted: '#6f6a61',
+  accent: '#c65f3f',
+  success: '#39795c',
+  border: '#d7cfc2',
+});
+
 export function labelSvg(label, options = {}) {
   const fontSize = options.fontSize ?? 22;
   const height = options.height ?? 46;
   const paddingX = options.paddingX ?? 21;
   const radius = options.radius ?? 14;
-  const bg = options.background ?? '#111827';
-  const bgOpacity = options.backgroundOpacity ?? 0.82;
-  const stroke = options.stroke ?? '#ffffff';
-  const strokeOpacity = options.strokeOpacity ?? 0.22;
+  const bg = options.background ?? VISUAL_BOARD_PALETTE.surface;
+  const bgOpacity = options.backgroundOpacity ?? 0.94;
+  const stroke = options.stroke ?? VISUAL_BOARD_PALETTE.border;
+  const strokeOpacity = options.strokeOpacity ?? 1;
+  const textColor = options.textColor ?? VISUAL_BOARD_PALETTE.ink;
   const maxWidth = Number.isFinite(Number(options.maxWidth)) ? Math.max(1, Number(options.maxWidth)) : Infinity;
   const minWidth = Math.min(options.minWidth ?? 126, maxWidth);
   const availableChars = Number.isFinite(maxWidth)
@@ -565,8 +576,32 @@ export function labelSvg(label, options = {}) {
 <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
   <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="${bg}" fill-opacity="${bgOpacity}"/>
   <rect x="0.75" y="0.75" width="${width - 1.5}" height="${height - 1.5}" rx="${Math.max(radius - 0.75, 1)}" fill="none" stroke="${stroke}" stroke-opacity="${strokeOpacity}" stroke-width="1.5"/>
-  <text x="${paddingX}" y="${Math.round(height * 0.64)}" fill="#ffffff" font-size="${fontSize}" font-weight="700" font-family="PingFang SC, Noto Sans CJK SC, Microsoft YaHei, Arial Unicode MS, sans-serif">${text}</text>
+  <text x="${paddingX}" y="${Math.round(height * 0.64)}" fill="${textColor}" font-size="${fontSize}" font-weight="700" font-family="PingFang SC, Noto Sans CJK SC, Microsoft YaHei, Arial Unicode MS, sans-serif">${text}</text>
 </svg>`);
+}
+
+function compactEvidenceHeaderSvg(width, title, verdict = '') {
+  const contentWidth = Math.max(Number(width) || 0, 1);
+  const hasVerdict = Boolean(String(verdict).trim());
+  const verdictWidth = hasVerdict ? Math.min(132, Math.max(64, charCount(verdict) * 18 + 28)) : 0;
+  const titleWidth = Math.max(120, contentWidth - verdictWidth - (hasVerdict ? 16 : 0));
+  const titleLines = wrapText(title, Math.max(8, Math.floor(titleWidth / 18)));
+  const height = Math.max(48, titleLines.length * 28 + 12);
+  return {
+    height,
+    input: Buffer.from(`
+<svg width="${contentWidth}" height="${height}" viewBox="0 0 ${contentWidth} ${height}" xmlns="http://www.w3.org/2000/svg">
+  ${lineSvg(titleLines, {
+    x: 0,
+    y: 28,
+    lineHeight: 28,
+    fontSize: 23,
+    fill: VISUAL_BOARD_PALETTE.ink,
+    fontWeight: 800,
+  })}
+  ${hasVerdict ? `<rect x="${contentWidth - verdictWidth}" y="6" width="${verdictWidth}" height="32" rx="16" fill="${VISUAL_BOARD_PALETTE.success}" fill-opacity="0.12"/><text x="${contentWidth - verdictWidth + 14}" y="28" fill="${VISUAL_BOARD_PALETTE.success}" font-size="16" font-weight="800" font-family="PingFang SC, Noto Sans CJK SC, Microsoft YaHei, Arial Unicode MS, sans-serif">${escapeXml(verdict)}</text>` : ''}
+</svg>`),
+  };
 }
 
 export function titleBlockSvg(width, title, subtitle, eyebrow = null) {
@@ -582,7 +617,7 @@ export function titleBlockSvg(width, title, subtitle, eyebrow = null) {
       y: y,
       lineHeight: 20,
       fontSize: 16,
-      fill: '#93c5fd',
+      fill: VISUAL_BOARD_PALETTE.accent,
       fontWeight: 700,
     }));
     y += eyebrowLines.length * 20 + 14;
@@ -592,7 +627,7 @@ export function titleBlockSvg(width, title, subtitle, eyebrow = null) {
     y: y + 30,
     lineHeight: 34,
     fontSize: 30,
-    fill: '#f8fafc',
+    fill: VISUAL_BOARD_PALETTE.ink,
     fontWeight: 800,
   }));
   y += titleLines.length * 34 + 10;
@@ -602,7 +637,7 @@ export function titleBlockSvg(width, title, subtitle, eyebrow = null) {
       y: y + 24,
       lineHeight: 24,
       fontSize: 18,
-      fill: '#cbd5e1',
+      fill: VISUAL_BOARD_PALETTE.muted,
       fontWeight: 500,
     }));
     y += subtitleLines.length * 24 + 6;
@@ -626,14 +661,14 @@ export function sectionHeaderSvg(width, index, label, reason = '') {
     height,
     input: Buffer.from(`
 <svg width="${contentWidth}" height="${height}" viewBox="0 0 ${contentWidth} ${height}" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="${contentWidth}" height="${height}" rx="18" fill="#0f172a" fill-opacity="0.92"/>
-  <rect x="0.75" y="0.75" width="${contentWidth - 1.5}" height="${height - 1.5}" rx="17.25" fill="none" stroke="#475569" stroke-opacity="0.45" stroke-width="1.5"/>
+  <rect x="0" y="0" width="${contentWidth}" height="${height}" rx="18" fill="${VISUAL_BOARD_PALETTE.surface}"/>
+  <rect x="0.75" y="0.75" width="${contentWidth - 1.5}" height="${height - 1.5}" rx="17.25" fill="none" stroke="${VISUAL_BOARD_PALETTE.border}" stroke-width="1.5"/>
   ${lineSvg(titleLines, {
     x: 20,
     y: 30,
     lineHeight: 28,
     fontSize: 24,
-    fill: '#f8fafc',
+    fill: VISUAL_BOARD_PALETTE.ink,
     fontWeight: 800,
   })}
   ${reasonLines.length > 0 ? lineSvg(reasonLines, {
@@ -641,7 +676,7 @@ export function sectionHeaderSvg(width, index, label, reason = '') {
     y: 30 + titleLines.length * 28 + 10,
     lineHeight: 22,
     fontSize: 16,
-    fill: '#cbd5e1',
+    fill: VISUAL_BOARD_PALETTE.muted,
     fontWeight: 500,
   }) : ''}
 </svg>`),
@@ -671,7 +706,7 @@ export function metricsSvg(width, metrics = [], notes = null, locale = OPENPRD_F
     y: 20,
     lineHeight: 22,
     fontSize: 16,
-    fill: '#cbd5e1',
+    fill: VISUAL_BOARD_PALETTE.muted,
     fontWeight: 500,
   })}
 </svg>`),
@@ -1040,12 +1075,15 @@ export async function renderParallelCard(projectRoot, item, index, options = {})
   const mediaList = normalizeMediaList(projectRoot, item.media, locale);
   const metrics = normalizeMetricList(item.metrics ?? item.metricMap, locale);
   const notes = String(item.notes ?? item.note ?? '').trim();
-  const header = titleBlockSvg(
-    contentWidth,
-    `${index + 1}. ${title}`,
-    subtitle,
-    verdict ? `${copy.resultPrefix}${copy.separator}${verdict}` : (options.eyebrow ?? copy.parallelEyebrow),
-  );
+  const compactEvidence = options.compactEvidence === true;
+  const header = compactEvidence
+    ? compactEvidenceHeaderSvg(contentWidth, title, verdict)
+    : titleBlockSvg(
+      contentWidth,
+      `${index + 1}. ${title}`,
+      subtitle,
+      verdict ? `${copy.resultPrefix}${copy.separator}${verdict}` : (options.eyebrow ?? copy.parallelEyebrow),
+    );
   const composites = [
     { input: header.input, left: 18, top: 18 },
   ];
@@ -1053,7 +1091,7 @@ export async function renderParallelCard(projectRoot, item, index, options = {})
   let currentTop = 18 + header.height + 12;
 
   for (const media of mediaList) {
-    const label = labelSvg(media.label, {
+    const label = compactEvidence ? null : labelSvg(media.label, {
       fontSize: 16,
       height: 36,
       minWidth: 96,
@@ -1062,10 +1100,11 @@ export async function renderParallelCard(projectRoot, item, index, options = {})
       radius: 12,
     });
     const mediaPanel = await resizePanel(media.path, contentWidth);
-    composites.push(
-      { input: label, left: 18, top: currentTop },
-      { input: mediaPanel.input, left: 18 + Math.round((contentWidth - mediaPanel.width) / 2), top: currentTop + 42 },
-    );
+    const mediaTop = compactEvidence ? currentTop : currentTop + 42;
+    if (label) {
+      composites.push({ input: label, left: 18, top: currentTop });
+    }
+    composites.push({ input: mediaPanel.input, left: 18 + Math.round((contentWidth - mediaPanel.width) / 2), top: mediaTop });
     renderedMedia.push({
       path: toWorkspacePath(projectRoot, media.path),
       label: media.label,
@@ -1075,7 +1114,7 @@ export async function renderParallelCard(projectRoot, item, index, options = {})
         height: mediaPanel.height,
       },
     });
-    currentTop += 42 + mediaPanel.height + 16;
+    currentTop = mediaTop + mediaPanel.height + (compactEvidence ? 12 : 16);
   }
 
   const metricsBlock = metricsSvg(contentWidth, metrics, notes, locale);
@@ -1090,14 +1129,14 @@ export async function renderParallelCard(projectRoot, item, index, options = {})
       width: cardWidth,
       height: cardHeight,
       channels: 3,
-      background: '#0f172a',
+      background: VISUAL_BOARD_PALETTE.surface,
     },
   }).composite([
     ...composites,
     {
       input: Buffer.from(`
 <svg width="${cardWidth}" height="${cardHeight}" viewBox="0 0 ${cardWidth} ${cardHeight}" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0.75" y="0.75" width="${cardWidth - 1.5}" height="${cardHeight - 1.5}" rx="22" fill="none" stroke="#334155" stroke-width="1.5"/>
+  <rect x="0.75" y="0.75" width="${cardWidth - 1.5}" height="${cardHeight - 1.5}" rx="18" fill="none" stroke="${VISUAL_BOARD_PALETTE.border}" stroke-width="1.5"/>
 </svg>`),
       left: 0,
       top: 0,

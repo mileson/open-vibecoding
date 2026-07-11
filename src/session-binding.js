@@ -8,6 +8,16 @@ const OPENPRD_HARNESS_REQUIREMENT_GATE = path.join(OPENPRD_HARNESS_DIR, 'require
 const OPENPRD_HARNESS_SESSION_BINDINGS_DIR = path.join(OPENPRD_HARNESS_DIR, 'session-bindings');
 const OPENPRD_STATE_CURRENT = path.join('.openprd', 'state', 'current.json');
 
+let sessionBindingWriteEnabled = true;
+
+function setSessionBindingWriteEnabled(enabled) {
+  sessionBindingWriteEnabled = enabled;
+}
+
+function isSessionBindingWriteEnabled() {
+  return sessionBindingWriteEnabled;
+}
+
 function normalizeSessionId(sessionId) {
   const text = String(sessionId ?? '').trim();
   return text || null;
@@ -57,6 +67,9 @@ async function upsertSessionBinding(projectRoot, sessionId, patch = {}) {
   if (!normalized) {
     return null;
   }
+  if (!sessionBindingWriteEnabled) {
+    return { sessionId: normalized, path: null, skipped: true, reason: 'session-binding-write-disabled' };
+  }
   const filePath = sessionBindingPath(projectRoot, normalized);
   const previous = await readJson(filePath).catch(() => null);
   const next = {
@@ -84,9 +97,7 @@ async function upsertSessionBinding(projectRoot, sessionId, patch = {}) {
     gateStatus: patch.gateStatus ?? next.gateStatus ?? null,
     gateActive: patch.gateActive ?? next.gateActive ?? false,
     bindingPath: filePath,
-    statePath: normalized
-      ? path.join(projectRoot, '.openprd', 'harness', 'session-states', `${normalized.replace(/[^A-Za-z0-9._-]/g, '_')}.json`)
-      : null,
+    statePath: path.join(projectRoot, '.openprd', 'harness', 'session-states', `${normalized.replace(/[^A-Za-z0-9._-]/g, '_')}.json`),
     updatedAt: next.updatedAt,
   });
   return {
@@ -167,9 +178,11 @@ async function syncSessionBindingFromChange(projectRoot, changeId, options = {})
 }
 
 export {
+  isSessionBindingWriteEnabled,
   readLegacyRequirementGate,
   readSessionBinding,
   sessionBindingPath,
+  setSessionBindingWriteEnabled,
   syncSessionBindingFromChange,
   syncSessionBindingFromReview,
   syncSessionBindingFromSnapshot,

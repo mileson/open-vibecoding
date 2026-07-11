@@ -49,7 +49,7 @@ export const REVIEW_PRESENTATION_TEMPLATE = {
     ],
   },
   designDirections: {
-    note: '可选；只有需求涉及界面/页面/交互时提供。先用 imagegen 生成 3 个差异足够大的交互稿，把图片放到 .openprd/design/active/ 后写入路径；不涉及界面时删除本字段。',
+    note: '可选；仅在大界面改动或需要用户选择视觉方向时提供，轻量 UI 微调不触发。按当前工具面用 Codex imagegen 或 Cursor GenerateImage 生成 3 个差异足够大的交互稿；已有界面默认共享同一截图并保持原视觉风格，冷启动使用 design brief。把图片放到 .openprd/design/active/ 后写入路径；不触发时删除本字段。',
     directions: [
       {
         id: 'direction-1',

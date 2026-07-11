@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { appendJsonl, cjoin, exists, readJson, readJsonl } from './fs-utils.js';
+import { atomicWriteText, withFileLock } from './kernel/atomic-store.js';
 import { timestamp } from './time.js';
 
 const OPENPRD_WORKSPACE_MARKER = '.openprd';
@@ -56,9 +57,13 @@ function normalizeWorkspaceRegistryEntry(entry) {
 }
 
 function resolveOpenPrdHome(options = {}) {
+  const testHome = process.env.NODE_TEST_CONTEXT
+    ? cjoin(os.tmpdir(), 'openprd-node-test-home', String(process.pid))
+    : null;
   return path.resolve(
     options.openprdHome
       ?? process.env.OPENPRD_HOME
+      ?? testHome
       ?? cjoin(os.homedir(), '.openprd'),
   );
 }
@@ -144,7 +149,7 @@ async function upsertWorkspaceRegistryEntry(projectRoot, options = {}) {
     lastAction: snapshot.lastAction ?? existing?.lastAction ?? 'detected',
   };
 
-  await appendJsonl(registry.registryPath, entry);
+  await withFileLock(`${registry.registryPath}.lock`, () => appendJsonl(registry.registryPath, entry));
   return {
     home: registry.home,
     registryPath: registry.registryPath,
@@ -154,9 +159,42 @@ async function upsertWorkspaceRegistryEntry(projectRoot, options = {}) {
   };
 }
 
+function registryBackupName(prefix = 'workspaces') {
+  return `${prefix}-${new Date().toISOString().replace(/[:.]/g, '-')}.jsonl`;
+}
+
+async function compactWorkspaceRegistry(options = {}) {
+  const registryPath = workspaceRegistryFilePath(options);
+  return withFileLock(`${registryPath}.lock`, async () => {
+    const registry = await readWorkspaceRegistry(options);
+    const staleRoots = new Set((registry.staleEntries ?? []).map((entry) => entry.workspaceRoot));
+    const entries = options.pruneStale === false
+      ? registry.entries
+      : registry.entries.filter((entry) => !staleRoots.has(entry.workspaceRoot));
+    const backupDir = path.resolve(options.backupDir ?? cjoin(registry.home, 'registry', 'backups'));
+    await fs.mkdir(backupDir, { recursive: true });
+    const backupPath = cjoin(backupDir, registryBackupName('workspaces'));
+    if (await exists(registryPath)) await fs.copyFile(registryPath, backupPath);
+    else await atomicWriteText(backupPath, '');
+    const body = entries.length > 0 ? `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n` : '';
+    await atomicWriteText(registryPath, body);
+    return {
+      ok: true,
+      registryPath,
+      backupPath,
+      beforeEvents: registry.totalEvents,
+      afterEvents: entries.length,
+      kept: entries.length,
+      pruned: registry.entries.length - entries.length,
+      stale: registry.staleEntries.length,
+    };
+  });
+}
+
 export {
   readWorkspaceRegistry,
   resolveOpenPrdHome,
+  compactWorkspaceRegistry,
   upsertWorkspaceRegistryEntry,
   workspaceRegistryFilePath,
 };

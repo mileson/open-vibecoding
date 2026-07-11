@@ -87,6 +87,11 @@ const UI_FILE_EXTENSIONS = new Set([
 ]);
 const VISUAL_REVIEWS_DIR = cjoin('.openprd', 'harness', 'visual-reviews');
 const VISUAL_EVIDENCE_FRESH_MS = 24 * 60 * 60 * 1000;
+const I18N_CONFIG_PATH = cjoin('.openprd', 'i18n-config.json');
+const I18N_TEXT_FILE_EXTENSIONS = new Set([
+  '.html', '.jsx', '.swift', '.tsx', '.vue', '.wxml', '.svelte',
+  '.kt', '.java', '.dart', '.xml',
+]);
 
 function normalizePathForReport(value) {
   return String(value ?? '').split(path.sep).join('/');
@@ -461,9 +466,39 @@ async function buildVisualEvidenceReminder(projectRoot, files) {
     suggestedCommands: [
       'openprd visual-compare . --before <改前截图> --after <改后截图>',
       'openprd visual-compare . --board <alignment-board.json>（同构列表/卡片/网格/表格对齐，含容器轨道与内容槽位）',
+      '网格与基线只进入 alignment-board；普通结果画布不得自动叠加',
       'openprd visual-compare . --board <centering-board.json>（单素材内部居中/视觉重心）',
     ],
     chatEmbedHint: '生成后把证据图用 `![视觉证据](<输出路径>)` 直接嵌入最终回复，让用户在对话流里看到对齐效果。',
+  };
+}
+
+async function buildI18nReminder(projectRoot, files) {
+  const textFiles = files
+    .filter((f) => f.status !== 'error' && I18N_TEXT_FILE_EXTENSIONS.has(path.extname(f.path).toLowerCase()))
+    .map((f) => f.path);
+  if (textFiles.length === 0) {
+    return { required: false, textFiles: [] };
+  }
+  const configPath = cjoin(projectRoot, I18N_CONFIG_PATH);
+  const config = await readJson(configPath).catch(() => null);
+  if (config && config.enforceOnDevCheck === false) {
+    return { required: false, textFiles, reason: 'i18n 检查已被用户关闭 (enforceOnDevCheck: false)。' };
+  }
+  const defaultLang = config?.defaultLanguage ?? 'zh-Hans';
+  const supported = Array.isArray(config?.supportedLanguages) ? config.supportedLanguages : ['zh-Hans', 'en'];
+  const platforms = Array.isArray(config?.platforms) ? config.platforms : [];
+  return {
+    required: true,
+    textFiles,
+    defaultLanguage: defaultLang,
+    supportedLanguages: supported,
+    platforms,
+    configExists: config !== null,
+    reason: config
+      ? `本轮触达 ${textFiles.length} 个可能包含用户文案的文件；请检查新增/修改的文案是否已使用 i18n 框架，基准语言 ${defaultLang}，需支持 ${supported.join(', ')}。`
+      : `本轮触达 ${textFiles.length} 个可能包含用户文案的文件，但项目尚未配置 .openprd/i18n-config.json。如需启用多语言检查，可运行 openprd i18n-init . 或手动创建配置文件。`,
+    guideline: 'docs/basic/i18n-guidelines.md',
   };
 }
 
@@ -621,6 +656,7 @@ export async function checkDevelopmentStandardsWorkspace(projectRoot, options = 
     files,
     wrapUp: buildDevCheckWrapUp(files, lineConfig),
     visualEvidence: await buildVisualEvidenceReminder(projectRoot, files),
+    i18nReminder: await buildI18nReminder(projectRoot, files),
     knowledgeReview,
     errors,
   };
@@ -657,4 +693,25 @@ export async function setDevCheckAutoRefactor(projectRoot, enabled) {
       mode: enabled ? 'auto-refactor' : 'recommend',
     },
   };
+}
+
+export async function initI18nConfig(projectRoot, options = {}) {
+  const configPath = cjoin(projectRoot, I18N_CONFIG_PATH);
+  const existing = await readJson(configPath).catch(() => null);
+  if (existing) {
+    return { created: false, configPath: normalizePathForReport(I18N_CONFIG_PATH), config: existing };
+  }
+  const defaultLang = options.defaultLanguage ?? 'zh-Hans';
+  const config = {
+    version: 1,
+    defaultLanguage: defaultLang,
+    supportedLanguages: [defaultLang, ...(defaultLang === 'en' ? ['zh-Hans'] : ['en'])],
+    enforceOnDevCheck: true,
+    platforms: [],
+    translationStrategy: 'key-value-file',
+    notes: '用户可随时修改此文件来调整默认语言、支持语种和检查策略',
+  };
+  await fs.mkdir(path.dirname(configPath), { recursive: true });
+  await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
+  return { created: true, configPath: normalizePathForReport(I18N_CONFIG_PATH), config };
 }

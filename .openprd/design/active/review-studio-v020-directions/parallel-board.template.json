@@ -1,0 +1,45 @@
+{
+  "mode": "parallel-board",
+  "title": "OpenPrd Review Studio 0.1.20 三方向 参考映射模板",
+  "summary": "每张卡先挂参考 crop。要做多对象、多方向或多页面统一验收时，在对应卡片里继续补实现截图、指标或备注。",
+  "columns": 3,
+  "cardWidth": 360,
+  "items": [
+    {
+      "label": "对象 01",
+      "subtitle": "参考对象 01",
+      "verdict": "待补实现截图",
+      "media": [
+        {
+          "path": ".openprd/design/active/review-studio-v020-directions/crops/01.png",
+          "label": "参考 crop"
+        }
+      ],
+      "notes": "需要时可继续补实现截图、指标或阶段性结论。"
+    },
+    {
+      "label": "对象 02",
+      "subtitle": "参考对象 02",
+      "verdict": "待补实现截图",
+      "media": [
+        {
+          "path": ".openprd/design/active/review-studio-v020-directions/crops/02.png",
+          "label": "参考 crop"
+        }
+      ],
+      "notes": "需要时可继续补实现截图、指标或阶段性结论。"
+    },
+    {
+      "label": "对象 03",
+      "subtitle": "参考对象 03",
+      "verdict": "待补实现截图",
+      "media": [
+        {
+          "path": ".openprd/design/active/review-studio-v020-directions/crops/03.png",
+          "label": "参考 crop"
+        }
+      ],
+      "notes": "需要时可继续补实现截图、指标或阶段性结论。"
+    }
+  ]
+}

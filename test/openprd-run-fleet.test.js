@@ -205,8 +205,8 @@ test('run exposes hook-stable context and records hook iterations', async () => 
   assert.ok(continuationContext.recommendation.reason.includes('工具无关的会话 ID'));
   assert.ok(continuationContext.recommendation.reason.includes('不能用相似历史、当前 active change'));
   assert.equal(continuationContext.recommendation.reason.includes('存在一个依赖已就绪的 OpenPrd 任务'), false);
-  assert.ok(await fs.stat(path.join(project, '.openprd', 'harness', 'run-state.json')).then(() => true));
-  assert.ok(await fs.stat(path.join(project, '.openprd', 'harness', 'iterations.jsonl')).then(() => true));
+  await assert.rejects(fs.stat(path.join(project, '.openprd', 'harness', 'run-state.json')), { code: 'ENOENT' });
+  await assert.rejects(fs.stat(path.join(project, '.openprd', 'harness', 'iterations.jsonl')), { code: 'ENOENT' });
 
   const recorded = await runWorkspace(project, {
     recordHook: true,
@@ -216,6 +216,7 @@ test('run exposes hook-stable context and records hook iterations', async () => 
     preview: 'start run',
   });
   assert.equal(recorded.ok, true);
+  assert.ok(await fs.stat(path.join(project, '.openprd', 'harness', 'run-state.json')).then(() => true));
   const iterations = await fs.readFile(path.join(project, '.openprd', 'harness', 'iterations.jsonl'), 'utf8');
   assert.ok(iterations.includes('UserPromptSubmit'));
   assert.ok(iterations.includes('context-injected'));
@@ -288,10 +289,12 @@ test('run exposes hook-stable context and records hook iterations', async () => 
   assert.doesNotMatch(contextAfterVerify.recommendation.type, /clarify-user/i);
 });
 
-test('run context auto-matches project knowledge skills and records adoption', async () => {
+test('run context auto-matches project knowledge skills without mutating adoption state', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
   await seedKnowledgeSkill(project);
+  const knowledgeIndexPath = path.join(project, '.openprd', 'knowledge', 'index.json');
+  const knowledgeIndexBefore = await fs.readFile(knowledgeIndexPath, 'utf8');
 
   const context = await runWorkspace(project, {
     context: true,
@@ -307,11 +310,9 @@ test('run context auto-matches project knowledge skills and records adoption', a
   assert.equal(context.knowledgeSkills.mandatoryCheck.mode, 'prompt-rerank');
   assert.equal(context.knowledgeSkills.mandatoryCheck.required, true);
   assert.equal(context.knowledgeSkills.mandatoryCheck.candidates[0].skillName, 'billing-trace-rollback');
-
-  const knowledgeIndex = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'knowledge', 'index.json'), 'utf8'));
-  assert.equal(knowledgeIndex.skills[0].adoption.hitCount, 1);
-  assert.equal(knowledgeIndex.skills[0].adoption.referencedCount, 1);
-  assert.equal(knowledgeIndex.skills[0].adoption.injectedCount, 0);
+  assert.equal(context.knowledgeSkills.summary.recorded, false);
+  assert.equal(context.knowledgeSkills.summary.adoption, null);
+  assert.equal(await fs.readFile(knowledgeIndexPath, 'utf8'), knowledgeIndexBefore);
 
   const logs = [];
   const originalLog = console.log;

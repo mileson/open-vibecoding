@@ -9,6 +9,7 @@ import { migrateLegacyOpenPrdArtifacts } from './openspec/migration.js';
 import { analyzePrdSnapshot, buildPrdSnapshot, formatVersionId, getRequiredFieldDescriptors, renderPrdMarkdown, summarizeSnapshot } from './prd-core.js';
 import { normalizeReleaseLedger } from './release-ledger.js';
 import { appendJsonl, appendText, cjoin, exists, readJson, readText, readYaml, stringifyYaml, writeJson, writeText, writeYaml } from './fs-utils.js';
+import { openProjectLedger } from './kernel/index.js';
 import { OPENSPEC_TASK_MAX_ITEMS_PER_FILE } from './openspec/constants.js';
 import { checkStandardsWorkspace, STANDARD_DOCS } from './standards.js';
 import { timestamp } from './time.js';
@@ -100,11 +101,6 @@ const WORKSPACE_SEED_REFRESH_FILES = [
   'design/templates/content-home.html',
   'design/templates/product-launch.html',
   'design/templates/ops-dashboard.html',
-  'design/active/facts-sheet.md',
-  'design/active/asset-spec.md',
-  'design/active/image-preflight.md',
-  'design/active/direction-plan.md',
-  'design/active/selected-direction.md',
   'schema/prd.schema.yaml',
   'schema/diagram-architecture.schema.yaml',
   'schema/diagram-product-flow.schema.yaml',
@@ -138,6 +134,7 @@ const WORKSPACE_SEED_COPY_IGNORE = new Set([
   'benchmarks/inbox',
   'changes',
   'discovery',
+  'design/active',
   'growth',
   'harness',
   'knowledge',
@@ -162,6 +159,76 @@ const WORKSPACE_SEED_COPY_IGNORE = new Set([
   'engagements/active/review.html',
   'engagements/active/verification.md',
 ]);
+const ACTIVE_DESIGN_TEMPLATE_FILES = {
+  'facts-sheet.md': `# Facts Sheet
+
+| 字段 | 当前值 | 来源 | verifiedAt | 状态 |
+| --- | --- | --- | --- | --- |
+| 产品 / 项目名 | 待填写 | 待确认 | - | pending |
+| 版本 / 发布状态 | 待填写 | 待确认 | - | pending |
+| 关键事实 1 | 待填写 | 待确认 | - | pending |
+| 关键事实 2 | 待填写 | 待确认 | - | pending |
+
+## 备注
+
+- 没核实到就保留 \`pending\`
+- 不要把记忆当来源
+`,
+  'asset-spec.md': `# Asset Spec
+
+| 类型 | 资产 | 来源 | 状态 | 备注 |
+| --- | --- | --- | --- | --- |
+| logo | 待填写 | 待确认 | pending |  |
+| 产品图 | 待填写 | 待确认 | pending |  |
+| UI 图 | 待填写 | 待确认 | pending |  |
+| 功能图标 | 新入口/按钮/空态默认配图标 | UI 图标 Phosphor；实现库 Lucide/Tabler/React Icons；AI 品牌 LobeHub；技术栈 Tech Icons | pending | 开发新功能时 Agent 自动找图标并登记，不等用户要求 |
+| 摄影 / 插图 | 待填写 | 待确认 | pending |  |
+| 色板 / 字体 | 待填写 | 待确认 | pending |  |
+| 动效节奏 | 待填写 | 待确认 | pending |  |
+| 背景 / 表面 | 待填写 | 待确认 | pending |  |
+| 构图记忆点 | 待填写 | 待确认 | pending |  |
+
+## 冻结变量
+
+- lens: 待填写
+- theme: 待填写
+- layout: 待填写
+- aesthetic: 待填写
+- memory-point: 待填写
+`,
+  'image-preflight.md': `# Image Preflight
+
+| 问题 | 回答 |
+| --- | --- |
+| 真实图片是不是页面成立前提 | 待填写 |
+| 必需图片类型 | 待填写 |
+| 计划来源 | 待填写 |
+| 缺失风险 | 待填写 |
+| 降级方案 | 待填写 |
+`,
+  'direction-plan.md': `# Direction Plan
+
+| 方向 | 生成逻辑 | lens | theme | layout | 审美主张 | 记忆点 | 为什么不同 | 适用场景 | 主要风险 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 方向 1 | contrast | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
+| 方向 2 | reference-transfer | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
+| 方向 3 | design-lens | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
+`,
+  'selected-direction.md': `# Selected Direction
+
+- selected: 待填写
+- reason: 待填写
+- lens: 待填写
+- theme: 待填写
+- layout: 待填写
+- aesthetic: 待填写
+- memory-point: 待填写
+- components:
+  - 待填写
+- follow-up risks:
+  - 待填写
+`,
+};
 const OPERATIONAL_GITIGNORE_ENTRIES = [
   '.openprd/harness/',
   '.openprd/learning/',
@@ -662,10 +729,32 @@ function buildWorkflowTaskGraph(snapshot = null, analysis = null, options = {}) 
 }
 
 async function appendWorkflowEvent(ws, type, payload = {}) {
+  const at = timestamp();
+  const eventTypeSuffix = String(type ?? 'event')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '') || 'event';
+  const jsonPayload = JSON.parse(JSON.stringify(payload ?? {}));
+  const ledger = openProjectLedger(ws.projectRoot);
+  await ledger.append(
+    `workflow:${ws.data?.currentSessionId ?? 'workspace'}`,
+    {
+      eventType: `workflow.${eventTypeSuffix}`,
+      actor: { type: 'openprd-cli' },
+      payload: {
+        type,
+        at,
+        ...jsonPayload,
+      },
+      metadata: {
+        compatibilityProjection: path.relative(ws.projectRoot, ws.paths.eventsLog).split(path.sep).join('/'),
+      },
+    },
+  );
   await appendJsonl(ws.paths.eventsLog, {
     type,
-    at: timestamp(),
-    ...payload,
+    at,
+    ...jsonPayload,
   });
 }
 
@@ -751,6 +840,12 @@ async function ensureWorkspaceSkeleton(projectRoot, options = {}) {
   await fs.mkdir(cjoin(workspaceRoot, 'design', 'assets'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'design', 'templates'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'design', 'active'), { recursive: true });
+  for (const [filename, content] of Object.entries(ACTIVE_DESIGN_TEMPLATE_FILES)) {
+    const targetPath = cjoin(workspaceRoot, 'design', 'active', filename);
+    if (options.force || !(await exists(targetPath))) {
+      await writeText(targetPath, content);
+    }
+  }
   await fs.mkdir(cjoin(workspaceRoot, 'growth'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'incidents'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'patterns'), { recursive: true });
@@ -1082,6 +1177,13 @@ async function migrateWorkspaceSkeleton(projectRoot, options = {}) {
   await fs.mkdir(cjoin(workspaceRoot, 'design', 'assets'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'design', 'templates'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'design', 'active'), { recursive: true });
+  for (const [filename, content] of Object.entries(ACTIVE_DESIGN_TEMPLATE_FILES)) {
+    const targetPath = cjoin(workspaceRoot, 'design', 'active', filename);
+    if (!(await exists(targetPath))) {
+      await writeText(targetPath, content);
+      changes.push({ path: cjoin('.openprd', 'design', 'active', filename), status: 'created' });
+    }
+  }
   await fs.mkdir(cjoin(workspaceRoot, 'growth'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'incidents'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'patterns'), { recursive: true });

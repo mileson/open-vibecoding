@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.1.19",
+  "currentVersion": "0.1.21",
   "versions": [
     {
       "version": "0.1.2",
@@ -724,8 +724,94 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.1.20",
+      "status": "released",
+      "createdAt": "2026-07-11 02:22:31",
+      "updatedAt": "2026-07-11 03:25:03",
+      "notes": null,
+      "items": [
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "统一项目账本、Manifest 协议和可重建投影，解决多份状态互相覆盖",
+          "sentence": "新增：统一项目账本、Manifest 协议和可重建投影，解决多份状态互相覆盖",
+          "recordedAt": "2026-07-11 02:22:31",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783707751558"
+          }
+        },
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "TaskRuntime 任务领取、租约恢复和 write-set 冲突检测，支持同项目多线程安全执行",
+          "sentence": "新增：TaskRuntime 任务领取、租约恢复和 write-set 冲突检测，支持同项目多线程安全执行",
+          "recordedAt": "2026-07-11 02:22:31",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783707751732"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "ContextCapsule 完整 800 / 增量 250 token 预算，run --context 保持业务状态只读",
+          "sentence": "优化：ContextCapsule 完整 800 / 增量 250 token 预算，run --context 保持业务状态只读",
+          "recordedAt": "2026-07-11 02:22:31",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783707751904"
+          }
+        },
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "业务/工程双视图 Review Studio、作用域门禁、Knowledge v3 与三端 Adapter SPI",
+          "sentence": "新增：业务/工程双视图 Review Studio、作用域门禁、Knowledge v3 与三端 Adapter SPI",
+          "recordedAt": "2026-07-11 02:22:32",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783707752075"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "本机安装与 fleet 升级增加软链接防护、备份、checksum、CAS、原子应用和单项目回滚",
+          "sentence": "优化：本机安装与 fleet 升级增加软链接防护、备份、checksum、CAS、原子应用和单项目回滚",
+          "recordedAt": "2026-07-11 02:22:32",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783707752244"
+          }
+        }
+      ],
+      "tag": null
+    },
+    {
+      "version": "0.1.21",
+      "status": "current",
+      "createdAt": "2026-07-11 19:26:22",
+      "updatedAt": "2026-07-11 19:26:22",
+      "notes": null,
+      "items": [
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "大界面改动自动生成三方向候选，既有界面默认延续原视觉风格；完善 Codex、Cursor 多工具生图与截图路由；优化视觉对比画布和本地项目批量升级安全性",
+          "sentence": "调整：大界面改动自动生成三方向候选，既有界面默认延续原视觉风格；完善 Codex、Cursor 多工具生图与截图路由；优化视觉对比画布和本地项目批量升级安全性",
+          "recordedAt": "2026-07-11 19:26:22",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783769182604"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-07-07 00:11:20"
+  "updatedAt": "2026-07-11 19:26:22"
 }

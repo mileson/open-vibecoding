@@ -1,9 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { cjoin, exists, writeJson } from './fs-utils.js';
+import { cjoin, exists } from './fs-utils.js';
+import { atomicWriteJson } from './kernel/index.js';
 import { hasLegacyOpenPrdArtifacts } from './openspec/migration.js';
 import { SOURCE_INVENTORY_IGNORE_DIRS } from './source-inventory.js';
 import { timestamp } from './time.js';
+import { createFleetTransactionContext, executeFleetProjectTransaction, planFleetProjectTransaction } from './upgrade/fleet-transaction.js';
+import { applySuccessfulFleetMutation, runStagedFleetMutation } from './upgrade/fleet-mutation.js';
 import { readWorkspaceRegistry, upsertWorkspaceRegistryEntry } from './workspace-registry.js';
 
 const FLEET_DEFAULT_MAX_DEPTH = 4;
@@ -35,6 +38,7 @@ const FLEET_PROJECT_MARKERS = [
 ];
 const FLEET_AGENT_MARKERS = ['.codex', '.claude', '.cursor', 'AGENTS.md', 'CLAUDE.md'];
 const FLEET_LEGACY_OPENPRD_MARKER = 'openprd-legacy-artifacts';
+const FLEET_TRANSACTIONAL_ACTIONS = new Set(['update', 'setup', 'backfill-work-units']);
 
 function normalizeCsvList(value) {
   if (!value) {
@@ -110,7 +114,7 @@ async function detectFleetMarkers(projectPath) {
   const entries = await fs.readdir(projectPath, { withFileTypes: true }).catch(() => []);
   const names = new Set(entries.map((entry) => entry.name));
   const markers = FLEET_PROJECT_MARKERS.filter((marker) => names.has(marker));
-  if (!markers.includes('.openprd') && await hasLegacyOpenPrdArtifacts(projectPath)) {
+  if (await hasLegacyOpenPrdArtifacts(projectPath)) {
     markers.push(FLEET_LEGACY_OPENPRD_MARKER);
   }
   return markers;
@@ -121,11 +125,18 @@ async function scanFleetProjects(rootPath, options = {}) {
   const maxDepth = parsePositiveInteger(options.maxDepth, FLEET_DEFAULT_MAX_DEPTH);
   const include = normalizeCsvList(options.include);
   const exclude = normalizeCsvList(options.exclude);
+  const infrastructureRoots = [options.openprdHome, options.backupRoot]
+    .filter(Boolean)
+    .map((candidate) => path.resolve(candidate))
+    .filter((candidate) => pathWithinRoot(root, candidate));
   const projects = [];
   const seenRealPaths = new Set();
 
   async function walk(currentPath, depth) {
     if (depth > maxDepth) {
+      return;
+    }
+    if (currentPath !== root && infrastructureRoots.some((candidate) => pathWithinRoot(candidate, currentPath))) {
       return;
     }
 
@@ -141,6 +152,7 @@ async function scanFleetProjects(rootPath, options = {}) {
     seenRealPaths.add(realPath);
 
     const markers = await detectFleetMarkers(currentPath);
+    const containsLegacyArtifactTree = markers.includes(FLEET_LEGACY_OPENPRD_MARKER);
     if (markers.length > 0) {
       const category = classifyFleetMarkers(markers);
       const included = projectPathMatches(root, currentPath, include);
@@ -169,6 +181,11 @@ async function scanFleetProjects(rootPath, options = {}) {
         continue;
       }
       if (FLEET_IGNORE_DIRS.has(entry.name)) {
+        continue;
+      }
+      // A legacy `openprd/changes` tree belongs to the project just discovered
+      // above. It is migration input, never another fleet project root.
+      if (containsLegacyArtifactTree && entry.name === 'openprd') {
         continue;
       }
       await walk(cjoin(currentPath, entry.name), depth + 1);
@@ -298,32 +315,18 @@ function summarizeFleetProjects(projects) {
   return summary;
 }
 
-async function collectFleetProjectHealth(projectPath, options, doctorWorkspace) {
-  if (!doctorWorkspace) {
-    return { ok: true, errors: [] };
-  }
-  try {
-    // Batch refresh should focus on generated guidance and workspace skeleton health.
-    // Legacy content-doc debt remains available in direct doctor/standards checks.
-    const doctor = await doctorWorkspace(projectPath, {
-      tools: options.tools ?? 'all',
-      hookProfile: options.hookProfile,
-      enableUserCodexConfig: Boolean(options.enableUserCodexConfig),
-      codexHome: options.codexHome,
-      openprdHome: options.openprdHome,
-      docsContent: false,
-      sourceManuals: false,
-    });
-    return {
-      ok: doctor.ok,
-      errors: doctor.errors ?? [],
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      errors: [error instanceof Error ? error.message : String(error)],
-    };
-  }
+function attachFleetTransactionReport(item, plan, context) {
+  item.transaction = {
+    id: plan.transactionId,
+    reportVersion: plan.version,
+    strategy: context.applyStrategy,
+  };
+  item.version = { ...plan.versions };
+  item.checksum = { ...plan.checksum };
+  item.backup = { ...plan.backup };
+  item.migration = plan.migration;
+  item.rollback = { ...plan.rollback };
+  item.refusal = [...plan.refusal];
 }
 
 function buildFleetRegistrySummary(rootPath, options, registry) {
@@ -350,12 +353,7 @@ function buildFleetRegistrySummary(rootPath, options, registry) {
 }
 
 async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
-  const {
-    doctorWorkspace,
-    backfillWorkUnitsWorkspace,
-    setupAgentIntegrationWorkspace,
-    updateAgentIntegrationWorkspace,
-  } = dependencies;
+  const { doctorWorkspace, backfillWorkUnitsWorkspace } = dependencies;
   const root = path.resolve(rootPath);
   if (!(await exists(root))) {
     throw new Error(`Fleet root does not exist: ${root}`);
@@ -374,6 +372,11 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
   const scanned = await scanFleetProjects(root, options);
   const mergedProjects = await mergeFleetProjects(scanned, registryScope.projects);
   const projects = [];
+  const transactionContext = await createFleetTransactionContext({
+    openprdHome: options.openprdHome,
+    backupRoot: options.backupRoot,
+    targetVersion: options.targetVersion,
+  });
 
   for (const project of mergedProjects) {
     const plannedAction = plannedFleetAction(project.category, options);
@@ -393,6 +396,27 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
       continue;
     }
 
+    let transactionPlan = null;
+    if (FLEET_TRANSACTIONAL_ACTIONS.has(plannedAction)) {
+      try {
+        transactionPlan = await planFleetProjectTransaction({ ...project, plannedAction }, transactionContext, { dryRun });
+        attachFleetTransactionReport(item, transactionPlan, transactionContext);
+      } catch (error) {
+        item.status = 'failed';
+        item.ok = false;
+        item.errors = [error instanceof Error ? error.message : String(error)];
+        projects.push(item);
+        continue;
+      }
+      if (!transactionPlan.eligible) {
+        item.status = 'failed';
+        item.ok = false;
+        item.errors = transactionPlan.refusal.map((refusal) => refusal.message);
+        projects.push(item);
+        continue;
+      }
+    }
+
     if (dryRun) {
       if (plannedAction === 'backfill-work-units' && backfillWorkUnitsWorkspace) {
         const backfill = await backfillWorkUnitsWorkspace(project.path, { dryRun: true });
@@ -408,54 +432,49 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
       continue;
     }
 
+    if (transactionPlan) {
+      const transaction = await executeFleetProjectTransaction(transactionPlan, {
+        openprdHome: options.openprdHome,
+        beforeApply: dependencies.beforeFleetApply,
+        mutate: (stagingRoot, staging) => runStagedFleetMutation(
+          plannedAction,
+          stagingRoot,
+          options,
+          dependencies,
+          staging,
+        ),
+        afterApply: plannedAction === 'update' || plannedAction === 'setup'
+          ? async () => ({
+            registry: await upsertWorkspaceRegistryEntry(project.path, {
+              openprdHome: options.openprdHome,
+              action: plannedAction === 'update' ? 'fleet-update' : 'fleet-setup',
+            }),
+          })
+          : null,
+      });
+      attachFleetTransactionReport(item, transaction.plan, transactionContext);
+      if (!transaction.ok) {
+        item.status = 'failed';
+        item.ok = false;
+        item.errors = Array.from(new Set([
+          ...(transaction.mutationResult?.errors ?? []),
+          transaction.error instanceof Error ? transaction.error.message : String(transaction.error),
+        ].filter(Boolean)));
+        projects.push(item);
+        continue;
+      }
+      item.ok = true;
+      applySuccessfulFleetMutation(item, plannedAction, transaction);
+      item.errors = [
+        ...(transaction.mutationResult?.actionResult?.doctor?.errors ?? []),
+        ...(transaction.mutationResult?.backfill?.errors ?? []),
+      ];
+      projects.push(item);
+      continue;
+    }
+
     try {
-      if (plannedAction === 'update') {
-        const update = await updateAgentIntegrationWorkspace(project.path, {
-          tools: options.tools ?? 'all',
-          hookProfile: options.hookProfile,
-          force: Boolean(options.force),
-          enableUserCodexConfig: Boolean(options.enableUserCodexConfig),
-          codexHome: options.codexHome,
-          openprdHome: options.openprdHome,
-        });
-        const backfill = backfillWorkUnitsWorkspace
-          ? await backfillWorkUnitsWorkspace(project.path, {})
-          : { ok: true, changes: [], errors: [], totalVersions: 0, changedVersions: 0 };
-        const health = await collectFleetProjectHealth(project.path, options, doctorWorkspace);
-        item.status = update.ok && backfill.ok ? 'updated' : 'failed';
-        item.ok = update.ok && backfill.ok;
-        item.registry = update.registry ?? null;
-        item.changes = [
-          ...(update.migration?.changes ?? []).map((change) => ({ ...change, source: 'workspace' })),
-          ...(update.changes ?? []).map((change) => ({ ...change, source: 'agent' })),
-          ...(backfill.changes ?? []).map((change) => ({ ...change, source: 'work-unit' })),
-        ];
-        item.doctorOk = health.ok;
-        item.healthOk = health.ok;
-        item.healthErrors = health.errors;
-        item.workUnits = {
-          totalVersions: backfill.totalVersions,
-          changedVersions: backfill.changedVersions,
-        };
-        item.errors = [...(update.doctor?.errors ?? []), ...(backfill.errors ?? [])];
-      } else if (plannedAction === 'setup') {
-        const setup = await setupAgentIntegrationWorkspace(project.path, {
-          tools: options.tools ?? 'all',
-          hookProfile: options.hookProfile,
-          force: Boolean(options.force),
-          enableUserCodexConfig: Boolean(options.enableUserCodexConfig),
-          codexHome: options.codexHome,
-          openprdHome: options.openprdHome,
-        });
-        item.status = setup.ok ? 'setup' : 'failed';
-        item.ok = setup.ok;
-        item.registry = setup.registry ?? null;
-        item.changes = [
-          ...(setup.migration?.changes ?? []).map((change) => ({ ...change, source: 'workspace' })),
-          ...(setup.changes ?? []).map((change) => ({ ...change, source: 'agent' })),
-        ];
-        item.errors = setup.doctor?.errors ?? [];
-      } else if (plannedAction === 'doctor') {
+      if (plannedAction === 'doctor') {
         const doctor = await doctorWorkspace(project.path, {
           tools: options.tools ?? 'all',
           hookProfile: options.hookProfile,
@@ -467,19 +486,6 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
         item.ok = doctor.ok;
         item.doctorOk = doctor.ok;
         item.errors = doctor.errors ?? [];
-      } else if (plannedAction === 'backfill-work-units') {
-        if (!backfillWorkUnitsWorkspace) {
-          throw new Error('Missing fleet dependency: backfillWorkUnitsWorkspace');
-        }
-        const backfill = await backfillWorkUnitsWorkspace(project.path, {});
-        item.status = backfill.ok ? (backfill.totalVersions > 0 ? 'backfilled' : 'skipped') : 'failed';
-        item.ok = backfill.ok;
-        item.workUnits = {
-          totalVersions: backfill.totalVersions,
-          changedVersions: backfill.changedVersions,
-        };
-        item.changes = (backfill.changes ?? []).map((change) => ({ ...change, source: 'work-unit' }));
-        item.errors = backfill.errors ?? [];
       } else if (plannedAction === 'sync-registry') {
         const registrySync = await upsertWorkspaceRegistryEntry(project.path, {
           openprdHome: options.openprdHome,
@@ -515,6 +521,17 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
       backfillWorkUnits: Boolean(options.backfillWorkUnits),
       syncRegistry: Boolean(options.syncRegistry),
     },
+    upgrade: {
+      reportVersion: transactionContext.version,
+      transactionId: transactionContext.transactionId,
+      targetVersion: transactionContext.targetVersion,
+      checksumAlgorithm: transactionContext.checksumAlgorithm,
+      applyStrategy: transactionContext.applyStrategy,
+      backupRoot: transactionContext.backupRoot,
+      archivePolicy: 'refuse-write',
+      symlinkPolicy: 'refuse-write',
+      compatibilityPolicy: 'refuse-too-new',
+    },
     scannedAt: timestamp(),
     summary: summarizeFleetProjects(projects),
     registry: registrySummary,
@@ -525,8 +542,8 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
 
   if (options.report) {
     const reportPath = path.resolve(options.report);
-    await writeJson(reportPath, result);
     result.reportPath = reportPath;
+    await atomicWriteJson(reportPath, result);
   }
 
   return result;

@@ -17,6 +17,7 @@ import {
   DEFAULT_PARALLEL_CARD_WIDTH,
   DEFAULT_PARALLEL_COLUMNS,
   FOCUS_COLORS,
+  VISUAL_BOARD_PALETTE,
   defaultOutputPath,
   encodePipeline,
   escapeXml,
@@ -75,7 +76,7 @@ async function renderStandardComparison(projectRoot, comparison, options = {}) {
       width: canvasWidth,
       height: canvasHeight,
       channels: 3,
-      background: '#111827',
+      background: VISUAL_BOARD_PALETTE.canvas,
     },
   }).composite([
     { input: referencePanel.input, left: referenceLeft, top: referenceTop },
@@ -278,7 +279,7 @@ async function renderFocusBoard(projectRoot, board, options = {}) {
       width: contentWidth,
       height: canvasHeight,
       channels: 3,
-      background: '#111827',
+      background: VISUAL_BOARD_PALETTE.canvas,
     },
   }).composite(composites);
 
@@ -398,7 +399,7 @@ async function renderParallelBoard(projectRoot, board, options = {}) {
       width: canvasWidth,
       height: canvasHeight,
       channels: 3,
-      background: '#111827',
+      background: VISUAL_BOARD_PALETTE.canvas,
     },
   }).composite(composites);
 
@@ -458,11 +459,12 @@ async function renderVerificationBoard(projectRoot, board, options = {}) {
   }
   const cardWidth = parsePositiveInteger(board.payload.cardWidth ?? options.maxPanelWidth, DEFAULT_PARALLEL_CARD_WIDTH, 'cardWidth');
   const columns = Math.max(1, Math.min(parsePositiveInteger(board.payload.columns, Math.min(DEFAULT_PARALLEL_COLUMNS, items.length), 'columns'), 4));
-  const margin = 24;
-  const gap = 24;
+  const compactResult = board.payload.presentation !== 'detailed';
+  const margin = compactResult ? 16 : 24;
+  const gap = compactResult ? 16 : 24;
   const route = String(board.payload.route ?? board.payload.flow ?? board.payload.method ?? '').trim();
   const summary = String(board.payload.summary ?? copy.verificationSummary(route));
-  const titleBlock = titleBlockSvg(
+  const titleBlock = compactResult ? null : titleBlockSvg(
     columns * cardWidth + (columns - 1) * gap,
     String(board.payload.title ?? copy.verificationTitle),
     summary,
@@ -475,6 +477,7 @@ async function renderVerificationBoard(projectRoot, board, options = {}) {
       cardWidth,
       eyebrow: copy.verificationCardEyebrow,
       locale,
+      compactEvidence: compactResult,
     }));
   }
 
@@ -483,11 +486,12 @@ async function renderVerificationBoard(projectRoot, board, options = {}) {
     rowHeights.push(Math.max(...renderedCards.slice(index, index + columns).map((card) => card.height)));
   }
   const canvasWidth = margin * 2 + columns * cardWidth + (columns - 1) * gap;
-  const canvasHeight = margin * 2 + titleBlock.height + 18 + rowHeights.reduce((sum, value) => sum + value, 0) + Math.max(0, rowHeights.length - 1) * gap;
-  const composites = [
+  const headerHeight = titleBlock ? titleBlock.height + 18 : 0;
+  const canvasHeight = margin * 2 + headerHeight + rowHeights.reduce((sum, value) => sum + value, 0) + Math.max(0, rowHeights.length - 1) * gap;
+  const composites = titleBlock ? [
     { input: titleBlock.input, left: margin, top: margin },
-  ];
-  let currentTop = margin + titleBlock.height + 18;
+  ] : [];
+  let currentTop = margin + headerHeight;
   for (let row = 0; row < rowHeights.length; row += 1) {
     const rowCards = renderedCards.slice(row * columns, row * columns + columns);
     for (const [column, card] of rowCards.entries()) {
@@ -505,7 +509,7 @@ async function renderVerificationBoard(projectRoot, board, options = {}) {
       width: canvasWidth,
       height: canvasHeight,
       channels: 3,
-      background: '#111827',
+      background: VISUAL_BOARD_PALETTE.canvas,
     },
   }).composite(composites);
 
@@ -522,6 +526,8 @@ async function renderVerificationBoard(projectRoot, board, options = {}) {
     format,
     boardSource: toWorkspacePath(projectRoot, board.sourcePath),
     title: String(board.payload.title ?? copy.verificationTitle),
+    presentation: compactResult ? 'compact-result' : 'detailed',
+    alignmentGuidesApplied: false,
     route: route || null,
     layout: {
       columns,
@@ -896,7 +902,7 @@ async function renderAlignmentBoard(projectRoot, board, options = {}) {
       width: contentWidth,
       height: canvasHeight,
       channels: 3,
-      background: '#111827',
+      background: VISUAL_BOARD_PALETTE.canvas,
     },
   }).composite(composites);
 

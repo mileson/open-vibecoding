@@ -10,6 +10,14 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `src/`: OpenPrd CLI 源码。
 - `src/cli/`: 命令行参数解析和终端输出渲染；`print.js` 作为稳定 barrel，对外汇总 `basic/ workflow/ doctor/ run/ quality/ growth/ change/ benchmark/ canvas` 各分域输出模块。
 - `src/cli/benchmark-print.js`: Benchmark 子命令的人类可读输出，避免继续扩大通用 `print.js`。
+- `src/kernel/`: Project Manifest、事件信封、原子存储、Project Ledger、哈希链校验和投影重建。
+- `src/runtime/`: TaskRuntime 的 claim、lease、heartbeat、write-set 冲突、lane binding 与 CLI workspace 适配。
+- `src/context/`: ContextRequest / ContextCapsule v1 编译、预算、增量、脱敏、缓存和 telemetry。
+- `src/gates/`: 多级作用域门禁、evidence / approval 精确绑定、有效期和撤销状态存储。
+- `src/adapters/`: Codex、Claude Code、Cursor 的统一 SPI、能力信封、上下文渲染和安装安全策略。
+- `src/knowledge-v3/`: 带 scope、TTL、证据和 token 预算的项目经验生命周期。
+- `src/upgrade/`: 单项目与 fleet 的预演、preimage backup、CAS、原子应用、回滚和事务日志。
+- `src/review-model.js`: 同一 ReviewModel 的业务视角、工程视角、共享 digest 和证据投影。
 - `src/codex-hook-runner-template.mjs`: 生成到项目 `.codex/hooks/openprd-hook.mjs` 的自包含 Codex hook runner 模板，承接运行态门禁逻辑源码。
   - 把“生成图片/封面图/配图/海报/插画/图标/贴纸/头像/banner/主视觉/KV/运营图/效果图/视觉稿/mockup”识别为 Image 2 优先的图片内容请求。
   - 对大界面改动额外注入 Computer Use 截产品内图、Image 2 生成 3 方向效果图、横向拼图评审的实现前流程提醒。
@@ -28,7 +36,7 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `src/openspec/`: OpenPrd change、spec、task 的结构化文件操作；新工作产物写入 `.openprd/changes/`、`.openprd/specs/` 和 `.openprd/archive/changes/`，旧根目录 `openprd/` 工作产物只由 update / setup / fleet 的自动迁移逻辑读取。
 - `src/diagram-workspace.js`: diagram 命令的 artifact 生成、评审状态和浏览器打开逻辑。
 - `src/discovery.js`: discovery 运行、覆盖矩阵、claims 和验证逻辑。
-- `src/fleet.js`: 历史项目扫描和批量 setup/update/doctor/work-unit backfill 编排。
+- `src/fleet.js`: 历史项目扫描、批量 setup/update/doctor/work-unit backfill，以及事务化升级编排。
 - `src/fs-utils.js`: 共享文件、JSON、YAML、JSONL 读写工具。
 - `src/html-artifacts.js`: HTML 协作 artifact 和复盘学习 reader 的渲染骨架；学习 reader 在这里承接章节级图文比喻卡、可选图片槽位和证据锚点，质量报告 HTML 通过独立渲染器接入，避免继续扩大通用 artifact 文件。
 - `src/session-registry.js`: 全局 session registry 读写层，负责 `~/.openprd/registry/sessions.jsonl` 的规范化、去重读取和 session -> workspace 归属回写。
@@ -39,7 +47,7 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `src/visual-compare.js`: `openprd visual-compare` 的图片合成工具，负责读取效果图和实现截图、修改前后截图，或基于 board JSON 生成局部焦点证据板、并行实验证据板、截图实测证据板、对齐辅助线证据板和内部居中证据板；会缩放面板、按当前用户主语言添加标签，并输出 JPG / PNG / WebP 视觉评审图。
 - `src/learning-review.js`: 复盘学习包的证据收集、Agent 写作工具包、内容合同校验、图文解释字段校验和 reader 归档。
 - `src/quality.js`: 质量契约、质量场景与证据检测、日志/追踪检测、业务成本与滥用护栏检测、评估执行环境检测、HTML 回归测试报告和项目经验 Skill 沉淀。
-- `src/run-harness.js`: `openprd run` 的 hook-stable context、verify、hook 事件记录，以及执行模式与 `parallelPlan` 推荐；历史会话恢复会先查全局 session registry，再回到目标 workspace 的 repo-local 线索解析具体 change/task/work unit。
+- `src/run-harness.js`: `openprd run` 的 ContextCapsule 编译、hook cache/telemetry、scoped gate 裁剪、verify 与执行策略；历史会话恢复会先查全局 session registry，再回到目标 workspace 的 repo-local 线索解析具体 change/task/work unit。
 - `src/github-release.js`: GitHub Release 渲染层，负责把 `package.json` 与 `release-ledger` 汇总成可直接发布的版本标题和 Markdown 正文。
 - `src/loop.js`: 长任务拆分、单任务 prompt、session 记录、任务 verify / finish，以及可跨对话引用的 `taskHandle` 与 worker 合同生成。
 - `src/source-inventory.js`: discovery 使用的源码盘点和忽略规则。
@@ -63,6 +71,10 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `.openprd/design/`: 前端设计框架层；`lenses/` 放设计视角，`themes/` 放主题 token，`layouts/` 放页面骨架，`components/` 放高频组件说明，`recipes/` 放任务配方，`checklists/` 放界面质量门，`assets/` 放内置表面素材/背景策略，`templates/` 放空白工作区可直接套用的页面起步模板，`active/` 放本轮界面任务的事实、素材、图片前置和方向合同。
 - `.openprd/growth/`: 执行中发现的配置缺口、规则候选和本地偏好队列；代码扩展识别这类白名单工具补全会自动固化并记录，其余需要用户决定的偏好、项目规矩和默认行为留到收工复盘确认。
 - `.openprd/knowledge/`: incident、abstract pattern 和项目级经验 Skill 归档。
+- `.openprd/manifest.json`: 项目协议版本与 context/task/gate/review/knowledge/adapter 格式协商入口。
+- `.openprd/ledger/`: 以哈希链保护的不可变项目事件账本和 projection checkpoint。
+- `.openprd/runtime/`: TaskRuntime claim、lease、lane 和 write-set 状态。
+- `.openprd/gates/`: scoped gate 定义、evidence、approval 与决策投影。
 - `.openprd/harness/feature-list.json`: loop 任务清单；每个任务包含 `taskHandle`、标题、依赖、verify 命令、测试策略、执行策略、可选 `oracle` 对照基准和状态。
 - `.openprd/harness/session-bindings/`: repo-local session 镜像；每个会话保存当前 lane 的 change/task/work-unit、review 和 gate 摘要，供本工作区恢复使用。
 - `.openprd/harness/session-states/`: session-scoped `currentState` 草稿，保证不同对话/需求线不会共用同一份工作流状态。

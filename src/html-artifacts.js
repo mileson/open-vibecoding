@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { buildReviewFallbackPanelItems, CHANGE_SUMMARY_VERBS, USER_CHANGE_SUMMARY_GUIDE } from './change-summary.js';
 import { cjoin, writeText } from './fs-utils.js';
 import { escapeHtml, listMarkup, slugify } from './html-artifact-utils.js';
+import { buildReviewModel, projectReviewModel } from './review-model.js';
 export { learningPackagePaths, renderLearningArtifact } from './learning-html-artifact.js';
 import { renderQualityEvalArtifact as renderQualityEvalArtifactV2 } from './quality-html-artifact.js';
 
@@ -431,6 +432,7 @@ function formatEvidenceItem(item) {
 export function buildReviewExportPayload(snapshot) {
   const sections = snapshot.sections ?? {};
   const presentation = buildReviewPresentationFeedback(snapshot);
+  const reviewModel = buildReviewModel(snapshot);
   return {
     versionId: snapshot.versionId,
     title: snapshot.title,
@@ -448,6 +450,11 @@ export function buildReviewExportPayload(snapshot) {
     sectionKeys: Object.keys(sections),
     presentationContract: presentation.contract,
     presentationFeedback: presentation.violations,
+    reviewModel: {
+      schema: reviewModel.schema,
+      digest: reviewModel.digest,
+      approvalContract: reviewModel.approvalContract,
+    },
     exportedAt: new Date().toISOString(),
   };
 }
@@ -1006,25 +1013,16 @@ function renderReviewProjectVersion(projectRelease) {
   `;
 }
 
-function renderReviewStageRail(snapshot) {
-  const hasDirections = Boolean(reviewDesignDirections(snapshot));
-  const stages = [
-    { title: '需求澄清', status: 'done' },
-    { title: '需求摘要', status: 'done' },
-    { title: '评审确认', status: 'current' },
-    ...(hasDirections ? [{ title: '方向选择', status: 'pending' }] : []),
-    { title: '任务拆解', status: 'pending' },
-    { title: '实现执行', status: 'pending' },
-    { title: '验证收口', status: 'pending' },
-  ];
+function renderReviewStageRail(reviewModel) {
+  const stages = reviewModel.timeline;
   const items = stages.map((stage, index) => `
-        <li class="review-stage ${stage.status}">
+        <li class="review-stage ${stage.status}" data-review-timeline-step="${escapeHtml(stage.id)}">
           <span class="review-stage-dot">${stage.status === 'done' ? '✓' : index + 1}</span>
           <span class="review-stage-name">${escapeHtml(stage.title)}</span>
           ${stage.status === 'current' ? '<span class="review-stage-badge">你在这里</span>' : ''}
         </li>`);
   return `
-      <nav class="review-stage-rail" aria-label="流程位置">
+      <nav class="review-stage-rail" aria-label="共享决策时间线" data-review-model-digest="${escapeHtml(reviewModel.digest)}">
         <ol>
           ${items.join('\n')}
         </ol>
@@ -1032,8 +1030,12 @@ function renderReviewStageRail(snapshot) {
 }
 
 function renderReviewOverview(snapshot, sectionsData, agenda = []) {
-  const problem = sectionsData.problem?.problemStatement || '尚未形成明确问题定义';
-  const goal = reviewList(sectionsData.goals?.goals)[0] ?? null;
+  const rawProblem = sectionsData.problem?.problemStatement || '尚未形成明确问题定义';
+  const rawGoal = reviewList(sectionsData.goals?.goals)[0] ?? null;
+  const problem = reviewPresentationMapNode(snapshot, 'problem', '问题定义', rawProblem).value;
+  const goal = rawGoal
+    ? reviewPresentationMapNode(snapshot, 'goal', '目标', rawGoal).value
+    : null;
   const agendaMarkup = agenda.length === 0 ? '' : `
       <aside class="review-agenda" aria-label="评审清单">
         <p class="review-agenda-title">这次评审要确认 ${agenda.length} 块内容</p>
@@ -1556,7 +1558,7 @@ function renderReviewDesignDirections(snapshot) {
             </div>
             ${summary ? `<p class="review-direction-summary">${escapeHtml(summary)}</p>` : ''}
             ${tradeoff ? `<p class="review-direction-tradeoff">取舍：${escapeHtml(tradeoff)}</p>` : ''}
-            <button type="button" class="review-direction-select" data-copy-value="${escapeHtml(selectCopy)}" title="${escapeHtml(selectCommand)}">
+            <button type="button" class="review-direction-select" data-copy-value="${escapeHtml(selectCopy)}" title="复制这个方向的确认结果">
               选这个方向
             </button>
           </div>
@@ -1574,7 +1576,7 @@ function renderReviewDesignDirections(snapshot) {
       </section>`;
 }
 
-function renderReviewDecision(snapshot) {
+function renderReviewDecision(snapshot, reviewModel) {
   const payload = JSON.stringify(buildReviewExportPayload(snapshot), null, 2);
   const confirmCommand = reviewCommand(snapshot, 'confirmed');
   const reviseCommand = reviewCommand(snapshot, 'needs-revision', '说明需要调整的点');
@@ -1586,12 +1588,12 @@ function renderReviewDecision(snapshot) {
   });
   const reviseCopy = reviewCopyBundle({ label: '需要调整', command: reviseCommand, payload });
   return `
-    <nav class="review-bottom-bar" aria-label="评审决定">
+    <nav class="review-bottom-bar" aria-label="评审决定" data-review-model-digest="${escapeHtml(reviewModel.digest)}">
       <div class="review-bottom-bar-inner">
-        <button type="button" class="review-bottom-action revise" data-copy-value="${escapeHtml(reviseCopy)}" title="${escapeHtml(reviseCommand)}">
+        <button type="button" class="review-bottom-action revise" data-copy-value="${escapeHtml(reviseCopy)}" title="复制需要调整的反馈">
           需要调整
         </button>
-        <button type="button" class="review-bottom-action confirm" data-copy-value="${escapeHtml(confirmCopy)}" title="${escapeHtml(confirmCommand)}">
+        <button type="button" class="review-bottom-action confirm" data-copy-value="${escapeHtml(confirmCopy)}" title="复制认可并继续的确认结果">
           认可并继续
         </button>
       </div>
@@ -1599,7 +1601,225 @@ function renderReviewDecision(snapshot) {
   `;
 }
 
+function renderReviewWorkbenchHeader(reviewModel) {
+  return `
+    <section class="review-workbench" aria-labelledby="reviewWorkbenchTitle" data-review-model-digest="${escapeHtml(reviewModel.digest)}">
+      <div class="review-workbench-copy">
+        <p class="review-kicker">双轨证据工作台</p>
+        <h2 id="reviewWorkbenchTitle">同一份评审，两种读法</h2>
+        <p>先在业务视图看清价值、范围、流程和风险；需要追溯任务、约束或依据时，再切到工程视图。两边共享同一份确认内容。</p>
+      </div>
+      <div class="review-view-tabs" role="tablist" aria-label="选择评审视图">
+        <button
+          type="button"
+          id="reviewTabBusiness"
+          class="review-view-tab active"
+          role="tab"
+          aria-selected="true"
+          aria-controls="reviewBusinessView"
+          data-review-tab="business"
+        >业务视图<span>先看结论</span></button>
+        <button
+          type="button"
+          id="reviewTabEngineering"
+          class="review-view-tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="reviewEngineeringView"
+          data-review-tab="engineering"
+          tabindex="-1"
+        >工程视图<span>核对追溯</span></button>
+      </div>
+      <p class="review-workbench-note" aria-live="polite">两种视图共享同一个确认基线，切换视图不会改变评审结论。</p>
+    </section>
+  `;
+}
+
+function renderBusinessEvidenceBridge(projection) {
+  const references = projection.evidenceReferences;
+  if (references.length === 0) return '';
+  return `
+    <section class="review-business-evidence" aria-labelledby="reviewBusinessEvidenceTitle">
+      <div>
+        <p class="review-kicker">判断依据</p>
+        <h2 id="reviewBusinessEvidenceTitle">这些结论有 ${references.length} 条依据可核对</h2>
+        <p>这里先保留清楚的业务结论；需要看原始依据时，可以直接定位到工程视图。</p>
+      </div>
+      <div class="review-business-evidence-actions">
+        ${references.map((item) => `
+          <button type="button" data-review-locate="review-evidence-${escapeHtml(item.id)}">${escapeHtml(item.label)}</button>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function reviewEngineeringRows(items, emptyText) {
+  if (items.length === 0) {
+    return `<p class="review-engineering-empty">${escapeHtml(emptyText)}</p>`;
+  }
+  return `<ul class="review-engineering-list">${items.map((item) => {
+    const candidate = item && typeof item === 'object' && !Array.isArray(item) ? item : { detail: item };
+    const label = normalizedReviewVisibleText(candidate.label ?? candidate.title ?? candidate.summary);
+    const detail = normalizedReviewVisibleText(candidate.detail ?? candidate.value ?? candidate.text);
+    const code = Boolean(candidate.code);
+    return `
+      <li class="review-engineering-item" data-review-filter-item>
+        ${label ? `<strong>${escapeHtml(label)}</strong>` : ''}
+        ${detail ? code ? `<code>${escapeHtml(detail)}</code>` : `<span>${escapeHtml(detail)}</span>` : ''}
+      </li>`;
+  }).join('')}</ul>`;
+}
+
+function renderReviewEngineeringSection({ id, title, description, items, emptyText }) {
+  return `
+    <section class="review-engineering-section" id="${escapeHtml(id)}" aria-labelledby="${escapeHtml(id)}-title">
+      <header>
+        <h2 id="${escapeHtml(id)}-title">${escapeHtml(title)}</h2>
+        <p>${escapeHtml(description)}</p>
+      </header>
+      ${reviewEngineeringRows(items, emptyText)}
+    </section>
+  `;
+}
+
+function renderReviewEngineeringProjection(projection) {
+  const trace = projection.trace;
+  const sections = projection.sections;
+  const traceItems = [
+    { label: '评审版本', detail: trace.versionId ?? '旧版评审未记录', code: true },
+    { label: '工作单元', detail: trace.workUnitId ?? '尚未绑定', code: true },
+    { label: '内容指纹', detail: projection.modelDigest, code: true },
+    { label: '来源摘要', detail: trace.snapshotDigest ?? '旧版评审未记录', code: true },
+    ...(trace.targetRoot ? [{ label: '项目位置', detail: trace.targetRoot, code: true }] : []),
+  ];
+  const deliveryItems = [
+    ...sections.delivery.functional.map((detail, index) => ({ label: `交付项 ${index + 1}`, detail })),
+    ...sections.delivery.nonFunctional.map((detail, index) => ({ label: `质量要求 ${index + 1}`, detail })),
+    ...sections.tasks.map((task) => ({
+      label: `${task.id}${task.status ? ` · ${task.status}` : ''}`,
+      detail: task.title,
+    })),
+  ];
+  const constraintItems = [
+    ...sections.constraints.technical.map((detail, index) => ({ label: `技术约束 ${index + 1}`, detail })),
+    ...sections.constraints.compliance.map((detail, index) => ({ label: `合规约束 ${index + 1}`, detail })),
+    ...sections.constraints.dependencies.map((detail, index) => ({ label: `依赖 ${index + 1}`, detail })),
+  ];
+  const fileItems = sections.files.map((detail, index) => ({ label: `文件 ${index + 1}`, detail, code: true }));
+  const acceptanceItems = sections.acceptance.map((detail, index) => ({ label: `验收 ${index + 1}`, detail }));
+  const handoffItems = [
+    sections.handoff.owner ? { label: '负责人', detail: sections.handoff.owner } : null,
+    sections.handoff.nextStep ? { label: '下一步', detail: sections.handoff.nextStep } : null,
+    sections.handoff.targetSystem ? { label: '目标范围', detail: sections.handoff.targetSystem } : null,
+  ].filter(Boolean);
+  const evidenceItems = projection.evidenceReferences.map((item, index) => `
+    <article
+      class="review-evidence-item review-engineering-item"
+      id="review-evidence-${escapeHtml(item.id)}"
+      tabindex="-1"
+      data-review-filter-item
+    >
+      <div class="review-evidence-index">${index + 1}</div>
+      <div>
+        <h3>${escapeHtml(item.label)}</h3>
+        <p>${escapeHtml(item.summary)}</p>
+        <div class="review-evidence-meta">
+          <span>${escapeHtml(item.kind === 'problem' ? '问题依据' : item.kind === 'validation' ? '验证依据' : '关联资料')}</span>
+          ${item.source ? `<span>来源：${escapeHtml(item.source)}</span>` : ''}
+          ${item.href ? `<code>${escapeHtml(item.href)}</code>` : ''}
+        </div>
+      </div>
+    </article>
+  `).join('');
+  const filterableCount = traceItems.length + deliveryItems.length + constraintItems.length
+    + fileItems.length + acceptanceItems.length + handoffItems.length + projection.evidenceReferences.length;
+
+  return `
+    <section
+      class="review-projection review-projection-engineering"
+      id="reviewEngineeringView"
+      role="tabpanel"
+      aria-labelledby="reviewTabEngineering"
+      data-review-view="engineering"
+      data-review-model-digest="${escapeHtml(projection.modelDigest)}"
+      hidden
+    >
+      <header class="review-engineering-head">
+        <div>
+          <p class="review-kicker">工程追溯</p>
+          <h1>从同一结论核对任务、约束与证据</h1>
+          <p>这里展示落地所需的版本、任务、文件、测试与依据；底部确认动作仍绑定同一个评审基线。</p>
+        </div>
+        <label class="review-engineering-filter" for="reviewEngineeringFilter">
+          <span>筛选工程内容</span>
+          <input id="reviewEngineeringFilter" type="search" placeholder="搜索任务、约束或证据" autocomplete="off" />
+          <output id="reviewEngineeringFilterCount" for="reviewEngineeringFilter">共 ${filterableCount} 项</output>
+        </label>
+      </header>
+      <div class="review-engineering-grid">
+        ${renderReviewEngineeringSection({
+          id: 'review-engineering-trace',
+          title: '版本与追溯',
+          description: '确认这次评审来自哪份内容，并核对两个视图的共同指纹。',
+          items: traceItems,
+          emptyText: '暂无版本与追溯信息。',
+        })}
+        ${renderReviewEngineeringSection({
+          id: 'review-engineering-delivery',
+          title: '交付与任务',
+          description: '查看必须交付的能力、质量要求和已经绑定的任务。',
+          items: deliveryItems,
+          emptyText: '当前评审稿尚未绑定具体任务。',
+        })}
+        ${renderReviewEngineeringSection({
+          id: 'review-engineering-constraints',
+          title: '约束与依赖',
+          description: '实现时不能越过的技术、合规与依赖边界。',
+          items: constraintItems,
+          emptyText: '暂无额外约束或依赖。',
+        })}
+        ${renderReviewEngineeringSection({
+          id: 'review-engineering-files',
+          title: '文件与改动范围',
+          description: '任务或证据已经明确关联的文件位置。',
+          items: fileItems,
+          emptyText: '当前评审稿尚未绑定具体文件。',
+        })}
+        ${renderReviewEngineeringSection({
+          id: 'review-engineering-acceptance',
+          title: '测试与验收',
+          description: '实现完成后据此判断是否真的达到目标。',
+          items: acceptanceItems,
+          emptyText: '当前评审稿尚未写明验收条件。',
+        })}
+        ${renderReviewEngineeringSection({
+          id: 'review-engineering-handoff',
+          title: '交接信息',
+          description: '明确由谁继续、下一步做什么、影响哪些范围。',
+          items: handoffItems,
+          emptyText: '当前评审稿尚未写明交接信息。',
+        })}
+      </div>
+      <section class="review-evidence-section" aria-labelledby="reviewEvidenceTitle">
+        <header>
+          <p class="review-kicker">共享证据</p>
+          <h2 id="reviewEvidenceTitle">证据索引</h2>
+          <p>业务视图里的“查看依据”会定位到这里；筛选不会改变证据与评审结论的绑定关系。</p>
+        </header>
+        <div class="review-evidence-list">
+          ${evidenceItems || '<p class="review-engineering-empty">当前评审稿尚未登记原始依据。</p>'}
+        </div>
+      </section>
+      <p class="review-engineering-no-results" id="reviewEngineeringNoResults" hidden>没有找到匹配内容，请换一个更短的关键词。</p>
+    </section>
+  `;
+}
+
 function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
+  const reviewModel = buildReviewModel(snapshot);
+  const businessProjection = projectReviewModel(reviewModel, 'business');
+  const engineeringProjection = projectReviewModel(reviewModel, 'engineering');
   const primaryFlows = reviewList(sectionsData.scenarios?.primaryFlows);
   const edgeCases = reviewList(sectionsData.scenarios?.edgeCases);
   const failureModes = reviewList(sectionsData.scenarios?.failureModes);
@@ -2378,6 +2598,344 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
         box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
         transform: translateY(0);
       }
+      .review-workbench {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 22px;
+        align-items: end;
+        margin-bottom: 18px;
+        padding: 20px 22px;
+        border: 1px solid var(--review-line);
+        border-radius: 8px;
+        background: var(--review-panel);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+      }
+      .review-workbench-copy h2 {
+        margin: 0;
+        color: var(--review-text);
+        font-size: 24px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+      .review-workbench-copy > p:last-child,
+      .review-workbench-note {
+        margin: 8px 0 0;
+        color: var(--review-muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+      .review-workbench-note {
+        grid-column: 1 / -1;
+        margin: 0;
+        padding-top: 12px;
+        border-top: 1px solid var(--review-line);
+        font-size: 13px;
+      }
+      .review-view-tabs {
+        display: inline-grid;
+        grid-template-columns: repeat(2, minmax(132px, 1fr));
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid var(--review-line);
+        border-radius: 12px;
+        background: var(--review-panel-soft);
+      }
+      .review-view-tab {
+        cursor: pointer;
+        display: grid;
+        gap: 2px;
+        min-height: 52px;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        padding: 8px 14px;
+        background: transparent;
+        color: var(--review-muted);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.2;
+        text-align: left;
+      }
+      .review-view-tab span {
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .review-view-tab:hover,
+      .review-view-tab:focus-visible {
+        border-color: #c7d2fe;
+        color: var(--review-indigo);
+        outline: none;
+      }
+      .review-view-tab.active {
+        border-color: #c7d2fe;
+        background: #ffffff;
+        color: var(--review-indigo);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+      }
+      .review-projection[hidden],
+      [data-review-filter-item][hidden],
+      .review-engineering-no-results[hidden] {
+        display: none !important;
+      }
+      .review-business-evidence {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 0.72fr);
+        gap: 22px;
+        align-items: center;
+        margin-top: 18px;
+        padding: 20px;
+        border: 1px solid #99f6e4;
+        border-radius: 8px;
+        background: #f0fdfa;
+      }
+      .review-business-evidence h2 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.3;
+      }
+      .review-business-evidence p:last-child {
+        margin: 6px 0 0;
+        color: var(--review-muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+      .review-business-evidence-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .review-business-evidence-actions button {
+        cursor: pointer;
+        min-height: 36px;
+        border: 1px solid #5eead4;
+        border-radius: 9px;
+        padding: 0 12px;
+        background: #ffffff;
+        color: #0f766e;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .review-business-evidence-actions button:hover,
+      .review-business-evidence-actions button:focus-visible {
+        border-color: var(--review-teal);
+        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+        outline: none;
+      }
+      .review-projection-engineering {
+        border: 1px solid var(--review-line);
+        border-radius: 8px;
+        background: var(--review-panel-soft);
+        padding: 20px;
+      }
+      .review-engineering-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 0.45fr);
+        gap: 24px;
+        align-items: end;
+        padding: 4px 2px 18px;
+        border-bottom: 1px solid var(--review-line);
+      }
+      .review-engineering-head h1 {
+        margin: 0;
+        font-size: 26px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+      .review-engineering-head > div > p:last-child {
+        margin: 8px 0 0;
+        color: var(--review-muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+      .review-engineering-filter {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 7px 10px;
+        align-items: center;
+      }
+      .review-engineering-filter > span {
+        color: var(--review-text);
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .review-engineering-filter input {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid var(--review-line);
+        border-radius: 9px;
+        padding: 0 12px;
+        background: #ffffff;
+        color: var(--review-text);
+        font: inherit;
+        font-size: 14px;
+      }
+      .review-engineering-filter input:focus {
+        border-color: var(--review-indigo);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        outline: none;
+      }
+      .review-engineering-filter output {
+        justify-self: end;
+        color: var(--review-muted);
+        font-size: 12px;
+      }
+      .review-engineering-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+      .review-engineering-section,
+      .review-evidence-section {
+        min-width: 0;
+        border: 1px solid var(--review-line);
+        border-radius: 8px;
+        background: var(--review-panel);
+        overflow: hidden;
+      }
+      .review-engineering-section > header,
+      .review-evidence-section > header {
+        min-height: 92px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--review-line);
+        background: #ffffff;
+      }
+      .review-engineering-section h2,
+      .review-evidence-section h2 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.3;
+      }
+      .review-engineering-section header p,
+      .review-evidence-section header > p:last-child {
+        margin: 6px 0 0;
+        color: var(--review-muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      .review-engineering-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .review-engineering-item {
+        min-width: 0;
+      }
+      .review-engineering-list .review-engineering-item {
+        display: grid;
+        grid-template-columns: minmax(108px, 0.32fr) minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+        padding: 12px 18px;
+        border-bottom: 1px solid #eef2f6;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .review-engineering-list .review-engineering-item:last-child {
+        border-bottom: 0;
+      }
+      .review-engineering-list strong {
+        color: var(--review-muted);
+        font-size: 12px;
+        line-height: 1.65;
+      }
+      .review-engineering-list span,
+      .review-engineering-list code {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .review-engineering-list code,
+      .review-evidence-meta code {
+        color: #3730a3;
+        font-family: var(--review-mono);
+        font-size: 11px;
+      }
+      .review-engineering-empty {
+        margin: 0;
+        padding: 18px;
+        color: var(--review-muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .review-evidence-section {
+        margin-top: 14px;
+      }
+      .review-evidence-section > header {
+        min-height: 0;
+      }
+      .review-evidence-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .review-evidence-item {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 12px;
+        padding: 16px 18px;
+        border-right: 1px solid #eef2f6;
+        border-bottom: 1px solid #eef2f6;
+        scroll-margin-top: 22px;
+        transition: background-color 160ms ease, box-shadow 160ms ease;
+      }
+      .review-evidence-item:nth-child(2n) { border-right: 0; }
+      .review-evidence-index {
+        display: inline-grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        background: #ccfbf1;
+        color: var(--review-teal);
+        font-size: 12px;
+        font-weight: 850;
+      }
+      .review-evidence-item h3 {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      .review-evidence-item p {
+        margin: 6px 0 0;
+        color: var(--review-text);
+        font-size: 13px;
+        line-height: 1.65;
+      }
+      .review-evidence-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        margin-top: 10px;
+        color: var(--review-muted);
+        font-size: 11px;
+      }
+      .review-evidence-item.is-located {
+        background: #ecfdf5;
+        box-shadow: inset 4px 0 0 var(--review-teal);
+      }
+      .review-evidence-item:focus-visible {
+        outline: 3px solid rgba(15, 118, 110, 0.24);
+        outline-offset: -3px;
+      }
+      .review-engineering-no-results {
+        margin: 14px 0 0;
+        padding: 14px 16px;
+        border: 1px solid #fde68a;
+        border-radius: 8px;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 14px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .review-view-tab,
+        .review-evidence-item,
+        .review-business-evidence-actions button {
+          scroll-behavior: auto;
+          transition: none;
+        }
+      }
       .review-directions {
         margin-top: 28px;
       }
@@ -2486,6 +3044,24 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
         outline: none;
       }
       @media (max-width: 860px) {
+        .review-workbench,
+        .review-engineering-head,
+        .review-business-evidence {
+          grid-template-columns: 1fr;
+        }
+        .review-view-tabs {
+          width: 100%;
+        }
+        .review-business-evidence-actions {
+          justify-content: flex-start;
+        }
+        .review-engineering-grid,
+        .review-evidence-list {
+          grid-template-columns: 1fr;
+        }
+        .review-evidence-item {
+          border-right: 0;
+        }
         .review-overview {
           grid-template-columns: 1fr;
         }
@@ -2499,6 +3075,21 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
       @media (max-width: 620px) {
         .review-page { padding: 18px 12px 128px; }
         .review-topbar { align-items: flex-start; flex-direction: column; }
+        .review-workbench,
+        .review-projection-engineering {
+          padding: 16px;
+        }
+        .review-view-tabs {
+          grid-template-columns: 1fr 1fr;
+        }
+        .review-view-tab {
+          min-width: 0;
+          padding-inline: 10px;
+        }
+        .review-engineering-list .review-engineering-item {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
         .review-project-version {
           min-width: 0;
           width: 100%;
@@ -2533,15 +3124,27 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
         <div class="review-brand">OpenPrd / 评审面板</div>
         ${renderReviewProjectVersion(visibleProjectRelease)}
       </header>
-      ${renderReviewStageRail(snapshot)}
-      ${renderReviewOverview(snapshot, sectionsData, panelAgenda)}
-      ${renderReviewGapPanel(sectionsData)}
-      ${renderReviewDesignDirections(snapshot)}
-      ${renderReviewFlowSvg(snapshot, sectionsData)}
-      <section class="review-panel-grid" aria-label="固定评审项">
-        ${panels.join('\n')}
+      ${renderReviewStageRail(reviewModel)}
+      ${renderReviewWorkbenchHeader(reviewModel)}
+      <section
+        class="review-projection review-projection-business"
+        id="reviewBusinessView"
+        role="tabpanel"
+        aria-labelledby="reviewTabBusiness"
+        data-review-view="business"
+        data-review-model-digest="${escapeHtml(businessProjection.modelDigest)}"
+      >
+        ${renderReviewOverview(snapshot, sectionsData, panelAgenda)}
+        ${renderReviewGapPanel(sectionsData)}
+        ${renderReviewDesignDirections(snapshot)}
+        ${renderReviewFlowSvg(snapshot, sectionsData)}
+        <section class="review-panel-grid" aria-label="固定评审项">
+          ${panels.join('\n')}
+        </section>
+        ${renderBusinessEvidenceBridge(businessProjection)}
       </section>
-      ${renderReviewDecision(snapshot)}
+      ${renderReviewEngineeringProjection(engineeringProjection)}
+      ${renderReviewDecision(snapshot, reviewModel)}
       <script>
         async function copyReviewText(text) {
           try {
@@ -2569,6 +3172,100 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
             flashCopied(button);
           });
         });
+
+        const reviewTabs = Array.from(document.querySelectorAll('[data-review-tab]'));
+        const reviewViews = Array.from(document.querySelectorAll('[data-review-view]'));
+        const engineeringFilter = document.getElementById('reviewEngineeringFilter');
+        const engineeringFilterCount = document.getElementById('reviewEngineeringFilterCount');
+        const engineeringNoResults = document.getElementById('reviewEngineeringNoResults');
+        const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function setReviewView(view, updateUrl = true) {
+          const nextView = view === 'engineering' ? 'engineering' : 'business';
+          reviewTabs.forEach((tab) => {
+            const active = tab.dataset.reviewTab === nextView;
+            tab.classList.toggle('active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            tab.tabIndex = active ? 0 : -1;
+          });
+          reviewViews.forEach((panel) => {
+            panel.hidden = panel.dataset.reviewView !== nextView;
+          });
+          document.documentElement.dataset.reviewView = nextView;
+          if (updateUrl) {
+            try {
+              const url = new URL(window.location.href);
+              if (nextView === 'engineering') url.searchParams.set('view', 'engineering');
+              else url.searchParams.delete('view');
+              window.history.replaceState(null, '', url);
+            } catch (error) {
+              // Local file previews can deny history updates; the view still switches.
+            }
+          }
+        }
+
+        reviewTabs.forEach((tab, index) => {
+          tab.addEventListener('click', () => setReviewView(tab.dataset.reviewTab));
+          tab.addEventListener('keydown', (event) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            let nextIndex = index;
+            if (event.key === 'ArrowLeft') nextIndex = (index - 1 + reviewTabs.length) % reviewTabs.length;
+            if (event.key === 'ArrowRight') nextIndex = (index + 1) % reviewTabs.length;
+            if (event.key === 'Home') nextIndex = 0;
+            if (event.key === 'End') nextIndex = reviewTabs.length - 1;
+            const nextTab = reviewTabs[nextIndex];
+            setReviewView(nextTab.dataset.reviewTab);
+            nextTab.focus();
+          });
+        });
+
+        function applyEngineeringFilter() {
+          if (!engineeringFilter) return;
+          const query = engineeringFilter.value.trim().toLocaleLowerCase('zh-CN');
+          const items = Array.from(document.querySelectorAll('#reviewEngineeringView [data-review-filter-item]'));
+          let visibleCount = 0;
+          items.forEach((item) => {
+            const matches = !query || item.textContent.toLocaleLowerCase('zh-CN').includes(query);
+            item.hidden = !matches;
+            if (matches) visibleCount += 1;
+          });
+          if (engineeringFilterCount) {
+            engineeringFilterCount.textContent = query ? '找到 ' + visibleCount + ' 项' : '共 ' + items.length + ' 项';
+          }
+          if (engineeringNoResults) engineeringNoResults.hidden = visibleCount !== 0;
+        }
+
+        if (engineeringFilter) {
+          engineeringFilter.addEventListener('input', applyEngineeringFilter);
+          applyEngineeringFilter();
+        }
+
+        document.querySelectorAll('[data-review-locate]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const target = document.getElementById(button.dataset.reviewLocate || '');
+            if (!target) return;
+            setReviewView('engineering');
+            if (engineeringFilter) {
+              engineeringFilter.value = '';
+              applyEngineeringFilter();
+            }
+            window.requestAnimationFrame(() => {
+              target.classList.add('is-located');
+              target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'center' });
+              target.focus({ preventScroll: true });
+              window.setTimeout(() => target.classList.remove('is-located'), 1800);
+            });
+          });
+        });
+
+        try {
+          const initialView = new URL(window.location.href).searchParams.get('view');
+          setReviewView(initialView === 'engineering' ? 'engineering' : 'business', false);
+        } catch (error) {
+          setReviewView('business', false);
+        }
+
         document.querySelectorAll('.review-direction-select').forEach((button) => {
           button.addEventListener('click', () => {
             document.querySelectorAll('.review-direction-card').forEach((card) => {

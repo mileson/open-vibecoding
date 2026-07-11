@@ -34,7 +34,7 @@ description: 评估 OpenPrd 的可观测性、业务成本与滥用护栏、评�
   - `openprd visual-compare <path> --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>`
   - `openprd visual-compare <path> --board <focus-board.json|parallel-board.json|verification-board.json|alignment-board.json> --locale <zh-CN|en>`
 - 大界面改动的实现前方案评审：
-  - 先按用户目标、信息架构变化、视觉决策成本和验证风险判断方案评审形态；已有界面时用 Codex Computer Use 截取产品内当前功能截图，冷启动没有现有界面时用已确认 PRD、用户群体、第一版切片、视觉目标、气质端点和记忆点生成设计 brief；再用 `imagegen`（Codex 原生 Image 2）生成至少 3 个设计方向，并保存横向拼接评审大图到 `.openprd/harness/visual-reviews/`
+  - 先按用户目标、信息架构变化、视觉决策成本和验证风险判断方案评审形态，用户无需另行提出生图；已有界面时按平台能力截取当前真实界面，三个方向共享同一截图并默认保持原视觉 DNA；冷启动用已确认 PRD、用户群体、第一版切片、视觉目标、气质端点和记忆点生成 design brief；再按工具面用 Codex `imagegen`（Image 2）或 Cursor `GenerateImage` 生成至少 3 个设计方向，并保存横向拼接评审大图到 `.openprd/harness/visual-reviews/`
 - 基于已审查报告生成或刷新项目级经验：
   - `openprd quality <path> --learn --from <candidate-dir|report-id-or-json>`
 - 审查执行中发现的配置、规则候选或 user-local 偏好：

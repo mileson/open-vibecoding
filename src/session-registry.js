@@ -1,10 +1,17 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { appendJsonl, cjoin, exists, readJsonl } from './fs-utils.js';
+import { atomicWriteText, withFileLock } from './kernel/atomic-store.js';
 import { timestamp } from './time.js';
 import { resolveOpenPrdHome } from './workspace-registry.js';
 
 const OPENPRD_SESSION_REGISTRY = cjoin('registry', 'sessions.jsonl');
+
+let registryWriteEnabled = true;
+
+function setRegistryWriteEnabled(enabled) {
+  registryWriteEnabled = enabled;
+}
 
 function normalizeSessionId(sessionId) {
   const text = String(sessionId ?? '').trim();
@@ -84,6 +91,20 @@ async function readSessionRegistry(options = {}) {
         ...entry,
         reason: 'missing-openprd-marker',
       });
+      continue;
+    }
+    if (entry.bindingPath && !(await exists(entry.bindingPath))) {
+      staleEntries.push({
+        ...entry,
+        reason: 'missing-binding',
+      });
+      continue;
+    }
+    if (entry.statePath && !(await exists(entry.statePath))) {
+      staleEntries.push({
+        ...entry,
+        reason: 'missing-state',
+      });
     }
   }
   return {
@@ -108,6 +129,9 @@ async function upsertSessionRegistryEntry(projectRoot, sessionId, patch = {}, op
   const normalized = normalizeSessionId(sessionId);
   if (!normalized) {
     return null;
+  }
+  if (!registryWriteEnabled) {
+    return { home: null, registryPath: null, entry: { sessionId: normalized }, status: 'skipped', reason: 'registry-write-disabled' };
   }
   const registry = await readSessionRegistry(options);
   const workspaceRoot = path.resolve(projectRoot);
@@ -140,7 +164,7 @@ async function upsertSessionRegistryEntry(projectRoot, sessionId, patch = {}, op
     lastUpdatedAt: patch.updatedAt ?? recordedAt,
     recordedAt,
   });
-  await appendJsonl(registry.registryPath, entry);
+  await withFileLock(`${registry.registryPath}.lock`, () => appendJsonl(registry.registryPath, entry));
   return {
     home: registry.home,
     registryPath: registry.registryPath,
@@ -150,10 +174,44 @@ async function upsertSessionRegistryEntry(projectRoot, sessionId, patch = {}, op
   };
 }
 
+function registryBackupName() {
+  return `sessions-${new Date().toISOString().replace(/[:.]/g, '-')}.jsonl`;
+}
+
+async function compactSessionRegistry(options = {}) {
+  const registryPath = sessionRegistryFilePath(options);
+  return withFileLock(`${registryPath}.lock`, async () => {
+    const registry = await readSessionRegistry(options);
+    const staleIds = new Set((registry.staleEntries ?? []).map((entry) => entry.sessionId));
+    const entries = options.pruneStale === false
+      ? registry.entries
+      : registry.entries.filter((entry) => !staleIds.has(entry.sessionId));
+    const backupDir = path.resolve(options.backupDir ?? cjoin(registry.home, 'registry', 'backups'));
+    await fs.mkdir(backupDir, { recursive: true });
+    const backupPath = cjoin(backupDir, registryBackupName());
+    if (await exists(registryPath)) await fs.copyFile(registryPath, backupPath);
+    else await atomicWriteText(backupPath, '');
+    const body = entries.length > 0 ? `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n` : '';
+    await atomicWriteText(registryPath, body);
+    return {
+      ok: true,
+      registryPath,
+      backupPath,
+      beforeEvents: registry.totalEvents,
+      afterEvents: entries.length,
+      kept: entries.length,
+      pruned: registry.entries.length - entries.length,
+      stale: registry.staleEntries.length,
+    };
+  });
+}
+
 export {
   normalizeSessionId,
+  compactSessionRegistry,
   readSessionRegistry,
   readSessionRegistryEntry,
   sessionRegistryFilePath,
+  setRegistryWriteEnabled,
   upsertSessionRegistryEntry,
 };

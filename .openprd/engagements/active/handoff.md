@@ -1,15 +1,15 @@
 # 交接
 
-- 本次内容: 画布协同闭环：标注改图、双向结构化工具、尺寸契约与唤起机制
+- 本次内容: OpenPrd 可解释项目控制平面与跨工具上下文升级
 - 产品场景: 以 Agent 为主要使用场景
 - 场景模板: 以 Agent 为主要使用场景
 - 负责人: OpenPrd
-- 下一步: 生成 change 与任务拆解后按序实现
-- 交接去向: OpenPrd CLI 画布子系统
+- 下一步: 按阶段完成 P0 回归与协议冻结、P1-P8 纵向实现、全量验证、0.1.20 版本升级和真实本地项目分批刷新
+- 交接去向: OpenPrd CLI、当前源码仓库、本机全局集成和所有真实活跃 OpenPrd 项目
 
 ## 变化摘要
 
-- 新增：选区状态随画布保存并可查询
-- 新增：插图 API 支持 left/right/below 摆放与 holder 替换
-- 新增：标注导出携带 annotationEdit 与源图形 ID 元数据
-- 新增：生图占位卡 handoff 记录携带宽高与比例契约
+- 新增：提供 project manifest、ledger append/read/head/verify/rebuild、projection replay API
+- 新增：提供 task claim/heartbeat/release、lease recovery、write-set conflict、lane binding API 与 CLI
+- 新增：提供 context compile/diff/cache/render/reference API，保持 run --context 兼容入口
+- 新增：提供 scoped gate/evidence evaluation 与明确 approval ID 绑定

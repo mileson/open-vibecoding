@@ -371,3 +371,49 @@
 - 已整理出一版可确认的需求稿。
 - 产品场景: 以 Agent 为主要使用场景。
 - 场景模板: 以 Agent 为主要使用场景。
+
+## 2026-07-07 10:51:07
+
+- Captured clarification for requirements.functional, constraints.technical.
+
+## 2026-07-07 10:51:32
+
+- 已整理出一版可确认的需求稿。
+- 产品场景: 以 Agent 为主要使用场景。
+- 场景模板: 以 Agent 为主要使用场景。
+
+## 2026-07-07 10:52:02
+
+- 已整理出一版可确认的需求稿。
+- 产品场景: 以 Agent 为主要使用场景。
+- 场景模板: 以 Agent 为主要使用场景。
+
+## 2026-07-07 10:53:03
+
+- Captured clarification for requirements.functional, scenarios.primaryFlows, scenarios.edgeCases.
+
+## 2026-07-07 10:53:03
+
+- 已整理出一版可确认的需求稿。
+- 产品场景: 以 Agent 为主要使用场景。
+- 场景模板: 以 Agent 为主要使用场景。
+
+## 2026-07-10 23:07:02
+
+- Captured clarification for meta.title, meta.owner, meta.version, meta.status, meta.productType, problem.problemStatement, problem.whyNow, problem.evidence, users.primaryUsers, users.secondaryUsers, users.stakeholders, validation.community, validation.seedUsers, validation.communityFit, validation.currentAlternative, validation.painEvidence, validation.manualPath, validation.manualPlaybook, validation.commitmentSignals, validation.firstValidationStep, validation.defaultAlivePlan, validation.paymentProof, validation.mvpSlice, validation.weekendTest, validation.smallestExecution, validation.productizeGate, validation.firstCustomerPath, validation.pricingHypothesis, validation.customerOneProfitability, validation.growthDiscipline, validation.reversibility, validation.customerTruth, validation.valuesFit, goals.goals, goals.successMetrics, goals.acceptanceGoals, scope.inScope, scope.outOfScope, scenarios.primaryFlows, scenarios.edgeCases, scenarios.failureModes, requirements.functional, requirements.nonFunctional, requirements.businessRules, constraints.technical, constraints.compliance, constraints.dependencies, businessGuardrails.costDrivers, businessGuardrails.usageLimits, businessGuardrails.abusePrevention, businessGuardrails.monitoringSignals, businessGuardrails.alertThresholds, businessGuardrails.stopLossActions, risks.assumptions, risks.risks, risks.openQuestions, handoff.owner, handoff.nextStep, handoff.targetSystem, typeSpecific.fields.humanAgentContract, typeSpecific.fields.autonomyBoundary, typeSpecific.fields.toolBoundary, typeSpecific.fields.stateModel, typeSpecific.fields.evalPlan.
+
+## 2026-07-10 23:07:07
+
+- 已锁定产品场景为 以 Agent 为主要使用场景。
+- 场景模板已设置为 以 Agent 为主要使用场景。
+
+## 2026-07-10 23:07:12
+
+- 已整理出一版可确认的需求稿。
+- 产品场景: 以 Agent 为主要使用场景。
+- 场景模板: 以 Agent 为主要使用场景。
+
+## 2026-07-10 23:16:24
+
+- 已为 OpenPrd 可解释项目控制平面与跨工具上下文升级 创建 architecture 图表评审产物。
+- 请在需求定稿前使用该产物确认组件、边界和缺失系统。

@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "schema": "openprd.reference-set.v1",
+  "generatedAt": "2026-07-10 23:10:01",
+  "id": "review-studio-v020-directions",
+  "title": "OpenPrd Review Studio 0.1.20 三方向",
+  "mode": "grid",
+  "summary": "3x1 网格切片，共 3 个参考对象。",
+  "source": {
+    "originalPath": "/Users/chaojifeng/.codex/generated_images/019f4c66-86fb-74d1-8ae8-ec1ce9064e59/exec-6739c328-3559-4bcf-8689-fe9596c42b0b.png",
+    "originalSha256": "571f2b74c32dc4f0e1a8a1a08a6fd14b65243226c401a8a6f684b6f1de223ead",
+    "originalMetadata": {
+      "width": 1716,
+      "height": 917,
+      "format": "png"
+    },
+    "stagedPath": ".openprd/design/active/review-studio-v020-directions/source.png",
+    "stagedSha256": "37ecd4c9ef7853c1fd9f1d237f7bacfe174986b8cd274a7809431a00b444e590",
+    "stagedMetadata": {
+      "width": 1716,
+      "height": 917,
+      "format": "png"
+    }
+  },
+  "selection": {
+    "mode": "grid",
+    "grid": {
+      "columns": 3,
+      "rows": 1
+    },
+    "include": null
+  },
+  "artifacts": {
+    "contactSheet": ".openprd/design/active/review-studio-v020-directions/contact-sheet.jpg",
+    "focusBoardTemplate": ".openprd/design/active/review-studio-v020-directions/focus-board.template.json",
+    "parallelBoardTemplate": ".openprd/design/active/review-studio-v020-directions/parallel-board.template.json",
+    "comparePlan": ".openprd/design/active/review-studio-v020-directions/compare-plan.json"
+  },
+  "items": [
+    {
+      "order": 1,
+      "id": "01",
+      "label": "对象 01",
+      "note": "1/3 列 · 1/1 行",
+      "cropPath": ".openprd/design/active/review-studio-v020-directions/crops/01.png",
+      "cropSha256": "861f3bcc79ca56cb8cad5eda6b7280d9748c555a845933ac045403ed8a36c8a6",
+      "cropMetadata": {
+        "width": 572,
+        "height": 917,
+        "format": "png"
+      },
+      "cropBox": {
+        "unit": "ratio",
+        "x": 0,
+        "y": 0,
+        "width": 0.333333,
+        "height": 1
+      },
+      "absoluteBox": {
+        "x": 0,
+        "y": 0,
+        "width": 572,
+        "height": 917
+      },
+      "requestedUnit": "ratio",
+      "requestedBox": {
+        "unit": "ratio",
+        "x": 0,
+        "y": 0,
+        "width": 0.333333,
+        "height": 1
+      }
+    },
+    {
+      "order": 2,
+      "id": "02",
+      "label": "对象 02",
+      "note": "2/3 列 · 1/1 行",
+      "cropPath": ".openprd/design/active/review-studio-v020-directions/crops/02.png",
+      "cropSha256": "7f1927369d514079615b0f475856ad6481645822e8a14ef390bbf9a3633c3091",
+      "cropMetadata": {
+        "width": 572,
+        "height": 917,
+        "format": "png"
+      },
+      "cropBox": {
+        "unit": "ratio",
+        "x": 0.333333,
+        "y": 0,
+        "width": 0.333333,
+        "height": 1
+      },
+      "absoluteBox": {
+        "x": 572,
+        "y": 0,
+        "width": 572,
+        "height": 917
+      },
+      "requestedUnit": "ratio",
+      "requestedBox": {
+        "unit": "ratio",
+        "x": 0.333333,
+        "y": 0,
+        "width": 0.333333,
+        "height": 1
+      }
+    },
+    {
+      "order": 3,
+      "id": "03",
+      "label": "对象 03",
+      "note": "3/3 列 · 1/1 行",
+      "cropPath": ".openprd/design/active/review-studio-v020-directions/crops/03.png",
+      "cropSha256": "295ee41a5fd24ba080fcd7a695fd6fa7d4252cdf71f4f29c04cc3d285227cb0b",
+      "cropMetadata": {
+        "width": 572,
+        "height": 917,
+        "format": "png"
+      },
+      "cropBox": {
+        "unit": "ratio",
+        "x": 0.666667,
+        "y": 0,
+        "width": 0.333333,
+        "height": 1
+      },
+      "absoluteBox": {
+        "x": 1144,
+        "y": 0,
+        "width": 572,
+        "height": 917
+      },
+      "requestedUnit": "ratio",
+      "requestedBox": {
+        "unit": "ratio",
+        "x": 0.666667,
+        "y": 0,
+        "width": 0.333333,
+        "height": 1
+      }
+    }
+  ]
+}

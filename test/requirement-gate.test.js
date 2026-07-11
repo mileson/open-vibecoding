@@ -137,12 +137,17 @@ describe('Codex requirement gate', () => {
     });
     assert.equal(largeUiDirectionPayload.continue, true);
     assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('大界面改动视觉方案评审'));
-    assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('Codex Computer Use'));
+    assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('Codex 原生 App 用 Computer Use'));
     assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('按生图路由调用内置生图工具'));
     assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('1/2/3'));
     assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('.openprd/harness/visual-reviews/'));
     assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('候选效果图'));
     assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('多对象参考处理'));
+    assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('用户不需要额外提出'));
+    assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('Chrome 插件的任务专用窗口'));
+    assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('同一张截图作为 image-to-image 参考'));
+    assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('除非用户明确要求换风格'));
+    assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('只换颜色的伪方向'));
 
     const visualMismatchPayload = runCodexHook(project, 'UserPromptSubmit', {
       prompt: '这个实现跟效果图不一致，看着有点好丑，你按效果图继续复刻一下。',
@@ -481,9 +486,11 @@ describe('Codex requirement gate', () => {
     );
   });
 
-  test('Codex hook injects matched project knowledge skills and records adoption', async () => {
+  test('Codex hook injects matched project knowledge skills without mutating adoption state', async () => {
     const { project } = await makeCodexHookProject();
     await seedProjectKnowledgeSkill(project);
+    const knowledgeIndexPath = path.join(project, '.openprd', 'knowledge', 'index.json');
+    const knowledgeIndexBefore = await fs.readFile(knowledgeIndexPath, 'utf8');
 
     const payload = runCodexHook(project, 'UserPromptSubmit', {
       prompt: '请继续处理 src/billing-api.js 里的 traceId 透传和 webhook 回滚，直接修。',
@@ -494,10 +501,7 @@ describe('Codex requirement gate', () => {
     assert.ok(context.includes('billing-trace-rollback'));
     assert.ok(context.includes('traceId 透传'));
 
-    const knowledgeIndex = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'knowledge', 'index.json'), 'utf8'));
-    assert.equal(knowledgeIndex.skills[0].adoption.hitCount, 1);
-    assert.equal(knowledgeIndex.skills[0].adoption.referencedCount, 1);
-    assert.equal(knowledgeIndex.skills[0].adoption.injectedCount, 1);
+    assert.equal(await fs.readFile(knowledgeIndexPath, 'utf8'), knowledgeIndexBefore);
   });
 
   test('Codex hook keeps bare session-ID diagnostics on the lightweight read-only path', async () => {

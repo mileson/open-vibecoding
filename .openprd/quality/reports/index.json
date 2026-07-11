@@ -1,7 +1,77 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-07 00:09:58",
+  "updatedAt": "2026-07-11 19:21:10",
   "reports": [
+    {
+      "reportId": "eval-20260711192107",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711192107.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711192107.html",
+      "generatedAt": "2026-07-11 19:21:10",
+      "status": "production-ready"
+    },
+    {
+      "reportId": "eval-20260711192102",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711192102.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711192102.html",
+      "generatedAt": "2026-07-11 19:21:06",
+      "status": "production-ready"
+    },
+    {
+      "reportId": "eval-20260711032414",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711032414.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711032414.html",
+      "generatedAt": "2026-07-11 03:24:16",
+      "status": "production-ready"
+    },
+    {
+      "reportId": "eval-20260711032412",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711032412.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711032412.html",
+      "generatedAt": "2026-07-11 03:24:13",
+      "status": "production-ready"
+    },
+    {
+      "reportId": "eval-20260711031843",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031843.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031843.html",
+      "generatedAt": "2026-07-11 03:18:45",
+      "status": "production-ready"
+    },
+    {
+      "reportId": "eval-20260711031832",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031832.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031832.html",
+      "generatedAt": "2026-07-11 03:18:34",
+      "status": "production-ready"
+    },
+    {
+      "reportId": "eval-20260711031829",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031829.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031829.html",
+      "generatedAt": "2026-07-11 03:18:31",
+      "status": "production-ready"
+    },
+    {
+      "reportId": "eval-20260711031753",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031753.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031753.html",
+      "generatedAt": "2026-07-11 03:17:55",
+      "status": "needs-attention"
+    },
+    {
+      "reportId": "eval-20260711031208",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031208.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031208.html",
+      "generatedAt": "2026-07-11 03:12:09",
+      "status": "needs-attention"
+    },
+    {
+      "reportId": "eval-20260711031136",
+      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031136.json",
+      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711031136.html",
+      "generatedAt": "2026-07-11 03:11:38",
+      "status": "needs-attention"
+    },
     {
       "reportId": "eval-20260707000956",
       "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260707000956.json",
@@ -631,76 +701,6 @@
       "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260612112301.html",
       "generatedAt": "2026-06-12 11:23:02",
       "status": "production-ready"
-    },
-    {
-      "reportId": "eval-20260609154706",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609154706.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609154706.html",
-      "generatedAt": "2026-06-09 15:47:08",
-      "status": "production-ready"
-    },
-    {
-      "reportId": "eval-20260609154705",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609154705.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609154705.html",
-      "generatedAt": "2026-06-09 15:47:08",
-      "status": "production-ready"
-    },
-    {
-      "reportId": "eval-20260609141448",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609141448.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609141448.html",
-      "generatedAt": "2026-06-09 14:14:49",
-      "status": "production-ready"
-    },
-    {
-      "reportId": "eval-20260609141437",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609141437.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609141437.html",
-      "generatedAt": "2026-06-09 14:14:38",
-      "status": "production-ready"
-    },
-    {
-      "reportId": "eval-20260609124432",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609124432.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609124432.html",
-      "generatedAt": "2026-06-09 12:44:33",
-      "status": "production-ready"
-    },
-    {
-      "reportId": "eval-20260609124421",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609124421.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609124421.html",
-      "generatedAt": "2026-06-09 12:44:22",
-      "status": "production-ready"
-    },
-    {
-      "reportId": "eval-20260609115650",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609115650.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609115650.html",
-      "generatedAt": "2026-06-09 11:56:52",
-      "status": "production-ready"
-    },
-    {
-      "reportId": "eval-20260609115438",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609115438.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609115438.html",
-      "generatedAt": "2026-06-09 11:54:40",
-      "status": "needs-attention"
-    },
-    {
-      "reportId": "eval-20260609111156",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609111156.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609111156.html",
-      "generatedAt": "2026-06-09 11:11:58",
-      "status": "needs-attention"
-    },
-    {
-      "reportId": "eval-20260609094734",
-      "jsonPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609094734.json",
-      "htmlPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260609094734.html",
-      "generatedAt": "2026-06-09 09:47:35",
-      "status": "needs-attention"
     }
   ]
 }

@@ -123,6 +123,16 @@ function printDevelopmentStandardsResult(result, json) {
   } else if (result.visualEvidence?.uiFiles?.length > 0) {
     console.log(`- 视觉证据: 最近 24 小时已有证据板（${result.visualEvidence.freshEvidence.join(', ')}）；确认覆盖本轮改动并把证据图嵌入对话流。`);
   }
+  if (result.i18nReminder?.required) {
+    console.log(`- 多语言提醒: ${result.i18nReminder.reason}`);
+    console.log(`  涉及文件: ${result.i18nReminder.textFiles.join(', ')}`);
+    if (result.i18nReminder.guideline) {
+      console.log(`  最佳实践: ${result.i18nReminder.guideline}`);
+    }
+    if (!result.i18nReminder.configExists) {
+      console.log('  建议: 创建 .openprd/i18n-config.json 启用项目级多语言检查。');
+    }
+  }
   printKnowledgeReview(result.knowledgeReview);
   for (const error of result.errors ?? []) {
     console.log(`- ${error}`);

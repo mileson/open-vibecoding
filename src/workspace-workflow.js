@@ -2350,7 +2350,7 @@ async function computeWorkspaceGuidance(ws, options = {}) {
 }
 
 
-async function nextWorkspace(projectRoot) {
+async function nextWorkspace(projectRoot, options = {}) {
   const ws = await loadWorkspace(projectRoot);
   if (!(await exists(ws.workspaceRoot))) {
     throw new Error(`Missing workspace: ${ws.workspaceRoot}`);
@@ -2373,22 +2373,24 @@ async function nextWorkspace(projectRoot) {
     gates,
   } = guidance;
 
-  await writeJson(ws.paths.taskGraph, taskGraph);
-  await appendWorkflowEvent(ws, 'next', {
-    nextAction,
-    reason,
-    missingRequiredFields: analysis.missingRequiredFields,
-  });
-  if (analysis.missingRequiredFields > 0) {
-    await appendOpenQuestions(ws, [
-      `还有 ${analysis.missingRequiredFields} 个关键信息需要确认。`,
-      ...analysis.suggestedQuestions,
+  if (!options.readOnly) {
+    await writeJson(ws.paths.taskGraph, taskGraph);
+    await appendWorkflowEvent(ws, 'next', {
+      nextAction,
+      reason,
+      missingRequiredFields: analysis.missingRequiredFields,
+    });
+    if (analysis.missingRequiredFields > 0) {
+      await appendOpenQuestions(ws, [
+        `还有 ${analysis.missingRequiredFields} 个关键信息需要确认。`,
+        ...analysis.suggestedQuestions,
+      ]);
+    }
+    await appendProgress(ws, [
+      `建议下一步: ${nextAction}。`,
+      `原因: ${reason}`,
     ]);
   }
-  await appendProgress(ws, [
-    `建议下一步: ${nextAction}。`,
-    `原因: ${reason}`,
-  ]);
 
   return {
     ws,
@@ -2411,6 +2413,7 @@ async function nextWorkspace(projectRoot) {
     },
     brainstormSuggestion: guidance.brainstormSuggestion,
     workflow: ['brainstorm', 'clarify', 'classify', 'interview', 'synthesize', 'diagram', 'review', 'freeze', 'handoff'],
+    readOnly: Boolean(options.readOnly),
   };
 }
 

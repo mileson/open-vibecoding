@@ -1,11 +1,18 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { detectRuntime } from './adapters/index.js';
+import {
+  compileContextCapsule,
+  createContextTelemetryEvent,
+  digestStable,
+  verifyContextCapsule,
+} from './context/index.js';
 import { labelExecutionMode, taskExecutionStrategy, describeExecutionStrategy } from './execution-strategy.js';
 import { appendJsonl, appendText, cjoin, exists, readJson, readJsonl, writeJson, writeText } from './fs-utils.js';
+import { appendJsonlAtomic, atomicWriteJson, readJsonIfExists, withFileLock } from './kernel/index.js';
 import {
   OPENPRD_HARNESS_TURN_STATE,
   recordKnowledgeReviewSignal,
-  recordKnowledgeSkillAdoption,
   resolveKnowledgeSkillMatches,
   reviewKnowledgeWorkspace,
 } from './knowledge.js';
@@ -26,6 +33,8 @@ const OPENPRD_HARNESS_REQUIREMENT_GATE = cjoin(OPENPRD_HARNESS_DIR, 'requirement
 const OPENPRD_HARNESS_REQUIREMENT_GATES_DIR = cjoin(OPENPRD_HARNESS_DIR, 'requirement-gates');
 const OPENPRD_HARNESS_SESSION_BINDINGS_DIR = cjoin(OPENPRD_HARNESS_DIR, 'session-bindings');
 const OPENPRD_HARNESS_EVENTS = cjoin(OPENPRD_HARNESS_DIR, 'events.jsonl');
+const OPENPRD_HARNESS_CONTEXT_CACHE_DIR = cjoin(OPENPRD_HARNESS_DIR, 'context-cache');
+const OPENPRD_HARNESS_CONTEXT_TELEMETRY = cjoin(OPENPRD_HARNESS_DIR, 'context-telemetry.jsonl');
 const OPENPRD_WORK_UNITS_DIR = cjoin('.openprd', 'engagements', 'work-units');
 const OPENPRD_PARALLEL_WORKER_IMPLEMENTATION_TASK_THRESHOLD = 3;
 const OPENPRD_LOOP_REQUIRED_IMPLEMENTATION_TASK_THRESHOLD = 10;
@@ -85,13 +94,46 @@ async function ensureRunHarness(projectRoot) {
   }
 }
 
+function normalizeAdapterClient(value) {
+  const client = String(value ?? '').trim().toLowerCase();
+  if (client === 'claude-code') return 'claude';
+  return ['codex', 'claude', 'cursor'].includes(client) ? client : null;
+}
+
+function runtimeEvidenceCandidate(value, source) {
+  const client = normalizeAdapterClient(value?.activeClient ?? value?.client ?? value?.agentType);
+  if (!client) return null;
+  return {
+    source,
+    client,
+    surface: value?.surface ?? 'unknown',
+    executionMode: value?.executionMode ?? 'interactive',
+    sessionId: value?.sessionId ?? null,
+    threadId: value?.threadId ?? null,
+    observedCapabilities: Array.isArray(value?.observedCapabilities) ? value.observedCapabilities : [],
+    confidence: Number.isFinite(value?.confidence) ? value.confidence : null,
+    turnId: value?.turnId ?? null,
+    agentType: value?.agentType ?? null,
+    model: value?.model ?? null,
+  };
+}
+
 async function readRuntimeEnvironmentContext(projectRoot) {
   const [runtimeEnvironment, installManifest, hookState] = await Promise.all([
     readJson(harnessFile(projectRoot, OPENPRD_HARNESS_RUNTIME_ENVIRONMENT)).catch(() => null),
     readJson(harnessFile(projectRoot, OPENPRD_HARNESS_INSTALL_MANIFEST)).catch(() => null),
     readJson(harnessFile(projectRoot, OPENPRD_HARNESS_HOOK_STATE)).catch(() => null),
   ]);
-  const active = runtimeEnvironment?.active
+  const candidates = [
+    runtimeEvidenceCandidate(hookState?.runtimeEnvironment, 'hook-payload'),
+    runtimeEvidenceCandidate(runtimeEnvironment?.active, 'session-binding'),
+  ].filter(Boolean);
+  const detectedRuntime = detectRuntime(candidates);
+  const selected = candidates.find((candidate) => (
+    candidate.client === detectedRuntime.activeClient
+      && (detectedRuntime.sessionId == null || candidate.sessionId === detectedRuntime.sessionId)
+  )) ?? null;
+  const fallbackActive = runtimeEnvironment?.active
     ?? hookState?.runtimeEnvironment
     ?? {
       activeClient: 'unknown',
@@ -101,8 +143,26 @@ async function readRuntimeEnvironmentContext(projectRoot) {
       evidence: [],
       observedCapabilities: [],
     };
+  const active = detectedRuntime.activeClient === 'unknown'
+    ? fallbackActive
+    : {
+        ...fallbackActive,
+        activeClient: detectedRuntime.activeClient,
+        surface: detectedRuntime.surface,
+        executionMode: detectedRuntime.executionMode,
+        sessionId: detectedRuntime.sessionId,
+        threadId: detectedRuntime.threadId,
+        confidence: detectedRuntime.confidence,
+        evidence: detectedRuntime.evidence,
+        observedCapabilities: selected?.observedCapabilities ?? [],
+        capabilityEnvelope: detectedRuntime.capabilityEnvelope,
+        turnId: selected?.turnId ?? fallbackActive?.turnId ?? null,
+        agentType: selected?.agentType ?? fallbackActive?.agentType ?? null,
+        model: selected?.model ?? fallbackActive?.model ?? null,
+      };
   return {
     active,
+    detectedRuntime,
     runtimeDetection: installManifest?.runtimeDetection ?? runtimeEnvironment?.runtimeDetection ?? null,
     platformCapabilityPacks: installManifest?.platformCapabilityPacks ?? runtimeEnvironment?.platformCapabilityPacks ?? [],
     files: {
@@ -113,13 +173,358 @@ async function readRuntimeEnvironmentContext(projectRoot) {
   };
 }
 
-async function readRunState(projectRoot) {
-  await ensureRunHarness(projectRoot);
+async function readRunState(projectRoot, options = {}) {
+  if (options.ensure !== false) {
+    await ensureRunHarness(projectRoot);
+  }
   return readJson(harnessFile(projectRoot, OPENPRD_HARNESS_RUN_STATE)).catch(() => ({
     version: 1,
     active: true,
     currentIteration: 0,
   }));
+}
+
+function compactContextLine(label, value) {
+  const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+  return text ? `${label}: ${text}` : null;
+}
+
+function boundedContextText(value, maxLength = 240) {
+  const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  return text.length > maxLength ? `${text.slice(0, Math.max(1, maxLength - 1))}…` : text;
+}
+
+function runContextRevision(context, message) {
+  return digestStable({
+    messageDigest: message ? digestStable(String(message)) : null,
+    valid: context.validation?.valid ?? false,
+    latestPrd: context.latestPrd,
+    activeChange: context.activeChange,
+    activeRequirementGate: context.activeRequirementGate,
+    focus: context.focus,
+    taskSummary: context.taskSummary,
+    nextTask: context.nextTask,
+    discovery: context.discovery,
+    lane: context.lane,
+    recommendation: context.recommendation,
+    runtimeEnvironment: context.runtimeEnvironment?.active ?? null,
+    knowledgeSkills: (context.knowledgeSkills?.matched ?? []).map((skill) => ({
+      skillName: skill.skillName,
+      path: skill.path,
+      score: skill.score,
+      sourceRef: skill.sourceRef,
+    })),
+  });
+}
+
+function buildRunContextCapsule(context, options = {}) {
+  const activeClient = context.runtimeEnvironment?.active?.activeClient ?? 'unknown';
+  const surface = context.runtimeEnvironment?.active?.surface ?? 'unknown';
+  const taskProgress = context.taskSummary
+    ? `${context.taskSummary.completed}/${context.taskSummary.total} 完成，${context.taskSummary.pending} 待处理，${context.taskSummary.blocked} 阻塞`
+    : null;
+  const knowledge = (context.knowledgeSkills?.matched ?? []).slice(0, 3).map((skill) => ({
+    name: skill.skillName,
+    useWhen: boundedContextText(skill.useWhen ?? skill.description, 180),
+    reviewFirst: (skill.reviewFirst ?? []).slice(0, 2).map((item) => boundedContextText(item, 120)),
+    antiPatterns: (skill.antiPatterns ?? []).slice(0, 1).map((item) => boundedContextText(item, 120)),
+    sourceRef: skill.sourceRef ?? null,
+  }));
+  const activeCapabilityPack = (context.runtimeEnvironment?.platformCapabilityPacks ?? [])
+    .find((pack) => normalizeAdapterClient(pack?.client ?? pack?.id) === activeClient);
+  const compactNextTask = context.nextTask
+    ? {
+        id: context.nextTask.id ?? context.nextTask.taskId ?? null,
+        taskHandle: context.nextTask.taskHandle ?? null,
+        title: boundedContextText(context.nextTask.title ?? context.nextTask.summary, 180),
+        status: context.nextTask.status ?? null,
+      }
+    : null;
+  const confirmation = context.recommendation?.executionConfirmationChecklist;
+  const compactConfirmation = confirmation?.required
+    ? {
+        required: true,
+        objective: boundedContextText(confirmation.objective, 180),
+        scope: (confirmation.scope ?? []).slice(0, 2).map((item) => boundedContextText(item, 140)),
+        implementation: (confirmation.implementationItems ?? []).slice(0, 2).map((item) => boundedContextText(item, 140)),
+        verification: (confirmation.verification ?? []).slice(0, 2).map((item) => boundedContextText(item, 140)),
+        risks: (confirmation.risks ?? []).slice(0, 2).map((item) => boundedContextText(item, 140)),
+      }
+    : null;
+  const clarifyReplyRequired = (context.recommendation?.nextAction ?? '') === 'clarify-user'
+    || context.recommendation?.title === 'clarify-user'
+    || context.recommendation?.title === '继续本轮需求入口澄清';
+  const candidates = [
+    {
+      id: 'requirement-gate',
+      authority: 'user-confirmed',
+      freshness: 'current',
+      relevance: context.activeRequirementGate ? 100 : 0,
+      value: context.activeRequirementGate
+        ? {
+            status: context.activeRequirementGate.status,
+            relevance: context.activeRequirementGate.relevance,
+            promptPreview: context.activeRequirementGate.promptPreview,
+          }
+        : null,
+    },
+    {
+      id: 'current-focus',
+      authority: 'project-canonical',
+      freshness: 'current',
+      relevance: 95,
+      value: {
+        activeChange: context.activeChange,
+        focus: {
+          changeId: context.focus?.changeId ?? null,
+          workUnitId: context.focus?.workUnitId ?? null,
+          taskHandle: context.focus?.taskHandle ?? null,
+          sessionId: context.focus?.sessionId ?? null,
+          source: context.focus?.source ?? null,
+        },
+        latestPrd: context.latestPrd
+          ? {
+              versionId: context.latestPrd.versionId ?? null,
+              workUnitId: context.latestPrd.workUnitId ?? null,
+              title: boundedContextText(context.latestPrd.title, 180),
+              status: context.latestPrd.status ?? null,
+            }
+          : null,
+      },
+    },
+    {
+      id: 'project-knowledge',
+      authority: 'project-canonical',
+      freshness: 'latest',
+      relevance: knowledge.length > 0 ? 90 : 0,
+      value: knowledge.length > 0 ? knowledge : null,
+    },
+    {
+      id: 'applicable-scoped-gates',
+      authority: 'project-canonical',
+      freshness: 'current',
+      relevance: (context.scopedGates ?? []).length > 0 ? 100 : 0,
+      value: (context.scopedGates ?? []).length > 0 ? context.scopedGates : null,
+    },
+    {
+      id: 'agent-interaction-contract',
+      authority: 'project-canonical',
+      freshness: 'current',
+      relevance: 92,
+      value: {
+        expression: '面向用户使用普通人能理解的结果、影响和下一步；内部编号、命令和路径只在确有帮助时出现。',
+        replyBoundary: clarifyReplyRequired
+          ? '本轮只输出需求摘要或追问一个最高价值澄清点，不承诺直接实现。'
+          : null,
+        approvalBoundary: context.recommendation?.executionConfirmationChecklist?.required
+          ? '执行前必须使用当前任务绑定的确认清单，不能复用其他任务的泛化确认。'
+          : null,
+      },
+    },
+    {
+      id: 'runtime-environment',
+      authority: 'runtime-observed',
+      freshness: 'current',
+      relevance: activeClient === 'unknown' ? 20 : 90,
+      value: {
+        activeClient,
+        surface,
+        executionMode: context.runtimeEnvironment?.active?.executionMode ?? null,
+        confidence: context.runtimeEnvironment?.active?.confidence ?? null,
+        observedCapabilities: context.runtimeEnvironment?.active?.observedCapabilities ?? [],
+        capabilityPack: activeCapabilityPack
+          ? {
+              id: activeCapabilityPack.id,
+              capabilities: (activeCapabilityPack.capabilities ?? []).map((capability) => ({
+                id: capability.id,
+                status: capability.status,
+              })),
+            }
+          : null,
+      },
+    },
+    {
+      id: 'task-progress',
+      authority: 'project-derived',
+      freshness: 'current',
+      relevance: context.taskSummary ? 85 : 10,
+      value: context.taskSummary
+        ? { summary: taskProgress, nextTask: compactNextTask, lane: boundedContextText(context.lane?.summary, 180) }
+        : { lane: boundedContextText(context.lane?.summary, 180), nextTask: compactNextTask },
+    },
+    {
+      id: 'recommended-next-step',
+      authority: 'project-derived',
+      freshness: 'current',
+      relevance: 100,
+      value: {
+        title: boundedContextText(context.recommendation?.title, 180),
+        reason: boundedContextText(context.recommendation?.reason, 260),
+        nextAction: context.recommendation?.nextAction ?? null,
+        executionMode: context.recommendation?.executionMode ?? null,
+        executionCommand: boundedContextText(
+          context.recommendation?.executionCommand ?? context.recommendation?.preparationCommand,
+          260,
+        ),
+        verifyCommand: boundedContextText(context.recommendation?.verifyCommand, 220),
+        confirmation: compactConfirmation,
+      },
+    },
+    {
+      id: 'project-health',
+      authority: 'project-derived',
+      freshness: 'current',
+      relevance: context.validation?.valid ? 50 : 100,
+      value: {
+        valid: context.validation?.valid ?? false,
+        errors: (context.validation?.errors ?? []).slice(0, 3).map((item) => boundedContextText(item, 180)),
+        warnings: (context.validation?.warnings ?? []).slice(0, 3).map((item) => boundedContextText(item, 180)),
+      },
+    },
+  ];
+  const request = {
+    workspaceId: context.projectRoot,
+    revision: runContextRevision(context, options.message),
+    taskId: context.focus?.taskHandle ?? context.nextTask?.taskHandle ?? context.nextTask?.id ?? null,
+    intent: options.message ?? null,
+    delivery: options.previousCapsule ? 'delta' : 'full',
+    tokenBudget: options.tokenBudget ?? 800,
+    deltaTokenBudget: options.deltaTokenBudget ?? 250,
+    candidates,
+  };
+  const capsule = compileContextCapsule(request, { previousCapsule: options.previousCapsule ?? null });
+  const renderedLines = [
+    `OpenPrd ContextCapsule v1 · ${capsule.delivery} · ${capsule.budget.estimatedTokens}/${capsule.budget.limitTokens} tokens · ${String(capsule.digest).slice(-12)}`,
+    ...capsule.entries.map((entry) => {
+    if (entry.id === 'recommended-next-step') {
+      return [
+        compactContextLine('建议下一步', entry.value?.title),
+        compactContextLine('这样安排的原因', entry.value?.reason),
+        compactContextLine('内部执行参考', entry.value?.executionCommand ?? entry.value?.preparationCommand),
+      ].filter(Boolean).join('\n');
+    }
+    if (entry.id === 'task-progress') {
+      return [
+        compactContextLine('当前处理路径', entry.value?.lane),
+        compactContextLine('任务进度', entry.value?.summary),
+      ].filter(Boolean).join('\n');
+    }
+    if (entry.id === 'runtime-environment') return compactContextLine('当前 Agent 环境', `${entry.value?.activeClient ?? 'unknown'} / ${entry.value?.surface ?? 'unknown'}`);
+    if (entry.id === 'requirement-gate') return compactContextLine('当前处理阶段', `${entry.value?.status ?? 'active'}（${entry.value?.relevance ?? 'primary'}）`);
+    if (entry.id === 'project-health') return compactContextLine('基础检查', entry.value?.valid ? '通过' : '失败');
+    if (entry.id === 'current-focus') return compactContextLine('当前聚焦事项', entry.value?.focus?.changeId ?? entry.value?.activeChange ?? entry.value?.latestPrd?.title);
+    if (entry.id === 'project-knowledge') return compactContextLine('项目经验', `${entry.value?.length ?? 0} 条已按作用域匹配`);
+    if (entry.id === 'applicable-scoped-gates') {
+      return compactContextLine('适用门禁', (entry.value ?? []).map((gate) => (
+        `${gate.operation}@${gate.scope?.type}:${gate.scope?.id}${gate.latestDecision?.status ? `=${gate.latestDecision.status}` : ''}`
+      )).join('；'));
+    }
+    if (entry.id === 'agent-interaction-contract') {
+      return [
+        compactContextLine('表达约束', entry.value?.expression),
+        compactContextLine('当前回复边界', entry.value?.replyBoundary),
+        compactContextLine('批准边界', entry.value?.approvalBoundary),
+      ].filter(Boolean).join('\n');
+    }
+    return null;
+  }).filter(Boolean),
+  ];
+  if (capsule.delivery === 'delta' && capsule.entries.length === 0) {
+    renderedLines.push(`上下文无变化，沿用 ${String(capsule.delta?.previousCapsuleDigest ?? '上一份 ContextCapsule').slice(-12)}`);
+  } else if (capsule.delivery === 'delta' && capsule.delta.removed.length > 0) {
+    renderedLines.push(`已移出上下文: ${capsule.delta.removed.join('、')}`);
+  }
+  return {
+    capsule,
+    renderedText: renderedLines.join('\n'),
+  };
+}
+
+function scopedGateMatchesContext(gate, projectRoot, context) {
+  const scope = gate?.scope;
+  if (!scope?.type || !scope?.id) return false;
+  if (scope.type === 'project') return true;
+  const ids = new Set([
+    context.activeChange,
+    context.focus?.changeId,
+    context.focus?.workUnitId,
+    context.focus?.taskHandle,
+    context.nextTask?.id,
+    context.nextTask?.taskId,
+    context.nextTask?.taskHandle,
+    context.lane?.kind,
+    context.lane?.id,
+    context.recommendation?.nextAction,
+    context.recommendation?.title,
+    path.resolve(projectRoot),
+    path.basename(path.resolve(projectRoot)),
+  ].filter(Boolean).map(String));
+  return ids.has(String(scope.id));
+}
+
+async function readApplicableScopedGates(projectRoot, context) {
+  const state = await readJson(path.join(projectRoot, '.openprd', 'gates', 'state.json')).catch(() => null);
+  if (!state?.gates || typeof state.gates !== 'object') return [];
+  const decisions = Array.isArray(state.decisions) ? state.decisions : [];
+  return Object.values(state.gates)
+    .filter((gate) => scopedGateMatchesContext(gate, projectRoot, context))
+    .map((gate) => ({
+      gateId: gate.gateId,
+      scope: gate.scope,
+      operation: gate.operation,
+      risk: gate.risk,
+      requiredEvidence: gate.requiredEvidence,
+      approval: gate.approval,
+      latestDecision: [...decisions].reverse().find((decision) => decision.gateId === gate.gateId) ?? null,
+    }))
+    .sort((left, right) => String(left.gateId).localeCompare(String(right.gateId)));
+}
+
+function runContextCacheFile(projectRoot, context) {
+  const active = context.runtimeEnvironment?.active ?? {};
+  const identity = digestStable({
+    projectRoot: path.resolve(projectRoot),
+    client: active.activeClient ?? 'unknown',
+    sessionId: active.sessionId ?? context.focus?.sessionId ?? null,
+    threadId: active.threadId ?? null,
+  }).replace(/^sha256:/, '').slice(0, 24);
+  return harnessFile(projectRoot, cjoin(OPENPRD_HARNESS_CONTEXT_CACHE_DIR, `last-${identity}.json`));
+}
+
+async function compileRunContextDelivery(projectRoot, context, options = {}) {
+  if (!options.hookInject) {
+    return {
+      ...buildRunContextCapsule(context, options),
+      cacheStatus: 'not-used',
+      cachePath: null,
+      telemetry: null,
+    };
+  }
+  const cachePath = runContextCacheFile(projectRoot, context);
+  return withFileLock(`${cachePath}.lock`, async () => {
+    const cached = await readJsonIfExists(cachePath, null).catch(() => null);
+    const cachedCapsule = verifyContextCapsule(cached?.capsule) ? cached.capsule : null;
+    const explicitPrevious = verifyContextCapsule(options.previousCapsule) ? options.previousCapsule : null;
+    const previousCapsule = explicitPrevious ?? cachedCapsule;
+    const delivery = buildRunContextCapsule(context, { ...options, previousCapsule });
+    const cacheStatus = explicitPrevious ? 'explicit-previous' : cachedCapsule ? 'session-hit' : 'session-miss';
+    const telemetry = createContextTelemetryEvent({ capsule: delivery.capsule, cacheStatus });
+    await atomicWriteJson(cachePath, {
+      schemaVersion: 1,
+      workspaceId: path.resolve(projectRoot),
+      client: context.runtimeEnvironment?.active?.activeClient ?? 'unknown',
+      sessionId: context.runtimeEnvironment?.active?.sessionId ?? context.focus?.sessionId ?? null,
+      capsule: delivery.capsule,
+    });
+    await appendJsonlAtomic(harnessFile(projectRoot, OPENPRD_HARNESS_CONTEXT_TELEMETRY), telemetry);
+    return {
+      ...delivery,
+      cacheStatus,
+      cachePath,
+      telemetry,
+    };
+  });
 }
 
 async function readActiveRequirementGate(projectRoot) {
@@ -1846,8 +2251,7 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
     resumeOpenSpecDiscoveryWorkspace,
     validateWorkspace,
   } = dependencies;
-  await ensureRunHarness(projectRoot);
-  const runState = await readRunState(projectRoot);
+  const runState = await readRunState(projectRoot, { ensure: false });
   const currentTurn = await readJson(harnessFile(projectRoot, OPENPRD_HARNESS_TURN_STATE)).catch(() => null);
   const runtimeEnvironment = await readRuntimeEnvironmentContext(projectRoot);
   const currentTurnPrompt = String(currentTurn?.prompt ?? '').trim();
@@ -1866,7 +2270,7 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
       warnings: [],
       checks: [],
     }));
-  const next = await nextWorkspace(projectRoot).catch(() => null);
+  const next = await nextWorkspace(projectRoot, { readOnly: true }).catch(() => null);
   const requirementGate = await readActiveRequirementGate(projectRoot);
   const changes = await listOpenPrdChangesWorkspace(projectRoot).catch(() => null);
   const activeChange = changes?.activeChange ?? null;
@@ -1980,32 +2384,9 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
       activeChange ? `.openprd/changes/${activeChange}` : null,
     ].filter(Boolean),
     limit: options.hookInject ? 4 : 3,
+    readOnly: true,
   }).catch(() => ({ matched: [], summary: { matched: 0 } }));
-  const knowledgeAdoption = knowledgeSkillMatches.matched?.length > 0
-    ? await recordKnowledgeSkillAdoption(projectRoot, {
-      matches: knowledgeSkillMatches.matched,
-      stages: options.hookInject ? ['hit', 'referenced', 'injected'] : ['hit', 'referenced'],
-      source: options.hookInject ? 'run-context-hook' : 'run-context',
-      sessionId: lane.target?.sessionId ?? resolvedTarget?.sessionId ?? requirementGate?.sessionId ?? null,
-      promptPreview: effectiveMessage,
-    }).catch(() => null)
-    : null;
-  const knowledgeStageBump = {
-    hitCount: options.hookInject ? 1 : 1,
-    referencedCount: 1,
-    injectedCount: options.hookInject ? 1 : 0,
-  };
-  const renderedKnowledgeSkills = (knowledgeSkillMatches.matched ?? []).map((skill) => ({
-    ...skill,
-    adoption: skill.adoption
-      ? {
-          ...skill.adoption,
-        hitCount: Number(skill.adoption.hitCount ?? 0) + knowledgeStageBump.hitCount,
-        referencedCount: Number(skill.adoption.referencedCount ?? 0) + knowledgeStageBump.referencedCount,
-        injectedCount: Number(skill.adoption.injectedCount ?? 0) + knowledgeStageBump.injectedCount,
-      }
-      : skill.adoption,
-  }));
+  const renderedKnowledgeSkills = knowledgeSkillMatches.matched ?? [];
 
   const context = {
     ok: validation.valid,
@@ -2078,7 +2459,8 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
         hookInjected: Boolean(options.hookInject && renderedKnowledgeSkills.length > 0),
         reviewRequired: Boolean(knowledgeSkillMatches.mandatoryCheck?.required),
         reviewMode: knowledgeSkillMatches.mandatoryCheck?.mode ?? null,
-        adoption: knowledgeAdoption?.summary ?? null,
+        adoption: null,
+        recorded: false,
       },
     },
     files: {
@@ -2089,11 +2471,23 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
     },
   };
 
-  await writeRunState(projectRoot, {
-    ...runState,
-    lastContextAt: context.generatedAt,
-    lastRecommendation: effectiveRecommendation,
+  context.scopedGates = await readApplicableScopedGates(projectRoot, context);
+  const contextDelivery = await compileRunContextDelivery(projectRoot, context, {
+    hookInject: options.hookInject,
+    message: effectiveMessage,
+    previousCapsule: options.previousCapsule ?? null,
+    tokenBudget: options.tokenBudget,
+    deltaTokenBudget: options.deltaTokenBudget,
   });
+  context.contextCapsule = contextDelivery.capsule;
+  context.contextText = contextDelivery.renderedText;
+  context.contextCache = {
+    status: contextDelivery.cacheStatus,
+    path: contextDelivery.cachePath,
+  };
+  context.contextTelemetry = contextDelivery.telemetry;
+  context.readOnly = true;
+  context.sideEffects = options.hookInject ? ['context-cache', 'context-telemetry'] : [];
 
   return context;
 }

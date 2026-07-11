@@ -89,6 +89,29 @@ function runProcess(command, args = [], options = {}) {
     });
     let stdout = '';
     let stderr = '';
+    let settled = false;
+    let timedOut = false;
+    const timeoutMs = Number.isFinite(options.timeoutMs)
+      ? Math.max(1, Number(options.timeoutMs))
+      : 15000;
+    const killGraceMs = Number.isFinite(options.killGraceMs)
+      ? Math.max(1, Number(options.killGraceMs))
+      : 1000;
+    let killTimer = null;
+    const timeoutTimer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGTERM');
+      killTimer = setTimeout(() => child.kill('SIGKILL'), killGraceMs);
+      killTimer.unref?.();
+    }, timeoutMs);
+    timeoutTimer.unref?.();
+    const finish = (payload) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutTimer);
+      if (killTimer) clearTimeout(killTimer);
+      resolve(payload);
+    };
     child.stdout.on('data', (chunk) => {
       stdout = `${stdout}${chunk}`.slice(-64000);
     });
@@ -96,7 +119,7 @@ function runProcess(command, args = [], options = {}) {
       stderr = `${stderr}${chunk}`.slice(-64000);
     });
     child.on('error', (error) => {
-      resolve({
+      finish({
         ok: false,
         command,
         args,
@@ -104,19 +127,22 @@ function runProcess(command, args = [], options = {}) {
         exitCode: null,
         stdout,
         stderr,
+        timedOut,
         error: error.message,
       });
     });
-    child.on('close', (exitCode) => {
-      resolve({
-        ok: exitCode === 0,
+    child.on('close', (exitCode, signal) => {
+      finish({
+        ok: !timedOut && exitCode === 0,
         command,
         args,
         display: invocation.display,
         exitCode,
+        signal,
         stdout,
         stderr,
-        error: null,
+        timedOut,
+        error: timedOut ? `Command timed out after ${timeoutMs}ms.` : null,
       });
     });
   });
@@ -131,6 +157,8 @@ function normalizeRunResult(command, args, result = {}) {
     exitCode: result.exitCode ?? result.status ?? null,
     stdout: String(result.stdout ?? ''),
     stderr: String(result.stderr ?? ''),
+    timedOut: Boolean(result.timedOut),
+    signal: result.signal ? String(result.signal) : null,
     error: result.error ? String(result.error) : null,
   };
 }
@@ -178,6 +206,17 @@ export function diagnoseCodexVersionFailure(result, options = {}) {
     };
   }
 
+  if (result.timedOut) {
+    return {
+      type: 'version-check-timeout',
+      summary: `Codex CLI 健康检查超时：codex --version 在 ${options.timeoutMs ?? 15000}ms 内没有返回。`,
+      missingPackage: null,
+      repairCommand,
+      manualCommand: repairCommand.display,
+      output,
+    };
+  }
+
   if (
     result.exitCode === null
     && /(ENOENT|not found|command not found|no such file|spawn .*enoent)/i.test(output)
@@ -212,6 +251,8 @@ export async function checkCodexCliHealth(options = {}) {
     await runner(command, args, {
       cwd: options.cwd,
       env: options.env ?? process.env,
+      timeoutMs: options.timeoutMs ?? 15000,
+      killGraceMs: options.killGraceMs,
     }),
   );
   const repairCommand = buildCodexRepairCommand(options);
@@ -257,6 +298,8 @@ export async function repairCodexCli(options = {}) {
     await runner(commandInfo.command, commandInfo.args, {
       cwd: options.cwd,
       env: options.env ?? process.env,
+      timeoutMs: options.repairTimeoutMs ?? 300000,
+      killGraceMs: options.killGraceMs,
     }),
   );
   const recheck = result.ok ? await checkCodexCliHealth(options) : null;

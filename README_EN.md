@@ -626,6 +626,8 @@ prices, buttons, icons, and action areas. Repeated card lists, card grids, and
 tables are default triggers even when the user did not explicitly complain
 about alignment; measuring only outer frames, columns, or row tops is not enough.
 
+Grid, baseline, and alignment overlays are exclusive to this layout-validation path. Regular `before/after`, `reference/actual`, and `verification-board` outputs do not add grids automatically; they use a compact warm result canvas that keeps screenshots and verdicts prominent.
+
 When a single logo, icon, avatar, badge, button graphic, or image crop needs
 internal centering review, or when the user reports that its visual weight feels
 off-center, crop the target if needed and generate a centering evidence board:

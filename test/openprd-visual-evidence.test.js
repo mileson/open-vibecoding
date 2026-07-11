@@ -518,6 +518,8 @@ test('visual-compare writes focus and parallel review boards and quality can det
   assert.equal(verificationResult.mode, 'verification-board');
   assert.equal(verificationResult.items.length, 2);
   assert.equal(verificationResult.reviewArtifact.mode, 'verification-board');
+  assert.equal(verificationResult.reviewArtifact.presentation, 'compact-result');
+  assert.equal(verificationResult.reviewArtifact.alignmentGuidesApplied, false);
   assert.equal(verificationResult.reviewArtifact.locale, 'zh-CN');
   assert.equal((await sharp(verificationResult.outputPath).metadata()).format, 'jpeg');
 

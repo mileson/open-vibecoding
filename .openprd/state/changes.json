@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "activeChange": "openprd-generated-change",
-  "updatedAt": "2026-07-06 22:52:06",
+  "activeChange": "openprd-control-plane-v020",
+  "updatedAt": "2026-07-10 23:12:01",
   "changes": {
     "verify-boundaries-and-historical-refresh": {
       "id": "verify-boundaries-and-historical-refresh",
@@ -47,6 +47,16 @@
       "id": "openprd-generated-change",
       "status": "active",
       "activatedAt": "2026-07-06 22:52:06"
+    },
+    "remove-session-tracking-humane-approval": {
+      "id": "remove-session-tracking-humane-approval",
+      "status": "active",
+      "activatedAt": "2026-07-07 10:53:22"
+    },
+    "openprd-control-plane-v020": {
+      "id": "openprd-control-plane-v020",
+      "status": "active",
+      "activatedAt": "2026-07-10 23:12:01"
     }
   }
 }

@@ -217,6 +217,11 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedAgents.includes('生图工具是工具路径，不是审美豁免'));
     assert.ok(generatedAgents.includes('默认紫白/蓝紫渐变、通用字体、白底卡片堆叠和无语境装饰'));
     assert.ok(generatedAgents.includes('imagegen'));
+    assert.ok(generatedAgents.includes('大界面三方向是 Agent 的默认责任'));
+    assert.ok(generatedAgents.includes('Codex 网页环境用 Chrome 插件任务专用窗口'));
+    assert.ok(generatedAgents.includes('共享同一张当前截图作为 image-to-image 参考'));
+    assert.ok(generatedAgents.includes('除非用户明确要求换风格'));
+    assert.ok(generatedAgents.includes('只换颜色的伪方向'));
     assert.ok(generatedAgents.includes('验证与创业闭环'));
     assert.ok(generatedAgents.includes('第一批最容易触达的社区或种子用户'));
     assert.ok(generatedAgents.includes('先怎么手工交付'));
@@ -322,7 +327,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedIntakeSkill.includes('b2b'));
     assert.ok(generatedIntakeSkill.includes('agent'));
     assert.ok(generatedIntakeSkill.includes('冷启动没有现有界面'));
-    assert.ok(generatedIntakeSkill.includes('设计 brief'));
+    assert.ok(generatedIntakeSkill.includes('design brief'));
     assert.ok(generatedIntakeSkill.includes('解释型 SVG'));
     const generatedDiagramSkill = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-diagram-review', 'SKILL.md'), 'utf8');
     assert.ok(generatedDiagramSkill.includes('explanation-svg'));
@@ -575,6 +580,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedFrontendSkill.includes('只做规划、下载素材、补合同、写说明或口头承诺'));
     assert.ok(generatedFrontendSkill.includes('相同文案类型/相同组件槽位'));
     assert.ok(generatedFrontendSkill.includes('alignment-board'));
+    assert.ok(generatedFrontendSkill.includes('普通截图、最终 before/after、reference/actual 和 verification-board 只负责展示结果'));
     assert.ok(generatedFrontendSkill.includes('centering-board'));
     assert.ok(generatedFrontendSkill.includes('黄色视觉重心点'));
     assert.ok(generatedFrontendSkill.includes('标题、副标题、描述、标签、状态、价格、按钮'));
@@ -751,7 +757,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
       assert.equal(eventPayload.should_stop, undefined);
       assert.equal(eventPayload.additional_contexts, undefined);
       assert.equal(eventPayload.hookSpecificOutput.hookEventName, eventName);
-      assert.ok(eventPayload.hookSpecificOutput.additionalContext.includes('当前进展参考'));
+      assert.ok(eventPayload.hookSpecificOutput.additionalContext.includes('OpenPrd ContextCapsule v1'));
       assert.ok(eventPayload.hookSpecificOutput.additionalContext.includes('OpenPrd 上下文只是建议'));
       assert.equal(eventPayload.hookSpecificOutput.additionalContext.includes('Follow the recommended OpenPrd run command'), false);
     }
@@ -1066,6 +1072,21 @@ test('Codex runtime health diagnoses optional dependency failure without repairi
   assert.equal(runtime.preflight.diagnostic.missingPackage, '@openai/codex-darwin-arm64');
   assert.equal(runtime.repairCommand.display, 'npm install -g @openai/codex@latest');
   assert.ok(runtime.errors.some((error) => error.includes('--repair-agent')));
+});
+
+test('Codex runtime health bounds a hung version command with a timeout', async () => {
+  const startedAt = Date.now();
+  const health = await checkCodexCliHealth({
+    codexCommand: process.execPath,
+    versionArgs: ['-e', 'setInterval(() => {}, 1000)'],
+    timeoutMs: 40,
+    killGraceMs: 20,
+  });
+
+  assert.equal(health.ok, false);
+  assert.equal(health.result.timedOut, true);
+  assert.equal(health.diagnostic.type, 'version-check-timeout');
+  assert.ok(Date.now() - startedAt < 2000);
 });
 
 test('Codex runtime wraps bare Windows commands through cmd.exe for npm shims', () => {

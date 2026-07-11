@@ -10,6 +10,19 @@ import { renderApprovedBenchmarkRegistrySection } from './benchmark.js';
 import { timestamp } from './time.js';
 import { upsertWorkspaceRegistryEntry } from './workspace-registry.js';
 import { readOperationalGitignoreStatus } from './workspace-core.js';
+import {
+  ADAPTER_CONTRACT_VERSION,
+  CAPABILITY_STATUS,
+  adapterContractDigest,
+  describeCapabilities,
+} from './adapters/index.js';
+import {
+  INSTALL_SAFETY_PROTOCOL_VERSION,
+  normalizeSymlinkStrategy,
+  safeAppendText,
+  safeEnsureDirectory,
+  safeWriteText,
+} from './adapters/install-safety.js';
 
 const PACKAGE_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const OPENPRD_AGENT_TOOLS = ['codex', 'claude', 'cursor'];
@@ -249,18 +262,16 @@ async function readJson(filePath) {
   return JSON.parse(await readText(filePath));
 }
 
-async function writeText(filePath, text) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, text, 'utf8');
+async function writeText(filePath, text, options = {}) {
+  await safeWriteText(filePath, text, options);
 }
 
-async function writeJson(filePath, value) {
-  await writeText(filePath, `${JSON.stringify(value, null, 2)}\n`);
+async function writeJson(filePath, value, options = {}) {
+  await writeText(filePath, `${JSON.stringify(value, null, 2)}\n`, options);
 }
 
-async function appendJsonl(filePath, value) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.appendFile(filePath, `${JSON.stringify(value)}\n`, 'utf8');
+async function appendJsonl(filePath, value, options = {}) {
+  await safeAppendText(filePath, `${JSON.stringify(value)}\n`, options);
 }
 
 async function packageVersion() {
@@ -426,7 +437,7 @@ async function writeGeneratedFile(filePath, params, options, changes) {
     });
     return;
   }
-  await writeText(filePath, body);
+  await writeText(filePath, body, options);
   changes.push({ path: rel, status: current ? 'updated' : 'created' });
   recordManagedFile(options, {
     path: rel,
@@ -443,7 +454,7 @@ async function upsertTextBlockFile(filePath, id, blockBody, options, changes) {
   const rel = normalizedRelativePath(options.projectRoot, filePath);
   const current = await readText(filePath).catch(() => '');
   const next = upsertManagedBlock(current || '', id, blockBody);
-  await writeText(filePath, next);
+  await writeText(filePath, next, options);
   changes.push({ path: rel, status: current ? 'updated-block' : 'created' });
   recordManagedFile(options, {
     path: rel,
@@ -500,6 +511,7 @@ function agentContractBody() {
     '5. 纯图片、封面图、配图、海报、插画、图标、贴纸、mockup 或“先看样子”请求按生图路由选工具：先判断当前对话工具面，Codex 环境用原生 `imagegen`（Image 2），Cursor 环境用内置 `GenerateImage`，两者都是工具内免费能力；都不可用或无法判断时，先读 `.openprd/harness/image-generation-preference.json` 的用户已确认偏好，没有偏好就先问用户选哪种生图方式，并把答复以 `user-confirmed` 来源写回该文件作为下次默认；绝不擅自调用用户本地或自有付费生图 API。生图工具是工具路径，不是审美豁免，生成前先写清用途、受众、气质、约束和记忆点，并用 anti-slop 避免默认紫白/蓝紫渐变、通用字体、白底卡片堆叠和无语境装饰；其中 logo、icon、avatar、badge 等开发素材在用户未明确要求场景化展示时，默认按独立素材输出（standalone asset）生成：全画布单主体，不额外添加卡片、设备框或其他展示容器；只有实际发生生图工具调用后，才能汇报生图结果、失败或限流。生图结果先当候选效果图，不要默认登记到 `.openprd/harness/visual-reviews/`。Agent 要主动确认是否符合预期、是否纳入后续效果图/实现截图对比、以及是否按此继续实现；只有确认后，才把选定方向、整张图或其中子图整理成 reference-set 并进入实现。进入实现阶段时，已有确认参考图用 `openprd visual-compare --reference/--actual`；如果参考图是一张整板、网格图或多对象组合，先运行 `openprd visual-prepare --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>`，确认 contact sheet 后再逐项对比；没有参考图时先判断新建界面还是修改既有界面，新建界面先按用户目标、信息架构变化、视觉决策成本和验证风险完成 3 方向方案评审，修改既有界面用 `openprd visual-compare --before/--after`；局部细节重点则补 `openprd visual-compare --board <focus-board.json>`，多方向实验则补 `openprd visual-compare --board <parallel-board.json>`；普通截图、Computer/Browser/Playwright 实测截图要作为证据时补 `openprd visual-compare --board <verification-board.json>`；同构列表、卡片、网格、表格或用户反馈没对齐时补 `openprd visual-compare --board <alignment-board.json>`，并同时覆盖容器轨道与内部内容槽位轨道；单个 logo、icon、avatar、badge、按钮图形或图片内部居中/视觉重心/偏心问题补 `openprd visual-compare --board <centering-board.json>`，并同时覆盖画布中心、主体外接框中心和视觉重心偏移。visual evidence 同时检查气质、层级、字体/色彩/表面角色和记忆点，不只检查截图是否存在。用户后续如果说“跟效果图”“不一致”“好丑”“复刻”，不能只口头说对比过了，至少先产出一份视觉证据图。如果用户目标是把工作转成可学习、可复用、可回看、可教学或可沉淀的材料，先按期望产物是否需要章节结构、证据锚点、图文讲解、检索练习、工作示例或长期阅读体验来判断；需要时优先走 `openprd learn .` 生成学习包和阅读器，不要用关键词表触发；“仙侠风格的学习材料”这类短请求也按学习型交付物处理，风格只作为 `--genre` 题材参数。',
     '5a. 对 logo、icon、avatar、badge、贴纸、空态插画、单物件 UI 位图等开发素材，如果最终要接入 UI 并需要透明背景，默认走“候选评审 -> 资产工程化 -> 接入验证”的图标资产链路：先基于用途、受众、气质、约束和记忆点生成 3 个差异足够大的独立素材候选方向，并保持纯 `#00ff00` 绿幕、无文字、无 UI 容器、主体居中且留足裁切边距；用户选定前不写入项目文件。用户选定后再定位源图或 contact sheet，保留绿幕源图，用 `remove_chroma_key.py` 抠成透明 PNG/WebP，按真实 UI 需要裁切居中并导出 384px 或多尺寸资产；接入时按首页卡片、工具格、吸顶栏、偏好预览等实际场景分别调显示比例，而不是只换图片路径。收口时同步写回 `.openprd/design/active/asset-spec.md` 和 `selected-direction.md`，说明选中的方向、资产路径、透明产物、接入位置和验证结果；最终回复必须区分绿幕源图、透明产物和是否已经接入。',
     '5b. 卡片宽度、间距、留白、对齐、颜色、圆角、字号、按钮或图标等轻量 UI 可视优化，仍可按 L0/L1 小范围修正推进，不自动升级成大界面 3 方向方案评审；但它是用户可见变化，动手前要有一句审美意图和记忆点，收口必须补 `visual-compare` 修改前后图、局部焦点证据板、截图实测证据板、对齐辅助线证据板或内部居中证据板，并检查气质、层级、颜色、字号、间距和表面角色是否成立。只要界面里有同构列表、卡片、网格或表格，就把容器轨道以及标题、副标题、描述、标签、状态、价格、按钮、图标、操作区等相同文案类型/相同组件槽位的对齐当作默认验收项，不等用户先投诉；只量外框、列宽或行顶不算完整对齐验收。只要任务在判断单个素材/图标/头像/徽标/按钮图形的内部居中、偏心或视觉重心，就把 centering-board 当作默认验收项；单张原始截图或主观“看起来居中”不算完整居中验收。build、package、`openprd dev-check` 和单张原始截图不能替代视觉证据。`visual-compare` 每次都会返回 `chatEmbed` markdown；生成证据板后必须把这行 `![视觉证据: ...](路径)` 直接嵌入最终回复，让证据在对话流里可见，不要只报告文件路径；`openprd dev-check` 在触达界面文件且最近 24 小时没有证据板时也会输出视觉证据提醒，收口前按提醒补齐。',
+    '5c. 大界面三方向是 Agent 的默认责任，不要求用户另行提出生图；轻量 UI 微调不触发。已有界面时，Codex 原生 App 用 Computer Use、Codex 网页环境用 Chrome 插件任务专用窗口、Cursor 用可用浏览器或项目预览能力截图；三个方向必须共享同一张当前截图作为 image-to-image 参考。除非用户明确要求换风格，否则锁定字体角色、色彩系统、明暗模式、表面语言、圆角/边框/阴影、图标语言、平台框架和信息密度，只探索布局、信息层级、导航、关键路径与空间构图。冷启动没有现有界面时才使用 design brief，不伪造修改前截图。候选图先明确用途、目标用户、业务约束、核心动作、气质和唯一记忆点，并检查字体、色彩、空间、层级、表面/图标语言和动效含义；拒绝无依据蓝紫渐变、默认字体、等权白卡堆叠、过量大圆角、无语境装饰和只换颜色的伪方向。',
     '6. 界面、页面、视觉、样式、信息架构或前端体验任务进入实现前，先读取 `$openprd-frontend-design`，并用 `.openprd/design/active/` 补齐 `facts-sheet / asset-spec / image-preflight / direction-plan / selected-direction`；空白工作区优先从 `.openprd/design/templates/` 选最近模板。若用户已经给了效果图、设计稿、参考截图或其他明确参考图，先把它当成主参考源；只有现有 starter、theme、layout 足够接近时才复用，不接近就允许偏离默认组合，以参考图为准。若当前轮用户已经把页面主题、模块范围或“直接实现”的意图说清，优先运行 `openprd run . --context --message <用户原话>`。若页面主题和模块范围已经明确，优先运行 `openprd design-starter . --starter <starter-id> --out index.html --brief "<页面主题>" --sections "<模块1|模块2|模块3>"` 起第一版真实页面；只有这个页面本来就不依赖外部产品事实、品牌素材或真实图片时，才在 active design artifacts 写清无依赖并补 `--no-external-facts --no-brand-assets --no-real-images`；若题目更像旅游、导览、展览、博物馆、城市、自然观察或案例内容页，先不要带 `--no-real-images`，让 starter 先尝试补首批真实图片；若这类冷启动即使带 message 仍短暂返回 `clarify-user`，把它当成摘要级提醒，先用 3 到 5 行 mini-plan 收口，再继续。starter 落地后默认进入 `Patch Mode`，必须直接在生成的入口文件上补丁修改；即使结构要大改，也是在同一路径内覆盖，不做 delete-first，更不要删除 `index.html` 后另起新稿。如果确实要整页重写，先把完整新稿写到 sibling draft，例如 `index.next.html`，确认内容成形后再覆盖回 `index.html`，不要让正式入口出现空窗；starter 一落地后，只允许做一轮就地对焦：快速读一次生成的入口文件和必要的 active design artifacts；这轮对焦结束后，下一步就必须是真实写入口，不要再回头搜网页、翻 `docs/basic/` 或继续模板漫游；把最后一批必要的查事实、查图、读模板动作放在口头宣布之前做完；一旦已经说“开始覆盖入口文件”或“开始整页重写”，下一步必须出现真实写文件动作，而不是继续只读浏览、压图或停在口头承诺；必要时 hook 会把这类非写入动作挡回去；`Patch Mode` 完成不等于只补合同、只下载素材或只写计划；至少要把入口文件本体改完、主要占位清掉，并把已准备好的真实图片或参考约束真正落进页面；没有明确参考方向时，不要直接落回同一种安全极简解。',
     '6a. 写产品界面上用户能看到的文案时，必须站在当前用户视角写：这句话要说明用户现在能做什么、会发生什么、为什么值得点、下一步怎么走。除非这是面向开发者或专业技术人员的技术型产品，否则默认用普通人能看懂的语言写结果、状态、限制和行动，不要暴露 API、SDK、模型、数据库、缓存、错误码或内部模块。正反例：不要写“适合想保留全部工具入口的用户”，改写成“首页会显示所有工具入口，你可以直接选择需要的功能”；不要写“API 请求失败，错误码 500”，改写成“暂时保存失败，请稍后再试”；技术型产品可以保留必要术语，但仍要写清用户动作、影响和修复路径。',
     '6b. 开发新功能出现新的入口、按钮、tab、卡片、空态或工具格时，默认自动配图标，不等用户提出：先复用项目已有图标体系；项目没有时按图标最佳实践路由选型（UI 图标 Phosphor，落码 Lucide/Tabler/React Icons，AI 品牌 LobeHub Icons，技术栈 Tech Icons，功能图标/插画 iconfont），把图标名、来源、用途登记到 `.openprd/design/active/asset-spec.md` 的“功能图标”行再接入。只有语义确实不需要图标或用户明确说不要时才跳过，并在收口说明原因。',
@@ -562,7 +574,7 @@ async function loadSourceSkill(skill) {
   };
 }
 
-async function renderSkill(skill, adapter, projectRoot) {
+async function renderSkill(skill, projectRoot) {
   const source = await loadSourceSkill(skill);
   const sections = [
     '---',
@@ -595,7 +607,7 @@ async function listFilesRecursive(rootDir) {
   return files;
 }
 
-async function writeSourceSkillReferences(projectRoot, skill, destinationDir, adapter, version, options, changes) {
+async function writeSourceSkillReferences(projectRoot, skill, destinationDir, version, options, changes) {
   if (!skill.sourceSkill) {
     return;
   }
@@ -606,7 +618,7 @@ async function writeSourceSkillReferences(projectRoot, skill, destinationDir, ad
     const body = await readText(filePath);
     await writeGeneratedFile(
       cjoin(destinationDir, 'references', relative),
-      { adapter, source: `${skill.id}:reference:${relative}`, version, body },
+      { adapter: 'shared', source: `${skill.id}:reference:${relative}`, version, body },
       options,
       changes,
     );
@@ -743,7 +755,7 @@ async function writeCodexConfig(projectRoot, options, changes) {
   const current = await readText(configPath).catch(() => '');
   let next = normalizeFeatureHooks(current || '');
   next = upsertTomlManagedBlock(next, 'CODEX-HOOKS', codexHooksTomlBlock(projectRoot, options));
-  await writeText(configPath, next);
+  await writeText(configPath, next, options);
   changes.push({ path: rel, status: current ? 'updated' : 'created' });
   recordManagedFile(options, {
     path: rel,
@@ -758,7 +770,7 @@ async function writeCodexUserConfig(options, changes) {
   const current = await readText(configPath).catch(() => '');
   const next = normalizeFeatureHooks(current || '');
   if (next !== current) {
-    await writeText(configPath, next);
+    await writeText(configPath, next, options);
   }
   changes.push({
     path: displayPath(configPath),
@@ -814,7 +826,7 @@ async function writeCodexHooksJson(projectRoot, options, changes) {
       delete next[eventName];
     }
   }
-  await writeJson(hooksPath, next);
+  await writeJson(hooksPath, next, options);
   changes.push({ path: rel, status: existed ? 'updated' : 'created' });
   recordManagedFile(options, {
     path: rel,
@@ -827,15 +839,15 @@ async function writeCodexHooksJson(projectRoot, options, changes) {
 async function writeCodexAdapter(projectRoot, options, changes) {
   const version = await packageVersion();
   for (const skill of CANONICAL_SKILLS) {
-    const body = await renderSkill(skill, 'codex', projectRoot);
+    const body = await renderSkill(skill, projectRoot);
     const skillDir = cjoin(projectRoot, '.codex', 'skills', skill.id);
     await writeGeneratedFile(
       cjoin(skillDir, 'SKILL.md'),
-      { adapter: 'codex', source: skill.id, version, body },
+      { adapter: 'shared', source: skill.id, version, body },
       options,
       changes,
     );
-    await writeSourceSkillReferences(projectRoot, skill, skillDir, 'codex', version, options, changes);
+    await writeSourceSkillReferences(projectRoot, skill, skillDir, version, options, changes);
   }
   for (const command of CANONICAL_COMMANDS) {
     await writeGeneratedFile(
@@ -864,15 +876,15 @@ async function writeClaudeAdapter(projectRoot, options, changes) {
   const version = await packageVersion();
   await upsertTextBlockFile(cjoin(projectRoot, 'CLAUDE.md'), 'CLAUDE', agentContractBody(), options, changes);
   for (const skill of CANONICAL_SKILLS) {
-    const body = await renderSkill(skill, 'claude', projectRoot);
+    const body = await renderSkill(skill, projectRoot);
     const skillDir = cjoin(projectRoot, '.claude', 'skills', skill.id);
     await writeGeneratedFile(
       cjoin(skillDir, 'SKILL.md'),
-      { adapter: 'claude', source: skill.id, version, body },
+      { adapter: 'shared', source: skill.id, version, body },
       options,
       changes,
     );
-    await writeSourceSkillReferences(projectRoot, skill, skillDir, 'claude', version, options, changes);
+    await writeSourceSkillReferences(projectRoot, skill, skillDir, version, options, changes);
   }
   for (const command of CANONICAL_COMMANDS) {
     await writeGeneratedFile(
@@ -902,8 +914,8 @@ async function writeCursorAdapter(projectRoot, options, changes) {
   }
 }
 
-async function ensureHarnessState(projectRoot) {
-  await fs.mkdir(harnessPath(projectRoot, OPENPRD_HARNESS_DIR), { recursive: true });
+async function ensureHarnessState(projectRoot, options = {}) {
+  await safeEnsureDirectory(harnessPath(projectRoot, OPENPRD_HARNESS_DIR), options);
   const hookStatePath = harnessPath(projectRoot, OPENPRD_HARNESS_HOOK_STATE);
   if (!(await exists(hookStatePath))) {
     await writeJson(hookStatePath, {
@@ -915,11 +927,11 @@ async function ensureHarnessState(projectRoot) {
       suppressions: {
         inputLock: false,
       },
-    });
+    }, options);
   }
   const eventsPath = harnessPath(projectRoot, OPENPRD_HARNESS_EVENTS);
   if (!(await exists(eventsPath))) {
-    await writeText(eventsPath, '');
+    await writeText(eventsPath, '', options);
   }
   const runtimeEnvironmentPath = harnessPath(projectRoot, OPENPRD_HARNESS_RUNTIME_ENVIRONMENT);
   if (!(await exists(runtimeEnvironmentPath))) {
@@ -940,7 +952,7 @@ async function ensureHarnessState(projectRoot) {
       runtimeDetection: RUNTIME_DETECTION_PROTOCOL,
       platformCapabilityPacks: [],
       updatedAt: null,
-    });
+    }, options);
   }
 }
 
@@ -1021,16 +1033,85 @@ function configuredOptionalCapabilityIds(optionalCapabilities) {
     .map((capability) => capability.id);
 }
 
+function capabilityGapsForEnvelope(envelope) {
+  return Object.entries(envelope?.capabilities ?? {})
+    .filter(([, status]) => typeof status === 'string' && status !== CAPABILITY_STATUS.NATIVE)
+    .map(([capability, status]) => ({
+      capability,
+      status,
+      requirement: status === CAPABILITY_STATUS.SURFACE_DEPENDENT
+        ? 'current-surface-evidence'
+        : 'adapter-or-platform-support',
+    }));
+}
+
+function buildAdapterProtocol(tools) {
+  const clients = normalizeTools(tools).map((client) => {
+    const capabilityEnvelope = describeCapabilities(client);
+    return {
+      client,
+      contractVersion: ADAPTER_CONTRACT_VERSION,
+      capabilitySchema: capabilityEnvelope.schema,
+      lifecycleEventSchema: 'openprd.adapter-event.v1',
+      capabilityEnvelope,
+      capabilityGaps: capabilityGapsForEnvelope(capabilityEnvelope),
+    };
+  });
+  return {
+    schema: 'openprd.adapter-protocol.v1',
+    protocolVersion: ADAPTER_CONTRACT_VERSION,
+    capabilityVersion: ADAPTER_CONTRACT_VERSION,
+    lifecycleEventVersion: ADAPTER_CONTRACT_VERSION,
+    contractDigest: adapterContractDigest(),
+    generatedContent: {
+      version: 1,
+      sharedSkillMarker: 'shared',
+      sharedSkillConsumers: clients
+        .map((entry) => entry.client)
+        .filter((client) => client === 'codex' || client === 'claude'),
+      platformSpecificKinds: ['command', 'hook', 'rule', 'config'],
+    },
+    clients,
+  };
+}
+
 function buildPlatformCapabilityPacks(tools, optionalCapabilities = []) {
   const toolSet = new Set(normalizeTools(tools));
   const configuredOptional = configuredOptionalCapabilityIds(optionalCapabilities);
   return PLATFORM_CAPABILITY_PACK_REGISTRY
     .filter((pack) => toolSet.has(pack.client))
-    .map((pack) => ({
-      ...pack,
-      capabilities: pack.capabilities.map((capability) => ({ ...capability })),
-      optionalEnhancements: configuredOptional,
-    }));
+    .map((pack) => {
+      const capabilityEnvelope = describeCapabilities(pack.client);
+      return {
+        ...pack,
+        adapterContractVersion: ADAPTER_CONTRACT_VERSION,
+        capabilityEnvelope,
+        capabilityGaps: capabilityGapsForEnvelope(capabilityEnvelope),
+        capabilities: pack.capabilities.map((capability) => ({ ...capability })),
+        optionalEnhancements: configuredOptional,
+      };
+    });
+}
+
+function installSafetyManifest(projectRoot, options = {}) {
+  const events = Array.isArray(options.installSafetyEvents) ? options.installSafetyEvents : [];
+  const eventPath = (filePath) => {
+    const relative = normalizedRelativePath(projectRoot, filePath);
+    return relative === '..' || relative.startsWith('../') ? displayPath(filePath) : relative;
+  };
+  return {
+    protocolVersion: INSTALL_SAFETY_PROTOCOL_VERSION,
+    symlinkStrategy: normalizeSymlinkStrategy(options.symlinkStrategy),
+    materializationCount: events.length,
+    materializations: events.map((event) => ({
+      strategy: event.strategy,
+      path: eventPath(event.symlinkPath),
+      linkTarget: event.linkTarget,
+      backupPath: displayPath(event.backupPath),
+      materializedType: event.materializedType,
+      at: event.at,
+    })),
+  };
 }
 
 async function writeInstallManifest(projectRoot, options, changes, tools, optionalCapabilities) {
@@ -1053,23 +1134,26 @@ async function writeInstallManifest(projectRoot, options, changes, tools, option
       runtimeEnvironment: OPENPRD_HARNESS_RUNTIME_ENVIRONMENT,
       driftReport: OPENPRD_HARNESS_DRIFT,
     },
+    adapterProtocol: buildAdapterProtocol(tools),
     runtimeDetection: RUNTIME_DETECTION_PROTOCOL,
     platformCapabilityPacks: buildPlatformCapabilityPacks(tools, optionalCapabilities),
     imageGenerationRouting: IMAGE_GENERATION_ROUTING,
+    installSafety: installSafetyManifest(projectRoot, options),
     optionalCapabilities,
   };
   const manifestPath = harnessPath(projectRoot, OPENPRD_HARNESS_MANIFEST);
   const existed = await exists(manifestPath);
-  await writeJson(manifestPath, manifest);
+  await writeJson(manifestPath, manifest, options);
   const runtimeEnvironmentPath = harnessPath(projectRoot, OPENPRD_HARNESS_RUNTIME_ENVIRONMENT);
   const runtimeEnvironment = await readJson(runtimeEnvironmentPath).catch(() => null);
   await writeJson(runtimeEnvironmentPath, {
     version: 1,
     ...(runtimeEnvironment ?? {}),
+    adapterProtocol: manifest.adapterProtocol,
     runtimeDetection: RUNTIME_DETECTION_PROTOCOL,
     platformCapabilityPacks: manifest.platformCapabilityPacks,
     imageGenerationRouting: IMAGE_GENERATION_ROUTING,
-  });
+  }, options);
   const configuredCount = optionalCapabilities.filter((capability) => capability.configured).length;
   changes.push({ path: OPENPRD_HARNESS_MANIFEST, status: existed ? 'updated' : 'created' });
   await appendJsonl(harnessPath(projectRoot, OPENPRD_HARNESS_EVENTS), {
@@ -1082,7 +1166,11 @@ async function writeInstallManifest(projectRoot, options, changes, tools, option
     platformCapabilityPackCount: manifest.platformCapabilityPacks.length,
     optionalCapabilityConfiguredCount: configuredCount,
     optionalCapabilityRecommendedCount: optionalCapabilities.length - configuredCount,
-  });
+    adapterContractVersion: manifest.adapterProtocol.protocolVersion,
+    adapterContractDigest: manifest.adapterProtocol.contractDigest,
+    symlinkStrategy: manifest.installSafety.symlinkStrategy,
+    materializationCount: manifest.installSafety.materializationCount,
+  }, options);
   return manifest;
 }
 
@@ -1113,7 +1201,7 @@ async function inspectManagedFile(projectRoot, entry) {
   return { ...entry, ok: true, reason: 'ok' };
 }
 
-async function computeDriftReport(projectRoot, tools) {
+async function computeDriftReport(projectRoot, tools, options = {}) {
   const manifest = await readInstallManifest(projectRoot);
   const checks = [];
   if (!manifest) {
@@ -1124,7 +1212,7 @@ async function computeDriftReport(projectRoot, tools) {
       errors: [`${OPENPRD_HARNESS_MANIFEST} is missing. Run openprd update .`],
       checks,
     };
-    await writeJson(harnessPath(projectRoot, OPENPRD_HARNESS_DRIFT), report);
+    await writeJson(harnessPath(projectRoot, OPENPRD_HARNESS_DRIFT), report, options);
     return report;
   }
   for (const entry of manifest.managedFiles ?? []) {
@@ -1142,7 +1230,7 @@ async function computeDriftReport(projectRoot, tools) {
     errors,
     checks,
   };
-  await writeJson(harnessPath(projectRoot, OPENPRD_HARNESS_DRIFT), report);
+  await writeJson(harnessPath(projectRoot, OPENPRD_HARNESS_DRIFT), report, options);
   return report;
 }
 
@@ -1151,14 +1239,22 @@ export async function setupOpenPrdAgentIntegration(projectRoot, options = {}) {
   const hookProfile = normalizeHookProfile(options.hookProfile);
   const changes = [];
   const managedFiles = [];
+  const installSafetyEvents = [];
+  const managedWriteRoots = [projectRoot];
+  if (options.enableUserCodexConfig) {
+    managedWriteRoots.push(resolveCodexHome(options));
+  }
   const normalizedOptions = {
     ...options,
     projectRoot,
     hookProfile,
     managedFiles,
+    installSafetyEvents,
+    managedWriteRoots,
+    symlinkStrategy: normalizeSymlinkStrategy(options.symlinkStrategy),
   };
 
-  await ensureHarnessState(projectRoot);
+  await ensureHarnessState(projectRoot, normalizedOptions);
   await writeProjectCommandCatalog(projectRoot, normalizedOptions, changes);
   await upsertTextBlockFile(cjoin(projectRoot, 'AGENTS.md'), 'AGENTS', agentContractBody(), normalizedOptions, changes);
 
@@ -1187,7 +1283,7 @@ export async function setupOpenPrdAgentIntegration(projectRoot, options = {}) {
     registryPath: registry.registryPath,
     status: registry.status,
     knownTotal: registry.knownTotal,
-  });
+  }, normalizedOptions);
 
   const doctor = await doctorOpenPrdAgentIntegration(projectRoot, {
     tools,
@@ -1363,7 +1459,16 @@ async function smokeTestCodexHook(projectRoot, options = {}) {
 export async function doctorOpenPrdAgentIntegration(projectRoot, options = {}) {
   const tools = normalizeTools(options.tools);
   const checks = [];
-  await ensureHarnessState(projectRoot);
+  const managedWriteRoots = [projectRoot];
+  if (options.enableUserCodexConfig) {
+    managedWriteRoots.push(resolveCodexHome(options));
+  }
+  const safetyOptions = {
+    ...options,
+    projectRoot,
+    managedWriteRoots,
+  };
+  await ensureHarnessState(projectRoot, safetyOptions);
   const manifest = await readInstallManifest(projectRoot);
   const hookProfile = normalizeHookProfile(options.hookProfile ?? manifest?.hooks?.profile);
   const optionalCapabilities = await collectOptionalCapabilities(projectRoot, tools, options);
@@ -1425,7 +1530,7 @@ export async function doctorOpenPrdAgentIntegration(projectRoot, options = {}) {
     await collectGeneratedDoctorCheck(projectRoot, checks, '.cursor/rules/openprd.mdc', 'Cursor OpenPrd rule');
     await collectGeneratedDoctorCheck(projectRoot, checks, '.cursor/commands/openprd-next.md', 'Cursor OpenPrd next command');
   }
-  const drift = await computeDriftReport(projectRoot, tools);
+  const drift = await computeDriftReport(projectRoot, tools, safetyOptions);
   for (const error of drift.errors) {
     checks.push({ path: OPENPRD_HARNESS_DRIFT, ok: false, message: error });
   }

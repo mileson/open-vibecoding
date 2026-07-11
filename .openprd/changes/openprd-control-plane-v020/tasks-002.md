@@ -1,0 +1,35 @@
+# 任务
+
+- [x] T001.26 更新文件说明书和文件夹 README
+  - type: documentation
+  - deps: T001.25
+  - done: 本次变更涉及的文件说明书和文件夹 README 已检查；缺失的已补齐，过期的已更新
+  - verify: openprd standards . --verify
+  - test-layer: manual
+  - test-size: manual
+  - test-scope: docs
+  - evidence-plan: openprd standards . --verify
+  - upgrade-reason: 文档任务以标准校验和人工审查证据为主
+  - execution-mode: parallel-workers
+  - parallel-group: docs
+  - write-scope: docs/basic/**, README*.md
+  - owner-role: worker
+  - local-verify: openprd standards . --verify
+  - integration-owner: main-agent
+
+- [x] T001.27 运行 OpenPrd spec 校验
+  - type: governance
+  - deps: T001.26
+  - done: 生成的 change 通过 OpenPrd 校验
+  - verify: openprd change . --validate --change openprd-control-plane-v020
+  - test-layer: manual
+  - test-size: manual
+  - test-scope: governance
+  - evidence-plan: openprd change . --validate --change openprd-control-plane-v020
+  - upgrade-reason: 治理任务以结构校验、评审确认和变更状态证据为主
+  - execution-mode: serial
+  - parallel-group: governance
+  - write-scope: .openprd/changes/**, .openprd/**
+  - owner-role: main-agent
+  - local-verify: openprd change . --validate --change openprd-control-plane-v020
+  - integration-owner: main-agent

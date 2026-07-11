@@ -706,6 +706,344 @@
         box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
         transform: translateY(0);
       }
+      .review-workbench {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 22px;
+        align-items: end;
+        margin-bottom: 18px;
+        padding: 20px 22px;
+        border: 1px solid var(--review-line);
+        border-radius: 8px;
+        background: var(--review-panel);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+      }
+      .review-workbench-copy h2 {
+        margin: 0;
+        color: var(--review-text);
+        font-size: 24px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+      .review-workbench-copy > p:last-child,
+      .review-workbench-note {
+        margin: 8px 0 0;
+        color: var(--review-muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+      .review-workbench-note {
+        grid-column: 1 / -1;
+        margin: 0;
+        padding-top: 12px;
+        border-top: 1px solid var(--review-line);
+        font-size: 13px;
+      }
+      .review-view-tabs {
+        display: inline-grid;
+        grid-template-columns: repeat(2, minmax(132px, 1fr));
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid var(--review-line);
+        border-radius: 12px;
+        background: var(--review-panel-soft);
+      }
+      .review-view-tab {
+        cursor: pointer;
+        display: grid;
+        gap: 2px;
+        min-height: 52px;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        padding: 8px 14px;
+        background: transparent;
+        color: var(--review-muted);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.2;
+        text-align: left;
+      }
+      .review-view-tab span {
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .review-view-tab:hover,
+      .review-view-tab:focus-visible {
+        border-color: #c7d2fe;
+        color: var(--review-indigo);
+        outline: none;
+      }
+      .review-view-tab.active {
+        border-color: #c7d2fe;
+        background: #ffffff;
+        color: var(--review-indigo);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+      }
+      .review-projection[hidden],
+      [data-review-filter-item][hidden],
+      .review-engineering-no-results[hidden] {
+        display: none !important;
+      }
+      .review-business-evidence {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 0.72fr);
+        gap: 22px;
+        align-items: center;
+        margin-top: 18px;
+        padding: 20px;
+        border: 1px solid #99f6e4;
+        border-radius: 8px;
+        background: #f0fdfa;
+      }
+      .review-business-evidence h2 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.3;
+      }
+      .review-business-evidence p:last-child {
+        margin: 6px 0 0;
+        color: var(--review-muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+      .review-business-evidence-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .review-business-evidence-actions button {
+        cursor: pointer;
+        min-height: 36px;
+        border: 1px solid #5eead4;
+        border-radius: 9px;
+        padding: 0 12px;
+        background: #ffffff;
+        color: #0f766e;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .review-business-evidence-actions button:hover,
+      .review-business-evidence-actions button:focus-visible {
+        border-color: var(--review-teal);
+        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+        outline: none;
+      }
+      .review-projection-engineering {
+        border: 1px solid var(--review-line);
+        border-radius: 8px;
+        background: var(--review-panel-soft);
+        padding: 20px;
+      }
+      .review-engineering-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 0.45fr);
+        gap: 24px;
+        align-items: end;
+        padding: 4px 2px 18px;
+        border-bottom: 1px solid var(--review-line);
+      }
+      .review-engineering-head h1 {
+        margin: 0;
+        font-size: 26px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+      .review-engineering-head > div > p:last-child {
+        margin: 8px 0 0;
+        color: var(--review-muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+      .review-engineering-filter {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 7px 10px;
+        align-items: center;
+      }
+      .review-engineering-filter > span {
+        color: var(--review-text);
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .review-engineering-filter input {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid var(--review-line);
+        border-radius: 9px;
+        padding: 0 12px;
+        background: #ffffff;
+        color: var(--review-text);
+        font: inherit;
+        font-size: 14px;
+      }
+      .review-engineering-filter input:focus {
+        border-color: var(--review-indigo);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        outline: none;
+      }
+      .review-engineering-filter output {
+        justify-self: end;
+        color: var(--review-muted);
+        font-size: 12px;
+      }
+      .review-engineering-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+      .review-engineering-section,
+      .review-evidence-section {
+        min-width: 0;
+        border: 1px solid var(--review-line);
+        border-radius: 8px;
+        background: var(--review-panel);
+        overflow: hidden;
+      }
+      .review-engineering-section > header,
+      .review-evidence-section > header {
+        min-height: 92px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--review-line);
+        background: #ffffff;
+      }
+      .review-engineering-section h2,
+      .review-evidence-section h2 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.3;
+      }
+      .review-engineering-section header p,
+      .review-evidence-section header > p:last-child {
+        margin: 6px 0 0;
+        color: var(--review-muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      .review-engineering-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .review-engineering-item {
+        min-width: 0;
+      }
+      .review-engineering-list .review-engineering-item {
+        display: grid;
+        grid-template-columns: minmax(108px, 0.32fr) minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+        padding: 12px 18px;
+        border-bottom: 1px solid #eef2f6;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .review-engineering-list .review-engineering-item:last-child {
+        border-bottom: 0;
+      }
+      .review-engineering-list strong {
+        color: var(--review-muted);
+        font-size: 12px;
+        line-height: 1.65;
+      }
+      .review-engineering-list span,
+      .review-engineering-list code {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .review-engineering-list code,
+      .review-evidence-meta code {
+        color: #3730a3;
+        font-family: var(--review-mono);
+        font-size: 11px;
+      }
+      .review-engineering-empty {
+        margin: 0;
+        padding: 18px;
+        color: var(--review-muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .review-evidence-section {
+        margin-top: 14px;
+      }
+      .review-evidence-section > header {
+        min-height: 0;
+      }
+      .review-evidence-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .review-evidence-item {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 12px;
+        padding: 16px 18px;
+        border-right: 1px solid #eef2f6;
+        border-bottom: 1px solid #eef2f6;
+        scroll-margin-top: 22px;
+        transition: background-color 160ms ease, box-shadow 160ms ease;
+      }
+      .review-evidence-item:nth-child(2n) { border-right: 0; }
+      .review-evidence-index {
+        display: inline-grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        background: #ccfbf1;
+        color: var(--review-teal);
+        font-size: 12px;
+        font-weight: 850;
+      }
+      .review-evidence-item h3 {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      .review-evidence-item p {
+        margin: 6px 0 0;
+        color: var(--review-text);
+        font-size: 13px;
+        line-height: 1.65;
+      }
+      .review-evidence-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        margin-top: 10px;
+        color: var(--review-muted);
+        font-size: 11px;
+      }
+      .review-evidence-item.is-located {
+        background: #ecfdf5;
+        box-shadow: inset 4px 0 0 var(--review-teal);
+      }
+      .review-evidence-item:focus-visible {
+        outline: 3px solid rgba(15, 118, 110, 0.24);
+        outline-offset: -3px;
+      }
+      .review-engineering-no-results {
+        margin: 14px 0 0;
+        padding: 14px 16px;
+        border: 1px solid #fde68a;
+        border-radius: 8px;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 14px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .review-view-tab,
+        .review-evidence-item,
+        .review-business-evidence-actions button {
+          scroll-behavior: auto;
+          transition: none;
+        }
+      }
       .review-directions {
         margin-top: 28px;
       }
@@ -814,6 +1152,24 @@
         outline: none;
       }
       @media (max-width: 860px) {
+        .review-workbench,
+        .review-engineering-head,
+        .review-business-evidence {
+          grid-template-columns: 1fr;
+        }
+        .review-view-tabs {
+          width: 100%;
+        }
+        .review-business-evidence-actions {
+          justify-content: flex-start;
+        }
+        .review-engineering-grid,
+        .review-evidence-list {
+          grid-template-columns: 1fr;
+        }
+        .review-evidence-item {
+          border-right: 0;
+        }
         .review-overview {
           grid-template-columns: 1fr;
         }
@@ -827,6 +1183,21 @@
       @media (max-width: 620px) {
         .review-page { padding: 18px 12px 128px; }
         .review-topbar { align-items: flex-start; flex-direction: column; }
+        .review-workbench,
+        .review-projection-engineering {
+          padding: 16px;
+        }
+        .review-view-tabs {
+          grid-template-columns: 1fr 1fr;
+        }
+        .review-view-tab {
+          min-width: 0;
+          padding-inline: 10px;
+        }
+        .review-engineering-list .review-engineering-item {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
         .review-project-version {
           min-width: 0;
           width: 100%;
@@ -862,46 +1233,46 @@
         
         <div class="review-project-version" aria-label="项目版本">
           <span class="review-project-version-label">项目版本</span>
-          <strong class="review-project-version-value">0.1.19</strong>
+          <strong class="review-project-version-value">0.1.20</strong>
           <span class="review-project-version-meta">已发布版本 · 5 条变化</span>
         </div>
   
       </header>
       
-      <nav class="review-stage-rail" aria-label="流程位置">
+      <nav class="review-stage-rail" aria-label="共享决策时间线" data-review-model-digest="798d752621fbcfbe1678f50e68089732d244ebc06ed28c00f042733f5c7f57d6">
         <ol>
           
-        <li class="review-stage done">
+        <li class="review-stage done" data-review-timeline-step="clarify">
           <span class="review-stage-dot">✓</span>
           <span class="review-stage-name">需求澄清</span>
           
         </li>
 
-        <li class="review-stage done">
+        <li class="review-stage done" data-review-timeline-step="summary">
           <span class="review-stage-dot">✓</span>
           <span class="review-stage-name">需求摘要</span>
           
         </li>
 
-        <li class="review-stage current">
+        <li class="review-stage current" data-review-timeline-step="review">
           <span class="review-stage-dot">3</span>
           <span class="review-stage-name">评审确认</span>
           <span class="review-stage-badge">你在这里</span>
         </li>
 
-        <li class="review-stage pending">
+        <li class="review-stage pending" data-review-timeline-step="tasks">
           <span class="review-stage-dot">4</span>
           <span class="review-stage-name">任务拆解</span>
           
         </li>
 
-        <li class="review-stage pending">
+        <li class="review-stage pending" data-review-timeline-step="implementation">
           <span class="review-stage-dot">5</span>
           <span class="review-stage-name">实现执行</span>
           
         </li>
 
-        <li class="review-stage pending">
+        <li class="review-stage pending" data-review-timeline-step="verification">
           <span class="review-stage-dot">6</span>
           <span class="review-stage-name">验证收口</span>
           
@@ -909,12 +1280,51 @@
         </ol>
       </nav>
       
+    <section class="review-workbench" aria-labelledby="reviewWorkbenchTitle" data-review-model-digest="798d752621fbcfbe1678f50e68089732d244ebc06ed28c00f042733f5c7f57d6">
+      <div class="review-workbench-copy">
+        <p class="review-kicker">双轨证据工作台</p>
+        <h2 id="reviewWorkbenchTitle">同一份评审，两种读法</h2>
+        <p>先在业务视图看清价值、范围、流程和风险；需要追溯任务、约束或依据时，再切到工程视图。两边共享同一份确认内容。</p>
+      </div>
+      <div class="review-view-tabs" role="tablist" aria-label="选择评审视图">
+        <button
+          type="button"
+          id="reviewTabBusiness"
+          class="review-view-tab active"
+          role="tab"
+          aria-selected="true"
+          aria-controls="reviewBusinessView"
+          data-review-tab="business"
+        >业务视图<span>先看结论</span></button>
+        <button
+          type="button"
+          id="reviewTabEngineering"
+          class="review-view-tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="reviewEngineeringView"
+          data-review-tab="engineering"
+          tabindex="-1"
+        >工程视图<span>核对追溯</span></button>
+      </div>
+      <p class="review-workbench-note" aria-live="polite">两种视图共享同一个确认基线，切换视图不会改变评审结论。</p>
+    </section>
+  
+      <section
+        class="review-projection review-projection-business"
+        id="reviewBusinessView"
+        role="tabpanel"
+        aria-labelledby="reviewTabBusiness"
+        data-review-view="business"
+        data-review-model-digest="798d752621fbcfbe1678f50e68089732d244ebc06ed28c00f042733f5c7f57d6"
+      >
+        
     <section class="review-overview" aria-labelledby="reviewOverviewTitle">
       <div class="review-overview-copy">
         <p class="review-kicker">需求概览</p>
         <h1 id="reviewOverviewTitle">OpenPrd loop 隔离 worktree 提交闭环</h1>
-        <p class="review-problem">OpenPrd 的 loop 虽然支持逐任务 finish 和可选 commit，但最近没有稳定形成“隔离 worktree + 单任务 commit + 可审查回归”的闭环。当前 loop --run 不会自动切到隔离环境，loop --finish --commit 仍按全仓 git add -A 提交，主工作区一旦有脏改动就容易把无关内容卷进来，导致任务虽然 done 却没有可靠的 commit 留痕。</p>
-        <p class="review-goal"><span class="review-goal-label">这次的目标</span>让 loop 在需要时显式进入隔离 worktree / branch 中执行，而不是默认污染主工作区。</p>
+        <p class="review-problem">loop 缺少隔离执行和精确提交。</p>
+        <p class="review-goal"><span class="review-goal-label">这次的目标</span>让每个任务都能独立提交并追溯。</p>
       </div>
       
       <aside class="review-agenda" aria-label="评审清单">
@@ -951,7 +1361,7 @@
   
     </section>
   
-      
+        
     <section class="review-gap review-gap-clear" aria-label="信息完整度">
       <div class="review-gap-headline">
         <span class="review-gap-dot" aria-hidden="true"></span>
@@ -960,8 +1370,8 @@
       </div>
     </section>
   
-      
-      
+        
+        
     <section class="review-map" aria-labelledby="reviewMapTitle">
       <div class="review-section-heading">
         <span class="review-icon review-icon-map" aria-hidden="true"><svg viewBox="0 0 24 24" role="img" aria-label="图谱"><path d="M12 5v14" /><path d="M5 8h14" /><path d="M7 16h10" /><circle cx="12" cy="5" r="2" /><circle cx="5" cy="8" r="2" /><circle cx="19" cy="8" r="2" /><circle cx="7" cy="16" r="2" /><circle cx="17" cy="16" r="2" /></svg></span>
@@ -1024,8 +1434,8 @@
       </div>
     </section>
   
-      <section class="review-panel-grid" aria-label="固定评审项">
-        
+        <section class="review-panel-grid" aria-label="固定评审项">
+          
     <section class="review-panel review-panel-flow" id="review-panel-flow">
       <header class="review-panel-head">
         <span class="review-icon review-icon-flow" aria-hidden="true"><svg viewBox="0 0 24 24" role="img" aria-label="流程"><path d="M5 6.5h6.4a3.6 3.6 0 0 1 3.6 3.6v.8" /><path d="M15 17.5H8.6A3.6 3.6 0 0 1 5 13.9v-.8" /><path d="m12 8.5 3-3 3 3" /><path d="m8 15.5-3 3-3-3" /></svg></span>
@@ -1143,9 +1553,325 @@
       <ul class="review-panel-list"><li><strong class="review-detail-summary">关注生命周期</strong><span class="review-detail-body">：第一版要先定清一个 change 对一个 worktree 的默认模型。</span></li><li><strong class="review-detail-summary">关注范围识别</strong><span class="review-detail-body">：touched files 收集不稳会影响提交精度。</span></li><li><strong class="review-detail-summary">关注状态一致</strong><span class="review-detail-body">：git 成功与状态写回的顺序必须锁定。</span></li><li><strong class="review-detail-summary">待定命名规则</strong><span class="review-detail-body">：branch 和 worktree 默认命名还需要在实现里定稿。</span></li><li><strong class="review-detail-summary">待定豁免语义</strong><span class="review-detail-body">：脏仓门禁的 override 提示要足够明确。</span></li></ul>
     </section>
   
+        </section>
+        
+    <section class="review-business-evidence" aria-labelledby="reviewBusinessEvidenceTitle">
+      <div>
+        <p class="review-kicker">判断依据</p>
+        <h2 id="reviewBusinessEvidenceTitle">这些结论有 5 条依据可核对</h2>
+        <p>这里先保留清楚的业务结论；需要看原始依据时，可以直接定位到工程视图。</p>
+      </div>
+      <div class="review-business-evidence-actions">
+        
+          <button type="button" data-review-locate="review-evidence-problem-0d48d499ba">依据 1</button>
+        
+          <button type="button" data-review-locate="review-evidence-problem-e507dd6ebd">依据 2</button>
+        
+          <button type="button" data-review-locate="review-evidence-problem-4e7bbd3c0c">依据 3</button>
+        
+          <button type="button" data-review-locate="review-evidence-problem-42488a3b3b">依据 4</button>
+        
+          <button type="button" data-review-locate="review-evidence-problem-67b9f1d3ac">依据 5</button>
+        
+      </div>
+    </section>
+  
       </section>
       
-    <nav class="review-bottom-bar" aria-label="评审决定">
+    <section
+      class="review-projection review-projection-engineering"
+      id="reviewEngineeringView"
+      role="tabpanel"
+      aria-labelledby="reviewTabEngineering"
+      data-review-view="engineering"
+      data-review-model-digest="798d752621fbcfbe1678f50e68089732d244ebc06ed28c00f042733f5c7f57d6"
+      hidden
+    >
+      <header class="review-engineering-head">
+        <div>
+          <p class="review-kicker">工程追溯</p>
+          <h1>从同一结论核对任务、约束与证据</h1>
+          <p>这里展示落地所需的版本、任务、文件、测试与依据；底部确认动作仍绑定同一个评审基线。</p>
+        </div>
+        <label class="review-engineering-filter" for="reviewEngineeringFilter">
+          <span>筛选工程内容</span>
+          <input id="reviewEngineeringFilter" type="search" placeholder="搜索任务、约束或证据" autocomplete="off" />
+          <output id="reviewEngineeringFilterCount" for="reviewEngineeringFilter">共 33 项</output>
+        </label>
+      </header>
+      <div class="review-engineering-grid">
+        
+    <section class="review-engineering-section" id="review-engineering-trace" aria-labelledby="review-engineering-trace-title">
+      <header>
+        <h2 id="review-engineering-trace-title">版本与追溯</h2>
+        <p>确认这次评审来自哪份内容，并核对两个视图的共同指纹。</p>
+      </header>
+      <ul class="review-engineering-list">
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>评审版本</strong>
+        <code>v0006</code>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>工作单元</strong>
+        <code>wu-20260607130707-4f012e44</code>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>内容指纹</strong>
+        <code>798d752621fbcfbe1678f50e68089732d244ebc06ed28c00f042733f5c7f57d6</code>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>来源摘要</strong>
+        <code>a3dbf01f4a3309d372002e417ffc2bc596b5e5c68a5a60c393547894ef72cefc</code>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>项目位置</strong>
+        <code>/Users/chaojifeng/Projects/harness-engineer/openprd</code>
+      </li></ul>
+    </section>
+  
+        
+    <section class="review-engineering-section" id="review-engineering-delivery" aria-labelledby="review-engineering-delivery-title">
+      <header>
+        <h2 id="review-engineering-delivery-title">交付与任务</h2>
+        <p>查看必须交付的能力、质量要求和已经绑定的任务。</p>
+      </header>
+      <ul class="review-engineering-list">
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>交付项 1</strong>
+        <span>支持显式 worktree / branch 配置，或提供隔离运行包装命令。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>交付项 2</strong>
+        <span>支持检测主工作区脏状态，并在 finish --commit 前阻断高风险路径。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>交付项 3</strong>
+        <span>支持基于 write-scope 或 touched files 生成本任务提交集。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>交付项 4</strong>
+        <span>支持在 loop 状态、session 日志和测试报告中记录 commit 关联信息。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>交付项 5</strong>
+        <span>支持为未满足 commit 前置条件的任务给出清晰诊断与恢复指引。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>质量要求 1</strong>
+        <span>默认路径必须安全，不能把无关改动静默卷入 commit。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>质量要求 2</strong>
+        <span>行为必须可追踪，可从状态文件复原任务执行链路。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>质量要求 3</strong>
+        <span>对现有 loop 用户保持兼容，新增能力应尽量显式开启或有明确默认策略。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>质量要求 4</strong>
+        <span>失败路径必须可恢复，不能留下半记录状态。</span>
+      </li></ul>
+    </section>
+  
+        
+    <section class="review-engineering-section" id="review-engineering-constraints" aria-labelledby="review-engineering-constraints-title">
+      <header>
+        <h2 id="review-engineering-constraints-title">约束与依赖</h2>
+        <p>实现时不能越过的技术、合规与依赖边界。</p>
+      </header>
+      <ul class="review-engineering-list">
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>技术约束 1</strong>
+        <span>基于现有 openprd loop / git 流程扩展，不重写整套任务调度。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>技术约束 2</strong>
+        <span>兼容当前 feature-list、loop-state、agent-sessions 与 test-reports 结构。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>技术约束 3</strong>
+        <span>需要同时考虑 worktree、命名分支与 detached HEAD 的兼容行为。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>合规约束 1</strong>
+        <span>提交与状态写回不能泄露用户本地无关改动或敏感信息。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>依赖 1</strong>
+        <span>Git worktree 能力。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>依赖 2</strong>
+        <span>现有 loop task executionStrategy.writeScope 与 finish / verify 流程。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>依赖 3</strong>
+        <span>OpenPrd 的状态文件、review / change / tasks 主流程。</span>
+      </li></ul>
+    </section>
+  
+        
+    <section class="review-engineering-section" id="review-engineering-files" aria-labelledby="review-engineering-files-title">
+      <header>
+        <h2 id="review-engineering-files-title">文件与改动范围</h2>
+        <p>任务或证据已经明确关联的文件位置。</p>
+      </header>
+      <p class="review-engineering-empty">当前评审稿尚未绑定具体文件。</p>
+    </section>
+  
+        
+    <section class="review-engineering-section" id="review-engineering-acceptance" aria-labelledby="review-engineering-acceptance-title">
+      <header>
+        <h2 id="review-engineering-acceptance-title">测试与验收</h2>
+        <p>实现完成后据此判断是否真的达到目标。</p>
+      </header>
+      <ul class="review-engineering-list">
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>验收 1</strong>
+        <span>在隔离 worktree 中连续完成多个 loop 任务时，每个任务都能生成独立 commit，并把 commitSha 写回状态。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>验收 2</strong>
+        <span>在脏主工作区直接尝试 finish --commit 时，会收到明确阻断和豁免提示。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>验收 3</strong>
+        <span>从状态文件和 session 日志可以追溯每个任务对应的 worktree、branch、commit 和测试报告。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>验收 4</strong>
+        <span>新能力不破坏现有 loop 的 plan、next、run、finish、verify 基本路径。</span>
+      </li></ul>
+    </section>
+  
+        
+    <section class="review-engineering-section" id="review-engineering-handoff" aria-labelledby="review-engineering-handoff-title">
+      <header>
+        <h2 id="review-engineering-handoff-title">交接信息</h2>
+        <p>明确由谁继续、下一步做什么、影响哪些范围。</p>
+      </header>
+      <ul class="review-engineering-list">
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>负责人</strong>
+        <span>Codex</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>下一步</strong>
+        <span>完成 review 确认后生成 change 和 tasks，再实现 loop 的隔离 worktree 提交闭环。</span>
+      </li>
+      <li class="review-engineering-item" data-review-filter-item>
+        <strong>目标范围</strong>
+        <span>OpenPrd</span>
+      </li></ul>
+    </section>
+  
+      </div>
+      <section class="review-evidence-section" aria-labelledby="reviewEvidenceTitle">
+        <header>
+          <p class="review-kicker">共享证据</p>
+          <h2 id="reviewEvidenceTitle">证据索引</h2>
+          <p>业务视图里的“查看依据”会定位到这里；筛选不会改变证据与评审结论的绑定关系。</p>
+        </header>
+        <div class="review-evidence-list">
+          
+    <article
+      class="review-evidence-item review-engineering-item"
+      id="review-evidence-problem-0d48d499ba"
+      tabindex="-1"
+      data-review-filter-item
+    >
+      <div class="review-evidence-index">1</div>
+      <div>
+        <h3>依据 1</h3>
+        <p>最近一个月能查到多次 loop finish 通过，但没有对应的 Commit 记录。</p>
+        <div class="review-evidence-meta">
+          <span>问题依据</span>
+          
+          
+        </div>
+      </div>
+    </article>
+  
+    <article
+      class="review-evidence-item review-engineering-item"
+      id="review-evidence-problem-e507dd6ebd"
+      tabindex="-1"
+      data-review-filter-item
+    >
+      <div class="review-evidence-index">2</div>
+      <div>
+        <h3>依据 2</h3>
+        <p>当前 openprd/.openprd/harness/feature-list.json 里 22 个 done 任务的 commitSha 为空。</p>
+        <div class="review-evidence-meta">
+          <span>问题依据</span>
+          
+          
+        </div>
+      </div>
+    </article>
+  
+    <article
+      class="review-evidence-item review-engineering-item"
+      id="review-evidence-problem-4e7bbd3c0c"
+      tabindex="-1"
+      data-review-filter-item
+    >
+      <div class="review-evidence-index">3</div>
+      <div>
+        <h3>依据 3</h3>
+        <p>现有 loop --run 直接在当前 cwd 执行，未自动创建或切换 worktree。</p>
+        <div class="review-evidence-meta">
+          <span>问题依据</span>
+          
+          
+        </div>
+      </div>
+    </article>
+  
+    <article
+      class="review-evidence-item review-engineering-item"
+      id="review-evidence-problem-42488a3b3b"
+      tabindex="-1"
+      data-review-filter-item
+    >
+      <div class="review-evidence-index">4</div>
+      <div>
+        <h3>依据 4</h3>
+        <p>现有 loop --finish --commit 仍按 git add -A 提交，提交范围过宽。</p>
+        <div class="review-evidence-meta">
+          <span>问题依据</span>
+          
+          
+        </div>
+      </div>
+    </article>
+  
+    <article
+      class="review-evidence-item review-engineering-item"
+      id="review-evidence-problem-67b9f1d3ac"
+      tabindex="-1"
+      data-review-filter-item
+    >
+      <div class="review-evidence-index">5</div>
+      <div>
+        <h3>依据 5</h3>
+        <p>当前隔离副本多为 detached HEAD，缺少稳定的 branch / worktree / commit 绑定。</p>
+        <div class="review-evidence-meta">
+          <span>问题依据</span>
+          
+          
+        </div>
+      </div>
+    </article>
+  
+        </div>
+      </section>
+      <p class="review-engineering-no-results" id="reviewEngineeringNoResults" hidden>没有找到匹配内容，请换一个更短的关键词。</p>
+    </section>
+  
+      
+    <nav class="review-bottom-bar" aria-label="评审决定" data-review-model-digest="798d752621fbcfbe1678f50e68089732d244ebc06ed28c00f042733f5c7f57d6">
       <div class="review-bottom-bar-inner">
         <button type="button" class="review-bottom-action revise" data-copy-value="OpenPrD Review: 需要调整
 
@@ -1376,8 +2102,25 @@ openprd review . --mark needs-revision --version &#39;v0006&#39; --digest &#39;a
     ]
   },
   &quot;presentationFeedback&quot;: [],
-  &quot;exportedAt&quot;: &quot;2026-07-06T16:25:36.248Z&quot;
-}" title="openprd review . --mark needs-revision --version &#39;v0006&#39; --digest &#39;a3dbf01f4a3309d372002e417ffc2bc596b5e5c68a5a60c393547894ef72cefc&#39; --work-unit &#39;wu-20260607130707-4f012e44&#39; --notes &#39;说明需要调整的点&#39;">
+  &quot;reviewModel&quot;: {
+    &quot;schema&quot;: &quot;openprd.review-model.v1&quot;,
+    &quot;digest&quot;: &quot;798d752621fbcfbe1678f50e68089732d244ebc06ed28c00f042733f5c7f57d6&quot;,
+    &quot;approvalContract&quot;: {
+      &quot;schema&quot;: &quot;openprd.review-approval.v1&quot;,
+      &quot;approvalId&quot;: &quot;review:v0006:798d752621fbcfbe&quot;,
+      &quot;decisionScope&quot;: &quot;review-version&quot;,
+      &quot;modelDigest&quot;: &quot;798d752621fbcfbe1678f50e68089732d244ebc06ed28c00f042733f5c7f57d6&quot;,
+      &quot;snapshotDigest&quot;: &quot;a3dbf01f4a3309d372002e417ffc2bc596b5e5c68a5a60c393547894ef72cefc&quot;,
+      &quot;versionId&quot;: &quot;v0006&quot;,
+      &quot;workUnitId&quot;: &quot;wu-20260607130707-4f012e44&quot;,
+      &quot;allowedDecisions&quot;: [
+        &quot;confirmed&quot;,
+        &quot;needs-revision&quot;
+      ]
+    }
+  },
+  &quot;exportedAt&quot;: &quot;2026-07-11T11:23:43.080Z&quot;
+}" title="复制需要调整的反馈">
           需要调整
         </button>
         <button type="button" class="review-bottom-action confirm" data-copy-value="OpenPrD Review: 认可并继续下一步
@@ -1611,8 +2354,25 @@ openprd review . --mark confirmed --version &#39;v0006&#39; --digest &#39;a3dbf0
     ]
   },
   &quot;presentationFeedback&quot;: [],
-  &quot;exportedAt&quot;: &quot;2026-07-06T16:25:36.248Z&quot;
-}" title="openprd review . --mark confirmed --version &#39;v0006&#39; --digest &#39;a3dbf01f4a3309d372002e417ffc2bc596b5e5c68a5a60c393547894ef72cefc&#39; --work-unit &#39;wu-20260607130707-4f012e44&#39;">
+  &quot;reviewModel&quot;: {
+    &quot;schema&quot;: &quot;openprd.review-model.v1&quot;,
+    &quot;digest&quot;: &quot;798d752621fbcfbe1678f50e68089732d244ebc06ed28c00f042733f5c7f57d6&quot;,
+    &quot;approvalContract&quot;: {
+      &quot;schema&quot;: &quot;openprd.review-approval.v1&quot;,
+      &quot;approvalId&quot;: &quot;review:v0006:798d752621fbcfbe&quot;,
+      &quot;decisionScope&quot;: &quot;review-version&quot;,
+      &quot;modelDigest&quot;: &quot;798d752621fbcfbe1678f50e68089732d244ebc06ed28c00f042733f5c7f57d6&quot;,
+      &quot;snapshotDigest&quot;: &quot;a3dbf01f4a3309d372002e417ffc2bc596b5e5c68a5a60c393547894ef72cefc&quot;,
+      &quot;versionId&quot;: &quot;v0006&quot;,
+      &quot;workUnitId&quot;: &quot;wu-20260607130707-4f012e44&quot;,
+      &quot;allowedDecisions&quot;: [
+        &quot;confirmed&quot;,
+        &quot;needs-revision&quot;
+      ]
+    }
+  },
+  &quot;exportedAt&quot;: &quot;2026-07-11T11:23:43.080Z&quot;
+}" title="复制认可并继续的确认结果">
           认可并继续
         </button>
       </div>
@@ -1645,6 +2405,100 @@ openprd review . --mark confirmed --version &#39;v0006&#39; --digest &#39;a3dbf0
             flashCopied(button);
           });
         });
+
+        const reviewTabs = Array.from(document.querySelectorAll('[data-review-tab]'));
+        const reviewViews = Array.from(document.querySelectorAll('[data-review-view]'));
+        const engineeringFilter = document.getElementById('reviewEngineeringFilter');
+        const engineeringFilterCount = document.getElementById('reviewEngineeringFilterCount');
+        const engineeringNoResults = document.getElementById('reviewEngineeringNoResults');
+        const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function setReviewView(view, updateUrl = true) {
+          const nextView = view === 'engineering' ? 'engineering' : 'business';
+          reviewTabs.forEach((tab) => {
+            const active = tab.dataset.reviewTab === nextView;
+            tab.classList.toggle('active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            tab.tabIndex = active ? 0 : -1;
+          });
+          reviewViews.forEach((panel) => {
+            panel.hidden = panel.dataset.reviewView !== nextView;
+          });
+          document.documentElement.dataset.reviewView = nextView;
+          if (updateUrl) {
+            try {
+              const url = new URL(window.location.href);
+              if (nextView === 'engineering') url.searchParams.set('view', 'engineering');
+              else url.searchParams.delete('view');
+              window.history.replaceState(null, '', url);
+            } catch (error) {
+              // Local file previews can deny history updates; the view still switches.
+            }
+          }
+        }
+
+        reviewTabs.forEach((tab, index) => {
+          tab.addEventListener('click', () => setReviewView(tab.dataset.reviewTab));
+          tab.addEventListener('keydown', (event) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            let nextIndex = index;
+            if (event.key === 'ArrowLeft') nextIndex = (index - 1 + reviewTabs.length) % reviewTabs.length;
+            if (event.key === 'ArrowRight') nextIndex = (index + 1) % reviewTabs.length;
+            if (event.key === 'Home') nextIndex = 0;
+            if (event.key === 'End') nextIndex = reviewTabs.length - 1;
+            const nextTab = reviewTabs[nextIndex];
+            setReviewView(nextTab.dataset.reviewTab);
+            nextTab.focus();
+          });
+        });
+
+        function applyEngineeringFilter() {
+          if (!engineeringFilter) return;
+          const query = engineeringFilter.value.trim().toLocaleLowerCase('zh-CN');
+          const items = Array.from(document.querySelectorAll('#reviewEngineeringView [data-review-filter-item]'));
+          let visibleCount = 0;
+          items.forEach((item) => {
+            const matches = !query || item.textContent.toLocaleLowerCase('zh-CN').includes(query);
+            item.hidden = !matches;
+            if (matches) visibleCount += 1;
+          });
+          if (engineeringFilterCount) {
+            engineeringFilterCount.textContent = query ? '找到 ' + visibleCount + ' 项' : '共 ' + items.length + ' 项';
+          }
+          if (engineeringNoResults) engineeringNoResults.hidden = visibleCount !== 0;
+        }
+
+        if (engineeringFilter) {
+          engineeringFilter.addEventListener('input', applyEngineeringFilter);
+          applyEngineeringFilter();
+        }
+
+        document.querySelectorAll('[data-review-locate]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const target = document.getElementById(button.dataset.reviewLocate || '');
+            if (!target) return;
+            setReviewView('engineering');
+            if (engineeringFilter) {
+              engineeringFilter.value = '';
+              applyEngineeringFilter();
+            }
+            window.requestAnimationFrame(() => {
+              target.classList.add('is-located');
+              target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'center' });
+              target.focus({ preventScroll: true });
+              window.setTimeout(() => target.classList.remove('is-located'), 1800);
+            });
+          });
+        });
+
+        try {
+          const initialView = new URL(window.location.href).searchParams.get('view');
+          setReviewView(initialView === 'engineering' ? 'engineering' : 'business', false);
+        } catch (error) {
+          setReviewView('business', false);
+        }
+
         document.querySelectorAll('.review-direction-select').forEach((button) => {
           button.addEventListener('click', () => {
             document.querySelectorAll('.review-direction-card').forEach((card) => {

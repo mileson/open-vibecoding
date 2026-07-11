@@ -6,6 +6,21 @@
 
 ## 服务边界
 
+### Agent Control Plane v0.2
+
+OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下文 + 作用域门禁”的控制平面。Markdown 继续作为人类可读入口，但不再承担并发真相源职责。
+
+- `src/kernel/` 提供 `.openprd/manifest.json`、不可变 Project Ledger、哈希链校验、CAS 追加、损坏修复和 projection replay。`state/events.jsonl` 等旧文件保留为一个兼容周期的投影，不作为并发写入仲裁源。
+- `src/runtime/` 提供 TaskRuntime：`claim / heartbeat / release / finish / recover`、lease 过期恢复、lane binding 和 write-set 冲突检测。并行线程先声明写集，再通过原子存储竞争任务所有权，避免“多个 Agent 同时勾同一 Markdown checkbox”。
+- `src/context/` 提供 ContextRequest / ContextCapsule v1。完整胶囊默认最多 800 tokens，增量胶囊最多 250 tokens；按 authority、freshness、relevance 排序，文件默认只传 digest + path，统一脱敏，并把缓存与 telemetry 放在独立副作用通道。
+- `src/gates/` 提供 project/change/work-unit/task/lane/operation 六级作用域门禁。evidence、approval、expiry、revoke 和 subject digest 必须精确绑定，避免某一任务的批准或证据污染整个项目。
+- `src/review-model.js` 将同一份 ReviewModel 投影为默认业务视角和可切换工程视角。两种视图共享 digest、时间线、证据和批准合同，业务评审不再被内部字段淹没，工程人员仍可追溯到依据。
+- `src/knowledge-v3/` 把经验生命周期收敛为 validate、promote、deprecate、supersede、query，并用 scope、TTL、token budget、evidence 与 reviewer 控制长期知识进入 Agent 上下文的条件。
+- `src/adapters/` 为 Codex、Claude Code、Cursor 提供统一 detect/capabilities/install/normalize/render/handoff SPI。能力缺口显式暴露，不伪装三端生命周期完全一致；共享 skill 保持字节一致，命令与 hook 允许平台专属实现。
+- `src/upgrade/` 与 `src/fleet.js` 提供 plan、dry-run、preimage backup、checksum/CAS、atomic apply、restore 和批量事务报告。归档、未知目录、过新版本和未显式处理的软链接默认拒绝写入。
+
+控制平面写入遵循一条顺序：先在 manifest 中协商协议版本，再在 TaskRuntime claim 工作单元并声明 write-set，之后追加 ledger event，最后重建或刷新人类可读投影。任何一步失败都不能让“任务状态”和“文件事实”各自成功一半。
+
 - CLI 入口: `bin/openprd.js` 只负责调用 `src/openprd.js` 的 `main(argv)` 并设置退出码。
 - CLI 分发: `src/openprd.js` 负责命令分发、workspace 初始化、`release` 项目版本轨道、freeze、handoff、change 生成和对外导出。
   - `handoff` 导出会同时写出结构化 `changeSummary` 与 `releaseNotes`；项目启用 `release` 版本轨道时优先读取当前项目版本下累计的变化条目，并额外带上 `projectVersion`。
@@ -14,6 +29,7 @@
 - 工作区核心: `src/workspace-core.js` 负责 workspace 骨架、迁移、校验、版本索引、事件日志和共享文档渲染。
   - 随包同步 `.openprd/README.md` 与 `templates/*/README.md` 的简体中文默认文档，以及配套的 `README_EN.md` 英文切换入口；如需兼容旧外链，可额外保留 `README_CN.md` 跳转页。
   - 负责 `.openprd/design/` 设计框架层的初始化与迁移：写入 lenses、themes、layouts、components、recipes、checklists、assets、templates 和 `active/` 合同文件，并把 `design.frameworkRoot`、`design.templateRoot` 与活动合同路径写入 `.openprd/config.yaml`。
+  - `design/active/` 使用中立模板初始化；package 自身正在填写的活动设计合同不会复制到新项目，update 也不会覆盖旧项目已经写实的合同。
   - 场景判定会忽略 `.openprd`、`.codex/.claude/.cursor`、OpenPrd managed `AGENTS.md/CLAUDE.md`，以及仅包含默认占位文档的 `docs/basic/`，避免 fresh init 目录因为自生成脚手架被误判成 `cold-start-existing-project`。
   - 把 `state/current.json` 和 `.openprd/harness/session-states/<session>.json` 视为两层状态：活跃 lane 由显式 `sessionId`、当前 requirement gate 或 session binding 决定，`clarify/capture/synthesize/review/freeze/handoff` 等工作流优先读写 lane-scoped state，避免新需求继续复用旧需求的 `current.json`。
 - 前端模板起步层: `src/design-starter.js` 负责 `openprd design-starter`，从 `.openprd/design/templates/` 读取内置模板，解析模板顶部的默认 `lens/theme/layout` 注释，并把所选模板稳定写入当前项目入口文件（例如 `index.html`）。入口生成后默认立即进入 `Patch Mode`：围绕同一路径继续细化结构、内容和样式，而不是 delete-first 后再重建。
@@ -164,6 +180,7 @@
   - `--update-openprd` 刷新已有 OpenPrd 工作区、识别只有旧根目录 `openprd/changes|specs|archive/changes` 工作产物的项目并触发迁移，同时顺带补齐历史 PRD work unit 绑定。
   - 项目自身 standards 或 validate 缺口只作为项目健康问题报告，不阻断生成引导更新；`--backfill-work-units` 可只刷新版本身份和稳定评审 artifact。
   - `doctor` 额外读取 `workspaces.jsonl` 与 `sessions.jsonl`，并对“过宽 root”与“父子嵌套 workspace”发出 hygiene 警告，降低多项目并行时的恢复歧义。
+  - fleet 写入使用 `src/upgrade/fleet-transaction.js` 分阶段执行。每个目标先记录版本、checksum 和备份，再原子替换；目标在写入前发生变化时 CAS 失败并回滚，不继续覆盖用户的新改动。
 - 持续调研: `src/discovery.js` 负责 discovery run、source inventory、coverage matrix、claims 和 discovery 验证。
 - OpenPrd change 文件域: `src/openspec/` 负责 OpenPrd change/spec/task 的读写、验证、应用、归档和旧目录迁移。
   - 新写入统一落在 `.openprd/changes/`、`.openprd/specs/` 与 `.openprd/archive/changes/`；旧版根目录 `openprd/changes|specs|archive/changes` 只由 update / setup / fleet 迁移器读取，运行期不再作为普通 change 查找来源。
@@ -183,6 +200,9 @@
 - `@openprd/cli` 通过 `package.json > bin.openprd -> bin/openprd.js` 暴露全局命令。文档默认推荐 `npm install -g @openprd/cli`，同时保留 `npx @openprd/cli@latest ...` 作为不依赖 PATH 的启动兜底；Windows 下 npm 全局可执行文件位于 prefix 目录本身（常见是 `%AppData%\npm`），不是 `{prefix}/bin`，排查命令缺失时先运行 `where openprd` 与 `npm config get prefix`。
 - `openprd self-update [--check] [--dry-run] [--json]` 是 CLI 自身更新入口。`--check` 只读取 npm 已发布版本、当前安装版本与 workspace registry，不写 CLI、项目、registry 或 harness 状态；默认执行路径预备运行 `npm install -g @openprd/cli@latest`，并在成功后重新读取安装后的 `openprd --version`，顺带给出旧项目刷新候选。dry-run 只返回计划；本地源码 checkout 下真实执行会失败并提示改用全局安装或本地开发流程。
 - `openprd upgrade [path] [--fleet] [--dry-run] ...` 是组合升级入口。它先执行 self-update，成功后重新解析 PATH 中的 `openprd`，再用新 CLI 执行 `update <path>`；`--fleet` 模式执行 `fleet <root> --update-openprd`。结果按 `selfUpdateOk` 和 `projectRefreshOk` 分阶段报告，self-update 失败时不刷新项目。
+- `openprd runtime <path> --action <claim|heartbeat|release|finish|recover|status>` 是 TaskRuntime 命令入口；claim 可带任务、lane、owner、lease 和 write-set，冲突与过期恢复都返回结构化原因。
+- `openprd gate <path> --action <define|evaluate|approve|revoke|status>` 是作用域门禁入口；批准必须携带匹配 gate、scope、operation、subject digest 和有效期。
+- `openprd init/setup/update` 的 `--symlink-strategy <refuse|materialize>` 控制用户级适配器目录中的软链接风险。默认拒绝；显式 materialize 时先把链接和目标快照写入 `--install-safety-backup-root`，再替换为独立文件。
 - `openprd dev-check <path> <file...>` 和 `node scripts/openprd-dev-check.mjs <path> <file...>` 是 Agent 编辑代码文件前后的轻量工具入口，输出每个文件的行数、问题级别和下一步动作建议。
 - dev-check 自动优化模式默认开启（`developmentStandards.autoRefactor.enabled`）：命中 attention/warning 时指示 Agent 本轮直接完成高内聚低耦合拆分。
   - 自动优化模式下 wrap-up 标题为“OpenPRD 自动优化报告”，表头换成问题级别、源文件规模、优化原因，并附开关确认话术。
@@ -242,6 +262,7 @@
 
 - 用户命令进入 `main(argv)`，由 `src/cli/args.js` 解析 flags 和 positionals。
 - `main` 根据命令分发到 workspace workflow、review、diagram、standards、quality、visual compare、dev standards、growth、loop、openspec、discovery、fleet、self-update / upgrade 或 run 模块。
+- `run --context` 是业务状态的纯读取入口，不更新 adoption、run-state、task graph 或 progress；只有 hook 注入模式会在 `.openprd/harness/context-cache/` 与 `context-telemetry.jsonl` 写缓存和观测数据。相同 revision 的后续轮次优先返回 delta capsule。
 - 工作区状态主要读写 `.openprd/` 下的 config、templates、state、engagements、exports、harness、changes、specs 和 archive 文件。
   - JSON/Markdown 作为事实源和归档层；澄清阶段只输出对话内提纲，评审与质量阶段以 HTML artifact 作为主要确认与评审界面。
   - `setup/update/fleet --update-openprd` 会把旧根目录 `openprd/` 中的 OpenPrd 工作产物迁入 `.openprd/`，有冲突时保留旧文件并报告人工处理。

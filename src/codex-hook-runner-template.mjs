@@ -765,45 +765,22 @@ function detectExecutionSignals(eventName, payload) {
   };
 }
 
-function latestSessionRegistryEntry(root, sessionId) {
-  if (!sessionId) {
-    return null;
-  }
-  const filePath = sessionRegistryPath();
-  if (!fs.existsSync(filePath)) {
-    return null;
-  }
-  const workspaceRoot = path.resolve(root);
-  let latest = null;
-  for (const line of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
-    if (!line.trim()) {
-      continue;
-    }
-    try {
-      const entry = JSON.parse(line);
-      if (entry?.sessionId !== sessionId) {
-        continue;
-      }
-      const entryRoot = entry?.workspaceRoot ? path.resolve(String(entry.workspaceRoot)) : null;
-      if (entryRoot && entryRoot !== workspaceRoot) {
-        continue;
-      }
-      latest = entry;
-    } catch {}
-  }
-  return latest;
-}
-
 function rememberAutomationMode(root, sessionId, payload, signals, laneKind) {
   if (!sessionId) {
     return null;
   }
-  return writeSessionRegistryEntry(root, sessionId, {
+  const gateStatus = laneKind === 'automation' ? 'automation-safe-mode' : 'openprd-opt-in';
+  const existing = readSessionBinding(root, sessionId);
+  // 每个 hook 事件都会经过这里；同一会话的 lane 记忆只需要落一次盘。
+  if (existing?.laneKind === laneKind && existing?.gateStatus === gateStatus) {
+    return existing;
+  }
+  return writeSessionBinding(root, sessionId, {
     laneKind,
     tool: 'openprd-hook',
     promptPreview: preview(promptText(payload) || payloadText(payload), 500),
     gateActive: false,
-    gateStatus: laneKind === 'automation' ? 'automation-safe-mode' : 'openprd-opt-in',
+    gateStatus,
     title: laneKind === 'automation'
       ? 'Unattended automation bypassed OpenPrd'
       : 'Unattended automation explicitly enabled OpenPrd',
@@ -820,7 +797,7 @@ function automationBypassDecision(root, eventName, payload, sessionId) {
   if (signals.isAutomation) {
     return { bypass: true, optIn: false, remembered: false, signals };
   }
-  const remembered = eventName === 'UserPromptSubmit' ? null : latestSessionRegistryEntry(root, sessionId);
+  const remembered = eventName === 'UserPromptSubmit' ? null : readSessionBinding(root, sessionId);
   if (remembered?.laneKind === 'automation' && remembered?.gateStatus === 'automation-safe-mode') {
     return { bypass: true, optIn: false, remembered: true, signals };
   }
@@ -912,44 +889,68 @@ function readSessionBinding(root, sessionId = null) {
   return readJsonSync(sessionBindingPath(root, sessionId), null);
 }
 
-function appendJsonLine(filePath, value) {
+function appendJsonLineAtomic(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.appendFileSync(filePath, JSON.stringify(value) + '\n');
+  const fd = fs.openSync(filePath, 'a', 0o600);
+  try {
+    fs.writeSync(fd, `${JSON.stringify(value)}\n`);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
-function writeSessionRegistryEntry(root, sessionId, patch = {}) {
+function sessionRegistryProjection(entry = {}) {
+  return {
+    sessionId: entry.sessionId ?? null,
+    workspaceRoot: entry.workspaceRoot ?? null,
+    laneKind: entry.laneKind ?? 'requirement',
+    tool: entry.tool ?? 'codex',
+    threadId: entry.threadId ?? null,
+    changeId: entry.changeId ?? null,
+    taskHandle: entry.taskHandle ?? null,
+    workUnitId: entry.workUnitId ?? null,
+    versionId: entry.versionId ?? null,
+    digest: entry.digest ?? null,
+    title: entry.title ?? null,
+    targetRoot: entry.targetRoot ?? null,
+    promptPreview: entry.promptPreview ?? null,
+    reviewStatus: entry.reviewStatus ?? null,
+    gateStatus: entry.gateStatus ?? null,
+    gateActive: entry.gateActive === true,
+  };
+}
+
+function writeSessionRegistryEntry(root, sessionId, binding, previous = null) {
   if (!sessionId) {
     return null;
   }
   const workspaceRoot = path.resolve(root);
-  const recordedAt = patch.recordedAt || now();
-  const entry = {
-    version: 1,
+  const projection = sessionRegistryProjection({
+    ...binding,
     sessionId,
     workspaceRoot,
+  });
+  const previousProjection = previous
+    ? sessionRegistryProjection({ ...previous, sessionId, workspaceRoot })
+    : null;
+  if (previousProjection && JSON.stringify(previousProjection) === JSON.stringify(projection)) {
+    return null;
+  }
+  const recordedAt = binding.updatedAt || now();
+  const entry = {
+    version: 1,
+    ...projection,
     realpath: workspaceRoot,
-    laneKind: patch.laneKind || 'requirement',
-    tool: patch.tool || 'codex',
-    threadId: patch.threadId || null,
-    changeId: patch.changeId || null,
-    taskHandle: patch.taskHandle || null,
-    workUnitId: patch.workUnitId || null,
-    versionId: patch.versionId || null,
-    digest: patch.digest || null,
-    title: patch.title || null,
-    targetRoot: patch.targetRoot ? path.resolve(patch.targetRoot) : null,
-    promptPreview: patch.promptPreview || null,
-    reviewStatus: patch.reviewStatus || null,
-    gateStatus: patch.gateStatus || null,
-    gateActive: patch.gateActive === true,
-    statePath: patch.statePath || sessionStatePath(root, sessionId),
-    bindingPath: patch.bindingPath || sessionBindingPath(root, sessionId),
-    firstRegisteredAt: patch.firstRegisteredAt || recordedAt,
+    targetRoot: projection.targetRoot ? path.resolve(projection.targetRoot) : null,
+    statePath: sessionStatePath(root, sessionId),
+    bindingPath: sessionBindingPath(root, sessionId),
+    firstRegisteredAt: previous?.createdAt || binding.createdAt || recordedAt,
     lastRegisteredAt: recordedAt,
-    lastUpdatedAt: patch.updatedAt || recordedAt,
+    lastUpdatedAt: recordedAt,
     recordedAt,
   };
-  appendJsonLine(sessionRegistryPath(), entry);
+  appendJsonLineAtomic(sessionRegistryPath(), entry);
   return entry;
 }
 
@@ -968,25 +969,7 @@ function writeSessionBinding(root, sessionId, patch = {}) {
     updatedAt: patch.updatedAt ?? now(),
   };
   writeJsonSync(filePath, next);
-  writeSessionRegistryEntry(root, sessionId, {
-    laneKind: patch.laneKind ?? previous?.laneKind ?? 'requirement',
-    tool: patch.tool ?? previous?.tool ?? 'codex',
-    threadId: patch.threadId ?? previous?.threadId ?? null,
-    changeId: patch.changeId ?? next.changeId ?? null,
-    taskHandle: patch.taskHandle ?? next.taskHandle ?? null,
-    workUnitId: patch.workUnitId ?? next.workUnitId ?? null,
-    versionId: patch.versionId ?? next.versionId ?? null,
-    digest: patch.digest ?? next.digest ?? null,
-    title: patch.title ?? next.title ?? null,
-    targetRoot: patch.targetRoot ?? next.targetRoot ?? null,
-    promptPreview: patch.promptPreview ?? next.promptPreview ?? null,
-    reviewStatus: patch.reviewStatus ?? next.reviewStatus ?? null,
-    gateStatus: patch.gateStatus ?? next.gateStatus ?? null,
-    gateActive: patch.gateActive ?? next.gateActive ?? false,
-    bindingPath: filePath,
-    statePath: sessionStatePath(root, sessionId),
-    updatedAt: next.updatedAt,
-  });
+  writeSessionRegistryEntry(root, sessionId, next, previous);
   return next;
 }
 
@@ -1561,6 +1544,9 @@ function knowledgeSkillContextLines(knowledgeSkills) {
 }
 
 function renderRunContextText(result) {
+  if (String(result?.contextText || '').trim()) {
+    return String(result.contextText).trim();
+  }
   const lines = [
     '当前进展参考',
     '当前项目: ' + result.projectRoot,
@@ -3507,7 +3493,9 @@ function largeUiVisualDirectionMessage() {
     'OpenPrd 大界面改动视觉方案评审:',
     '位置: 需求分流之后、PRD 定稿或实现开工之前；它不同于 review.html，也不同于实现后的 visual-compare。',
     '判断: 先从用户目标、信息架构变化、视觉决策成本和验收风险判断是否需要方向评审，不用关键词触发。会决定首屏、核心布局、主视觉、关键路径、组件层级/密度，或用户需要先选设计方向时触发。',
-    '步骤: 已有界面时用 Codex Computer Use 进入产品内对应功能并截当前真实界面；冷启动没有现有界面时，基于已确认 PRD、用户画像、第一版切片和视觉目标写设计 brief。brief 必须写清用途、受众、气质端点、约束和记忆点，3 个方向要分别说明审美主张和主动避开的模板味。然后按生图路由调用内置生图工具（Codex=`imagegen`/Image 2，Cursor=`GenerateImage`；都不可用时按 `.openprd/harness/image-generation-preference.json` 的用户已确认偏好，没有偏好先问用户）生成至少 3 个不同设计思想方向；把效果图横向拼成一张带 1/2/3 序号的大图，先作为候选效果图给用户评审，不要默认写入 `.openprd/harness/visual-reviews/` 当验收参考。',
+    '自动性: 用户不需要额外提出“请生图”。只要语义判断命中大界面改动或视觉决策成本高，就主动完成 3 方向生成；卡片宽度、间距、对齐、颜色、圆角、字号等轻量微调不触发。',
+    '步骤: 已有界面时，Codex 原生 App 用 Computer Use，Codex 网页环境用 Chrome 插件的任务专用窗口，Cursor 用当前可用的浏览器或项目预览能力，进入对应功能并截当前真实界面。三个方向必须把同一张截图作为 image-to-image 参考；除非用户明确要求换风格，否则锁定现有字体角色、色彩系统、明暗模式、表面语言、圆角/边框/阴影、图标语言、平台框架和信息密度，只探索布局、信息层级、导航、关键路径和空间构图。冷启动没有现有界面时，基于已确认 PRD、用户画像、第一版切片和视觉目标写 design brief，不伪造修改前截图。brief 必须写清用途、受众、气质端点、约束和记忆点，3 个方向要分别说明审美主张和主动避开的模板味。然后按生图路由调用内置生图工具（Codex=`imagegen`/Image 2，Cursor=`GenerateImage`；都不可用时按 `.openprd/harness/image-generation-preference.json` 的用户已确认偏好，没有偏好先问用户）生成至少 3 个不同设计思想方向；把效果图横向拼成一张带 1/2/3 序号的大图，先作为候选效果图给用户评审，不要默认写入 `.openprd/harness/visual-reviews/` 当验收参考。',
+    '质量: 每个方向都要从用途、用户、业务约束、核心动作和唯一记忆点出发，同时检查字体角色、色彩、空间构图、信息层级、表面/图标语言和动效含义；拒绝无依据蓝紫渐变、默认字体、等权白卡堆叠、过量大圆角、无语境装饰和只换颜色的伪方向。',
     '交互: 主动追问三件事：是否符合预期、是否纳入后续效果图/实现截图对比、是否按此继续后续实现。只有用户确认纳入后续对比或继续实现后，才把选定方向、整张图或其中子图整理成 reference-set 并写入 `.openprd/harness/visual-reviews/`；用户确认前，不进入大 UI 实现，也不要声称界面方案已定。',
     '多对象参考处理: 如果候选效果图是一张图里包含多个子图、网格、多对象或多方向，不要拿整板直接硬比；先运行 `openprd visual-prepare . --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>`，检查 contact sheet，确认 reference-set 后再逐项进入实现和验收。',
   ].join('\n');

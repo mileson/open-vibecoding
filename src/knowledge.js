@@ -366,8 +366,10 @@ async function ensureKnowledgeWorkspace(projectRoot) {
   }
 }
 
-async function readKnowledgeIndex(projectRoot) {
-  await ensureKnowledgeWorkspace(projectRoot);
+async function readKnowledgeIndex(projectRoot, options = {}) {
+  if (options.ensure !== false) {
+    await ensureKnowledgeWorkspace(projectRoot);
+  }
   const current = await readJson(knowledgePath(projectRoot, KNOWLEDGE_INDEX)).catch(() => defaultKnowledgeIndex());
   return {
     ...defaultKnowledgeIndex(),
@@ -496,8 +498,8 @@ function serializeComparable(value) {
   return JSON.stringify(value);
 }
 
-async function hydrateKnowledgeSkills(projectRoot) {
-  const index = await readKnowledgeIndex(projectRoot);
+async function hydrateKnowledgeSkills(projectRoot, options = {}) {
+  const index = await readKnowledgeIndex(projectRoot, { ensure: options.ensure !== false });
   const cache = new Map();
   const hydratedSkills = [];
   let changed = false;
@@ -508,7 +510,7 @@ async function hydrateKnowledgeSkills(projectRoot) {
       changed = true;
     }
   }
-  if (changed) {
+  if (changed && options.writeBack !== false) {
     await writeKnowledgeIndex(projectRoot, {
       ...index,
       skills: hydratedSkills,
@@ -1861,8 +1863,13 @@ function scoreKnowledgeSkillMatch(skill, query) {
 }
 
 export async function resolveKnowledgeSkillMatches(projectRoot, options = {}) {
-  await ensureKnowledgeWorkspace(projectRoot);
-  const { skills } = await hydrateKnowledgeSkills(projectRoot);
+  if (!options.readOnly) {
+    await ensureKnowledgeWorkspace(projectRoot);
+  }
+  const { skills } = await hydrateKnowledgeSkills(projectRoot, {
+    ensure: !options.readOnly,
+    writeBack: !options.readOnly,
+  });
   const query = buildKnowledgeMatchQuery(options);
   if (!query.normalizedText) {
     return {

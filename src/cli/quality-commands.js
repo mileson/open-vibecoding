@@ -218,5 +218,23 @@ export async function runQualityCommand(command, { projectPath, flags, positiona
     return result.ok ? 0 : 1;
   }
 
+  if (command === 'i18n-init') {
+    const initProjectPath = path.resolve(flags.path ?? positionals[0] ?? process.cwd());
+    const { initI18nConfig } = await import('../dev-standards.js');
+    const result = await initI18nConfig(initProjectPath, {
+      defaultLanguage: flags.locale ?? undefined,
+    });
+    if (flags.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(`OpenPrd i18n: ${result.created ? '已创建' : '配置已存在'} ${result.configPath}`);
+      console.log(`基准语言: ${result.config.defaultLanguage}`);
+      console.log(`支持语种: ${result.config.supportedLanguages.join(', ')}`);
+      console.log(`dev-check 检查: ${result.config.enforceOnDevCheck ? '开启' : '关闭'}`);
+      console.log(`最佳实践文档: docs/basic/i18n-guidelines.md`);
+    }
+    return 0;
+  }
+
   return null;
 }

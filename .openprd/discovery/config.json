@@ -1,5 +1,5 @@
 {
-  "activeChange": "openprd-generated-change",
+  "activeChange": "openprd-control-plane-v020",
   "taskSharding": {
     "maxItemsPerFile": 25,
     "handoffRequired": true,

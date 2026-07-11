@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-06T16:25:38.662Z",
+  "updatedAt": "2026-07-11T11:23:44.021Z",
   "summary": {
-    "eventCount": 7,
+    "eventCount": 8,
     "observed": 0,
     "pendingObserved": 0,
     "autoApplied": 0,
@@ -10,7 +10,7 @@
     "reconciledAutoApplied": 0,
     "rejected": 0,
     "skipped": 0,
-    "completionCheckpoints": 7,
+    "completionCheckpoints": 8,
     "skippedReasons": {},
     "current": {
       "total": 2,
@@ -20,6 +20,32 @@
     }
   },
   "recentEvents": [
+    {
+      "version": 1,
+      "at": "2026-07-10T19:18:30.538Z",
+      "action": "checkpoint",
+      "outcome": "quality-verify",
+      "candidateId": null,
+      "candidateType": null,
+      "scope": "project",
+      "autoApplied": false,
+      "applyMode": null,
+      "reason": "openprd-control-plane-v020",
+      "changed": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/adapters/adapter-spi.js",
+        "src/adapters/capability-envelope.js",
+        "src/adapters/event-normalizer.js",
+        "src/adapters/index.js"
+      ]
+    },
     {
       "version": 1,
       "at": "2026-07-06T16:09:45.430Z",

@@ -1,0 +1,295 @@
+{
+  "versionNumber": 17,
+  "versionId": "v0017",
+  "createdAt": "2026-07-07 10:53:03",
+  "projectRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "workspaceRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd",
+  "schema": "prd-core",
+  "templatePack": "agent",
+  "productType": "agent",
+  "title": "去会话追踪化：changes 为真相源 + 人话确认",
+  "owner": "OpenPrd",
+  "status": "synthesized",
+  "sections": {
+    "meta": {
+      "title": "去会话追踪化：changes 为真相源 + 人话确认",
+      "owner": "OpenPrd",
+      "status": "clarifying",
+      "version": "v0017",
+      "productType": "agent",
+      "date": "2026-07-07"
+    },
+    "problem": {
+      "problemStatement": "OpenPrd 画布目前只有单向的“发送给 Codex”整体交接：Agent 不能结构化读取用户在画布上的选区与标注，不能把生成图片精准放回画布锚点旁，标注修改意图靠用户口述或手动截图传递，协同链路断在“人标注完之后”这一步。",
+      "whyNow": "对标 Cowart 已验证“标注改图闭环 + 画布双向结构化工具 + 生图尺寸契约 + 具名 skill 唤起”四件能力能显著降低人机视觉协同成本；OpenPrd 0.1.18 刚落地生图路由，正好把尺寸契约与路由串起来。",
+      "evidence": [
+        "Cowart 的 get_cowart_selection / insert_cowart_image / annotation-edit 元数据闭环已被 DeepWiki 调研确认",
+        "OpenPrd 画布现状只有 placeholderId 回填和整体 handoff，无结构化选区读取",
+        "用户已确认按对标建议落地四项能力"
+      ]
+    },
+    "users": {
+      "primaryUsers": [
+        "使用 OpenPrd 画布做视觉协同的开发者与产品设计协作者"
+      ],
+      "secondaryUsers": [],
+      "stakeholders": [
+        "OpenPrd 维护者",
+        "Codex/Cursor 上的 Vibe Coding 用户"
+      ]
+    },
+    "goals": {
+      "goals": [
+        "用户在画布上标注后，一句话就能让 Agent 读懂标注并生成修订图放回原图旁",
+        "Agent 能结构化读取画布选区并把图片锚定回填",
+        "生图请求自动携带占位卡尺寸契约",
+        "用户能用自然语言稳定唤起画布协同"
+      ],
+      "successMetrics": [
+        "标注改图闭环端到端可走通并有测试覆盖",
+        "selection/insert-image API 有集成测试",
+        "尺寸契约出现在生图指引与占位卡 handoff 记录中"
+      ],
+      "acceptanceGoals": [
+        "canvas 服务新增 GET /api/selection 与 POST /api/insert-image 且测试通过",
+        "标注导出带 annotationEdit 元数据并能被 hook 指引消费",
+        "hook 对画布协同意图注入引导语"
+      ]
+    },
+    "validation": {
+      "community": [],
+      "seedUsers": [],
+      "communityFit": [],
+      "currentAlternative": null,
+      "painEvidence": [],
+      "manualPath": [],
+      "manualPlaybook": [],
+      "commitmentSignals": [],
+      "firstValidationStep": "生成 change 与任务拆解后按序实现",
+      "defaultAlivePlan": [],
+      "paymentProof": [],
+      "mvpSlice": null,
+      "weekendTest": null,
+      "smallestExecution": [],
+      "productizeGate": [],
+      "firstCustomerPath": [],
+      "pricingHypothesis": null,
+      "customerOneProfitability": null,
+      "growthDiscipline": [],
+      "reversibility": null,
+      "customerTruth": null,
+      "valuesFit": null
+    },
+    "scope": {
+      "inScope": [
+        "canvas-workspace.js 新增选区状态持久化与查询 API",
+        "canvas-workspace.js 新增锚定插图 API（anchorShapeId/placement/replaceHolder）",
+        "canvas-app.html.js 标注修改请求导出（带元数据）与选区上报",
+        "生图占位卡尺寸契约写入 handoff 与生图指引",
+        "codex-hook-runner-template.mjs 画布协同意图识别与引导注入",
+        "agent-canonical-content.js 画布协同指引",
+        "docs/basic 与 README 同步"
+      ],
+      "outOfScope": [
+        "不迁移 tldraw、不做 Codex widget 内嵌",
+        "不新建独立 MCP stdio server，复用画布本地 HTTP 服务",
+        "不改变现有发送给 Codex 的 app-server 桥接协议"
+      ]
+    },
+    "scenarios": {
+      "primaryFlows": [
+        "用户在同一项目开第二个对话窗口，直接读活跃变更清单继续工作，两个窗口状态互不覆盖",
+        "automation 会话运行数百次工具调用，hook 每次只读本会话小文件，全局账本不再膨胀",
+        "高风险写入被拦截后，agent 用人话说明影响，用户回一句确认即放行继续实现"
+      ],
+      "edgeCases": [
+        "旧全局 sessions.jsonl 存在时停止写入、保留只读兼容，读取入口平滑降级",
+        "用户给出会话 ID 要求续接但本地无该会话记录时，直接列出活跃变更请用户指认，不做语义猜测",
+        "pending approval 存在多条时，用户确认语句按最近一条挂起风险放行，其余仍保持拦截"
+      ],
+      "failureModes": [
+        "画布服务未启动时 API 调用失败要提示先运行 openprd canvas",
+        "回填图片文件缺失时保持画布 scene 不变"
+      ]
+    },
+    "requirements": {
+      "functional": [
+        {
+          "id": "remove-session-id-tracking",
+          "title": "去掉会话 ID 追踪，changes 文件夹为唯一真相源",
+          "description": "参照 OpenSpec 模式：对话上下文本身已包含会话信息，OpenPrd 不再维护全局 ~/.openprd/registry/sessions.jsonl 会话追踪；hook 热路径不再全量扫描全局 registry；automation lane 记忆改为 per-session 本地小文件 O(1) 读写；会话续接不再做跨 workspace 扫描和 promptPreview 语义匹配兜底，改为读活跃 change 列表或直接问用户；每个变更独立文件夹互不冲突，天然支持同项目多窗口并行。"
+        },
+        {
+          "id": "session-scoped-runtime-state",
+          "title": "运行态状态按会话隔离，消除多窗口互相覆写",
+          "description": "turn-state 等会话相关运行态从 workspace 单例文件改为按会话分文件存放；workspace 级只保留真正共享的变更台账与质量报告；多个对话窗口同时工作互不覆盖。"
+        },
+        {
+          "id": "human-language-risk-approval",
+          "title": "高风险门禁改为挂起审批加人话确认",
+          "description": "autonomy-risk 门禁挡下写入后，把待审批风险记录为 pending approval；agent 用业务人话向用户说明会做什么、影响和回滚方式；用户回一句普通确认（如确认/同意/可以/继续）即放行对应 pending 风险，不再要求用户粘贴指定的字面技术授权句，不为技术概念向用户索取技术确认。"
+        }
+      ],
+      "nonFunctional": [
+        "界面文案面向普通用户",
+        "API 只监听本地回环地址",
+        "新增代码有集成测试覆盖"
+      ],
+      "businessRules": [
+        "只做已确认四项能力，不扩 UI 引擎替换",
+        "生图仍走 0.1.18 生图路由，不擅用付费 API"
+      ]
+    },
+    "businessGuardrails": {
+      "costDrivers": [
+        "主要成本是生图调用次数与画布服务本地资源"
+      ],
+      "usageLimits": [
+        "首版按单画布会话协同，不开放批量自动改图"
+      ],
+      "abusePrevention": [
+        "insert-image 校验锚点与文件存在性，避免脏写",
+        "API 仅本地回环访问"
+      ],
+      "monitoringSignals": [
+        "ops.json handoff 记录数、回填成功率、API 错误率"
+      ],
+      "alertThresholds": [
+        "回填连续失败时提示用户检查画布服务状态"
+      ],
+      "stopLossActions": [
+        "异常时停止自动回填，保留原画布快照并回退到手动流程"
+      ]
+    },
+    "constraints": {
+      "technical": [
+        "沿用 Excalidraw embed 与现有 canvas-sessions 文件存储",
+        "Node 内置测试框架",
+        "不新增外部依赖",
+        "hook 热路径（每次工具调用）禁止读取全局 sessions.jsonl 等 O(N) 追加文件；会话级状态一律 per-session 本地文件 O(1) 直读。",
+        "workspace 级单例状态文件（turn-state/run-state）里会话相关字段不得被并行窗口互相覆写；真相源收敛到 change 文件夹与任务台账。"
+      ],
+      "compliance": [
+        "不写入敏感信息",
+        "画布数据留在本地项目目录"
+      ],
+      "dependencies": [
+        "依赖 openprd canvas 本地服务",
+        "依赖 0.1.18 生图路由协议"
+      ]
+    },
+    "risks": {
+      "assumptions": [
+        "用户接受标注截图作为修改指令载体",
+        "Excalidraw selection 数据足以表达锚定需求"
+      ],
+      "risks": [
+        "Excalidraw 与 tldraw 数据模型差异导致锚定语义需要适配",
+        "标注文字识别依赖 Agent 视觉能力"
+      ],
+      "openQuestions": [
+        "后续是否把画布协同扩展为独立 MCP server 另行评估"
+      ]
+    },
+    "handoff": {
+      "owner": "OpenPrd",
+      "nextStep": "生成 change 与任务拆解后按序实现",
+      "targetSystem": "OpenPrd CLI 画布子系统"
+    },
+    "typeSpecific": {
+      "kind": "agent",
+      "title": "Agent 使用场景专项",
+      "fields": {
+        "humanAgentContract": "标注意图由人给出，修订图生成与回填由 Agent 自动完成；替换原图等破坏性动作仍需人确认。",
+        "autonomyBoundary": "Agent 可自动读选区、生成并旁位回填；不得覆盖或删除用户原图与标注。",
+        "toolBoundary": "使用画布本地 HTTP API、生图路由选定的内置生图工具与 OpenPrd CLI。",
+        "stateModel": "画布 scene/selection/ops 文件保存在 .openprd/harness/canvas-sessions/<session-key>/。",
+        "evalPlan": "集成测试覆盖 selection/insert-image/标注导出元数据/hook 引导注入，最终跑 dev-check 与发布前四项验证。"
+      }
+    }
+  },
+  "reviewPresentation": {
+    "diagram": {
+      "type": "map"
+    },
+    "mapNodes": {
+      "problem": {
+        "title": "问题定义",
+        "text": "会话追踪层层扫描，多窗口易串状态还拖慢每次操作"
+      },
+      "goal": {
+        "title": "目标",
+        "text": "以变更文件夹为唯一真相源，多窗口并行互不干扰"
+      },
+      "scope": {
+        "title": "范围",
+        "text": "移除全局会话追踪、热路径提速、确认改人话"
+      },
+      "flow": {
+        "title": "流程",
+        "text": "新窗口读活跃变更清单即可续做，不再反查历史"
+      },
+      "risk": {
+        "title": "风险",
+        "text": "旧会话续接入口需平滑降级，避免影响存量项目"
+      }
+    },
+    "panels": {
+      "flow": [
+        {
+          "summary": "移除反查",
+          "detail": "打开新窗口后直接读当前变更清单就能继续工作，不再从全局记录里反查上一个对话。"
+        },
+        {
+          "summary": "优化续接",
+          "detail": "你说继续某项工作时，按变更名字直接定位；找不到就直接问你，不再靠相似度猜测。"
+        }
+      ],
+      "function": [
+        {
+          "summary": "移除追踪",
+          "detail": "不再往全局会话账本里持续记流水，避免账本越来越大拖慢每一次操作。"
+        },
+        {
+          "summary": "优化性能",
+          "detail": "每次工具操作只读当前会话自己的小文件，速度稳定不随历史增长变慢。"
+        },
+        {
+          "summary": "调整状态",
+          "detail": "各窗口的执行状态分开存放，多个窗口同时干活不会互相覆盖。"
+        },
+        {
+          "summary": "优化确认",
+          "detail": "遇到高风险操作被拦下时，用普通话说明会做什么和怎么回滚；你回一句确认就放行，不再要求照抄指定句子。"
+        }
+      ],
+      "guardrail": [
+        {
+          "summary": "保留拦截",
+          "detail": "高风险动作仍然会先停下来问你，只是确认方式变简单，安全边界不放松。"
+        },
+        {
+          "summary": "平滑过渡",
+          "detail": "旧的全局账本停止写入并保留只读，存量项目不受影响。"
+        }
+      ],
+      "risk": [
+        {
+          "summary": "降级路径",
+          "detail": "极少数跨项目续做场景改为直接问你在哪个项目，宁可多问一句也不绑错。"
+        }
+      ]
+    }
+  },
+  "workUnitId": "wu-20260707105303-0c5fc49f",
+  "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+  "content": "# 去会话追踪化：changes 为真相源 + 人话确认\n> 语言规则：用户可见说明、PRD、spec 和 tasks 跟随用户当前主语言；无法判断时才使用简体中文兜底。PRD、OpenPrd、OpenSpec、API、SDK、CLI、TypeScript、JSON、HTTP、WebSocket、字段 key、命令名、品牌名、产品名和协议名等必要专有名词保留原文。\n- 版本: v0017\n- 负责人: OpenPrd\n- 产品场景: 以 Agent 为主要使用场景\n- 场景模板: 以 Agent 为主要使用场景\n- 状态: synthesized\n- 生成时间: 2026-07-07 10:53:03\n## 元信息\n\n- 标题: 去会话追踪化：changes 为真相源 + 人话确认\n- 负责人: OpenPrd\n- 状态: clarifying\n- 版本: v0017\n- 产品场景: 以 Agent 为主要使用场景\n- 日期: 2026-07-07\n\n## 问题\n\n- 问题陈述: OpenPrd 画布目前只有单向的“发送给 Codex”整体交接：Agent 不能结构化读取用户在画布上的选区与标注，不能把生成图片精准放回画布锚点旁，标注修改意图靠用户口述或手动截图传递，协同链路断在“人标注完之后”这一步。\n- 为什么是现在: 对标 Cowart 已验证“标注改图闭环 + 画布双向结构化工具 + 生图尺寸契约 + 具名 skill 唤起”四件能力能显著降低人机视觉协同成本；OpenPrd 0.1.18 刚落地生图路由，正好把尺寸契约与路由串起来。\n- 证据:\n  - Cowart 的 get_cowart_selection / insert_cowart_image / annotation-edit 元数据闭环已被 DeepWiki 调研确认\n  - OpenPrd 画布现状只有 placeholderId 回填和整体 handoff，无结构化选区读取\n  - 用户已确认按对标建议落地四项能力\n\n## 用户与相关方\n\n- 主要用户:\n  - 使用 OpenPrd 画布做视觉协同的开发者与产品设计协作者\n- 次要用户:\n  - 待补充\n- 相关方:\n  - OpenPrd 维护者\n  - Codex/Cursor 上的 Vibe Coding 用户\n\n## 目标与成功标准\n\n- 目标:\n  - 用户在画布上标注后，一句话就能让 Agent 读懂标注并生成修订图放回原图旁\n  - Agent 能结构化读取画布选区并把图片锚定回填\n  - 生图请求自动携带占位卡尺寸契约\n  - 用户能用自然语言稳定唤起画布协同\n- 成功指标:\n  - 标注改图闭环端到端可走通并有测试覆盖\n  - selection/insert-image API 有集成测试\n  - 尺寸契约出现在生图指引与占位卡 handoff 记录中\n- 验收目标:\n  - canvas 服务新增 GET /api/selection 与 POST /api/insert-image 且测试通过\n  - 标注导出带 annotationEdit 元数据并能被 hook 指引消费\n  - hook 对画布协同意图注入引导语\n\n## 验证与创业闭环\n\n- 可触达社区:\n  - 待补充\n- 第一批种子用户:\n  - 待补充\n- 社区契合与触达依据:\n  - 待补充\n- 当前替代方案: 待补充\n- 痛点与替代证据:\n  - 待补充\n- 手工交付路径:\n  - 待补充\n- 手工作战卡:\n  - 待补充\n- 承诺信号:\n  - 待补充\n- 首个低成本验证: 生成 change 与任务拆解后按序实现\n- 先活下来方案:\n  - 待补充\n- 付费验证信号:\n  - 待补充\n- 第一版只做一件事: 待补充\n- 周末级验证: 待补充\n- 最小工具桥接:\n  - 待补充\n- 产品化门槛:\n  - 待补充\n- 第一批客户路径:\n  - 待补充\n- 初始收费假设: 待补充\n- 客户 1 盈利路径: 待补充\n- 销售与增长纪律:\n  - 待补充\n- 可逆性判断: 待补充\n- 客户真问题校验: 待补充\n- 价值观一致性: 待补充\n\n## 范围与非目标\n\n- 范围内:\n  - canvas-workspace.js 新增选区状态持久化与查询 API\n  - canvas-workspace.js 新增锚定插图 API（anchorShapeId/placement/replaceHolder）\n  - canvas-app.html.js 标注修改请求导出（带元数据）与选区上报\n  - 生图占位卡尺寸契约写入 handoff 与生图指引\n  - codex-hook-runner-template.mjs 画布协同意图识别与引导注入\n  - agent-canonical-content.js 画布协同指引\n  - docs/basic 与 README 同步\n- 范围外:\n  - 不迁移 tldraw、不做 Codex widget 内嵌\n  - 不新建独立 MCP stdio server，复用画布本地 HTTP 服务\n  - 不改变现有发送给 Codex 的 app-server 桥接协议\n\n## 场景与流程\n\n- 主流程:\n  - 用户在同一项目开第二个对话窗口，直接读活跃变更清单继续工作，两个窗口状态互不覆盖\n  - automation 会话运行数百次工具调用，hook 每次只读本会话小文件，全局账本不再膨胀\n  - 高风险写入被拦截后，agent 用人话说明影响，用户回一句确认即放行继续实现\n- 边界情况:\n  - 旧全局 sessions.jsonl 存在时停止写入、保留只读兼容，读取入口平滑降级\n  - 用户给出会话 ID 要求续接但本地无该会话记录时，直接列出活跃变更请用户指认，不做语义猜测\n  - pending approval 存在多条时，用户确认语句按最近一条挂起风险放行，其余仍保持拦截\n- 失败模式:\n  - 画布服务未启动时 API 调用失败要提示先运行 openprd canvas\n  - 回填图片文件缺失时保持画布 scene 不变\n\n## 可视化图表\n\n### 产品流程\n\n```mermaid\nflowchart LR\n  entry[\"入口触发<br/>用户在同一项目开第二个对话窗口，直接读活跃变更清单继续工作，两个窗口状态互不覆盖\"]\n  experience[\"产品内步骤<br/>automation 会话运行数百次工具调用，hook 每次只读本会话小文件，全局账本不再膨胀\"]\n  decision{\"决策点<br/>旧全局 sessions.jsonl 存在时停止写入、保留只读兼容，读取入口平滑降级\"}\n  success([\"成功结果<br/>标注改图闭环端到端可走通并有测试覆盖\"])\n  failure[[\"失败与恢复<br/>画布服务未启动时 API 调用失败要提示先运行 openprd canvas\"]]\n  entry -->|\"用户在同一项目开第二个对话窗口，直接读活跃变更清单继续工作，两个窗口状态互不覆盖\"| experience\n  experience -->|\"automation 会话运行数百次工具调用，hook 每次只读本会话小文件，全局…\"| decision\n  decision -->|\"用户在画布上标注后，一句话就能让 Agent 读懂标注并生成修订图放回原图旁\"| success\n  decision -.->|\"画布服务未启动时 API 调用失败要提示先运行 openprd canvas\"| failure\n```\n\n### 架构\n\n```mermaid\nflowchart LR\n  users[\"主要用户<br/>使用 OpenPrd 画布做视觉协同的开发者与产品设计协作者\"]\n  subgraph solution[\"方案边界\"]\n    experience[\"Agent 使用场景层<br/>用户在同一项目开第二个对话窗口，直接读活跃变更清单继续工作，两个窗口状态互不覆盖 · automation 会话运行数百次工具…\"]\n    core[\"核心产品逻辑<br/>OpenPrd 画布目前只有单向的“发送给 Codex”整体交接：Agent 不能结构化读取用户在画布上的选区与标注，不能把生…\"]\n    integrations[\"依赖与集成<br/>依赖 openprd canvas 本地服务 · 依赖 0.1.18 生图路由协议\"]\n    governance[[\"约束与可靠性<br/>不写入敏感信息 · 画布数据留在本地项目目录\"]]\n    delivery[\"验证与交接<br/>标注改图闭环端到端可走通并有测试覆盖 · selection/insert-image API 有集成测试 · 尺寸契约出现在…\"]\n  end\n  users -->|\"用户在同一项目开第二个对话窗口，直接读活跃变更清单继续工作，两个窗口状态互不覆盖\"| experience\n  experience -->|\"产品动作与编排\"| core\n  core -->|\"依赖与外部服务\"| integrations\n  core -.->|\"策略、可靠性与合规\"| governance\n  core -->|\"成功标准与交接\"| delivery\n  integrations -->|\"运营就绪\"| delivery\n  governance -.->|\"评审与确认\"| delivery\n```\n\n## 需求\n\n- 功能需求:\n  - id: remove-session-id-tracking\n  - title: 去掉会话 ID 追踪，changes 文件夹为唯一真相源\n  - description: 参照 OpenSpec 模式：对话上下文本身已包含会话信息，OpenPrd 不再维护全局 ~/.openprd/registry/sessions.jsonl 会话追踪；hook 热路径不再全量扫描全局 registry；automation lane 记忆改为 per-session 本地小文件 O(1) 读写；会话续接不再做跨 workspace 扫描和 promptPreview 语义匹配兜底，改为读活跃 change 列表或直接问用户；每个变更独立文件夹互不冲突，天然支持同项目多窗口并行。\n  - id: session-scoped-runtime-state\n  - title: 运行态状态按会话隔离，消除多窗口互相覆写\n  - description: turn-state 等会话相关运行态从 workspace 单例文件改为按会话分文件存放；workspace 级只保留真正共享的变更台账与质量报告；多个对话窗口同时工作互不覆盖。\n  - id: human-language-risk-approval\n  - title: 高风险门禁改为挂起审批加人话确认\n  - description: autonomy-risk 门禁挡下写入后，把待审批风险记录为 pending approval；agent 用业务人话向用户说明会做什么、影响和回滚方式；用户回一句普通确认（如确认/同意/可以/继续）即放行对应 pending 风险，不再要求用户粘贴指定的字面技术授权句，不为技术概念向用户索取技术确认。\n- 非功能需求:\n  - 界面文案面向普通用户\n  - API 只监听本地回环地址\n  - 新增代码有集成测试覆盖\n- 业务规则:\n  - 只做已确认四项能力，不扩 UI 引擎替换\n  - 生图仍走 0.1.18 生图路由，不擅用付费 API\n\n## 业务护栏\n\n- 成本来源:\n  - 主要成本是生图调用次数与画布服务本地资源\n- 额度与限制:\n  - 首版按单画布会话协同，不开放批量自动改图\n- 滥用防护:\n  - insert-image 校验锚点与文件存在性，避免脏写\n  - API 仅本地回环访问\n- 监控信号:\n  - ops.json handoff 记录数、回填成功率、API 错误率\n- 报警阈值:\n  - 回填连续失败时提示用户检查画布服务状态\n- 止损动作:\n  - 异常时停止自动回填，保留原画布快照并回退到手动流程\n\n## 约束、依赖与风险\n\n- 技术约束:\n  - 沿用 Excalidraw embed 与现有 canvas-sessions 文件存储\n  - Node 内置测试框架\n  - 不新增外部依赖\n  - hook 热路径（每次工具调用）禁止读取全局 sessions.jsonl 等 O(N) 追加文件；会话级状态一律 per-session 本地文件 O(1) 直读。\n  - workspace 级单例状态文件（turn-state/run-state）里会话相关字段不得被并行窗口互相覆写；真相源收敛到 change 文件夹与任务台账。\n- 合规要求:\n  - 不写入敏感信息\n  - 画布数据留在本地项目目录\n- 依赖:\n  - 依赖 openprd canvas 本地服务\n  - 依赖 0.1.18 生图路由协议\n- 假设:\n  - 用户接受标注截图作为修改指令载体\n  - Excalidraw selection 数据足以表达锚定需求\n- 风险:\n  - Excalidraw 与 tldraw 数据模型差异导致锚定语义需要适配\n  - 标注文字识别依赖 Agent 视觉能力\n- 开放问题:\n  - 后续是否把画布协同扩展为独立 MCP server 另行评估\n\n## 类型专项模块\n\n- 类型: Agent 使用场景专项\n- humanAgentContract: 标注意图由人给出，修订图生成与回填由 Agent 自动完成；替换原图等破坏性动作仍需人确认。\n- autonomyBoundary: Agent 可自动读选区、生成并旁位回填；不得覆盖或删除用户原图与标注。\n- toolBoundary: 使用画布本地 HTTP API、生图路由选定的内置生图工具与 OpenPrd CLI。\n- stateModel: 画布 scene/selection/ops 文件保存在 .openprd/harness/canvas-sessions/<session-key>/。\n- evalPlan: 集成测试覆盖 selection/insert-image/标注导出元数据/hook 引导注入，最终跑 dev-check 与发布前四项验证。\n\n## 交接\n\n- 负责人: OpenPrd\n- 下一步: 生成 change 与任务拆解后按序实现\n- 目标系统: OpenPrd CLI 画布子系统\n",
+  "digest": "9e3783650f946922422469f295ccd3e6984630ce0375d61a0cea57690a1c6db5",
+  "reviewPresentationMeta": {
+    "validatedAt": "2026-07-07T02:53:11.619Z",
+    "source": "/tmp/openprd-review-presentation.json",
+    "presentationHash": "a9c744e35ff8cf39fa6d00ad2ff110b0ec168794ed6f31410967acfa2cc0f346",
+    "violationsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "validator": "openprd review-presentation"
+  }
+}

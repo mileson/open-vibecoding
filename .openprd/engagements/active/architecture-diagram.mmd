@@ -1,16 +1,22 @@
 flowchart LR
-  users["主要用户<br/>需要用 OpenPrd loop 执行中等到长程实现的维护者 · 希望逐任务 commit、可审查、可回归且不污染主工作区的 …"]
+  people_agents["用户与 Agent<br/>业务用户负责目标与决策，Codex、Cursor、Claude Code 在授权范围内执行。"]
   subgraph solution["方案边界"]
-    experience["Agent 使用场景层<br/>用户为一个 change 进入 loop 开发时，OpenPrd 可显式创建或接入隔离 worktree 与命名分支，再在其中…"]
-    core["核心产品逻辑<br/>OpenPrd 的 loop 虽然支持逐任务 finish 和可选 commit，但最近没有稳定形成“隔离 worktree …"]
-    integrations["依赖与集成<br/>Git worktree 能力。 · 现有 loop task executionStrategy.writeScope 与 …"]
-    governance[["约束与可靠性<br/>提交与状态写回不能泄露用户本地无关改动或敏感信息。"]]
-    delivery["验证与交接<br/>loop --run 可以显式创建或接入 worktree / branch，或提供等价包装入口。 · 主工作区脏时，loop…"]
+    review_studio["业务与工程双视图<br/>同一 ReviewModel 生成小白可懂的业务视图和工程可追溯视图。"]
+    adapter_spi["跨工具适配层<br/>归一生命周期事件，协商能力并渲染各工具需要的上下文与决定。"]
+    context_compiler["上下文编译器<br/>按任务、风险、权限与 token 预算生成稳定 Capsule 或 Delta。"]
+    gate_engine[["分级门禁与证据<br/>项目、变更、工作单元、任务、会话和单次操作各自判断。"]]
+    task_runtime["并发任务运行态<br/>Lane、claim、lease、heartbeat、write-set 与 CAS 协调多线程执行。"]
+    domain_services["需求与项目服务<br/>Change、Task、Review、Quality、Knowledge 与 Migration 只通过控制平面变更事实。"]
+    project_ledger["Project Ledger<br/>事件信封、连续 revision、幂等键和可重建投影构成唯一业务真相。"]
+    atomic_store["原子存储与版本清单<br/>原子写入、锁、checksum、reader/writer 版本和迁移记录保护旧项目。"]
   end
-  users -->|"用户为一个 change 进入 loop 开发时，OpenPrd 可显式创建或…"| experience
-  experience -->|"产品动作与编排"| core
-  core -->|"依赖与外部服务"| integrations
-  core -.->|"策略、可靠性与合规"| governance
-  core -->|"成功标准与交接"| delivery
-  integrations -->|"运营就绪"| delivery
-  governance -.->|"评审与确认"| delivery
+  people_agents -->|"理解范围、风险与决定"| review_studio
+  people_agents -->|"提交任务与运行事件"| adapter_spi
+  adapter_spi -->|"协商能力与上下文格式"| context_compiler
+  context_compiler -.->|"附带适用门禁与权限"| gate_engine
+  gate_engine -.->|"允许后领取任务范围"| task_runtime
+  task_runtime -->|"在 claim 与 write-set 内执行"| domain_services
+  domain_services -->|"追加事实事件"| project_ledger
+  project_ledger -->|"提供最新权威事实"| context_compiler
+  project_ledger -->|"生成双投影"| review_studio
+  atomic_store -.->|"原子持久化与版本保护"| project_ledger

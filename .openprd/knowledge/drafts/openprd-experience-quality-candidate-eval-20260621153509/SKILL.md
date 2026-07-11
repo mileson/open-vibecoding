@@ -17,9 +17,8 @@ use_when: Use when the current task overlaps this draft project experience and y
 - 这次修复已经带有验证或收尾证据，适合尽快抽象成项目级研发经验。
 - doctor-green: doctor passed
 - quality-verify: quality production-ready | touched: README.md, package.json, scripts/dev-check-wrapup-copy.mjs, scripts/openprd-codex-isolated-worker.mjs, scripts/openprd-dev-check.mjs, scripts/openprd-github-release-notes.mjs
+- dev-check: dev-check attention=5, warning=7 | touched: src/adapters/adapter-spi.js, src/adapters/capability-envelope.js, src/adapters/event-normalizer.js, src/adapters/index.js, src/adapters/install-safety.js, src/agent-canonical-content.js
 - quality-verify: quality needs-attention | attention gates: feature-coverage | touched: README.md, package.json, scripts/dev-check-wrapup-copy.mjs, scripts/openprd-codex-isolated-worker.mjs, scripts/openprd-dev-check.mjs, scripts/openprd-github-release-notes.mjs
-- dev-check: dev-check attention=4, warning=1 | touched: src/canvas-workspace.js, src/canvas-session-store.js, src/canvas-binding.js, src/canvas-codex-relay.js, src/canvas-app.html.js, src/canvas-app-styles.js
-- dev-check: dev-check attention=2, warning=2 | touched: src/canvas-workspace.js, src/canvas-app.html.js, src/canvas-i18n.js, src/codex-hook-runner-template.mjs, src/agent-canonical-content.js, test/openprd-canvas.test.js
 
 ## 适用范围
 
@@ -50,11 +49,11 @@ use_when: Use when the current task overlaps this draft project experience and y
 - `scripts/openprd-github-release-notes.mjs`
 - `scripts/openprd-review-presentation.mjs`
 - `scripts/quality-perf-check.mjs`
-- `src/agent-canonical-content.js`
-- `src/agent-integration.js`
-- `src/benchmark/constants.js`
-- `src/benchmark/operations.js`
-- `.openprd/quality/reports/eval-20260707000956.json`
+- `src/adapters/adapter-spi.js`
+- `src/adapters/capability-envelope.js`
+- `src/adapters/event-normalizer.js`
+- `src/adapters/index.js`
+- `/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711192107.json`
 
 ## 不要直接套用
 
@@ -70,9 +69,8 @@ use_when: Use when the current task overlaps this draft project experience and y
 
 - doctor passed
 - quality production-ready
+- dev-check attention=5, warning=7
 - quality needs-attention
-- dev-check attention=4, warning=1
-- dev-check attention=2, warning=2
-- dev-check attention=4, warning=0
-- dev-check attention=3, warning=1
 - 运行 openprd quality . --verify 并确认需要关注的门禁已经闭环。
+- 打开 HTML 报告，核对证据链、评估结论和后续动作是否一致。
+- 重新执行任务级 verify 命令，并把最终证据路径保留在质量报告里。

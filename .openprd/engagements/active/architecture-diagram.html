@@ -3,39 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>架构评审</title>
+    <title>OpenPrd 0.1.20 可解释项目控制平面</title>
     <style>
       :root {
-        color-scheme: dark;
-        --bg: #020617;
-        --panel: rgba(15, 23, 42, 0.92);
-        --text: #e2e8f0;
-        --muted: #94a3b8;
-        --grid: rgba(148, 163, 184, 0.12);
+        color-scheme: light;
+        --bg: #f6f8fb;
+        --panel: #ffffff;
+        --panel-soft: #f9fafb;
+        --text: #172033;
+        --muted: #667085;
+        --line: #d8dee8;
       }
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        font-family: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: var(--text);
-        background:
-          linear-gradient(var(--grid) 1px, transparent 1px),
-          linear-gradient(90deg, var(--grid) 1px, transparent 1px),
-          radial-gradient(circle at top, rgba(34, 211, 238, 0.12), transparent 30%),
-          var(--bg);
-        background-size: 40px 40px, 40px 40px, 100% 100%, auto;
+        background: var(--bg);
       }
       .page { max-width: 1240px; margin: 0 auto; padding: 32px 24px 48px; }
       .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
       .header-copy { display: flex; flex-direction: column; gap: 4px; }
       .pulse {
-        width: 12px; height: 12px; border-radius: 999px; background: #22d3ee;
-        box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); animation: pulse 2s infinite;
+        width: 12px; height: 12px; border-radius: 999px; background: #2563eb;
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); animation: pulse 2s infinite;
       }
       @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+        0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
+        70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
       }
       .project-chip {
         display: inline-flex;
@@ -44,32 +40,37 @@
         width: fit-content;
         padding: 4px 10px;
         border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.24);
-        background: rgba(15, 23, 42, 0.72);
-        color: #cbd5e1;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--muted);
         font-size: 11px;
       }
-      h1 { margin: 0; font-size: 28px; }
+      h1 { margin: 0; font-size: 28px; font-weight: 700; }
       .subtitle-block { margin: 6px 0 0 24px; color: var(--muted); font-size: 13px; }
       .diagram-shell {
-        margin-top: 24px; border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 20px;
-        padding: 20px; background: rgba(2, 6, 23, 0.72); backdrop-filter: blur(6px);
+        margin-top: 24px; border: 1px solid var(--line); border-radius: 20px;
+        padding: 20px; background: var(--panel);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
       }
       svg { width: 100%; height: auto; display: block; }
       .node-title { font-size: 13px; font-weight: 700; }
-      .node-subtitle, .detail, .flow-label, .legend-label, .footer { font-size: 10px; fill: #cbd5e1; }
-      .detail { fill: #94a3b8; }
+      .node-subtitle, .detail, .flow-label, .legend-label, .footer { font-size: 10px; fill: #334155; }
+      .detail { fill: #667085; }
+      .lane-chip { font-size: 9px; fill: #94a3b8; }
+      .legend-label { fill: #667085; }
+      .flow-label { fill: #334155; paint-order: stroke; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round; }
       .summary-grid, .side-grid { display: grid; gap: 16px; margin-top: 24px; }
       .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .side-grid { grid-template-columns: 1fr 1fr; }
       .card {
-        border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 16px;
+        border: 1px solid var(--line); border-radius: 16px;
         background: var(--panel); padding: 14px 16px;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
       }
-      .card-header { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 8px; }
+      .card-header { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 8px; font-weight: 600; }
       .dot { width: 10px; height: 10px; border-radius: 999px; }
-      ul { padding-left: 18px; margin: 0; color: #cbd5e1; font-size: 12px; line-height: 1.65; }
-      .footer { margin-top: 18px; color: var(--muted); }
+      ul { padding-left: 18px; margin: 0; color: #475467; font-size: 12px; line-height: 1.65; }
+      .footer { margin-top: 18px; color: var(--muted); font-size: 12px; }
     </style>
   </head>
   <body>
@@ -77,139 +78,181 @@
       <div class="header">
         <div class="pulse"></div>
         <div class="header-copy">
-          <div class="project-chip">OpenPrd loop 隔离 worktree 提交闭环</div>
-          <h1>架构评审</h1>
-          <p class="subtitle-block">在需求定稿前评审系统边界、依赖和交接形态。</p>
+          <div class="project-chip">OpenPrd 0.1.20 可解释项目控制平面</div>
+          <h1>OpenPrd 0.1.20 可解释项目控制平面</h1>
+          <p class="subtitle-block">一份项目事实、一个并发协调层、按需编译上下文，并向业务与工程生成不同读法。</p>
         </div>
       </div>
       <div class="diagram-shell">
-    <svg viewBox="0 0 1080 720" role="img" aria-label="架构评审">
+    <svg viewBox="0 0 2512 484" role="img" aria-label="OpenPrd 0.1.20 可解释项目控制平面">
+      
       <defs>
         <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-          <polygon points="0 0, 10 5, 0 10" fill="#7dd3fc"></polygon>
+          <polygon points="0 0, 10 5, 0 10" fill="#64748b"></polygon>
+        </marker>
+        <marker id="arrowhead-error" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+          <polygon points="0 0, 10 5, 0 10" fill="#dc2626"></polygon>
         </marker>
       </defs>
-      <rect x="40" y="172" width="1000" height="430" rx="18" fill="none" stroke="#f59e0b" stroke-opacity="0.55" stroke-width="1.5" stroke-dasharray="8,5"></rect>
-      <text x="58" y="194" class="legend-label">方案边界</text>
-      <path d="M 540 144 C 540 182, 215 176, 215 228" fill="none" stroke="#7dd3fc" stroke-width="2"  marker-end="url(#arrowhead)"></path>
-  <text x="312" y="176" class="flow-label">用户为一个 change 进入 loop 开发时，OpenPrd 可显式创建或…</text>
-<path d="M 360 288 L 395 288" fill="none" stroke="#7dd3fc" stroke-width="2"  marker-end="url(#arrowhead)"></path>
-  <text x="366" y="276" class="flow-label">产品动作与编排</text>
-<path d="M 685 288 L 720 288" fill="none" stroke="#7dd3fc" stroke-width="2"  marker-end="url(#arrowhead)"></path>
-  <text x="694" y="276" class="flow-label">成功标准与交接</text>
-<path d="M 540 348 C 540 392, 325 396, 325 448" fill="none" stroke="#7dd3fc" stroke-width="2"  marker-end="url(#arrowhead)"></path>
-  <text x="300" y="392" class="flow-label">依赖与外部服务</text>
-<path d="M 540 348 C 540 392, 755 396, 755 448" fill="none" stroke="#fb7185" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrowhead)"></path>
-  <text x="692" y="392" class="flow-label">策略、可靠性与合规</text>
-<path d="M 470 568 C 470 610, 820 610, 820 348" fill="none" stroke="#7dd3fc" stroke-width="2"  marker-end="url(#arrowhead)"></path>
-  <text x="596" y="614" class="flow-label">运营就绪</text>
-<path d="M 820 568 C 920 612, 920 416, 865 348" fill="none" stroke="#fb7185" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrowhead)"></path>
-  <text x="850" y="612" class="flow-label">评审与确认</text>
+      
+      <rect x="46" y="69.5" width="2420" height="332.5" rx="18" fill="none" stroke="#b45309" stroke-opacity="0.55" stroke-width="1.5" stroke-dasharray="8,5"></rect>
+      <text x="64" y="91.5" class="legend-label">方案边界</text>
+    
+      <path d="M 328 158.5 C 904 158.5, 904 158.5, 1480 158.5" fill="none" stroke="#64748b" stroke-width="1.8"  marker-end="url(#arrowhead)"></path>
+  <text x="904" y="150.5" class="flow-label" text-anchor="middle">理解范围、风险与决定</text>
+<path d="M 328 158.5 C 376 158.5, 376 236, 424 236" fill="none" stroke="#64748b" stroke-width="1.8"  marker-end="url(#arrowhead)"></path>
+  <text x="376" y="189.25" class="flow-label" text-anchor="middle">提交任务与运行事件</text>
+<path d="M 680 236 C 1080 236, 1080 306, 1480 306" fill="none" stroke="#64748b" stroke-width="1.8"  marker-end="url(#arrowhead)"></path>
+  <text x="1080" y="263" class="flow-label" text-anchor="middle">协商能力与上下文格式</text>
+<path d="M 1736 306 C 1784 306, 1784 236, 1832 236" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#arrowhead-error)"></path>
+  <text x="1784" y="263" class="flow-label" text-anchor="middle">附带适用门禁与权限</text>
+<path d="M 2088 236 C 2136 236, 2136 236, 2184 236" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#arrowhead-error)"></path>
+  <text x="2136" y="228" class="flow-label" text-anchor="middle">允许后领取任务范围</text>
+<path d="M 2184 236 C 2124 362, 1092 362, 1032 236" fill="none" stroke="#64748b" stroke-width="1.8"  marker-end="url(#arrowhead)"></path>
+  <text x="1608" y="354" class="flow-label" text-anchor="middle">在 claim 与 write-set 内执行</text>
+<path d="M 1032 236 C 1080 236, 1080 236, 1128 236" fill="none" stroke="#64748b" stroke-width="1.8"  marker-end="url(#arrowhead)"></path>
+  <text x="1080" y="228" class="flow-label" text-anchor="middle">追加事实事件</text>
+<path d="M 1384 236 C 1432 236, 1432 306, 1480 306" fill="none" stroke="#64748b" stroke-width="1.8"  marker-end="url(#arrowhead)"></path>
+  <text x="1432" y="263" class="flow-label" text-anchor="middle">提供最新权威事实</text>
+<path d="M 1384 236 C 1432 236, 1432 158.5, 1480 158.5" fill="none" stroke="#64748b" stroke-width="1.8"  marker-end="url(#arrowhead)"></path>
+  <text x="1432" y="173.25" class="flow-label" text-anchor="middle">生成双投影</text>
+<path d="M 328 313.5 C 728 313.5, 728 236, 1128 236" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#arrowhead-error)"></path>
+  <text x="728" y="266.75" class="flow-label" text-anchor="middle">原子持久化与版本保护</text>
+      
+    <g>
+      <rect x="72" y="96" width="256" height="125" rx="14" fill="#f8fafc" fill-opacity="0.92" stroke="#94a3b8" stroke-width="1.5"></rect>
+      <text x="88" y="120" class="node-title" fill="#475569">用户与 Agent</text>
+      
+      <text x="88" y="138" class="node-subtitle">业务用户负责目标与决策，Codex、Cur</text><text x="88" y="153" class="node-subtitle">sor、Claude Code 在授权范围内执行</text><text x="88" y="168" class="node-subtitle">。</text>
+      <text x="88" y="189" class="detail">显式任务、会话和工作单元标识始终…</text><text x="88" y="204" class="detail">高风险动作绑定当前操作的明确授权</text>
+    </g>
+  
 
     <g>
-      <rect x="390" y="48" width="300" height="96" rx="14" fill="#0f172a" fill-opacity="0.92" stroke="#94a3b8" stroke-width="1.5"></rect>
-      <text x="406" y="76" class="node-title" fill="#e2e8f0">主要用户</text>
-      <text x="406" y="92" class="node-subtitle">需要用 OpenPrd loop 执行中等到长程实现的维护者 · 希望逐任务 commit、可…</text>
-      <text x="406" y="102" class="detail">OpenPrd 维护者</text><text x="406" y="118" class="detail">在脏仓库或长程任务中依赖 loop 的项目协作者</text>
+      <rect x="1480" y="103.5" width="256" height="110" rx="14" fill="#eff6ff" fill-opacity="0.92" stroke="#2563eb" stroke-width="1.5"></rect>
+      <text x="1496" y="127.5" class="node-title" fill="#1d4ed8">业务与工程双视图</text>
+      
+      <text x="1496" y="145.5" class="node-subtitle">同一 ReviewModel 生成小白可懂的业</text><text x="1496" y="160.5" class="node-subtitle">务视图和工程可追溯视图。</text>
+      <text x="1496" y="181.5" class="detail">共享决策时间线与 model digest</text><text x="1496" y="196.5" class="detail">默认业务视角，工程证据按需展开</text>
     </g>
-
+  
 
     <g>
-      <rect x="70" y="228" width="290" height="120" rx="14" fill="#0f172a" fill-opacity="0.92" stroke="#22d3ee" stroke-width="1.5"></rect>
-      <text x="86" y="256" class="node-title" fill="#67e8f9">Agent 使用场景层</text>
-      <text x="86" y="272" class="node-subtitle">用户为一个 change 进入 loop 开发时，OpenPrd 可显式创建或接入隔离 wor…</text>
-      <text x="86" y="282" class="detail">给 openprd loop --run 增加显式 --worktree / --…</text><text x="86" y="298" class="detail">在 commit 前增加主工作区脏状态门禁和显式 override 机制。</text><text x="86" y="314" class="detail">把提交范围从 git add -A 收窄到 task write-scope 或本…</text>
+      <rect x="424" y="181" width="256" height="110" rx="14" fill="#fffbeb" fill-opacity="0.92" stroke="#b45309" stroke-width="1.5"></rect>
+      <text x="440" y="205" class="node-title" fill="#b45309">跨工具适配层</text>
+      
+      <text x="440" y="223" class="node-subtitle">归一生命周期事件，协商能力并渲染各</text><text x="440" y="238" class="node-subtitle">工具需要的上下文与决定。</text>
+      <text x="440" y="259" class="detail">Codex、Cursor、Claude Code 使用…</text><text x="440" y="274" class="detail">能力缺口明确返回，不模拟支持</text>
     </g>
-
+  
 
     <g>
-      <rect x="395" y="228" width="290" height="120" rx="14" fill="#0f172a" fill-opacity="0.92" stroke="#34d399" stroke-width="1.5"></rect>
-      <text x="411" y="256" class="node-title" fill="#6ee7b7">核心产品逻辑</text>
-      <text x="411" y="272" class="node-subtitle">OpenPrd 的 loop 虽然支持逐任务 finish 和可选 commit，但最近没有稳…</text>
-      <text x="411" y="282" class="detail">支持显式 worktree / branch 配置，或提供隔离运行包装命令。</text><text x="411" y="298" class="detail">支持检测主工作区脏状态，并在 finish --commit 前阻断高风险路径。</text><text x="411" y="314" class="detail">支持基于 write-scope 或 touched files 生成本任务提交集。</text>
+      <rect x="1480" y="243.5" width="256" height="125" rx="14" fill="#f0fdfa" fill-opacity="0.92" stroke="#0f766e" stroke-width="1.5"></rect>
+      <text x="1496" y="267.5" class="node-title" fill="#0f766e">上下文编译器</text>
+      
+      <text x="1496" y="285.5" class="node-subtitle">按任务、风险、权限与 token 预算生</text><text x="1496" y="300.5" class="node-subtitle">成稳定 Capsule 或 Delta。</text>
+      <text x="1496" y="321.5" class="detail">完整摘要 800 tokens，增量 250 tok…</text><text x="1496" y="336.5" class="detail">同 revision 同输入产生同 digest</text><text x="1496" y="351.5" class="detail">默认只读，telemetry 与事实分离</text>
     </g>
-
+  
 
     <g>
-      <rect x="180" y="448" width="290" height="120" rx="14" fill="#0f172a" fill-opacity="0.92" stroke="#f59e0b" stroke-width="1.5"></rect>
-      <text x="196" y="476" class="node-title" fill="#fcd34d">依赖与集成</text>
-      <text x="196" y="492" class="node-subtitle">Git worktree 能力。 · 现有 loop task executionStrate…</text>
-      <text x="196" y="502" class="detail">Git worktree 能力。</text><text x="196" y="518" class="detail">现有 loop task executionStrategy.writeScope…</text><text x="196" y="534" class="detail">OpenPrd 的状态文件、review / change / tasks 主流程。</text>
+      <rect x="1832" y="181" width="256" height="110" rx="14" fill="#fef2f2" fill-opacity="0.92" stroke="#dc2626" stroke-width="1.5"></rect>
+      <text x="1848" y="205" class="node-title" fill="#b91c1c">分级门禁与证据</text>
+      
+      <text x="1848" y="223" class="node-subtitle">项目、变更、工作单元、任务、会话和</text><text x="1848" y="238" class="node-subtitle">单次操作各自判断。</text>
+      <text x="1848" y="259" class="detail">局部任务不被无关项目债务阻断</text><text x="1848" y="274" class="detail">发布与真实迁移继续执行项目级门禁</text>
     </g>
-
+  
 
     <g>
-      <rect x="610" y="448" width="290" height="120" rx="14" fill="#0f172a" fill-opacity="0.92" stroke="#fb7185" stroke-width="1.5"></rect>
-      <text x="626" y="476" class="node-title" fill="#fda4af">约束与可靠性</text>
-      <text x="626" y="492" class="node-subtitle">提交与状态写回不能泄露用户本地无关改动或敏感信息。</text>
-      <text x="626" y="502" class="detail">提交与状态写回不能泄露用户本地无关改动或敏感信息。</text><text x="626" y="518" class="detail">默认路径必须安全，不能把无关改动静默卷入 commit。</text><text x="626" y="534" class="detail">行为必须可追踪，可从状态文件复原任务执行链路。</text>
+      <rect x="2184" y="173.5" width="256" height="125" rx="14" fill="#f0fdfa" fill-opacity="0.92" stroke="#0f766e" stroke-width="1.5"></rect>
+      <text x="2200" y="197.5" class="node-title" fill="#0f766e">并发任务运行态</text>
+      
+      <text x="2200" y="215.5" class="node-subtitle">Lane、claim、lease、heartbeat、wri</text><text x="2200" y="230.5" class="node-subtitle">te-set 与 CAS 协调多线程执行。</text>
+      <text x="2200" y="251.5" class="detail">同一任务只能被一个有效 claim 持有</text><text x="2200" y="266.5" class="detail">不相交文件范围可以并行</text><text x="2200" y="281.5" class="detail">崩溃后安全回收过期 lease</text>
     </g>
-
+  
 
     <g>
-      <rect x="720" y="228" width="290" height="120" rx="14" fill="#0f172a" fill-opacity="0.92" stroke="#c084fc" stroke-width="1.5"></rect>
-      <text x="736" y="256" class="node-title" fill="#d8b4fe">验证与交接</text>
-      <text x="736" y="272" class="node-subtitle">loop --run 可以显式创建或接入 worktree / branch，或提供等价包装入…</text>
-      <text x="736" y="282" class="detail">目标: OpenPrd</text><text x="736" y="298" class="detail">下一步: 完成 review 确认后生成 change 和 tasks，再实现 l…</text><text x="736" y="314" class="detail">在隔离 worktree 中连续完成多个 loop 任务时，每个任务都能生成独立 …</text><text x="736" y="330" class="detail">在脏主工作区直接尝试 finish --commit 时，会收到明确阻断和豁免提示。</text>
+      <rect x="776" y="173.5" width="256" height="125" rx="14" fill="#f0fdfa" fill-opacity="0.92" stroke="#0f766e" stroke-width="1.5"></rect>
+      <text x="792" y="197.5" class="node-title" fill="#0f766e">需求与项目服务</text>
+      
+      <text x="792" y="215.5" class="node-subtitle">Change、Task、Review、Quality、Kno</text><text x="792" y="230.5" class="node-subtitle">wledge 与 Migration 只通过控制平面</text><text x="792" y="245.5" class="node-subtitle">变更事实。</text>
+      <text x="792" y="266.5" class="detail">保持现有 CLI 兼容入口</text><text x="792" y="281.5" class="detail">Knowledge 有证据、作用域、有效期…</text>
     </g>
+  
 
+    <g>
+      <rect x="1128" y="181" width="256" height="110" rx="14" fill="#eef2ff" fill-opacity="0.92" stroke="#4f46e5" stroke-width="1.5"></rect>
+      <text x="1144" y="205" class="node-title" fill="#4338ca">Project Ledger</text>
+      
+      <text x="1144" y="223" class="node-subtitle">事件信封、连续 revision、幂等键和</text><text x="1144" y="238" class="node-subtitle">可重建投影构成唯一业务真相。</text>
+      <text x="1144" y="259" class="detail">current、task graph、review、know…</text><text x="1144" y="274" class="detail">支持 verify、replay 与损坏恢复</text>
+    </g>
+  
+
+    <g>
+      <rect x="72" y="251" width="256" height="125" rx="14" fill="#eef2ff" fill-opacity="0.92" stroke="#4f46e5" stroke-width="1.5"></rect>
+      <text x="88" y="275" class="node-title" fill="#4338ca">原子存储与版本清单</text>
+      
+      <text x="88" y="293" class="node-subtitle">原子写入、锁、checksum、reader/wri</text><text x="88" y="308" class="node-subtitle">ter 版本和迁移记录保护旧项目。</text>
+      <text x="88" y="329" class="detail">legacy、dual、ledger 三种兼容模式</text><text x="88" y="344" class="detail">真实升级前备份，失败按项目回滚</text><text x="88" y="359" class="detail">symlink 与过新 schema 安全拒绝写入</text>
+    </g>
+  
+      
       <g>
-        <text x="54" y="652" class="legend-label">图例</text>
-        <rect x="54" y="666" width="12" height="12" rx="3" fill="#22d3ee"></rect><text x="74" y="676" class="legend-label">体验</text>
-        <rect x="182" y="666" width="12" height="12" rx="3" fill="#34d399"></rect><text x="202" y="676" class="legend-label">核心逻辑</text>
-        <rect x="330" y="666" width="12" height="12" rx="3" fill="#c084fc"></rect><text x="350" y="676" class="legend-label">验证</text>
-        <rect x="476" y="666" width="12" height="12" rx="3" fill="#f59e0b"></rect><text x="496" y="676" class="legend-label">依赖</text>
-        <rect x="640" y="666" width="12" height="12" rx="3" fill="#fb7185"></rect><text x="660" y="676" class="legend-label">约束</text>
-        <rect x="798" y="666" width="12" height="12" rx="3" fill="#94a3b8"></rect><text x="818" y="676" class="legend-label">外部/用户</text>
+        <text x="54" y="436" class="legend-label">图例</text>
+        <rect x="54" y="450" width="12" height="12" rx="3" fill="#2563eb"></rect><text x="74" y="460" class="legend-label">体验</text><rect x="138" y="450" width="12" height="12" rx="3" fill="#0f766e"></rect><text x="158" y="460" class="legend-label">核心逻辑</text><rect x="250" y="450" width="12" height="12" rx="3" fill="#4f46e5"></rect><text x="270" y="460" class="legend-label">验证</text><rect x="334" y="450" width="12" height="12" rx="3" fill="#b45309"></rect><text x="354" y="460" class="legend-label">依赖</text><rect x="418" y="450" width="12" height="12" rx="3" fill="#dc2626"></rect><text x="438" y="460" class="legend-label">约束</text><rect x="502" y="450" width="12" height="12" rx="3" fill="#94a3b8"></rect><text x="522" y="460" class="legend-label">外部/用户</text>
       </g>
+  
     </svg>
   </div>
       <div class="summary-grid">
       <div class="card">
         <div class="card-header">
-          <span class="dot" style="background:#22d3ee"></span>
-          <span>范围</span>
+          <span class="dot" style="background:#2563eb"></span>
+          <span>用户得到什么</span>
         </div>
-        <ul><li>范围内: 给 openprd loop --run 增加显式 --worktree / --branch，或提供先创建隔离 worktree 再执行的包装入口。 / 在 commit 前增加主工作区脏状态门禁和显式 override 机制。 / 把提交范围从 g…</li><li>范围外: 不在这次能力里自动 push、开 PR 或发布。 / 不做复杂的交互式冲突解决或自动合并策略。</li><li>主流程: 用户为一个 change 进入 loop 开发时，OpenPrd 可显式创建或接入隔离 worktree 与命名分支，再在其中逐任务运行和提交。 / 每个任务验证通过后执行 finish --commit，只提交当前任务 write-scope / t…</li></ul>
+        <ul><li>进入项目后直接看到本次任务需要的最少上下文</li><li>多线程并行不会互相覆盖，冲突会说清原因和下一步</li><li>业务评审先看结果，工程细节仍能从同一结论追溯</li></ul>
       </div>
-
+    
 
       <div class="card">
         <div class="card-header">
-          <span class="dot" style="background:#34d399"></span>
-          <span>架构检查</span>
+          <span class="dot" style="background:#0f766e"></span>
+          <span>系统如何可靠</span>
         </div>
-        <ul><li>核心逻辑: 支持显式 worktree / branch 配置，或提供隔离运行包装命令。 / 支持检测主工作区脏状态，并在 finish --commit 前阻断高风险路径。</li><li>依赖: Git worktree 能力。 / 现有 loop task executionStrategy.writeScope 与 finish / verify 流程。</li><li>约束: 提交与状态写回不能泄露用户本地无关改动或敏感信息。</li></ul>
+        <ul><li>唯一项目账本 + 可重建投影，运行态不再冒充业务真相</li><li>revision、幂等键、claim、lease、write-set 与 CAS 防止丢失更新</li><li>上下文编译默认只读、可缓存、可增量、可解释</li></ul>
       </div>
-
+    
 
       <div class="card">
         <div class="card-header">
-          <span class="dot" style="background:#f59e0b"></span>
-          <span>评审重点</span>
+          <span class="dot" style="background:#b45309"></span>
+          <span>如何安全升级</span>
         </div>
-        <ul><li>确认缺失假设: 第一版默认以一个 change / 一段 loop 对应一个隔离 worktree 为优先模型，而不是每个 task 一个 worktree。 / 已有 task write-scope 在多数实现任务里足够收窄 commit 范围；不足时需要 …</li><li>开放问题: 第一版是否明确采用一个 change 一个 worktree、一个 task 一个 commit。 / worktree / branch 命名规范是否要产品化成 CLI 默认值。 / override 脏仓库门禁时，CLI 需要多强的显式确认语义。</li><li>在需求定稿前请用户确认模块、边界和缺失系统。</li></ul>
+        <ul><li>0.1.20 先以 dual 模式和旧状态对账</li><li>每个真实项目都先预检、备份、校验，再原子替换</li><li>归档保持不变，失败只回滚当前项目</li></ul>
       </div>
     </div>
       <div class="side-grid">
       <div class="card">
         <div class="card-header">
-          <span class="dot" style="background:#c084fc"></span>
+          <span class="dot" style="background:#4f46e5"></span>
           <span>假设</span>
         </div>
-        <ul><li>第一版默认以一个 change / 一段 loop 对应一个隔离 worktree 为优先模型，而不是每个 task 一个 worktree。</li><li>已有 task write-scope 在多数实现任务里足够收窄 commit 范围；不足时需要 touched files 补位。</li></ul>
+        <ul><li>待补充</li></ul>
       </div>
-
+    
 
       <div class="card">
         <div class="card-header">
-          <span class="dot" style="background:#f59e0b"></span>
+          <span class="dot" style="background:#b45309"></span>
           <span>评审说明</span>
         </div>
-        <ul><li>确认这些模块是否反映澄清后的目标架构。</li><li>标记缺失系统、边界或外部依赖。</li><li>在需求定稿前验证可靠性、合规和交接预期。</li></ul>
+        <ul><li>用户已明确授权按此架构继续实现，无需中途停顿。</li><li>任何 lost update、错误项目写入、归档变化、敏感信息泄漏或无法回滚都阻断真实刷新。</li><li>版本升级和 fleet 刷新只能在全量测试与项目级门禁健康后执行。</li></ul>
       </div>
     </div>
-      <div class="footer">负责人: Codex · 交接去向: OpenPrd · 最近生成: 2026-06-07 13:08:25</div>
+      <div class="footer">负责人: OpenPrd · 交接去向: OpenPrd CLI 与本地项目生态 · 最近生成: 2026-07-10 23:16:24</div>
     </div>
   </body>
 </html>
