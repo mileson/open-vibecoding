@@ -20,7 +20,7 @@ import {
 process.env.OPENPRD_HOME = path.join(os.tmpdir(), 'openprd-test-home-requirement-gate-safety');
 
 describe('Codex hook safety and design gates', () => {
-  test('Codex hook blocks skill and AGENTS edits until visualization confirmation is complete', async () => {
+  test('Codex hook keeps skill visualization advisory without blocking edits', async () => {
     const { project } = await makeCodexHookProject();
 
     const skillPrompt = runCodexHook(project, 'UserPromptSubmit', {
@@ -36,8 +36,9 @@ describe('Codex hook safety and design gates', () => {
       tool_name: 'apply_patch',
       tool_input: '*** Begin Patch\n*** Update File: skills/openprd-shared/SKILL.md\n@@\n+- pending edit\n*** End Patch',
     });
-    assert.equal(blockedSkillPatch.decision, 'block');
-    assert.ok(blockedSkillPatch.reason.includes('visualization-confirmation gate'));
+    assert.equal(blockedSkillPatch.decision, undefined);
+    assert.equal(blockedSkillPatch.continue, true);
+    assert.ok(JSON.stringify(blockedSkillPatch).includes('visualization advisory'));
 
     const confirmed = runCodexHook(project, 'UserPromptSubmit', {
       prompt: '确认执行',
@@ -114,7 +115,7 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(researchGate.status, 'evidence-collected');
   });
 
-  test('Codex hook blocks frontend implementation writes until active design contracts are filled', async () => {
+  test('Codex hook allows frontend writes while active design contracts are maintained in background', async () => {
     const { project } = await makeCodexHookProject();
 
     const frontendPrompt = runCodexHook(project, 'UserPromptSubmit', {
@@ -142,13 +143,10 @@ describe('Codex hook safety and design gates', () => {
         '*** End Patch',
       ].join('\n'),
     });
-    assert.equal(blockedPatchPayload.decision, 'block');
-    assert.ok(blockedPatchPayload.reason.includes('design-preflight contract is still incomplete'));
-    assert.ok(blockedPatchPayload.reason.includes('facts-sheet.md'));
-    assert.ok(blockedPatchPayload.reason.includes('asset-spec.md'));
-    assert.ok(blockedPatchPayload.reason.includes('image-preflight.md'));
-    assert.ok(blockedPatchPayload.reason.includes('direction-plan.md'));
-    assert.ok(blockedPatchPayload.reason.includes('selected-direction.md'));
+    assert.equal(blockedPatchPayload.decision, undefined);
+    assert.equal(blockedPatchPayload.continue, true);
+    assert.ok(JSON.stringify(blockedPatchPayload).includes('does not block'));
+    assert.ok(JSON.stringify(blockedPatchPayload).includes('do not ask the user to fill templates'));
 
     const activeDir = path.join(project, '.openprd', 'design', 'active');
     await fs.writeFile(path.join(activeDir, 'facts-sheet.md'), '# Facts\n\n- 开放时间：10:00-17:00\n- 中文语音导览：7 GBP\n- 会员优先：已知用户输入\n');

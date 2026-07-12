@@ -476,7 +476,7 @@ async function writeProjectCommandCatalog(projectRoot, options, changes) {
 }
 
 function agentContractBody() {
-  return [
+  const lines = [
     '## OpenPrd Harness',
     '',
     '本项目由 OpenPrd 管理。Agent 应优先遵循 repo-local skills 和 hooks；`AGENTS.md` 只保留轻量入口合同。',
@@ -527,8 +527,8 @@ function agentContractBody() {
     '- requirement：需求未完成 `clarify/review/change/tasks` 前阻断实现写入；tasks 就绪后，只有用户原始意图已明确要求实现，或后续在看过执行确认清单后明确发出执行指令时才放行。',
     '- research：公开 GitHub 架构/对标先 DeepWiki；第三方技术用法、配置、限制、版本差异或迁移先查本地证据，不足时再按 `resolve_library_id -> query_docs` 使用 Context7。',
     '- design：界面、页面、视觉和前端体验任务进入实现前，先读取 `$openprd-frontend-design`，并补齐 `.openprd/design/active/` 下的事实、素材、图片和方向合同。',
-    '- skill-visualization：修改 skill、`SKILL.md`、`AGENTS.md` 或相关 workflow 前，先输出彩色 Mermaid 方案并等待用户确认。',
-    '- autonomy-risk：即使已经授权实现，也默认阻断未经当前用户明确批准的云端热修复、生产远端写入、业务兜底、写死逻辑、客户端/服务端补业务数据或缓存补行。',
+    '- skill-visualization：修改 skill、`SKILL.md`、`AGENTS.md` 或相关 workflow 前，用彩色 Mermaid 说明方案；它是可视说明，不是用户授权门禁，用户已要求修改时可继续执行。',
+    '- autonomy-risk：风险识别只向 Agent 提供配置化、迁移、标准状态机、幂等脚本和可回滚发布路径建议，不承担授权审批；OpenPrd 不因生产、支付、删除、账号切换、兜底、写死或材料缺失阻断工具调用，也不索取用户确认，是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断。',
     '- secrets / weapp / browser / copy：分别处理 `secrets-vault`、按需的小程序运行态验证、窗口归属与 i18n/普通用户文案提醒。',
     '- 需要细节时，读 router 指向的 skill 和 command catalog，而不是继续扩写 `AGENTS.md`。',
     '',
@@ -538,7 +538,25 @@ function agentContractBody() {
     'If the quality report says `productionReady=false`, do not claim overall readiness. Reuse `openprd run . --verify` to separate current-task status from workspace-level debt, list the missing evidence or gates, and when only `feature-coverage` is pending describe it as task-ledger or evidence debt rather than a failed implementation.',
     'The only baseline documentation path is `docs/basic/`.',
     '',
-  ].join('\n');
+  ];
+  const overrides = new Map([
+    ['- requirement：', '- requirement：requirement、PRD、review、change 和 tasks 是 Agent 后台维护材料，不阻断实现、不索取用户确认。'],
+  ]);
+  return lines.map((line) => {
+    for (const [prefix, replacement] of overrides) {
+      if (line.startsWith(prefix)) {
+        return replacement;
+      }
+    }
+    return line
+      .replace('只有新功能/新流程方案才先走 requirement intake、对话内 requirement 摘要确认，再 `review/change/tasks`，最后才实现。', '新功能/新流程方案的 requirement、PRD、review、change 和 tasks 由 Agent 在后台维护，不阻断用户已经要求的实现。')
+      .replace('L2 的首轮澄清只能承诺“我先整理需求摘要给你确认”，不能把 requirement 摘要确认、review 和实现压成一句“你回我一句我就开始实现”。', 'L2 的需求摘要是 Agent 后台维护材料，不创建用户确认停顿。')
+      .replace('如果 `openprd run . --context` 仍然建议 `clarify-user`，当前这轮回复的目标就只能是 `需求摘要` 或 `1 个最高价值澄清点`，不要写成“我先按默认方案实现”。', '如果 `openprd run . --context` 建议 `clarify-user`，Agent 优先选择可逆默认方案并显式说明假设；是否提问由 Agent 自行判断。')
+      .replace('单纯的“请帮我实现/继续实现”只表示有执行意图，不表示可以跳过 requirement 摘要确认、`capture/classify/synthesize` 写入路径或 review；只有用户明确表示“不需要进行任何确认”时，才允许静默走完整 requirement write path。', '“请帮我实现/继续实现”表示执行意图；requirement、capture/classify/synthesize 和 review 由 Agent 在后台维护，不追加 OpenPrd 确认门禁。')
+      .replace('`review.html` 是稳定评审 artifact，不再默认等于唯一的人类停顿点；默认按 decision-points approval policy 执行，只有当前 lane 仍要求人类决策时才在 final answer 主体里停下请求确认；当 review 已确认且 tasks 已就绪但还需要执行授权时，先给执行确认清单再请用户确认。', '`review.html` 是稳定评审 artifact，不是授权门禁；Agent 自行记录并继续，OpenPrd 不要求用户批准评审稿或执行清单。')
+      .replace('Agent 要主动确认是否符合预期、是否纳入后续效果图/实现截图对比、以及是否按此继续实现；只有确认后，才把选定方向、整张图或其中子图整理成 reference-set 并进入实现。', 'Agent 应展示候选方向并说明采用的可逆默认方向；OpenPrd 不强制等待确认，用户明确选择时再覆盖默认方向并更新 reference-set。')
+      .replace('用户选定前不写入项目文件。用户选定后再定位源图或 contact sheet', 'Agent 可先保留候选源图并选择可逆默认方向；用户明确选定时优先采用。进入资产工程化后再定位源图或 contact sheet');
+  }).join('\n');
 }
 
 function parseSkillSourceMarkdown(text) {

@@ -33,7 +33,7 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
    - 只读命令：`status`、`validate`、`next`、`history`、`diff`、`interview`、`doctor`
    - 写入命令：`init`、`setup`、`update`、`classify`、`synthesize`、`diagram`、`release`、`freeze`、`handoff`
    - 执行命令：`loop --run`、`tasks --advance`、`discovery --advance`、`loop --finish --commit`、git commit、git push，必须有当前用户明确执行意图。
-   - 实现授权不包含云端热修复、生产远端写入、业务兜底、写死逻辑、客户端/服务端补业务数据或缓存补行；这些动作需要当前用户单独明确批准，并给出本地源码/配置/迁移同步与回滚计划。
+   - 用户要求实现、继续、修复、部署或发布时，OpenPrd 不再追加授权门禁。风险词和动作类型只用于提醒 Agent 优先选择配置化、可回滚、幂等或标准状态机方案，不触发 OpenPrd 阻断或用户确认；是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断，禁止要求用户复述固定授权口令。
 3. 不要虚构 OpenPrd 命令或产物类型。
    - 不确定时先对照 `openprd --help`。
 4. 共用规则放在这里，领域规则放到对应 skill。
@@ -100,7 +100,7 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
    - 触发条件：会明显改变页面信息架构、主视觉、核心布局、关键路径、组件层级/密度，或用户需要先选择设计方向。
    - 位置：需求分流之后、PRD 定稿或实现开工之前；它不是 `review.html`，也不是实现后的 `visual-compare`。
    - 步骤：用户不需要额外提出生图。已有界面时，Codex 原生 App 用 Computer Use、Codex 网页环境用 Chrome 插件任务专用窗口、Cursor 用可用浏览器或项目预览能力截当前真实界面；三个方向都以同一截图做 image-to-image，除非用户明确要求换风格，否则保持现有视觉 DNA。冷启动没有现有界面时，基于已确认 PRD、用户群体、第一版切片、视觉目标、气质端点和记忆点生成 design brief；按工具面用 Codex `imagegen`（Image 2）或 Cursor `GenerateImage` 至少生成 3 个不同设计思想方向；每个方向都要有具体审美主张和 anti-slop 自检；把效果图横向拼成一张大图，每张左上角标注 1/2/3，先作为候选效果图展示。
-   - 交互：主动确认是否符合预期、是否纳入后续效果图/实现截图对比、以及是否按此继续实现；只有确认后才把选定方向、整张图或其中子图整理到 `.openprd/harness/visual-reviews/`。用户确认前，不进入大 UI 实现，也不要声称界面方案已定。
+   - 交互：把候选方向直接给用户看，并说明 Agent 采用了哪个可逆默认方向及原因；OpenPrd 不强制等待用户确认，也不阻断大 UI 实现。用户明确选择时再覆盖默认方向并写入 `.openprd/harness/visual-reviews/`。
 14. 界面任务进入实现前，先用 `.openprd/design/` 锁定设计框架。
    - 页面涉及具体产品事实、版本、发布时间、规格、价格、引用数据或地点事实时，先补 `.openprd/design/active/facts-sheet.md`，不要凭记忆写页面。
    - 页面依赖 logo、产品图、UI 图、摄影图、插图、图表或品牌色字体时，先补 `.openprd/design/active/asset-spec.md`。
@@ -146,7 +146,7 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
 21. 修改 skill、`SKILL.md`、`AGENTS.md` 或相关 workflow 前，先可视化确认。
    - 先读取当前 skill / AGENTS 现状，再输出一张彩色 Mermaid 方案图。
    - Mermaid 必须区分 `unchanged`、`added`、`changed`、`removed`，并在图后用短说明写清新增、修改、保持不变、删除或阻断。
-   - 必须等待用户明确确认后，才能修改相关文件。
+   - Mermaid 用于帮助用户理解变更；OpenPrd 不把它变成写入授权门禁。Agent 可在输出方案图后按用户已提出的修改目标继续。
 22. 涉及微信小程序运行态时，只在明确需要运行态证据时再升级到本地验证。
    - 只有当用户明确要求小程序实测、验证、复现、页面操作、截图、日志、网络请求、开发者工具自动化，或当前改动高风险到必须依赖运行态证据时，才升级到小程序本地验证。
    - 一旦进入小程序运行态验证，默认沿用当前小程序运行态或开发者工具会话连续验证，不要为了验证自动重开应用；只有用户明确要求从 0 到 1、冷启动、重开或重新打开时，才从头启动。
@@ -170,8 +170,8 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
 - 单纯的“请帮我实现/继续实现”只表示有执行意图，不表示可以跳过 requirement 摘要确认、`capture/classify/synthesize` 写入路径或 review；只有用户明确表示“不需要进行任何确认”时，才允许静默走完整 requirement write path。
 - 声称实现就绪前，要说明文档影响检查是新增、更新，还是有意保持 `docs/basic/`、文件说明书和文件夹 README 不变。
 - 用户要求生成图片、封面图、配图、海报、插画、图标、贴纸、头像、banner、主视觉/KV、运营图、效果图、视觉稿、mockup、先看样子或先确认设计方向时，最终回复应给出 `imagegen` 生成的图片结果；只有实际发生 `imagegen` 调用后，才能汇报生图结果、失败或限流。Image 2 是工具路径，不是审美豁免；最终回复要能说明候选图是否满足用途、受众、气质和记忆点。生图结果先当候选效果图，并主动确认是否符合预期、是否纳入后续效果图/实现截图对比、以及是否按此继续实现。进入实现阶段后，已有确认参考图才给出 `openprd visual-compare --reference/--actual` 生成的 JPG 路径；如果参考图是一张整板、网格图或多对象组合，先运行 `openprd visual-prepare --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>` 并说明 contact sheet / compare-plan；没有参考图时先判断新建界面还是修改既有界面，新建界面先完成 3 方向方案评审，修改既有界面给出 `openprd visual-compare --before/--after` 生成的 JPG 路径；普通截图实测补 `openprd visual-compare --board <verification-board.json>`，同构列表、卡片、网格、表格或用户反馈没对齐时补 `openprd visual-compare --board <alignment-board.json>`，并说明相同槽位 spread 是否仍有偏差；最终同时说明是否仍有结构、气质、层级、颜色、字号、间距或记忆点差异。
-- 大界面改动进入实现前，最终回复或阶段性回复应给出 3 方向横向候选效果图大图，并明确等待用户确认是否纳入后续对比和继续实现；只有确认后再进入实现。
-- 在系统形态、产品流程或外部依赖仍有实质不确定性时，需求定稿前先向用户确认。
+- 大界面改动应给出 3 方向横向候选效果图大图；Agent 可选最符合目标且可逆的方向继续，OpenPrd 不强制等待确认。用户明确选择时优先采用用户方向。
+- 在系统形态、产品流程或外部依赖仍有实质不确定性时，Agent 先选择可逆默认方案并显式说明假设；是否需要提问由 Agent 自行判断，不由 OpenPrd 强制。
 - 当用户还没看过最新的 synthesize 产物或图示产物时，handoff 前先确认。
 - 当用户要求可视化说明，或当前解释明显包含复杂关系、路径、对比、边界或风险传播时，路由到 `$openprd-diagram-review`；优先判断是否适合轻量解释型 SVG，而不是默认进入正式评审图。
 

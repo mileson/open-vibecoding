@@ -1924,6 +1924,8 @@ function analyzePromptIntent(prompt) {
   const canvasCollaborationRequest = /(画布|canvas|excalidraw)/i.test(text)
     && /(标注|批注|协同|改图|回填|贴到画布|放到画布|插入画布|插到画布|画布评审|画布反馈|一起看|openprd\s*canvas|annotation)/i.test(text);
   const visualReview = /效果图|实现截图|视觉对比|视觉评审|对标效果图|复刻|不一致|好丑|没对齐|对不上|不像/i.test(text);
+  const largeUiVisualDirectionRequest = visualMockupRequest
+    && /(界面改动比较大|大界面|大改|改版|重做|重新设计|三种设计方向|3\s*种设计方向|多个设计方向|信息架构|核心布局|首屏|关键路径)/i.test(text);
   const directBugfixExecution = explicitExecution && bugfixOrDiagnostic;
   const newFeatureVerbMatched = /(新增|增加|新建)/.test(text);
   const capabilityCreationMatched = capabilityCreationPatterns.some((pattern) => pattern.test(text));
@@ -2017,6 +2019,7 @@ function analyzePromptIntent(prompt) {
     readOnly,
     simpleConcrete,
     visualMockupRequest,
+    largeUiVisualDirectionRequest,
     continuationRequest,
     continuationSessionId,
     continuationTaskHandle,
@@ -2705,11 +2708,10 @@ function detectHighRiskAutonomyMutation(root, payload, intent, risk) {
 
 function formatHighRiskAutonomyBlock(detection) {
   return [
-    `OpenPrd blocked a high-risk autonomy action: ${detection.title}.`,
-    '当前用户消息只授权了本轮实现范围，不等于授权 Agent 私自做云端热修复、生产远端写入、业务兜底、写死逻辑或缓存补行。',
+    `OpenPrd detected an autonomy risk: ${detection.title}.`,
     detection.details ? `Matched action: ${detection.details}` : null,
-    '默认路径：先改本地源码、配置、迁移或数据修复脚本，让本地与云端保持同一事实源；完成后再按正常发布/部署路径验证。',
-    '如果这次确实必须临时处理，请先让用户明确说“允许这次云端热修复”或“允许这次临时兜底/写死”，并说明影响范围、回滚方式和如何同步回本地源码/配置/迁移。',
+    'Agent 责任：优先改成配置、迁移、标准状态机、幂等脚本或可回滚发布路径并继续。OpenPrd 只提供风险提醒，不承担授权审批。',
+    'OpenPrd 不阻断工具调用，也不要求用户确认或复述固定授权口令；是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断。',
   ].filter(Boolean).join('\n');
 }
 
@@ -3043,7 +3045,7 @@ function skillVisualizationGateMessage(gate) {
   return [
     'OpenPrd skill/AGENTS 可视化确认门禁: active。',
     '当前请求涉及 skill、SKILL.md、AGENTS.md 或相关 workflow 规则变更。编辑前必须先读取现状，输出彩色 Mermaid 方案图，再用简短文字说明新增、修改、保持不变和删除/阻断项。',
-    'Mermaid 必须包含 `unchanged`、`added`、`changed`、`removed` 四种 classDef，并等待用户明确确认后才能修改相关文件。',
+    'Mermaid 应包含 `unchanged`、`added`、`changed`、`removed` 四种 classDef，用于解释变更；它不是 OpenPrd 授权门禁，用户已提出修改时可继续执行。',
   ].join('\n');
 }
 
@@ -3104,7 +3106,6 @@ function composeHookContext(root, intent = null, gate = null, progress = null, s
     weappGateMessage(readNamedGate(root, 'weapp', sessionId)),
     browserSafetyMessage(intent),
     productCopyMessage(intent),
-    largeUiVisualDirectionMessage(intent),
   ].filter(Boolean).join('\n');
 }
 
@@ -3357,7 +3358,6 @@ function recordRunHook(cwd, baseEvent, outcome) {
 
 function requirementGateMessage(intent, gate) {
   const gateBlocksImplementation = isBlockingRequirementGate(gate);
-  const approvalPolicy = requirementApprovalPolicy(gate);
   if (!intent?.requiresIntake && !gateBlocksImplementation) {
     return null;
   }
@@ -3372,21 +3372,13 @@ function requirementGateMessage(intent, gate) {
       'Before generation, do a quick anti-slop check: without brand or reference support, avoid default purple/blue-purple gradients, generic font taste, white card piles, and context-free decoration.',
     ].join('\n');
   }
-  const status = gateBlocksImplementation ? 'active' : 'opened';
   return [
-    'OpenPrd requirement intake gate: ' + status + '.',
-    'This prompt looks like a likely 新功能/新流程方案 (L2), so the heavy requirement-intake lane is active. Do not decide from fixed keywords; first use $openprd-requirement-intake to classify the user-visible requirement type by impact, unknowns, decision cost, and validation cost.',
+    'OpenPrd requirement intake runs in background and does not create a user approval stop.',
+    'This prompt looks like a likely 新功能/新流程方案 (L2). Use $openprd-requirement-intake to classify it by impact, unknowns, decision cost, and validation cost while continuing the work the user requested.',
     'Keep this mapping visible for internal review: 直接处理=L0, 现有功能优化=L1, 新功能/新流程方案=L2.',
     'L0 and L1 stay on lightweight paths and should not be forced through formal PRD/review/change/tasks unless the scope expands.',
-    'If the requirement type is 新功能/新流程方案 (L2), do not edit implementation files yet and proceed through PRD/review/change/tasks with the appropriate PRD scene lens: 通用场景、面向个人消费者场景、面向企业服务场景，或以 Agent 为主要使用场景。 Keep raw enum values such as base / consumer / b2b / agent for internal commands or records only; do not surface them to the user unless truly necessary.',
-    reviewPolicyAllowsSilentRecord(approvalPolicy)
-      ? 'Decision-point policy: because the user explicitly said there is no need for any confirmation stop, you may skip the requirement-summary confirmation stop, write back the requirement facts, synthesize the PRD, record the exact current stable review artifact, generate the OpenPrd change, prepare the task breakdown, then implement within the confirmed scope.'
-      : 'Decision-point policy: first output a short structured requirement summary in chat with 需求判断 / 需求理解 / 功能范围 / 技术方案, where 功能范围 and 技术方案 should prefer Markdown tables; if this is still a 0-to-1 or worth-doing discussion, also surface the validation/startup loop with 第一批最容易触达的社区或种子用户、你为什么算这个社区里的自己人、当前替代方案和痛点证据、先怎么手工交付、手工作战卡怎么写、能不能先用 spreadsheet / 表单 / no-code 跑起来、什么承诺才算真需求、有没有 10 个样本和更强付费信号、最低成本先验证什么、达到什么条件才允许产品化、增长阶段守什么纪律、以及验证阶段怎样先活下来; wait for the user to confirm that summary, then write back confirmed facts, synthesize the PRD, wait for a human decision on the stable review artifact, generate the OpenPrd change, prepare the task breakdown, then implement within the confirmed scope.',
-    reviewPolicyAllowsSilentRecord(approvalPolicy)
-      ? 'This lane is in silent-record mode only because the user explicitly said there is no need for any further review or confirmation stop. Plain "请帮我实现" is not enough; you may record only the exact current version, digest, and work unit.'
-      : 'Requirement-summary confirmation, review-artifact confirmation, and implementation authorization are different gates: do not treat "可以开做", "继续实现", plain "请帮我实现", or "不需要评审" as permission to skip them.',
-    'If the original request already asked to implement, execution can continue once the active approval policy and tasks are ready; otherwise wait for a clear execution request.',
-    'Recommended next action: write a short 需求类型判断 in chat, and by default merge the route into the label as 需求类型：新功能/新流程方案（L2）; only add a separate 内部路由码 when internal debugging truly benefits. Then run openprd clarify ., summarize the requirement in chat using 需求判断 / 需求理解 / 功能范围 / 技术方案, prefer Markdown tables for 功能范围 and 技术方案, and if the ask still looks like 0-to-1 validation also add 第一批最容易触达的社区或种子用户、你为什么算这个社区里的自己人、当前替代方案和痛点证据、先怎么手工交付、手工作战卡怎么写、能不能先用 spreadsheet / 表单 / no-code 跑起来、什么承诺才算真需求、有没有 10 个样本和更强付费信号、最低成本先验证什么、达到什么条件才允许产品化、增长阶段守什么纪律、以及验证阶段怎样先活下来; ask for confirmation, and only after that write back confirmed facts. Do not open a clarification HTML page; the formal HTML review happens after synthesize/review.',
+    'For L2, maintain PRD/review/change/tasks and the appropriate scene lens in the background. Do not block implementation files, do not ask the user to approve OpenPrd artifacts, and do not expose internal enum values unless necessary.',
+    'Write back the best-supported facts with explicit source labels, synthesize the PRD, record the stable review artifact, generate the change, and prepare tasks as Agent-owned maintenance. If information is uncertain, choose a reversible default and state the assumption instead of turning OpenPrd into a confirmation gate.',
   ].join('\n');
 }
 
@@ -3488,7 +3480,10 @@ function learningReviewMessage(intent = null) {
   return lines.join('\n');
 }
 
-function largeUiVisualDirectionMessage() {
+function largeUiVisualDirectionMessage(intent = null) {
+  if (!intent?.largeUiVisualDirectionRequest) {
+    return null;
+  }
   return [
     'OpenPrd 大界面改动视觉方案评审:',
     '位置: 需求分流之后、PRD 定稿或实现开工之前；它不同于 review.html，也不同于实现后的 visual-compare。',
@@ -3496,7 +3491,7 @@ function largeUiVisualDirectionMessage() {
     '自动性: 用户不需要额外提出“请生图”。只要语义判断命中大界面改动或视觉决策成本高，就主动完成 3 方向生成；卡片宽度、间距、对齐、颜色、圆角、字号等轻量微调不触发。',
     '步骤: 已有界面时，Codex 原生 App 用 Computer Use，Codex 网页环境用 Chrome 插件的任务专用窗口，Cursor 用当前可用的浏览器或项目预览能力，进入对应功能并截当前真实界面。三个方向必须把同一张截图作为 image-to-image 参考；除非用户明确要求换风格，否则锁定现有字体角色、色彩系统、明暗模式、表面语言、圆角/边框/阴影、图标语言、平台框架和信息密度，只探索布局、信息层级、导航、关键路径和空间构图。冷启动没有现有界面时，基于已确认 PRD、用户画像、第一版切片和视觉目标写 design brief，不伪造修改前截图。brief 必须写清用途、受众、气质端点、约束和记忆点，3 个方向要分别说明审美主张和主动避开的模板味。然后按生图路由调用内置生图工具（Codex=`imagegen`/Image 2，Cursor=`GenerateImage`；都不可用时按 `.openprd/harness/image-generation-preference.json` 的用户已确认偏好，没有偏好先问用户）生成至少 3 个不同设计思想方向；把效果图横向拼成一张带 1/2/3 序号的大图，先作为候选效果图给用户评审，不要默认写入 `.openprd/harness/visual-reviews/` 当验收参考。',
     '质量: 每个方向都要从用途、用户、业务约束、核心动作和唯一记忆点出发，同时检查字体角色、色彩、空间构图、信息层级、表面/图标语言和动效含义；拒绝无依据蓝紫渐变、默认字体、等权白卡堆叠、过量大圆角、无语境装饰和只换颜色的伪方向。',
-    '交互: 主动追问三件事：是否符合预期、是否纳入后续效果图/实现截图对比、是否按此继续后续实现。只有用户确认纳入后续对比或继续实现后，才把选定方向、整张图或其中子图整理成 reference-set 并写入 `.openprd/harness/visual-reviews/`；用户确认前，不进入大 UI 实现，也不要声称界面方案已定。',
+    '交互: 把三个方向直接给用户看，并说明 Agent 采用的可逆默认方向及原因；OpenPrd 不强制等待确认，也不阻断大 UI 实现。用户明确选择时再覆盖默认方向并更新 reference-set。',
     '多对象参考处理: 如果候选效果图是一张图里包含多个子图、网格、多对象或多方向，不要拿整板直接硬比；先运行 `openprd visual-prepare . --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>`，检查 contact sheet，确认 reference-set 后再逐项进入实现和验收。',
   ].join('\n');
 }
@@ -3513,69 +3508,30 @@ function visualLocalAdjustmentMessage() {
 }
 
 function codexConfirmationReplyRule() {
-  return 'Codex 回复规则: 只有当前真的还缺人来拍板时，才在 final answer 里停下来请求确认。停下请求确认时执行“一次确认合同”：把本条需求后续本来会出现的全部确认点合并成一段话一次性说清，并告诉用户只要回一句“确认，继续执行”，剩余环节会自动连续推进；同一条需求不允许出现第二个人工确认停顿。绝对不要让用户粘贴 digest、work unit、版本号或任何 openprd 命令——这些值 hook 会自动绑定，需要时由你自己填进命令。只要用户已经明确说了“认可并继续”，或已经确认了 mini-plan、范围边界、正式产品边界，就直接沿着已确认路径继续，不要再写“如果你认可”“确认的话我就继续”这类二次索取确认的话。面向用户时，不要直接抛 lane、change、tasks、review artifact、work unit、digest、worker shard、write-scope、worktree、内部版本号、命令或文件路径这些内部词；统一改说“需求确认稿”“本次调整”“后续任务”“继续落地”“完成后检查”。如果后面真的还需要额外授权，再用人话把会做什么、不会做什么、完成后怎么检查说清楚。如果当前仍在 L2 的首轮澄清或需求摘要确认阶段，不要写成“你回我一句我就开始实现”；只能承诺“我先整理需求摘要给你确认，确认后再继续”。如果当前 lane 已进入 silent-record 策略，只能说明用户已经明确说了“不需要进行任何确认”；单纯的“请帮我实现/继续实现”不能把 lane 切到 silent-record。';
+  return 'Codex 回复规则: OpenPrd 不创建用户确认停顿，不要求用户批准需求摘要、评审稿、change、tasks、设计合同、测试证据或风险分类，也不要求粘贴 digest、work unit、版本号或命令。Agent 在后台维护这些材料并继续用户要求的工作；是否因真实上下文需要向用户提问，只由当前 Agent 依据宿主安全规则和任务信息自行判断，不由 OpenPrd 强制。';
 }
 
 function confirmationGateMessage(gate) {
   if (!gate || gate.active) {
     return null;
   }
-  const intro = gate.status === 'execution-authorized'
-    ? 'OpenPrd requirement intake gate auto-authorized execution after review confirmation and task preparation because the original user request already asked to implement.'
-    : 'OpenPrd requirement intake gate was explicitly confirmed by the user.';
   return [
-    intro,
-    'Implementation may proceed only within the confirmed scope, with docs/basic, file manuals, folder README docs, standards verification, and OpenPrd run verification kept up to date. For backend, script, agent, tooling, service, or data-processing changes, keep CLI and API surface review current in docs/basic/backend-structure.md.',
+    'OpenPrd requirement materials are Agent-maintained background records and do not create a user approval stop.',
+    'Continue the user-requested work while keeping docs, review records, tasks, and verification evidence accurate.',
     'For UI or visual work with an existing reference image, first confirm the user has accepted that image as a later comparison reference; if one image contains multiple sub-images, grid cells, or objects, run openprd visual-prepare . --reference <effect-image> --grid <columns>x<rows> or --boxes <plan.json>, inspect the contact sheet, and use the generated reference-set / compare-plan before comparing. Then capture the implemented UI and run openprd visual-compare . --reference <effect-image> --actual <implementation-screenshot>; if local detail matters more than the whole screen, add openprd visual-compare . --board <focus-board.json> --locale <zh-CN|en> so the agent can review numbered zoom regions. When there is no reference image, capture the before screenshot first, implement, capture the after screenshot from the same entry, viewport, account, and data state, then run openprd visual-compare . --before <before-screenshot> --after <after-screenshot>; if the agent explored multiple optimization directions, add openprd visual-compare . --board <parallel-board.json> --locale <zh-CN|en>. If ordinary screenshots or Computer/Browser/Playwright checks are used as evidence, assemble them with the checked path and checkpoints through openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en> before claiming visual completion. If the UI contains repeated homogeneous cards, lists, grids, or tables, or the user reports misalignment, capture the real screen, overlay guide lines, measure both container-track and internal content-slot x/y/size/baseline spread, and assemble an alignment-board through openprd visual-compare . --board <alignment-board.json> --locale <zh-CN|en>. If a single logo, icon, avatar, badge, button graphic, or image crop needs internal-centering or visual-centroid judgment, crop the target and assemble a centering-board through openprd visual-compare . --board <centering-board.json> --locale <zh-CN|en> before claiming it is centered.',
     'If the user later says the implementation does not match the effect image, looks wrong, or asks for replication, do not rely on subjective narration alone; produce at least one visual evidence artifact before claiming completion.',
   ].join('\n');
 }
 
 function currentRequirementStatusLine(gate, progress) {
-  if (gate?.status === 'review-confirmation-authorized') {
-    return gate?.reviewActionAuthorization?.continueAfterReview
-      ? '用户刚刚已经确认这版需求，并且明确表示继续。先记录这次确认结果，然后直接接着整理本次调整和后续任务；只有后面真的还缺额外授权时，再用人话说明影响和下一步。'
-      : '用户刚刚已经确认这版需求；本回合只允许记录这次确认结果，不能把它直接扩展成开工授权。';
-  }
-  if (gate?.status === 'review-recording-authorized') {
-    return '这版需求确认稿已经按免再次确认的规则授权记录；只记录这一次确认结果，然后继续整理本次调整和后续任务。';
-  }
-  switch (progress?.nextStep) {
-    case 'clarification-confirmation-required':
-      return '当前卡点: 先让用户确认当前需求摘要；在此之前不要把核心需求写成既定事实，也不要直接往后推进。请求确认时按“一次确认合同”表达：明确告诉用户这是本条需求默认唯一的一次人工确认，只要回复“确认，继续执行”，后面的需求稿整理、调整范围、任务拆解和实现都会自动连续推进，不会再逐环节找他确认。';
-    case 'clarification-writeback-required':
-      return '当前卡点: 用户已经确认这轮需求摘要或默认方案，但 current.json 里还没有把确认后的事实稳定写回。先按 canonical 字段路径用 user-confirmed 回写，再继续 synthesize；不要再回退成泛化 clarify，也不要继续写 agent-inferred。';
-    case 'product-type-classification-required':
-      return '当前卡点: 用户已经确认这轮需求摘要，但产品场景还没锁定。先完成 classify 并让当前 lane 的产品场景与写回事实一致，再继续 synthesize。';
-    case 'requirement-interview-required':
-      return '当前卡点: 用户已经确认这轮需求摘要，但 current.json 里还缺这轮 requirement 的关键事实。先补齐 canonical 字段，必要时再用 openprd interview 收敛剩余问题，然后继续 synthesize。';
-    case 'prd-synthesis-required':
-      return reviewPolicyAllowsSilentRecord(requirementApprovalPolicy(gate))
-        ? '当前卡点: 用户已明确表示不需要再停下来确认，可以直接整理已确认内容，并生成这版需求确认稿。'
-        : '当前卡点: 当前需求摘要已确认，下一步把已确认内容整理成这版需求确认稿。';
-    case 'prd-review-required':
-      return progress?.review?.versionId
-        ? '当前卡点: 先等用户确认这版需求确认稿；不要把“继续做”“开落地吧”或单纯的“请帮我实现/继续实现”当成已经认可这版内容。请求确认时只需要用户回一句自然语言，例如“确认这版，继续执行”；版本、digest、work unit 由 hook 自动绑定，绝对不要让用户粘贴 digest、work unit 或任何 openprd 命令。同时说明这一句确认之后整条链会自动执行到实现，不会再停。'
-        : '当前卡点: 先整理出这版需求确认稿，再等待用户确认。';
-    case 'review-recording-required':
-      return '当前卡点: 这版需求确认稿已经生成，而且用户已明确表示不需要再停下来确认；可以先记录这次确认结果，再继续后面的整理。';
-    case 'change-generation-required':
-      return '当前卡点: 这版需求已经确认，下一步先整理本次调整范围；这是当前流程的直接延续，不需要再重复索取同一轮确认。';
-    case 'task-breakdown-required':
-      return '当前卡点: 本次调整范围已经立起来了，下一步把它拆成可直接执行的后续任务。';
-    case 'implementation-ready':
-      return '当前卡点: 这版需求和后续任务都准备好了。如果用户一开始就明确要继续做，就直接进入实现；否则再用人话说明这次会做什么、不会做什么、完成后怎么检查。若用户刚刚确认的是 L1 范围边界或 mini-plan，承接话术要写成“已确认，我按这个继续”，不要再写成像二次索取确认的句子。';
-    default:
-      return '当前卡点: 继续按“澄清需求 -> 确认需求 -> 整理本次调整 -> 拆分后续任务 -> 开始实现”的顺序推进。';
-  }
+  const next = progress?.nextStep || gate?.status || 'continue';
+  return `后台维护状态: ${next}。这是 Agent 的记录任务，不是用户卡点；继续用户要求的工作并自行补齐。`;
 }
 
 function currentRequirementMessage(intent, gate, progress) {
   const prompt = stripMarkdown(gate?.promptPreview || '');
   const approvalPolicy = requirementApprovalPolicy(gate);
-  const gateStatus = isImplementationAdvanceIntent(intent)
-    ? 'OpenPrd requirement intake gate was explicitly confirmed by the user.'
-    : 'OpenPrd requirement intake gate: active.';
+  const gateStatus = 'OpenPrd requirement intake runs in background and does not block the user-requested implementation.';
   const lines = [
     'OpenPrd 当前需求入口',
     gateStatus,
@@ -3588,21 +3544,17 @@ function currentRequirementMessage(intent, gate, progress) {
     gate?.intakeMode === 'deep-reflection'
       ? '需求入口: 先运行需求自省，再输出对话内澄清摘要或简短清单。'
       : '需求入口: 先做轻量项目映射，再确认影响点和验收方式。',
-    reviewPolicyAllowsSilentRecord(approvalPolicy)
-      ? '当前 approval policy: decision-points / silent-record。之所以进入 silent-record，是因为用户已经明确表示不需要进行任何确认；单纯的“请帮我实现/继续实现”或“不要评审”都不够，仍然只能记录版本、digest、work unit 精确匹配的 artifact。'
-      : '当前 approval policy: decision-points / human-review。当前 lane 仍需要一次 requirement 摘要确认和一次稳定 review artifact 的明确人类决策；单纯的“请帮我实现/继续实现”不算这两次决策。',
+    '当前 approval policy: agent-maintained。需求摘要、稳定评审记录、change 和 tasks 由 Agent 在后台维护；用户要求实现或继续时，不再要求额外确认口令、digest、work-unit id 或命令。',
     intent?.reviewContinuationRequested
       ? '这条消息同时表达了“确认当前稳定评审稿并继续当前 OpenPrd 下一步”的意图：先记录精确 review artifact，再继续当前 lane；如果 review 后 tasks 已就绪但还需要执行授权，立刻展示执行确认清单，不要停在“如果你要我继续”。'
       : '',
     currentRequirementStatusLine(gate, progress),
-    reviewPolicyAllowsSilentRecord(approvalPolicy)
-      ? 'Decision-point order: because the user explicitly waived any confirmation stop, you may skip requirement-summary confirmation, write back requirement facts, synthesize the PRD, record the exact stable review artifact, generate the OpenPrd change, prepare the task breakdown, then implement within the confirmed scope.'
-      : 'Decision-point order: clarify the requirement, summarize it in chat using 需求判断 / 需求理解 / 功能范围 / 技术方案, prefer Markdown tables for 功能范围 and 技术方案, and if the ask still looks like 0-to-1 validation also surface 第一批最容易触达的社区或种子用户、你为什么算这个社区里的自己人、当前替代方案和痛点证据、先怎么手工交付、手工作战卡怎么写、能不能先用 spreadsheet / 表单 / no-code 跑起来、什么承诺才算真需求、有没有 10 个样本和更强付费信号、最低成本先验证什么、达到什么条件才允许产品化、增长阶段守什么纪律、以及验证阶段怎样先活下来; wait for the user to confirm that requirement summary, write back only confirmed facts, synthesize the PRD, wait for a human review decision on the stable artifact, generate the OpenPrd change, prepare the task breakdown, then implement within the confirmed scope.',
-    'Recommended next action: 先在 chat 输出“需求类型判断”，默认把路由码并进“需求类型：新功能/新流程方案（L2）”这类标签里；只有内部排障确实需要时，才额外写“内部路由码”。若为新功能/新流程方案（L2），再运行 openprd clarify .，并按“需求判断 / 需求理解 / 功能范围 / 技术方案”给出结构化摘要，其中“功能范围”和“技术方案”优先用 Markdown 表格；`需求判断` 和 `需求理解` 先用轻量主句说清这次是什么、核心问题和第一版目标，再把边界、风险、异常例子和技术细项下沉到后续分项或表格，不要把某条示例文案写成固定模板。如果这轮本质上还在判断值不值得做，还要主动补上：第一批最容易触达的社区或种子用户、当前替代方案、先怎么手工交付、什么承诺才算真需求、最低成本先验证什么，以及验证阶段怎样先活下来。请求确认后再写回 requirement 事实并继续 classify/synthesize，不要把这一步表述成“确认后直接开始实现”。Do not open clarification HTML; use review.html only after synthesize/review.',
+    'Decision-point order: Agent 先吸收用户原始意图并继续当前安全范围内的工作，同时在后台补写需求事实、PRD、评审记录、change 和 tasks；材料不完整时记录缺口，不中断用户任务。',
+    'Recommended next action: 用户要求实现、继续、修复、部署或发布时直接推进；需要的需求类型判断和结构化摘要由 Agent 自行整理，只有真实产品方向存在多个会明显改变结果的选择时才向用户提一个必要问题。',
   ];
   if (isImplementationAdvanceIntent(intent)) {
     lines.splice(2, 1, gate?.active
-      ? '用户表达了继续实现的意图；但在 review 评审、change 和任务拆解走完之前，仍然阻断实现写入。'
+      ? '用户表达了继续实现的意图；直接进入安全范围内的实现，review、change 和任务拆解由 Agent 在后台补齐。'
       : '用户已确认当前需求可以进入执行范围；仍需保持实现范围与已确认的需求入口一致。');
   }
   lines.push(codexConfirmationReplyRule());
@@ -3610,7 +3562,7 @@ function currentRequirementMessage(intent, gate, progress) {
 }
 
 function requirementRoutingSummary() {
-  return '需求类型由 $openprd-requirement-intake 按影响面、未知数、决策成本和验证成本判断：直接处理(L0)可直接处理并事后说明，不打开正式 PRD/review/change/tasks；现有功能优化(L1)先给对话内 mini-plan，默认不生成正式 PRD/change/tasks；新功能/新流程方案(L2)才进入 requirement intake 与 PRD/review/change/tasks，并选择通用场景 / 面向个人消费者场景 / 面向企业服务场景 / 以 Agent 为主要使用场景的 PRD 视角。对用户复述时不要直接把 consumer / b2b / agent 当展示词；这些枚举值只用于内部记录和命令。单纯的“请帮我实现/继续实现”只表示有执行意图，不表示跳过 requirement 摘要确认或 review；只有用户明确表示不需要进行任何确认时，才允许静默走完整 requirement write path。';
+  return '需求类型由 $openprd-requirement-intake 按影响面、未知数、决策成本和验证成本判断：直接处理(L0)直接完成；现有功能优化(L1)用轻量 mini-plan；新功能/新流程方案(L2)由 Agent 在后台维护 requirement、PRD、review、change 和 tasks。用户说“实现、继续、修复、部署、发布”就是当前目标范围内的有效执行意图，不再要求补确认口令或流程材料。';
 }
 
 function historicalRequirementReminder(root, runContext, intent, gate) {
@@ -3648,6 +3600,9 @@ function contextMessage(cwd, intent = null, gate = null, progress = null) {
     : runOpenPrdContext(cwd, intent?.promptText ?? null);
   const effectiveProgress = progress ?? evaluateRequirementGateProgress(cwd);
   const gateMessage = requirementGateMessage(intent, gate) || confirmationGateMessage(gate);
+  const runText = String(run.stdout || '');
+  const largeUiContext = runText.includes('OpenPrd 大界面改动视觉方案评审:') ? null : largeUiVisualDirectionMessage(intent);
+  const visualAdjustmentContext = runText.includes('如果这轮验收重点在局部变化') ? null : visualLocalAdjustmentMessage();
   if (run.ok) {
     const separateCurrentRequirement = Boolean(intent?.requiresIntake || ((intent?.confirmation || intent?.reviewDecision) && gate?.promptPreview));
     if (separateCurrentRequirement) {
@@ -3660,13 +3615,13 @@ function contextMessage(cwd, intent = null, gate = null, progress = null) {
         visualMockupMessage(intent, cwd),
         canvasCollaborationMessage(intent),
         learningReviewMessage(intent),
-        largeUiVisualDirectionMessage(),
-        visualLocalAdjustmentMessage(),
+        largeUiContext,
+        visualAdjustmentContext,
         requirementRoutingSummary(),
         '如果用户只是要求看看、规划、分析、审查、解释影响或列出文件，请保持只读并基于证据回答；不要运行 OpenPrd loop、任务推进、discovery 推进、commit 或其他写入命令。',
         '只有当用户当前明确要求开发、实现、修复、继续任务、深度调研、对标复刻或提交时，才运行 openprd loop --run、openprd tasks --advance、openprd discovery --advance、commit/push 等执行命令。',
         '代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 openprd dev-check . <file...>；若出现需要关注的文件：自动优化开启（默认）时，先在本轮完成高内聚低耦合拆分（不丢功能、行为不变、拆完重跑测试），最终回复以 **OpenPRD 自动优化报告** 为标题直接复用 dev-check 生成的 Markdown 表格（列：影响对象、问题级别、源文件规模、优化原因、本次处理结果、后续建议），并附自动优化开关确认一句话；自动优化关闭时，以 **后续建议** 为标题复用表格（列：影响对象、关注程度、规模信号、预警原因、本次处理结果、后续建议）。两种模式都按 🔴 → 🟠 → 🟡 排序；不要把“问题级别／关注程度”列改写成纯 emoji，必须保留例如“🟠 中风险｜建议优先关注”这类完整标签；如果你改写了表格文案，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。',
-        '大界面改动的效果图先当候选效果图；出图后主动确认是否符合预期、是否纳入后续效果图/实现截图对比、是否按此继续实现。只有确认后，才把选定方向、整张图或其中子图整理到 `.openprd/harness/visual-reviews/` 并进入大 UI 实现。',
+        '大界面改动的效果图先当候选效果图；Agent 可选择最符合目标且可逆的默认方向继续，并说明假设。用户明确选择时再更新 `.openprd/harness/visual-reviews/`，OpenPrd 不强制确认停顿。',
         '涉及界面、页面、视觉、样式或前端体验时，已有确认参考图才运行 openprd visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en>；如果一张参考图里有多个子图/对象/网格，先运行 openprd visual-prepare . --reference <效果图> --grid <列>x<行> 或 --boxes <plan.json>，确认 contact sheet 后再逐项对比。没有明确参考图时先判断新建还是修改：新建界面走实现前 3 方向方案评审；修改既有界面则动手前先截修改前截图，完成后运行 openprd visual-compare . --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>；如果并行试了多个优化方向，再补一份 openprd visual-compare . --board <parallel-board.json> --locale <zh-CN|en>。普通截图、Computer/Browser/Playwright 实测截图只能作为原始素材，收口前要补 openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en> 的截图实测证据板。新开发或修改同构列表、卡片、网格、表格时，或用户反馈没对齐/排版漂移时，还要补 openprd visual-compare . --board <alignment-board.json> --locale <zh-CN|en> 的对齐辅助线证据板，同时量测容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位的 x/y/宽高/baseline spread。单个素材/图标/头像/徽标/按钮图形/图片内部居中、偏心或视觉重心判断时，还要补 openprd visual-compare . --board <centering-board.json> --locale <zh-CN|en> 的内部居中证据板，同时量测画布中心、主体外接框中心和视觉重心偏移。用户后续如果说“跟效果图”“不一致”“好丑”“复刻”，不能只口头说对比过了，至少产出一份 visual-compare / focus-board / parallel-board / verification-board / alignment-board / centering-board 证据图。',
         '发现可沉淀项时不要中途打断任务：代码扩展识别这类白名单工具补全会自动应用并记录；用户偏好、项目协作规矩和 OpenPrd 默认行为先记录为候选，收工时运行 openprd grow . --review 集中确认。',
         '维护 OpenPrd 本身且涉及配置类能力时，先判断是否应纳入 openprd grow；高置信可成长默认纳入，不确定则主动询问用户。',
@@ -3683,13 +3638,13 @@ function contextMessage(cwd, intent = null, gate = null, progress = null) {
       visualMockupMessage(intent, cwd),
       canvasCollaborationMessage(intent),
       learningReviewMessage(intent),
-      largeUiVisualDirectionMessage(),
-      visualLocalAdjustmentMessage(),
+      largeUiContext,
+      visualAdjustmentContext,
       requirementRoutingSummary(),
       '如果用户只是要求看看、规划、分析、审查、解释影响或列出文件，请保持只读并基于证据回答；不要运行 OpenPrd loop、任务推进、discovery 推进、commit 或其他写入命令。',
       '只有当用户当前明确要求开发、实现、修复、继续任务、深度调研、对标复刻或提交时，才运行 openprd loop --run、openprd tasks --advance、openprd discovery --advance、commit/push 等执行命令。',
       '代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 openprd dev-check . <file...>；若出现需要关注的文件：自动优化开启（默认）时，先在本轮完成高内聚低耦合拆分（不丢功能、行为不变、拆完重跑测试），最终回复以 **OpenPRD 自动优化报告** 为标题直接复用 dev-check 生成的 Markdown 表格（列：影响对象、问题级别、源文件规模、优化原因、本次处理结果、后续建议），并附自动优化开关确认一句话；自动优化关闭时，以 **后续建议** 为标题复用表格（列：影响对象、关注程度、规模信号、预警原因、本次处理结果、后续建议）。两种模式都按 🔴 → 🟠 → 🟡 排序；不要把“问题级别／关注程度”列改写成纯 emoji，必须保留例如“🟠 中风险｜建议优先关注”这类完整标签；如果你改写了表格文案，先用 `node scripts/dev-check-wrapup-copy.mjs --validate` 校验每格不超过 20 字；若报错，按提示缩短后重试。',
-      '大界面改动的效果图先当候选效果图；出图后主动确认是否符合预期、是否纳入后续效果图/实现截图对比、是否按此继续实现。只有确认后，才把选定方向、整张图或其中子图整理到 `.openprd/harness/visual-reviews/` 并进入大 UI 实现。',
+      '大界面改动的效果图先当候选效果图；Agent 可选择最符合目标且可逆的默认方向继续，并说明假设。用户明确选择时再更新 `.openprd/harness/visual-reviews/`，OpenPrd 不强制确认停顿。',
       '涉及界面、页面、视觉、样式或前端体验时，已有确认参考图才运行 openprd visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en>；如果一张参考图里有多个子图/对象/网格，先运行 openprd visual-prepare . --reference <效果图> --grid <列>x<行> 或 --boxes <plan.json>，确认 contact sheet 后再逐项对比。没有明确参考图时先判断新建还是修改：新建界面走实现前 3 方向方案评审；修改既有界面则动手前先截修改前截图，完成后运行 openprd visual-compare . --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>；如果并行试了多个优化方向，再补一份 openprd visual-compare . --board <parallel-board.json> --locale <zh-CN|en>。普通截图、Computer/Browser/Playwright 实测截图只能作为原始素材，收口前要补 openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en> 的截图实测证据板。新开发或修改同构列表、卡片、网格、表格时，或用户反馈没对齐/排版漂移时，还要补 openprd visual-compare . --board <alignment-board.json> --locale <zh-CN|en> 的对齐辅助线证据板，同时量测容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位的 x/y/宽高/baseline spread。单个素材/图标/头像/徽标/按钮图形/图片内部居中、偏心或视觉重心判断时，还要补 openprd visual-compare . --board <centering-board.json> --locale <zh-CN|en> 的内部居中证据板，同时量测画布中心、主体外接框中心和视觉重心偏移。用户后续如果说“跟效果图”“不一致”“好丑”“复刻”，不能只口头说对比过了，至少产出一份 visual-compare / focus-board / parallel-board / verification-board / alignment-board / centering-board 证据图。',
       '发现可沉淀项时不要中途打断任务：代码扩展识别这类白名单工具补全会自动应用并记录；用户偏好、项目协作规矩和 OpenPrd 默认行为先记录为候选，收工时运行 openprd grow . --review 集中确认。',
       '维护 OpenPrd 本身且涉及配置类能力时，先判断是否应纳入 openprd grow；高置信可成长默认纳入，不确定则主动询问用户。',
@@ -4294,13 +4249,11 @@ function handle(eventName, cwd, payload) {
         || isSilentRecordReviewMarkCommand(payload, gate, progress)
       );
     if (skillGate?.active && looksLikeSkillContractMutation(root, payload)) {
-      appendEvent(root, { ...baseEvent, outcome: 'blocked-skill-visualization-gate' });
-      recordRunHook(root, baseEvent, 'blocked-skill-visualization-gate');
+      appendEvent(root, { ...baseEvent, outcome: 'allowed-skill-visualization-advisory' });
+      recordRunHook(root, baseEvent, 'allowed-skill-visualization-advisory');
       updateHookState(root, baseEvent);
-      return blockHook([
-        'OpenPrd blocked a skill/AGENTS mutation because the visualization-confirmation gate is still active.',
-        'Before editing SKILL.md, AGENTS.md, or related skill workflow files, first output a color-coded Mermaid plan, summarize added/changed/unchanged/removed items, then wait for explicit user confirmation.',
-      ].join('\n'));
+      recordTouchedFiles(root, payload);
+      return allowHook('OpenPrd skill visualization advisory: use a color-coded Mermaid plan to explain the change when useful, but do not block the user-requested edit or ask for OpenPrd-specific confirmation.');
     }
     if (researchGate?.active && isMutationPayload(payload, risk) && !authorizedReviewMutation) {
       const researchBlockStreak = bumpProcessGateBlockCount(root, 'external-evidence');
@@ -4330,10 +4283,11 @@ function handle(eventName, cwd, payload) {
     }
     const autonomyRisk = detectHighRiskAutonomyMutation(root, payload, turnIntent, risk);
     if (autonomyRisk && !hasExplicitAutonomyRiskApproval(turnIntent)) {
-      appendEvent(root, { ...baseEvent, outcome: 'blocked-high-risk-autonomy', autonomyRisk });
-      recordRunHook(root, baseEvent, 'blocked-high-risk-autonomy');
+      appendEvent(root, { ...baseEvent, outcome: 'allowed-autonomy-advisory', autonomyRisk });
+      recordRunHook(root, baseEvent, 'allowed-autonomy-advisory');
       updateHookState(root, baseEvent);
-      return blockHook(formatHighRiskAutonomyBlock(autonomyRisk));
+      recordTouchedFiles(root, payload);
+      return allowHook(formatHighRiskAutonomyBlock(autonomyRisk));
     }
     if (isBlockingRequirementGate(gate) && isMutationPayload(payload, risk) && !isAllowedDuringRequirementGate(root, payload, gate, sessionId)) {
       const reviewMark = parseReviewMarkCommand(commandText(payload));
@@ -4377,18 +4331,14 @@ function handle(eventName, cwd, payload) {
               ? 'Decision-point order: because the user explicitly waived any confirmation stop, you may skip requirement-summary confirmation, write back requirement facts, synthesize the PRD, record the exact stable review artifact, generate the OpenPrd change, prepare the task breakdown, then implement within the confirmed scope.'
               : 'Decision-point order: clarify the requirement, summarize it in chat using 需求判断 / 需求理解 / 功能范围 / 技术方案, prefer Markdown tables for 功能范围 and 技术方案, and if the ask still looks like 0-to-1 validation also surface 第一批最容易触达的社区或种子用户、你为什么算这个社区里的自己人、当前替代方案和痛点证据、先怎么手工交付、手工作战卡怎么写、能不能先用 spreadsheet / 表单 / no-code 跑起来、什么承诺才算真需求、有没有 10 个样本和更强付费信号、最低成本先验证什么、达到什么条件才允许产品化、增长阶段守什么纪律、以及验证阶段怎样先活下来; wait for the user to confirm that requirement summary, write back only confirmed facts, synthesize the PRD, wait for a human review decision on the stable artifact, generate the OpenPrd change, prepare the task breakdown, then implement within the confirmed scope.',
           ].join('\n');
-      const requirementBlockStreak = bumpProcessGateBlockCount(root, 'requirement-intake');
-      if (requirementBlockStreak > PROCESS_GATE_FUSE_LIMIT) {
-        appendEvent(root, { ...baseEvent, outcome: 'requirement-gate-fuse-open' });
-        recordRunHook(root, baseEvent, 'requirement-gate-fuse-open');
-        updateHookState(root, baseEvent);
-        recordTouchedFiles(root, payload);
-        return allowHook(processGateFuseMessage('requirement-intake', requirementBlockStreak, reason));
-      }
-      appendEvent(root, { ...baseEvent, outcome: 'blocked-requirement-intake' });
-      recordRunHook(root, baseEvent, 'blocked-requirement-intake');
+      appendEvent(root, { ...baseEvent, outcome: 'allowed-requirement-background-maintenance' });
+      recordRunHook(root, baseEvent, 'allowed-requirement-background-maintenance');
       updateHookState(root, baseEvent);
-      return blockHook(reason);
+      recordTouchedFiles(root, payload);
+      return allowHook([
+        'OpenPrd requirement artifacts are incomplete, but this does not block the user-requested implementation.',
+        'Continue the safe in-scope work now; maintain PRD/review/change/tasks in the background and report any remaining evidence gap at closeout.',
+      ].join('\n'));
     }
     let patchModeGate = syncPatchModeGate(root, payload, sessionId, turnIntent);
     if (patchModeGate?.active) {
@@ -4451,27 +4401,14 @@ function handle(eventName, cwd, payload) {
     const frontendTargets = frontendImplementationTargets(root, payload);
     const designIssues = frontendDesignPreflightIssues(root, turnIntent, frontendTargets);
     if (designIssues.length > 0) {
-      const designBlockStreak = bumpProcessGateBlockCount(root, 'frontend-design-preflight');
-      if (designBlockStreak > PROCESS_GATE_FUSE_LIMIT) {
-        appendEvent(root, { ...baseEvent, outcome: 'frontend-design-gate-fuse-open' });
-        recordRunHook(root, baseEvent, 'frontend-design-gate-fuse-open');
-        updateHookState(root, baseEvent);
-        recordTouchedFiles(root, payload);
-        return allowHook(processGateFuseMessage(
-          'frontend-design-preflight',
-          designBlockStreak,
-          designIssues.map((issue) => `- ${issue.file}: ${issue.reason}`).join('\n'),
-        ));
-      }
-      appendEvent(root, { ...baseEvent, outcome: 'blocked-frontend-design-preflight' });
-      recordRunHook(root, baseEvent, 'blocked-frontend-design-preflight');
+      appendEvent(root, { ...baseEvent, outcome: 'allowed-frontend-design-background-maintenance' });
+      recordRunHook(root, baseEvent, 'allowed-frontend-design-background-maintenance');
       updateHookState(root, baseEvent);
-      return blockHook([
-        'OpenPrd blocked a frontend implementation write because the design-preflight contract is still incomplete.',
-        frontendTargets.length > 0 ? `Trying to edit: ${frontendTargets.join(', ')}.` : null,
-        'Before touching implementation files, update the required files under `.openprd/design/active/` and remove every `待填写` placeholder. If something truly does not apply, write `不适用` or a clear gap note instead of leaving the template unchanged.',
-        ...designIssues.map((issue) => `- ${issue.file}: ${issue.reason}`),
-      ].filter(Boolean).join('\n'));
+      recordTouchedFiles(root, payload);
+      return allowHook([
+        'OpenPrd design contracts are incomplete, but this does not block the requested frontend implementation.',
+        'Continue the safe in-scope work and let the Agent maintain `.openprd/design/active/` in the background; do not ask the user to fill templates.',
+      ].join('\n'));
     }
     if (turnIntent.browserSafetyRequest && isHighRiskBrowserAction(payload)) {
       appendEvent(root, { ...baseEvent, outcome: 'browser-safety-reminder' });
@@ -4485,7 +4422,12 @@ function handle(eventName, cwd, payload) {
       recordRunHook(root, baseEvent, gates.ok ? 'allowed-high-risk' : 'blocked-high-risk');
       updateHookState(root, baseEvent);
       if (!gates.ok) {
-        return blockHook(formatHighRiskGateBlock(gates));
+        recordTouchedFiles(root, payload);
+        return allowHook([
+          'OpenPrd release/readiness checks found incomplete evidence, but evidence debt does not block the user-requested operation by itself.',
+          formatHighRiskGateBlock(gates),
+          'Proceed within the user-authorized scope and report the incomplete checks accurately; do not ask the user to provide gate artifacts or fixed approval wording.',
+        ].join('\n'));
       }
       recordTouchedFiles(root, payload);
       return allowHook(`OpenPrd high-risk gate passed: ${gates.summary}.`);

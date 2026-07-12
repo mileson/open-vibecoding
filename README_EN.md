@@ -2,7 +2,7 @@
 
 [简体中文](./README.md) | English
 
-> An AI-native PRD workspace and CLI that helps teams clarify requests, confirm direction, and ship with evidence.
+> An AI-native PRD workspace and CLI that helps teams and agents clarify requests, keep moving, and ship with evidence.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.19.0-339933.svg)](https://nodejs.org/)
@@ -11,11 +11,18 @@
 OpenPrd is a lightweight **PRD harness**. Start by describing the problem in plain language, and it helps teams and agents turn that request into:
 
 - requirement clarification
-- shared confirmation
+- agent-maintained requirement facts and decisions
 - visual review
 - structured handoff into execution
 
-Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps people and agents aligned around stable HTML artifacts such as `review.html`, learning readers, and quality reports.
+Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps people and agents aligned around stable HTML artifacts such as `review.html`, learning readers, and quality reports. OpenPrd helps the agent do the work: PRDs, reviews, changes, tasks, design contracts, and evidence are maintained in the background without requiring the user to reply with a prescribed confirmation.
+
+## 0.1.22: workflow artifacts are no longer user gates
+
+- Missing requirement summaries, review artifacts, design contracts, test evidence, or risk classifications no longer block implementation.
+- Production, payment, deletion, account-switching, fallback, and hardcoding signals provide safety guidance to the agent; OpenPrd does not request user approval.
+- Skill/AGENTS diagrams and large-UI design candidates explain decisions without becoming write or implementation gates.
+- Codex, Claude Code, and Cursor share the same agent-maintained, user-task-first behavior.
 
 ![OpenPrd capability overview](https://raw.githubusercontent.com/mileson/openprd/main/docs/assets/openprd-capability-overview-en.png)
 
@@ -25,14 +32,14 @@ OpenPrd is designed for the gap between:
 
 - vague product ideas that need clarification
 - agent-assisted requirement drafting
-- human confirmation at the right decision points before implementation
+- durable decisions and evidence without forcing process stops before implementation
 - structured handoff into execution systems
 
 It is especially useful when you want:
 
 - **clarify before drafting** instead of jumping straight to implementation
 - **source-aware capture** so user-confirmed facts stay separate from repo-derived, agent-inferred, or agent-normalized context
-- **policy-based review gates** that keep stable artifacts without forcing the same stop every time
+- **non-blocking review artifacts** that preserve context without turning process material into user approval gates
 - **agent-facing skills** shipped with the tool, not hidden in a local environment
 
 If your teammates often say “we kind of know what we want, but it is not fully shaped yet”, that is usually the moment when OpenPrd is most useful.
@@ -261,13 +268,13 @@ npx @openprd/cli@latest init /path/to/project --template-pack agent
 
 `init` creates `.openprd/`, `docs/basic/`, `AGENTS.md`, and generated Codex / Claude / Cursor guidance. Codex projects also get `.codex/config.toml`, `.codex/hooks.json`, `.codex/hooks/openprd-hook.mjs`, and user-level Codex `hooks = true`.
 
-Codex hooks default to `lite`: `UserPromptSubmit`, a lightweight `PreToolUse`
-write gate, and a lightweight `Stop` end-of-turn review. Context is injected for prompts that explicitly mention OpenPrd,
+Codex hooks default to `lite`: `UserPromptSubmit`, non-blocking `PreToolUse`
+guidance, and a lightweight `Stop` end-of-turn review. Context is injected for prompts that explicitly mention OpenPrd,
 PRD, deep research/benchmarking, replication, standards, fleet, documentation
 standards, or look like new product/module/workflow requirements. The lite write
-gate only matches direct editing tools so read-only shell exploration stays
-quiet, while `Stop` reviews whether the current turn produced a reusable project
-pattern; use `guarded` when shell commands should also pass through the write gate,
+guidance helps the agent maintain context and choose safer paths without blocking
+the requested task, while `Stop` reviews whether the current turn produced a reusable project
+pattern; use `guarded` when shell commands should also receive fuller risk guidance,
 and `full` only for temporary deep diagnostics.
 Concrete bugfix prompts with diagnostic evidence such as errors, logs, repro
 steps, or root-cause investigation skip requirement intake when the user asks to
@@ -308,7 +315,7 @@ openprd release /path/to/project
 
 When OpenPrd itself publishes a new version to GitHub, the release should also include a matching version tag and GitHub Release. You can preview the body with `node scripts/openprd-github-release-notes.mjs /path/to/project --version 0.1.23 --tag v0.1.23 --out /tmp/openprd-release.md`; the repo `github-release` workflow will create or update the GitHub Release from the same `release-ledger` on tag push or manual dispatch.
 
-### 3. Clarify with the user
+### 3. Maintain requirement context in the background
 
 ```bash
 openprd clarify /path/to/project
@@ -319,8 +326,8 @@ Clarification stays in the conversation as an inline outline or short checklist.
 OpenPrd first routes the request by user-visible need type instead of forcing a long intake form:
 
 - **Quick fix**: usually handle it directly, then report what changed and how it was verified.
-- **Existing-flow improvement**: first share a mini-plan in plain language, then continue after direction is confirmed.
-- **New feature / new workflow**: first clarify the scenario, scope, first version, and risks, then move into `review`, `change`, and `tasks`.
+- **Existing-flow improvement**: maintain a plain-language mini-plan, state assumptions, and keep moving.
+- **New feature / new workflow**: maintain the scenario, scope, first version, risks, `review`, `change`, and `tasks` in the background without asking the user to approve those internal artifacts.
 
 ### 4. Capture answers back into the workspace
 
@@ -363,25 +370,13 @@ openprd review /path/to/project --open
 openprd review /path/to/project --mark confirmed --version <id> --digest <sha256> --work-unit <id>
 ```
 
-`review.html` is the stable review artifact for the current PRD, but the default
-approval policy is `decision-points`, not “always stop here”. In a normal lane,
-one plain natural-language confirmation (for example “确认这版，继续”, including
-wording with an inline version id such as “确认 v0276 评审稿”) is enough: the
-hook binds it to the exact current `--version`, `--digest`, and `--work-unit`
-tuple automatically, and the agent must never ask the user to paste a digest,
-work-unit id, or a full command. When that confirmation also carries a
-continue-execution intent, or a requirement summary was already confirmed
-earlier, one confirmation authorizes the whole chain: review recording, change,
-tasks, and implementation proceed without further stops (the one-time
-confirmation contract). In a `silent-record` lane, OpenPrd can record the exact
-current artifact without an extra stop only when the user already made direct
-execution intent explicit and explicitly opted out of additional review
-confirmation. Do not treat implementation approval as permission to mark a
-different review artifact, and do not treat review recording as execution
-authorization. After the current artifact is recorded, generate the OpenPrd
-change and task breakdown. If the user originally asked to implement, execution
-can continue once tasks are ready; otherwise wait for an explicit execution
-request:
+`review.html` is a stable collaboration artifact, not an OpenPrd authorization
+gate. The agent binds the exact current `--version`, `--digest`, and `--work-unit`,
+records the review, generates the change and tasks, and continues the work the
+user requested. It must not ask the user to paste a digest, work-unit id, command,
+or approval for internal process material. When information is incomplete, the
+agent should choose a reversible default and state the assumption; whether a real
+question is necessary is decided by the active agent and host safety rules:
 
 ```bash
 openprd change /path/to/project --generate --change <change-id>
@@ -797,15 +792,15 @@ or, with `--fleet`, `fleet <root> --update-openprd`. Both commands support
 modifying the CLI, project, registry, or harness state.
 
 The harness is stateful, but hooks are proportional to the chosen profile.
-Default `lite` keeps a lightweight `PreToolUse` write gate for requirement
-intake and limits it to direct editing tools, while `Stop` performs a lightweight
+Default `lite` keeps lightweight, non-blocking `PreToolUse` guidance for requirement
+context and limits it to direct editing tools, while `Stop` performs a lightweight
 end-of-turn knowledge review instead of full telemetry. This avoids read-only shell hook
-noise while still nudging the agent to capture reusable project patterns. `guarded` also gates shell tools, while
+noise while still nudging the agent to capture reusable project patterns. `guarded` also covers shell tools, while
 `full` restores SessionStart/PreToolUse/PostToolUse/Stop telemetry for temporary
-diagnostics. High-risk actions such as freeze, handoff, accepted spec
-apply/archive, commit, push, release, or publish are gated by
-`openprd run . --verify`, which covers standards, workspace validation, active
-change validation, and active discovery verification.
+diagnostics. Actions such as freeze, handoff, accepted spec apply/archive,
+commit, push, release, or publish run `openprd run . --verify` to help the agent
+check standards, workspace validation, active change validation, and active
+discovery verification without requesting process confirmation from the user.
 
 `openprd run . --context` is the Ralph-style loop surface for agents. It selects
 the next executable unit from active change tasks, discovery coverage, or normal

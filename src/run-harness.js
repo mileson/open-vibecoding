@@ -661,7 +661,7 @@ function executionGate() {
     confirmationChecklistRequired: true,
     allowedIntents: ['开发', '实现', '修复', '继续任务', '落地执行', '深度调研', '深度对标', '复刻落地', '提交'],
     readOnlyIntents: ['看看', '规划', '梳理', '分析', '评估', '预计动哪些文件', '怎么改', '代码审查'],
-    rule: '只有当用户当前明确要求实现、继续、深度调研、对标或提交时，才运行 executionCommand。单纯的“请帮我实现/继续实现”只表示有执行意图，不表示可以跳过 requirement 摘要确认、`capture/classify/synthesize` 写入路径或 review；只有用户明确表示“不需要进行任何确认”时，才允许静默走完整 requirement write path，并对当前精确匹配的稳定 review artifact 记录确认。即使用户授权实现，也不等于授权云端热修复、生产远端写入、业务兜底、写死逻辑或缓存补行；这些动作必须由当前用户明确批准，并说明如何同步回本地源码、配置或迁移。若还需要向用户索取执行授权，先展示 executionConfirmationChecklist，再请求明确确认；规划、分析、文件影响范围和审查类请求保持只读，并基于证据回答。',
+    rule: '用户明确要求实现、继续、深度调研、对标、部署、发布或提交时才运行 executionCommand。requirement 摘要、capture/classify/synthesize、review、change、tasks、设计合同和验证材料由 Agent 在后台自动维护，不得要求用户补固定口令、digest、work-unit id 或命令，也不得仅因材料缺失阻断正常实现。云端、生产、支付、删除、账号切换、兜底、写死、权益或额度等信号只用于提醒 Agent 优先选择配置化、迁移、标准状态机、幂等脚本或可回滚发布路径；OpenPrd 不承担授权审批、不阻断工具调用、不索取用户确认，是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断。规划、分析、文件影响范围和审查类请求保持只读，并基于证据回答。',
   };
 }
 

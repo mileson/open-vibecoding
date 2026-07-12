@@ -239,7 +239,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedAgents.includes('是不是你愿意长期住进去的业务形态'));
     assert.ok(generatedAgents.includes('独立素材输出（standalone asset）'));
     assert.ok(generatedAgents.includes('候选效果图'));
-    assert.ok(generatedAgents.includes('纳入后续效果图/实现截图对比'));
+    assert.ok(generatedAgents.includes('OpenPrd 不强制等待确认'));
     assert.ok(generatedAgents.includes('openprd learn .'));
     assert.ok(generatedAgents.includes('学习包和阅读器'));
     assert.ok(generatedAgents.includes('期望产物是否需要章节结构'));
@@ -254,7 +254,8 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedAgents.includes('task-scoped Markdown/HTML 测试报告路径'));
     assert.ok(generatedAgents.includes('Markdown / HTML 测试报告'));
     assert.ok(generatedAgents.includes('autonomy-risk'));
-    assert.ok(generatedAgents.includes('云端热修复、生产远端写入、业务兜底、写死逻辑'));
+    assert.ok(generatedAgents.includes('不索取用户确认'));
+    assert.ok(generatedAgents.includes('是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断'));
     assert.equal(generatedAgents.includes('## Skill Routing'), false);
     assert.equal(generatedAgents.includes('## Tool Reality'), false);
     assert.equal(generatedAgents.includes('## Working Principles'), false);
@@ -269,8 +270,9 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedHook.includes('image-generation-preference.json'));
     assert.ok(generatedHook.includes('审美意图和记忆点'));
     assert.ok(generatedHook.includes('build、package 和 dev-check'));
-    assert.ok(generatedHook.includes('blocked-high-risk-autonomy'));
-    assert.ok(generatedHook.includes('允许这次云端热修复'));
+    assert.ok(generatedHook.includes('allowed-autonomy-advisory'));
+    assert.ok(generatedHook.includes('OpenPrd 不阻断工具调用'));
+    assert.equal(generatedHook.includes('允许这次云端热修复'), false);
 
     const commandCatalog = await fs.readFile(path.join(project, '.openprd', 'harness', 'command-catalog.md'), 'utf8');
     assert.ok(commandCatalog.includes('轻量 UI 可视优化'));
@@ -530,22 +532,15 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedHarnessSkill.includes('.openprd/harness/visual-reviews/'));
     assert.ok(generatedHarnessSkill.includes('实现截图'));
     assert.ok(generatedHarnessSkill.includes('修改前截图'));
-    assert.ok(generatedHarnessSkill.includes('执行确认清单'));
-    assert.ok(generatedHarnessSkill.includes('已确认，我按这个继续'));
-    assert.ok(generatedHarnessSkill.includes('不能只要求用户回复一句确认'));
-    assert.ok(generatedHarnessSkill.includes('先整理需求摘要给你确认'));
-    assert.ok(generatedHarnessSkill.includes('你回我一句我就开始实现'));
-    assert.ok(generatedHarnessSkill.includes('不自动授权云端热修复'));
     assert.ok(generatedHarnessSkill.includes('这条经验只会保留在当前项目里'));
     const generatedCodexHook = await fs.readFile(path.join(project, '.codex', 'hooks', 'openprd-hook.mjs'), 'utf8');
-    assert.ok(generatedCodexHook.includes('执行确认清单'));
+    assert.ok(generatedCodexHook.includes('OpenPrd 不创建用户确认停顿'));
     assert.ok(generatedCodexHook.includes('期望产物形态'));
     assert.ok(generatedCodexHook.includes('learningMaterialRequest'));
     assert.ok(generatedCodexHook.includes('学习型交付物'));
     assert.ok(generatedCodexHook.includes('冷启动没有现有界面'));
     assert.ok(generatedCodexHook.includes('新建界面应先完成 3 方向方案评审'));
-    assert.ok(generatedCodexHook.includes('已确认，我按这个继续'));
-    assert.ok(generatedCodexHook.includes('不要再写“如果你认可”'));
+    assert.ok(generatedCodexHook.includes('是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断'));
     assert.ok(generatedCodexHook.includes('候选效果图'));
     assert.ok(generatedCodexHook.includes('生图工具是工具路径，不是审美豁免'));
     assert.ok(generatedCodexHook.includes('没有品牌或参考图依据时，不要默认紫白/蓝紫渐变'));
@@ -559,8 +554,8 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedCodexHook.includes('视觉重心偏移'));
     assert.ok(generatedCodexHook.includes('内容槽位'));
     assert.ok(generatedCodexHook.includes('只量外框'));
-    assert.ok(generatedCodexHook.includes('先整理需求摘要给你确认'));
-    assert.ok(generatedCodexHook.includes('你回我一句我就开始实现'));
+    assert.ok(generatedCodexHook.includes('不要求用户批准需求摘要'));
+    assert.ok(generatedCodexHook.includes('不创建用户确认停顿'));
     assert.ok(generatedCodexHook.includes('这次我观察到一个以后可能重复出现的情况：'));
     assert.ok(generatedCodexHook.includes('这条经验只会保留在当前项目里。'));
     assert.ok(generatedCodexHook.includes('openprd knowledge reject --path . --id'));

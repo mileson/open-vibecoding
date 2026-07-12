@@ -54,8 +54,8 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 20. 用户要求日志、链路追踪、业务成本护栏、免费额度、滥用防护、评估执行环境、冒烟覆盖、性能基线、极端场景、HTML 质量评估报告或项目级经验 Skill 时，路由到 `$openprd-quality`
 21. 用户需要可视化说明，或系统/产品形态仍不清晰时，在进入需求定稿前路由到 `$openprd-diagram-review`
 22. 默认保持 Codex hooks 轻量。除非项目明确需要完整工具级遥测，否则 `openprd setup/update` 使用 `--hook-profile lite`；默认 `lite` 会保留 `Stop` 收工回顾，用于在本轮结束前提醒是否值得沉淀项目经验，并要求 Agent 用“本次情况 / 准备整理成的经验 / 以后如何复用 / 只保留在当前项目里”的结构化人话向用户确认
-23. hook 会强制阻断几类场景：需求入口未完成就写实现、外部证据不足就直接改第三方集成、skill/AGENTS 变更未先可视化确认、敏感信息场景下直接读原始 vault 文件，以及未经当前用户明确批准的云端热修复、生产远端写入、业务兜底、写死逻辑或缓存补行
-24. 即使用户已经授权实现，也不自动授权云端热修复、生产远端写入、客户端/服务端补业务数据、接口临时插入业务行、缓存补行、硬编码或写死逻辑。发现这类路径时先停下，说明为什么标准源码/迁移/配置路径不够、影响范围、回滚方式、本地同步计划和验证方式；只有用户明确说允许热修复、允许临时兜底或允许写死后才执行。
+23. hook 默认不因 PRD、review、change、tasks、设计合同、测试报告或视觉证据尚未补齐而阻断用户要求的正常实现。缺失材料由 Agent 在后台自动补齐；来不及补齐时继续完成安全范围内的工作，并在收口如实说明证据状态，不把流程作业转嫁给用户。
+24. 风险识别只向 Agent 提供提醒和更安全的实现建议，不承担授权审批。命中“兜底、写死、补数据、权益、额度、生产、支付、删除、账号”等词时先看真实动作对象，优先改成配置、迁移、标准状态机、幂等脚本或可回滚发布路径并继续。OpenPrd 不因风险词或动作类型阻断工具调用，也不向用户索取确认、指定句子、摘要、digest、work-unit id 或命令；是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断。
 25. 当 `doctor` 报告生成引导漂移时，读取 `.openprd/harness/drift-report.json`
 26. `openprd run . --context` 会返回 `runtimeEnvironment`。先按 `.openprd/harness/runtime-environment.json` 和 install manifest 的 `platformCapabilityPacks` 判断当前对话是在 Codex、Claude Code 还是 Cursor，再启用对应能力；Codex Image 2、Computer Use、Codex-owned browser window、对话协同画布和当前线程文本桥接都必须有当前 surface 或 hook/session 证据，不能只凭 Codex CLI 或配置文件存在来启用。当前线程桥接只在 Codex App 明确提供线程发送工具时使用；画布图片仍以导出路径或 Markdown 图片引用作为证据，不宣称网页能自动直发附件。
 
@@ -83,7 +83,7 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
   - 不要把 `run --context` 建议当作直接用户命令
   - 用户给出会话 ID 续接历史任务时，使用 `openprd run <path> --context --message <用户原话或会话ID>` 保留通用会话 ID 语义；先恢复指定会话，不要让当前 active change 抢主线
   - 用户没有给 ID、但明确描述了已有需求/任务对象时，也使用 `openprd run <path> --context --message <用户原话>`；先解析对应的 change/task/work unit，再决定是否沿用当前工作区状态
-  - 默认 lite Codex hooks 会为明确的 OpenPrd、PRD、深度调研、对标复刻、standards、fleet、文档标准化提示词，以及结构上较复杂的需求注入 `$openprd-requirement-intake` 分流提示；直接处理(L0)不打开 requirement gate，现有功能优化(L1)用对话内 mini-plan 承接，新功能/新流程方案(L2)才进入 PRD/review/change/tasks；轻量 `PreToolUse` 写入门禁会在需求入口未确认前阻断过早实现；本轮准备结束时，`Stop` 会基于 touched files 和 verify/finish 信号回顾是否要生成项目经验草案，并要求 Agent 先用人话向用户确认是否保留到当前项目里
+  - 默认 lite Codex hooks 会为明确的 OpenPrd、PRD、深度调研、对标复刻、standards、fleet、文档标准化提示词，以及结构上较复杂的需求注入 `$openprd-requirement-intake` 分流提示；直接处理(L0)不打开 requirement 维护，现有功能优化(L1)用对话内 mini-plan 承接，新功能/新流程方案(L2)在后台维护 PRD/review/change/tasks；`PreToolUse` 不因这些材料缺失阻断实现；`Stop` 只提醒 Agent 评估是否值得生成项目经验草案，不强制用户确认
   - 只有当项目确实需要完整 hook 遥测或临时深度诊断时，才用 `openprd update <path> --hook-profile full`
 - 长程实现循环使用：
   - `openprd loop <path> --init`
@@ -99,7 +99,7 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
   - 只有在当前用户消息明确要求开发、继续任务、深度调研、对标复刻或提交时，才运行 `openprd loop <path> --run`
   - 代码修改完成后、最终回复前，运行 `openprd dev-check <path> <file...>`；自动优化开启（默认）时需要关注的文件先本轮完成拆分，再以 **OpenPRD 自动优化报告** 表格呈现（列：影响对象、问题级别、源文件规模、优化原因、本次处理结果、后续建议）并附开关确认；关闭后以 **后续建议** 表格呈现（列：影响对象、关注程度、规模信号、预警原因、本次处理结果、后续建议）。两种模式都按 🔴 → 🟠 → 🟡 排序
   - 用户只是要求生成图片、封面图、配图、海报、插画、图标、贴纸、头像、banner、主视觉/KV、运营图、效果图、视觉稿、mockup 或先看样子时，默认调用 `imagegen`（Codex 原生 Image 2）生成图片；Image 2 是工具路径，不是审美豁免，生成前先写清用途、受众、气质、约束和记忆点；除非用户明确指定 HTML/SVG/CSS/Canvas/代码稿，不要生成临时 HTML 再截图；未调用 `imagegen` 前，不要声称生图已完成、失败或限流。生图结果先当候选效果图，不要默认纳入验收
-  - 大界面改动不直接开工：先按用户目标、信息架构变化、视觉决策成本和验证风险判断方案评审形态；已有界面时用 Codex Computer Use 打开产品内对应功能并截图，冷启动没有现有界面时用已确认 PRD、用户群体、第一版切片、视觉目标、气质端点和记忆点生成设计 brief；再用 `imagegen`（Codex 原生 Image 2）生成至少 3 个设计方向，横向拼接成一张带 1/2/3 序号的大图作为候选效果图给用户确认；每个方向都要有具体审美主张和 anti-slop 自检；主动确认是否符合预期、是否纳入后续效果图/实现截图对比、以及是否按此继续实现；只有确认后，再把它作为实现参考图进入后续任务
+  - 大界面改动先按用户目标、信息架构变化、视觉决策成本和验证风险判断方案评审形态；已有界面时用 Codex Computer Use 打开产品内对应功能并截图，冷启动没有现有界面时用当前 PRD、用户群体、第一版切片、视觉目标、气质端点和记忆点生成 design brief；再用 `imagegen`（Codex 原生 Image 2）生成至少 3 个设计方向，横向拼接成一张带 1/2/3 序号的大图作为候选效果图；每个方向都要有具体审美主张和 anti-slop 自检。候选图用于帮助用户判断，但 OpenPrd 不强制停下等待确认；Agent 可按最符合目标且可逆的方向继续，并清楚说明采用的假设
   - 如果已有确认参考效果图、图片资产、设计稿、截图或用户给图并进入实现阶段，阶段性完成后必须生成实现截图，并用 `openprd visual-compare <path> --reference <效果图> --actual <实现截图> --locale <zh-CN|en>` 输出 JPG 视觉对比图；如果参考图里有多个子图、网格或对象，先运行 `openprd visual-prepare <path> --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>`，检查 contact sheet 后按 compare-plan 逐项对比；如果局部细节更重要，再补 `--board <focus-board.json>` 输出局部焦点证据板；如果没有明确参考图，先判断新建界面还是修改既有界面：新建界面先完成 3 方向方案评审，修改既有界面动手前先生成修改前截图，完成后生成修改后截图，并用 `openprd visual-compare <path> --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>` 输出 JPG 自检图；如果并行试了多个优化方向，再补 `--board <parallel-board.json>` 输出并行实验证据板；如果新功能或改动包含同构列表、卡片、网格、表格，或用户反馈没对齐/排版漂移，再补 `--board <alignment-board.json>` 输出对齐辅助线证据板。未查看对比图，或对比图仍有明显结构、气质、层级、字体/色彩/表面角色、记忆点差异/漂移时，不要声称界面视觉完成；如果用户后续说“跟效果图”“不一致”“好丑”“复刻”，至少先产出一份视觉证据图
   - `openprd loop <path> --finish` 前，先完成文档影响检查并更新缺失或过期的 `docs/basic/`、文件说明书和文件夹 README；涉及后端、脚本、Agent、工具链、服务或数据处理变更时，同步评估 CLI 与 API 两个接入面
   - 声称单个任务完成前，只运行本任务最小足够验证，并通过 `--evidence`、测试报告或任务 metadata 留下 task-scoped evidence；不要在每个任务里反复运行 `openprd quality <path> --verify` 或全局 `openprd run <path> --verify`
@@ -121,7 +121,7 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 - 使用：
   - `openprd clarify <path>`
 - 当关键产品事实缺失时，先查看 `intake-reflection.md` 的需求入口自省，再把压缩后的必须确认问题问给用户
-- 当需求模糊、起点只有一句想法，或需要先做方案探索时，先查看生成的 `intake-reflection.md`，先把用户群体、产品形态、第一版切片、暂不处理、不能破坏和风险探针整理成首轮项目画像，再把压缩后的目标、范围、非目标、验收方式和必须确认问题放在对话里请用户确认；不要生成或打开澄清 HTML
+- 当需求模糊、起点只有一句想法，或需要先做方案探索时，先查看生成的 `intake-reflection.md`，把用户群体、产品形态、第一版切片、暂不处理、不能破坏和风险探针整理成首轮项目画像；Agent 选择最可逆的默认方案继续，把假设和验收方式说清楚，不把 OpenPrd 摘要变成用户确认门禁；不要生成或打开澄清 HTML
 - Agent 在对话里先用业务和产品语言复述：这次主要给谁、什么场景、先解决什么、先不碰什么、不能影响什么、会带来哪些业务风险。默认先追问 1 个最高价值问题，而不是一次性抛一整墙技术问题。
 - `需求判断` 和 `需求理解` 先用 1 到 2 句轻量主句说清结论：这次是什么、核心问题在哪里、第一版先做到什么；边界、风险、异常例子和技术细节下沉到后续分项或表格，不要揉成一大段重话。
 - 如果当前还是 L2 的首轮澄清或 requirement 摘要确认阶段，只能承诺“我先整理需求摘要给你确认，确认后再进入 PRD / review 流程”；不要写成“你回我一句我就开始实现”，也不要把 requirement 摘要确认、review 和实现压成一步。
@@ -155,7 +155,7 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 - L1/L2 中只有语义判断为大界面改动、视觉决策成本高或需要用户选方向时，才在 review-presentation 写入前自动补交互方向评审；轻量 UI 微调不触发。按当前工具面用 Codex `imagegen`（Image 2）或 Cursor `GenerateImage` 生成 3 个差异足够大的交互稿方向，图片保存到 `.openprd/design/active/`，再把每个方向的 `id/title/image/summary/tradeoff` 写入 `reviewPresentation.designDirections.directions[]`（title 15 字内、summary/tradeoff 30 字内）。已有界面时三个方向必须共享同一张当前截图作为 image-to-image 参考并默认保持视觉 DNA；冷启动才使用 design brief。review.html 会渲染 3 方向评审卡片，用户点“选这个方向”后回传 `openprd review <path> --mark confirmed --direction <id>` 命令；选定方向会记录进评审状态，后续实现必须按选定方向推进。不涉及界面或只是轻量微调时不要携带 designDirections 字段
 - 用户想在交互稿上圈选、批注或做视觉级反馈时，引导走画布评审协同：画布右栏顶部“评审协同”区显示当前 7 步流程位置，“导入评审方向”会把当前 review 的 designDirections 连图带说明摆上画布（已选定方向会标出），用户圈选批注后用“发送给 Codex”回传反馈
 - 用户问“现在到哪一步了”“接下来做什么”“OpenPrd 到底是干嘛的”时，先运行 `openprd guide <path>`：它按工作区状态输出 7 步流程（需求澄清 → 需求摘要 → 评审确认 → 交互方向选择 → 任务拆解 → 实现执行 → 验证收口）、当前位置和下一步动作，用它的输出向用户解释，不要口头即兴复述流程
-- 把生成的 `review.html` 当作首选稳定评审 artifact。默认 approval policy 是 `decision-points`：当前 lane 仍需要人类决策时，请用户先评审问题定义、范围、主流程、风险和开放问题，再运行带精确 `--version`、`--digest`、`--work-unit` 的 `openprd review <path> --mark confirmed`。L2 下先确认对话内 requirement 摘要，再写回确认事实、classify/synthesize，并进入这一步 review。若用户一开始已经明确要求直接做，并显式表示“不需要进行任何确认”，lane 才可进入 `silent-record`；单纯的“请帮我实现/继续实现”或“不要评审”都不触发这个豁免。进入 `silent-record` 后也只允许记录当前精确匹配的稳定 artifact，不能借机替别的版本补确认。review 记录完成且 tasks 就绪后，如果用户刚刚确认的是现有功能优化（L1）的 mini-plan、范围边界或正式产品边界，后续承接要写成“已确认，我按这个继续”，不要写成“确认，我们就按这个……”这种像再次索取确认的句子；如果用户原始意图已经明确要求实现，可直接继续执行；否则先输出执行确认清单，列出本轮目标、将执行内容、不做事项、验证方式和已知风险，再请求明确执行授权，不能只要求用户回复一句确认
+- 把生成的 `review.html` 当作稳定评审 artifact，但它是 Agent 后台维护和用户随时可看的结果，不是授权门禁。Agent 用精确 `--version`、`--digest`、`--work-unit` 记录当前稳定 artifact，自行完成 requirement 写回、classify/synthesize、review、change 和 tasks；不得要求用户批准摘要、评审稿或执行清单，也不得因这些材料尚未完成阻断用户已经要求的实现
 - 在 L2 的 requirement 摘要确认前，不要承诺“确认后我就开始实现”；正确顺序是：先确认摘要，再写回事实、进入 classify/synthesize/review，review 和 tasks 就绪后才谈执行。
 
 ### 6. 需要时生成可视化评审产物

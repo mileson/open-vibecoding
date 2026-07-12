@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.1.21",
+  "currentVersion": "0.1.22",
   "versions": [
     {
       "version": "0.1.2",
@@ -792,9 +792,9 @@
     },
     {
       "version": "0.1.21",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-07-11 19:26:22",
-      "updatedAt": "2026-07-11 19:26:22",
+      "updatedAt": "2026-07-12 22:09:02",
       "notes": null,
       "items": [
         {
@@ -810,8 +810,29 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.1.22",
+      "status": "current",
+      "createdAt": "2026-07-12 22:09:02",
+      "updatedAt": "2026-07-12 22:09:02",
+      "notes": null,
+      "items": [
+        {
+          "type": "移除",
+          "summary": "移除",
+          "detail": "需求、评审、设计与验证材料改为 Agent 后台维护；风险信号仅提供安全建议，不阻断用户任务",
+          "sentence": "移除：需求、评审、设计与验证材料改为 Agent 后台维护；风险信号仅提供安全建议，不阻断用户任务",
+          "recordedAt": "2026-07-12 22:09:02",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783865342881"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-07-11 19:26:22"
+  "updatedAt": "2026-07-12 22:09:02"
 }

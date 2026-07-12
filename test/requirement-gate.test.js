@@ -136,7 +136,9 @@ describe('Codex requirement gate', () => {
       prompt: '这个设置页面界面改动比较大，先用 Computer Use 截产品内页面，再给我三种设计方向效果图确认。',
     });
     assert.equal(largeUiDirectionPayload.continue, true);
-    assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('大界面改动视觉方案评审'));
+    const largeUiContext = largeUiDirectionPayload.hookSpecificOutput.additionalContext;
+    assert.ok(largeUiContext.includes('大界面改动视觉方案评审'));
+    assert.equal(largeUiContext.split('OpenPrd 大界面改动视觉方案评审:').length - 1, 1);
     assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('Codex 原生 App 用 Computer Use'));
     assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('按生图路由调用内置生图工具'));
     assert.ok(largeUiDirectionPayload.hookSpecificOutput.additionalContext.includes('1/2/3'));
@@ -193,7 +195,7 @@ describe('Codex requirement gate', () => {
       prompt: '请直接修复支付回调和订单状态同步失败的问题，涉及登录态、订单回调和退款分支。',
     });
     assert.equal(riskyBugfixPromptPayload.continue, true);
-    assert.ok(riskyBugfixPromptPayload.hookSpecificOutput.additionalContext.includes('requirement intake gate'));
+    assert.ok(riskyBugfixPromptPayload.hookSpecificOutput.additionalContext.includes('runs in background'));
     const riskyBugfixGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'requirement-gate.json'), 'utf8'));
     assert.equal(riskyBugfixGate.active, true);
     assert.equal(riskyBugfixGate.status, 'requires-clarification');
@@ -268,7 +270,7 @@ describe('Codex requirement gate', () => {
       prompt: '请直接修复支付回调和订单状态同步失败的问题，涉及登录态、订单回调和退款分支。',
     });
     assert.equal(laterHumanPrompt.continue, true);
-    assert.ok(laterHumanPrompt.hookSpecificOutput.additionalContext.includes('requirement intake gate'));
+    assert.ok(laterHumanPrompt.hookSpecificOutput.additionalContext.includes('runs in background'));
   });
 
   test('Codex hook keeps OpenPrd gates enabled when automation explicitly opts in', async () => {
@@ -286,14 +288,14 @@ describe('Codex requirement gate', () => {
       ].join('\n'),
     });
     assert.equal(optInPrompt.continue, true);
-    assert.ok(optInPrompt.hookSpecificOutput.additionalContext.includes('requirement intake gate'));
+    assert.ok(optInPrompt.hookSpecificOutput.additionalContext.includes('runs in background'));
 
     const gate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'requirement-gates', `${sessionId}.json`), 'utf8'));
     assert.equal(gate.active, true);
     assert.equal(gate.status, 'requires-clarification');
   });
 
-  test('Codex hook blocks semantic requirement writes before summary confirmation and allows them after confirmation', async () => {
+  test('Codex hook keeps semantic requirement maintenance in the background', async () => {
     const { project } = await makeCodexHookProject();
 
     const requirementPromptPayload = runCodexHook(project, 'UserPromptSubmit', {
@@ -309,8 +311,9 @@ describe('Codex requirement gate', () => {
       tool_name: 'Bash',
       tool_input: { cmd: 'openprd capture . --field problem.problemStatement --value "默认假设" --source agent-inferred' },
     });
-    assert.equal(blockedCapturePayload.decision, 'block');
-    assert.ok(blockedCapturePayload.reason.includes('Do not write requirement facts'));
+    assert.equal(blockedCapturePayload.decision, undefined);
+    assert.equal(blockedCapturePayload.continue, true);
+    assert.ok(JSON.stringify(blockedCapturePayload).includes('does not block'));
 
     const allowedNormalizedCapturePayload = runCodexHook(project, 'PreToolUse', {
       tool_name: 'Bash',
@@ -323,9 +326,9 @@ describe('Codex requirement gate', () => {
       tool_name: 'Bash',
       tool_input: { cmd: 'openprd synthesize .' },
     });
-    assert.equal(blockedSynthesizePayload.decision, 'block');
-    assert.ok(blockedSynthesizePayload.reason.includes('需求判断 / 需求理解 / 功能范围 / 技术方案'));
-    assert.ok(blockedSynthesizePayload.reason.includes('第一批最容易触达的社区或种子用户'));
+    assert.equal(blockedSynthesizePayload.decision, undefined);
+    assert.equal(blockedSynthesizePayload.continue, true);
+    assert.ok(JSON.stringify(blockedSynthesizePayload).includes('does not block'));
 
     const clarificationConfirmPayload = runCodexHook(project, 'UserPromptSubmit', {
       prompt: '确认',
@@ -542,7 +545,7 @@ describe('Codex requirement gate', () => {
       prompt: '请直接实现：在【Agent管理】模块下，我希望增加一个【团队搭建】放到【Agent 工区】菜单下面，这个模块主要是将 Agent市场、技能库和 CLI库按流程串联起来，一站式完成配置。',
     });
     assert.equal(requirementPromptPayload.continue, true);
-    assert.ok(requirementPromptPayload.hookSpecificOutput.additionalContext.includes('requirement intake gate'));
+    assert.ok(requirementPromptPayload.hookSpecificOutput.additionalContext.includes('runs in background'));
     assert.ok(requirementPromptPayload.hookSpecificOutput.additionalContext.includes('$openprd-requirement-intake'));
     assert.ok(requirementPromptPayload.hookSpecificOutput.additionalContext.includes('面向个人消费者场景'));
     assert.ok(requirementPromptPayload.hookSpecificOutput.additionalContext.includes('面向企业服务场景'));

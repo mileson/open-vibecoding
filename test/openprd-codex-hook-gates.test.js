@@ -31,7 +31,7 @@ function makeHookRunner(project, hookPath, extraInput = {}) {
   };
 }
 
-test('Codex hook blocks unapproved cloud hotfixes and business fallbacks', async () => {
+test('Codex hook keeps autonomy risks advisory without adding OpenPrd approval gates', async () => {
   const project = await makeTempProject();
   const codexHome = path.join(project, 'codex-home');
   await setupAgentIntegrationWorkspace(project, {
@@ -62,9 +62,10 @@ test('Codex hook blocks unapproved cloud hotfixes and business fallbacks', async
     prompt: '请直接修复会员权益，但除非我明确要求，不要写兜底或写死逻辑。',
   });
   const blockedFallback = runHook('PreToolUse', patchPayload);
-  assert.equal(blockedFallback.decision, 'block');
-  assert.ok(blockedFallback.reason.includes('业务兜底/写死逻辑'));
-  assert.ok(blockedFallback.reason.includes('当前用户消息只授权了本轮实现范围'));
+  assert.equal(blockedFallback.continue, true);
+  assert.equal(blockedFallback.decision, undefined);
+  assert.ok(JSON.stringify(blockedFallback).includes('Agent 责任'));
+  assert.ok(JSON.stringify(blockedFallback).includes('OpenPrd 不阻断工具调用'));
 
   runHook('UserPromptSubmit', {
     prompt: '请直接修复会员权益，这次明确允许临时兜底，后续同步回服务端配置。',
@@ -81,12 +82,13 @@ test('Codex hook blocks unapproved cloud hotfixes and business fallbacks', async
       cmd: 'ssh prod "node scripts/fix-entitlement.js"',
     },
   });
-  assert.equal(blockedCloudHotfix.decision, 'block');
-  assert.ok(blockedCloudHotfix.reason.includes('云端/生产远端写入'));
-  assert.ok(blockedCloudHotfix.reason.includes('允许这次云端热修复'));
+  assert.equal(blockedCloudHotfix.decision, undefined);
+  assert.equal(blockedCloudHotfix.continue, true);
+  assert.ok(JSON.stringify(blockedCloudHotfix).includes('云端/生产远端写入'));
+  assert.ok(JSON.stringify(blockedCloudHotfix).includes('OpenPrd 不阻断工具调用'));
 });
 
-test('Codex hook escalates repeated confirmations, fuses repeated process-gate blocks, demotes tooling asks, and heals stale lane reviews', async () => {
+test('Codex hook escalates confirmations, keeps requirement materials advisory, demotes tooling asks, and heals stale reviews', async () => {
   const project = await makeTempProject();
   const codexHome = path.join(project, 'codex-home');
   await setupAgentIntegrationWorkspace(project, {
@@ -151,7 +153,7 @@ test('Codex hook escalates repeated confirmations, fuses repeated process-gate b
   assert.equal(gate.executionIntent.source, 'repeated-user-confirmation');
   assert.ok(Number(gate.confirmationCount) >= 2);
 
-  // 流程型门禁熔断：同一轮内连续阻断超过上限后降级为提醒放行。
+  // 需求材料由 Agent 后台维护，第一次实现写入就应直接放行。
   const patchPayload = {
     tool_name: 'apply_patch',
     tool_input: {
@@ -165,15 +167,10 @@ test('Codex hook escalates repeated confirmations, fuses repeated process-gate b
       ].join('\n'),
     },
   };
-  const firstBlock = runHook('PreToolUse', patchPayload);
-  assert.equal(firstBlock.decision, 'block');
-  runHook('PreToolUse', patchPayload);
-  runHook('PreToolUse', patchPayload);
-  const fused = runHook('PreToolUse', patchPayload);
-  assert.equal(fused.decision, undefined, JSON.stringify(fused));
-  assert.equal(fused.continue, true);
-  const fusedContext = JSON.stringify(fused);
-  assert.ok(fusedContext.includes('门禁熔断'), fusedContext.slice(0, 400));
+  const firstWrite = runHook('PreToolUse', patchPayload);
+  assert.equal(firstWrite.decision, undefined, JSON.stringify(firstWrite));
+  assert.equal(firstWrite.continue, true);
+  assert.ok(JSON.stringify(firstWrite).includes('does not block'));
 
   // 僵尸稿自愈：全局 current.json 残留其他会话的确认稿时，不再要求确认旧稿。
   const staleProject = await makeTempProject();
@@ -202,10 +199,11 @@ test('Codex hook escalates repeated confirmations, fuses repeated process-gate b
   runStaleHook('UserPromptSubmit', {
     prompt: '新增一个团队协作审批工作流模块，串联多个入口和流程编排，做成一站式平台能力',
   });
-  const staleBlock = runStaleHook('PreToolUse', patchPayload);
-  assert.equal(staleBlock.decision, 'block');
-  assert.ok(!staleBlock.reason.includes('version v0099'), staleBlock.reason.slice(0, 600));
-  assert.ok(staleBlock.reason.includes('已自动忽略'), staleBlock.reason.slice(0, 600));
+  const staleWrite = runStaleHook('PreToolUse', patchPayload);
+  assert.equal(staleWrite.decision, undefined);
+  assert.equal(staleWrite.continue, true);
+  assert.ok(!JSON.stringify(staleWrite).includes('version v0099'));
+  assert.ok(JSON.stringify(staleWrite).includes('does not block'));
 });
 
 test('Codex hook turns one natural-language review confirmation into full-chain authorization', async () => {
@@ -243,16 +241,16 @@ test('Codex hook turns one natural-language review confirmation into full-chain 
     },
   }, null, 2));
 
-  // 确认前的评审写入被拦时，指导语必须要求 agent 自行补齐 artifact 绑定，
-  // 而不是让用户粘贴 digest / work unit / 完整命令。
+  // 评审记录也是 Agent 后台维护材料，不应反过来阻塞用户已要求的工作。
   const prematureMark = runHook('PreToolUse', {
     tool_name: 'shell',
     tool_input: {
       command: `openprd review . --mark confirmed --version v0276 --digest ${digest} --work-unit wu-tail-0001`,
     },
   });
-  assert.equal(prematureMark.decision, 'block');
-  assert.ok(prematureMark.reason.includes('NEVER ask the user'), prematureMark.reason.slice(0, 600));
+  assert.equal(prematureMark.decision, undefined);
+  assert.equal(prematureMark.continue, true);
+  assert.ok(JSON.stringify(prematureMark).includes('does not block'));
 
   // 一句自然语言确认（带版本号 + 继续执行）应当同时授权评审记录并升级整条链。
   runHook('UserPromptSubmit', { prompt: '确认 v0276 评审稿，继续执行' });

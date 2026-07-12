@@ -2,7 +2,7 @@
 
 简体中文 | [English](./README_EN.md)
 
-> 帮团队先把需求说清楚、确认清楚，再更稳地交付的 AI 原生 PRD 工作区与 CLI。
+> 帮团队和 Agent 把需求说清楚、持续做下去并用证据交付的 AI 原生 PRD 工作区与 CLI。
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.19.0-339933.svg)](https://nodejs.org/)
@@ -11,12 +11,19 @@
 OpenPrd 是一个轻量但结构化的 **PRD harness**。你只需要先把问题说出来，它会帮团队和 Agent 把需求整理成：
 
 - 需求澄清
-- 用户确认
+- Agent 后台维护的需求事实与决策记录
 - 图形化评审
-- 冻结前关卡控制
+- 非阻断式风险提醒与交付检查
 - 面向执行系统的结构化交接
 
-它把关键确认点沉淀成稳定的 HTML 产物，而不是把版本状态散落在聊天记录或终端输出里。
+它把需求、决策和验证结果沉淀成稳定的 HTML 产物，而不是把状态散落在聊天记录或终端输出里。OpenPrd 的职责是帮助 Agent 做事：PRD、review、change、tasks、设计合同与测试证据由 Agent 在后台维护，不再要求用户回复指定内容才能继续。
+
+## 0.1.22：不再把流程材料变成用户门禁
+
+- OpenPrd 不再因需求摘要、评审稿、设计合同、测试证据或风险分类缺失而阻断实现。
+- 生产、支付、删除、账号切换、兜底与写死等信号只给 Agent 安全建议，不由 OpenPrd 索取用户确认。
+- Skill / AGENTS 方案图和大界面候选方向用于帮助理解，不再成为写入或实现授权门槛。
+- Codex、Claude Code、Cursor 共用同一套“Agent 后台维护、用户任务优先”的规则。
 
 ![OpenPrd 能力总览](https://raw.githubusercontent.com/mileson/openprd/main/docs/assets/openprd-capability-overview-zh.png)
 
@@ -25,7 +32,7 @@ OpenPrd 是一个轻量但结构化的 **PRD harness**。你只需要先把问�
 如果你希望：
 
 - 在写 PRD 前先澄清需求
-- 区分用户确认、项目已有事实和 Agent 推断
+- 区分用户原始表达、项目已有事实和 Agent 推断
 - 在 freeze 前插入架构图 / 流程图评审
 - 让 Agent 遵循 repo 内置的协同规则
 
@@ -52,12 +59,12 @@ OpenPrd 解决的问题，不只是“把 spec 写出来”，也不只是“把
 
 | 工具 | 重心 | 用户主要看到的产物 | 更适合什么 |
 |------|------|--------------------|------------|
-| **OpenPrd** | 需求澄清、HTML 优先协作、交付门禁 | `review.html`、学习阅读器、质量报告、图示、结构化 change/task 状态 | 需要把人机协同、评审确认、执行推进和交付判断串起来的团队 |
+| **OpenPrd** | 需求澄清、HTML 优先协作、Agent 后台上下文维护 | `review.html`、学习阅读器、质量报告、图示、结构化 change/task 状态 | 希望用户只说目标、Agent 自动维护上下文并持续推进的团队 |
 | **OpenSpec** | spec / change 生命周期 | Markdown proposal、spec、design、tasks | 更关注 spec 增量治理和变更编排的团队 |
 | **Superpowers** | skill 驱动的编码执行流 | skills、plans、worktree / subagent 流程、代码评审检查点 | 更关注 AI Agent 如何规划、编码、review、收尾的工程团队 |
 
-OpenPrd 最有特色的地方，在于它把“这次到底在做什么、谁来确认、凭什么继续往下走”
-做成稳定可见的协作面，而不是只留在 spec 文件或 prompt 流程里。
+OpenPrd 最有特色的地方，在于它把“这次到底在做什么、Agent 依据什么继续、最后如何验证”
+做成稳定可见的协作面，而不是让用户记住 spec 文件、内部口令或 prompt 流程。
 
 ## 典型真实场景
 
@@ -66,7 +73,7 @@ OpenPrd 最有特色的地方，在于它把“这次到底在做什么、谁来
 
 | 场景 | 为什么这里更像 OpenPrd 的强项 | 主要产物 |
 |------|--------------------------------|----------|
-| 模糊产品需求，先别急着写代码 | 先澄清，再区分用户确认事实与 Agent 推断，最后把结果沉淀成稳定评审页。 | `clarify`、`capture`、`synthesize`、`review.html` |
+| 模糊产品需求，需要边做边收敛 | 区分用户原始表达、项目事实与 Agent 推断，在推进中持续沉淀稳定评审页。 | `clarify`、`capture`、`synthesize`、`review.html` |
 | 已有流程或登录入口改造 | 先从仓库与运行态重建当前事实，再决定下一步 change，而不是直接拍脑袋改。 | `discovery`、`diagram`、`review.html`、`change` |
 | 流程图、界面或架构确认 | 把理解差异放到图示和可评审产物里，而不是埋在聊天记录里。 | `diagram`、`visual-compare`、左右对比 JPG |
 | 长程 Agent 执行链路 | 把确认后的工作拆成按依赖可执行的小任务，每次新会话只推进一个任务并带验证门禁。 | `tasks`、`loop`、任务提示词、进度日志、验证报告 |
@@ -219,12 +226,12 @@ npx @openprd/cli@latest init /path/to/project --template-pack agent
 
 `init` 会创建 `.openprd/`、`docs/basic/`、`AGENTS.md`，并生成 Codex / Claude / Cursor 三端引导。`.openprd/` 是项目内唯一的 OpenPrd 工作区；change、spec、task 和 archive 产物都会收敛到 `.openprd/changes/`、`.openprd/specs/` 和 `.openprd/archive/changes/`，不再在仓库根目录生成单独的 `openprd/` 目录。Codex 项目会同时写入 `.codex/config.toml`、`.codex/hooks.json`、`.codex/hooks/openprd-hook.mjs`，并开启用户级 Codex `hooks = true`。
 
-Codex hooks 默认使用 `lite` 模式：安装 `UserPromptSubmit`、轻量
-`PreToolUse` 写入门禁，以及轻量 `Stop` 收工回顾。明确提到 OpenPrd、PRD、深度调研、深度对标、复刻、
+Codex hooks 默认使用 `lite` 模式：安装 `UserPromptSubmit`、非阻断式
+`PreToolUse` 建议，以及轻量 `Stop` 收工回顾。明确提到 OpenPrd、PRD、深度调研、深度对标、复刻、
 standards、fleet、文档标准化，或看起来像新产品 / 模块 / 流程需求的提示词都会
-注入上下文；`lite` 写入门禁只匹配直接编辑工具，让只读 shell 探查保持安静；`Stop`
+注入上下文；`PreToolUse` 只向 Agent 提供风险与材料维护建议，不因 OpenPrd 流程材料阻断用户任务；`Stop`
 会在本轮结束前回顾是否值得沉淀项目经验。
-需要连 shell 命令也进入写入门禁时使用 `guarded`，只有临时深度诊断才使用
+需要让 shell 命令也获得更完整的风险提示时使用 `guarded`，只有临时深度诊断才使用
 `full`。
 如果用户给出报错、日志、复现、根因排查等明确故障证据，并要求直接修复，
 hook 会按小型 bugfix 处理，不开启需求入口；“确认修复”这类确认词也会关闭
@@ -259,7 +266,7 @@ openprd release /path/to/project
 
 如果 OpenPrd 自身要把新版本发布到 GitHub，默认还要推送匹配的版本 tag，并配套 GitHub Release。可以先用 `node scripts/openprd-github-release-notes.mjs /path/to/project --version 0.1.23 --tag v0.1.23 --out /tmp/openprd-release.md` 预览发布文案；仓库内的 `github-release` workflow 会在 tag push 或手动触发时，基于同一份 `release-ledger` 自动创建或更新 GitHub Release。
 
-### 3. 先向用户澄清
+### 3. Agent 后台整理需求
 
 ```bash
 openprd clarify /path/to/project
@@ -270,8 +277,8 @@ openprd clarify /path/to/project
 OpenPrd 会先按用户可见的需求类型接住这句话，而不是先让你填一堆表单：
 
 - **直接处理**：通常直接做，做完告诉你改了什么、怎么验。
-- **现有功能优化**：先给一版 mini-plan，你确认方向后再继续。
-- **新功能 / 新流程方案**：先把场景、范围、第一版和风险说清楚，再进入 `review`、`change` 和 `tasks`。
+- **现有功能优化**：Agent 用 mini-plan 收敛范围并继续执行，显式说明采用的假设。
+- **新功能 / 新流程方案**：Agent 在后台整理场景、范围、第一版和风险，并持续维护 `review`、`change` 和 `tasks`，不要求用户批准这些内部材料。
 
 ### 4. 写回答案
 
@@ -314,18 +321,11 @@ openprd review /path/to/project --open
 openprd review /path/to/project --mark confirmed --version <id> --digest <sha256> --work-unit <id>
 ```
 
-`review.html` 是当前 PRD 的稳定评审稿，但默认 approval policy 是
-`decision-points`，不是“每次都必须停在这里”。常规 lane 下，一句自然语言
-确认（例如“确认这版，继续”，容忍“确认 v0276 评审稿”这类版本号插写）就足够：
-hook 会自动把确认绑定到当前精确的 `--version`、`--digest`、`--work-unit`，
-Agent 不允许反过来向用户索要 digest、work-unit 或完整命令。当这句确认同时
-带有“继续执行”意图，或此前已确认过需求摘要时，一次确认会解锁整条链：评审
-记录、change、tasks 与实现全程直通，不再逐环节停下（一次确认合同）。
-`silent-record` lane 只有在用户一开始已经明确要求直接做、并显式表示不需要
-额外评审或确认时，才允许直接记录当前这份精确 artifact。不要把实现授权当成
-给任意评审稿补确认，也不要把评审记录当成实现授权。当前 artifact 记录完成后，
-再生成 OpenPrd change 和任务拆解；如果用户原始意图已明确要求实现，tasks
-就绪后即可直接执行，否则等待一句明确的执行指令：
+`review.html` 是当前 PRD 的稳定评审稿，也是用户随时可以查看的协作结果，但不是
+OpenPrd 授权门禁。Agent 自动绑定当前精确的 `--version`、`--digest`、`--work-unit`，
+自行记录 review、生成 change、拆解 tasks 并继续用户已经要求的工作；不得反过来要求
+用户粘贴 digest、work-unit、完整命令或批准内部材料。信息不完整时，Agent 优先选择
+可逆默认方案并说明假设；是否真的需要提问由当前 Agent 根据宿主安全规则与真实上下文判断：
 
 ```bash
 openprd change /path/to/project --generate --change <change-id>
@@ -687,7 +687,7 @@ openprd loop /path/to/project --run --agent codex --dry-run
 `--dry-run`，预演时只打印安装和刷新命令，不修改 CLI、项目、registry 或 harness 状态。
 
 这套 harness 是有状态的，但 hook 重量由 profile 控制。默认 `lite` 保留轻量
-PreToolUse 写入门禁，并把匹配范围限制在直接编辑工具上，同时在 `Stop` 做一轮轻量项目经验回顾，避免只读 shell 噪声和完整工具级遥测；`guarded` 会额外覆盖 shell 工具，`full` 只建议用于临时深度诊断。`freeze`、`handoff`、accepted spec apply/archive、commit、push、release、publish 等高风险动作会先经过 `openprd run . --verify`，覆盖标准化、工作区校验、激活 change 校验和激活 discovery 校验。
+PreToolUse 非阻断式建议，并把匹配范围限制在直接编辑工具上，同时在 `Stop` 做一轮轻量项目经验回顾，避免只读 shell 噪声和完整工具级遥测；`guarded` 会额外覆盖 shell 工具，`full` 只建议用于临时深度诊断。`freeze`、`handoff`、accepted spec apply/archive、commit、push、release、publish 等动作会运行 `openprd run . --verify`，帮助 Agent 检查标准化、工作区、激活 change 和 discovery 状态，但不要求用户补流程确认。
 
 `openprd run . --context` 是类似 Ralph 的循环控制面。它会从激活 change 任务、discovery coverage 或普通 OpenPrd 工作流状态里选择下一项可执行单元，并把 hook turn 记录到 `.openprd/harness/iterations.jsonl`。
 
