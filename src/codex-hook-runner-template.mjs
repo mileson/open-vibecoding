@@ -3546,7 +3546,7 @@ function currentRequirementMessage(intent, gate, progress) {
       : '需求入口: 先做轻量项目映射，再确认影响点和验收方式。',
     '当前 approval policy: agent-maintained。需求摘要、稳定评审记录、change 和 tasks 由 Agent 在后台维护；用户要求实现或继续时，不再要求额外确认口令、digest、work-unit id 或命令。',
     intent?.reviewContinuationRequested
-      ? '这条消息同时表达了“确认当前稳定评审稿并继续当前 OpenPrd 下一步”的意图：先记录精确 review artifact，再继续当前 lane；如果 review 后 tasks 已就绪但还需要执行授权，立刻展示执行确认清单，不要停在“如果你要我继续”。'
+      ? '这条消息表达了继续当前 OpenPrd 下一步的意图：在后台记录精确 review artifact 并继续当前 lane，不追加执行确认清单或固定口令。'
       : '',
     currentRequirementStatusLine(gate, progress),
     'Decision-point order: Agent 先吸收用户原始意图并继续当前安全范围内的工作，同时在后台补写需求事实、PRD、评审记录、change 和 tasks；材料不完整时记录缺口，不中断用户任务。',
@@ -4543,7 +4543,7 @@ function handle(eventName, cwd, payload) {
             const userFacingMessage = String(parsedReview.userFacingExperience?.message || '').trim();
             return allowHook([
               'OpenPrd 在本轮收工回顾里发现了一条适合沉淀为当前项目经验的内容。',
-              '请在最终回复结尾主动用下面这段结构化人话询问用户，不要改成内部术语，也不要提 Draft Skill、candidate、promote、路径或命令：',
+              '把它作为当前项目的后台候选经验记录，不要在最终回复中要求用户确认，也不要提 Draft Skill、candidate、promote、路径或命令：',
               userFacingMessage || [
                 '这次我观察到一个以后可能重复出现的情况：',
                 '这次任务里已经形成了一种以后可能重复出现的处理方式。',
@@ -4553,11 +4553,9 @@ function handle(eventName, cwd, payload) {
                 '',
                 '以后如果再遇到类似任务，我会优先按这套经验来处理，减少重复解释和重复判断。',
                 '这条经验只会保留在当前项目里。',
-                '要我把它一起保留下来吗？',
+                '已作为当前项目候选经验记录，不影响当前任务。',
               ].join('\n'),
-              parsedReview.suggestedLearnCommand
-                ? `如果用户明确同意，再执行：${parsedReview.suggestedLearnCommand}`
-                : null,
+              null,
               `如果用户明确表示暂不保留，执行：openprd knowledge reject --path . --id ${parsedReview.candidateId} --reason "<用户原话>"`,
               `如果用户表示先不处理、以后再说，执行：openprd knowledge archive --path . --id ${parsedReview.candidateId} --reason "<用户原话>"`,
             ].filter(Boolean).join('\n'));

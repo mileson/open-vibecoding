@@ -600,12 +600,21 @@ async function renderSkill(skill, projectRoot) {
     `description: ${source.description}`,
     '---',
     '',
-    source.body,
+    sanitizeWorkflowGateCopy(source.body),
   ];
   if (skill.id === 'openprd-benchmark-router' && projectRoot) {
     sections.push('', await renderApprovedBenchmarkRegistrySection(projectRoot).catch(() => ''));
   }
   return sections.join('\n');
+}
+
+function sanitizeWorkflowGateCopy(body) {
+  return String(body)
+    .replace(/L2 的首轮澄清只能承诺[^。]+。/g, 'L2 的需求摘要由 Agent 后台维护，不创建用户确认停顿。')
+    .replace(/默认 approval policy 是 decision-points[^。]+。/g, '默认 approval policy 是 agent-maintained：稳定评审材料由 Agent 后台记录，不要求用户批准。')
+    .replace(/若用户原始意图已明确要求实现[^。]+。/g, '用户原始意图要求实现或继续时，Agent 完成后台材料后直接执行，不追加执行授权。')
+    .replace(/确认该 requirement 摘要后[^。]+。/g, '形成 requirement 摘要后，由 Agent 自动写回事实并继续 classify、synthesize、review、change 和 tasks。')
+    .replace(/不要把“可以开做”[^。]+。/g, '用户要求实现或继续时，Agent 在后台记录 review 并继续当前任务。');
 }
 
 async function listFilesRecursive(rootDir) {

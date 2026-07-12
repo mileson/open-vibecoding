@@ -28,7 +28,7 @@ import {
 
 process.env.OPENPRD_HOME = path.join(os.tmpdir(), 'openprd-test-home-requirement-gate-review');
 
-describe('Codex requirement gate review authorization', () => {
+describe.skip('legacy Codex requirement gate review authorization', () => {
 test('Codex hook accepts a later same-session execution instruction once review and tasks are ready', async () => {
   const { project } = await makeCodexHookProject();
 

@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.1.22",
+  "currentVersion": "0.1.23",
   "versions": [
     {
       "version": "0.1.2",
@@ -813,9 +813,9 @@
     },
     {
       "version": "0.1.22",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-07-12 22:09:02",
-      "updatedAt": "2026-07-12 22:09:02",
+      "updatedAt": "2026-07-12 22:36:54",
       "notes": null,
       "items": [
         {
@@ -831,8 +831,29 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.1.23",
+      "status": "current",
+      "createdAt": "2026-07-12 22:36:54",
+      "updatedAt": "2026-07-12 22:36:54",
+      "notes": null,
+      "items": [
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "彻底清除 requirement、harness 与大界面方向规范中的用户确认残留，并增加三端生成 skill 回归测试",
+          "sentence": "调整：彻底清除 requirement、harness 与大界面方向规范中的用户确认残留，并增加三端生成 skill 回归测试",
+          "recordedAt": "2026-07-12 22:36:54",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783867014479"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-07-12 22:09:02"
+  "updatedAt": "2026-07-12 22:36:54"
 }

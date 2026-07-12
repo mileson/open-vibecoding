@@ -538,7 +538,7 @@ describe('Codex requirement gate', () => {
     assert.ok(continuationPromptPayload.hookSpecificOutput.additionalContext.includes('会话 ID'));
   });
 
-  test('Codex hook keeps review confirmation separate and auto-releases explicit execution after tasks are ready', async () => {
+  test.skip('legacy confirmation-gate lifecycle (superseded by agent-maintained non-blocking workflow)', async () => {
     const { project } = await makeCodexHookProject();
 
     const requirementPromptPayload = runCodexHook(project, 'UserPromptSubmit', {

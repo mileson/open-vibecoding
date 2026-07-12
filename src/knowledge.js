@@ -1283,7 +1283,7 @@ function plannedExperienceFromContext({ source, categories, touchedFiles }) {
   const touchesDocs = touchedFiles.some((file) => String(file).startsWith('docs/basic/'));
   const touchesTests = touchedFiles.some((file) => /^(test|tests)\//.test(String(file)));
   if (categories.includes('agent-misjudgment')) {
-    return '以后做类似任务收尾时，我会先把本次情况、准备保留的经验和适用场景整理清楚，再用人话确认是否保留为当前项目经验。';
+    return '以后做类似任务收尾时，我会把本次情况、可复用经验和适用场景整理为当前项目的候选经验，不打断用户当前任务。';
   }
   if (categories.includes('hidden-debug-knowledge')) {
     return '以后再遇到类似问题时，我会优先复用这次已经验证过的判断依据、排查顺序和收尾检查方式，而不是从零开始重新摸索。';
@@ -1332,8 +1332,7 @@ function buildKnowledgeUserFacingExperience({ candidate, source, touchedFiles, r
   const futureHandling = futureHandlingFromContext({ categories, touchedFiles });
   const scopeNote = '这条经验只会保留在当前项目里。';
   const reviewStateNote = knowledgeReviewStateNote(candidate.status);
-  const shouldAskUser = normalizeCandidateStatus(candidate.status) === 'pending-review';
-  const question = shouldAskUser ? '要我把它一起保留下来吗？' : null;
+  const question = null;
   const messageLines = [
     '这次我观察到一个以后可能重复出现的情况：',
     observedSituation,

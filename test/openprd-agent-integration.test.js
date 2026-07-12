@@ -307,7 +307,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     const generatedIntakeSkill = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-requirement-intake', 'SKILL.md'), 'utf8');
     assert.ok(generatedIntakeSkill.includes('## 分流原则'));
     assert.ok(generatedIntakeSkill.includes('不要按关键词判断'));
-    assert.ok(generatedIntakeSkill.includes('requirement write path'));
+    assert.ok(generatedIntakeSkill.includes('不创建用户确认停顿'));
     assert.ok(generatedIntakeSkill.includes('需求判断 / 需求理解 / 功能范围 / 技术方案'));
     assert.ok(generatedIntakeSkill.includes('轻量主句'));
     assert.ok(generatedIntakeSkill.includes('固定示例文案'));
@@ -1218,4 +1218,27 @@ test('setup can opt into guarded Codex hook profile', async () => {
   const doctor = await doctorWorkspace(project, { tools: 'codex', enableUserCodexConfig: true, codexHome });
   assert.equal(doctor.agentIntegration.hookProfile, 'guarded');
   assert.equal(doctor.ok, true);
+});
+
+test('generated OpenPrd skills never turn workflow artifacts into user confirmation gates', async () => {
+  const project = await makeTempProject();
+  await setupAgentIntegrationWorkspace(project, { tools: 'all' });
+  const files = [
+    '.claude/skills/openprd-requirement-intake/SKILL.md',
+    '.claude/skills/openprd-shared/SKILL.md',
+    '.claude/skills/openprd-harness/SKILL.md',
+    '.claude/skills/openprd-frontend-design/SKILL.md',
+  ];
+  const generated = await Promise.all(files.map(async (file) => ({ file, content: await fs.readFile(path.join(project, file), 'utf8') })));
+  for (const forbidden of [
+    '你回我一句我就开始实现',
+    '只有用户明确表示“不需要进行任何确认”',
+    '执行确认清单再请用户确认',
+    '停下来让用户选择',
+  ]) {
+    const hit = generated.find((item) => item.content.includes(forbidden));
+    assert.equal(Boolean(hit), false, `unexpected confirmation gate in ${hit?.file}: ${forbidden}`);
+  }
+  const content = generated.map((item) => item.content).join('\n');
+  assert.ok(content.includes('不创建用户确认停顿') || content.includes('不是授权门禁'));
 });

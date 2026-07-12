@@ -127,7 +127,7 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
    - 直接处理通常包括空格、错别字、按钮文案、简单样式、明确 bugfix 和低风险局部调整；直接执行，完成后说明变更和验证。
    - 现有功能优化有明确落点但影响多个文件或行为；先给对话内 mini-plan，再实现和验证。
    - 如果用户刚刚已经确认了现有功能优化（L1）的 mini-plan、范围边界或正式产品边界，后续承接要明确写成“已确认，我按这个继续/收口/落地”，不要只写一个“确认”，也不要写成“确认，我们就按这个……”这种像再次索取确认的句子。
-- 新功能/新流程方案包括新产品、模块、流程、权限、计费、AI/第三方集成、云服务、跨系统、数据迁移或边界不清的需求；先走 requirement intake、对话内 requirement 摘要确认、review、change 和 tasks，再实现。
+- 新功能/新流程方案包括新产品、模块、流程、权限、计费、AI/第三方集成、云服务、跨系统、数据迁移或边界不清的需求；requirement intake、摘要、review、change 和 tasks 由 Agent 后台维护，不阻断用户要求的实现。
 - 对话内 requirement 摘要保持原有“需求判断 / 需求理解 / 功能范围 / 技术方案”结构，但 `需求判断` 和 `需求理解` 先用轻量主句说清结论；边界、风险、异常例子和技术细节下沉到后面的分项或表格，不要把它们挤成一大段。
 - 对于 L2 或脑暴诉求，默认再补一层“创业验证闭环”：第一批最容易触达的人群/社区、你为什么算这个社区里的自己人、当前替代方案和痛点证据、先不做完整产品时的手工路径、手工作战卡、一件事 MVP、周末级验证、能否先用 spreadsheet / 表单 / no-code 跑起来、如果必须开始做产品也只自动化最重复的一步并先压成 forms / lists / CRUD 骨架、第一批客户路径、从第一个客户开始怎么收费、客户 1 如何打平成本、有没有 10 个样本和更强付费信号、达到什么条件才允许产品化、增长阶段守什么纪律，以及验证阶段怎样先活下来、这条路是否可逆、是否真在解决客户问题、是否符合团队价值观，以及这是不是你愿意长期住进去、不会反过来绑住团队的业务形态。
 - 历史 active change 在新 requirement intake 激活时只作为提醒，不抢当前主线。
@@ -167,7 +167,7 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
 
 - 当用户要求“看看、规划、梳理、分析、评估、explain、review”或列出影响文件时，保持只读。此时只基于证据回答，不运行 `openprd loop --run`、`openprd tasks --advance`、`openprd discovery --advance`、commit、push 或其他写入命令。
 - 只有当当前用户消息明确要求开发、实现、修复、继续任务、深度调研、对标复刻或提交时，才执行 OpenPrd loop、task 或 discovery 推进。
-- 单纯的“请帮我实现/继续实现”只表示有执行意图，不表示可以跳过 requirement 摘要确认、`capture/classify/synthesize` 写入路径或 review；只有用户明确表示“不需要进行任何确认”时，才允许静默走完整 requirement write path。
+- “请帮我实现/继续实现”就是执行意图；Agent 静默完成 requirement、capture/classify/synthesize 和 review 维护，不追加 OpenPrd 确认门禁。
 - 声称实现就绪前，要说明文档影响检查是新增、更新，还是有意保持 `docs/basic/`、文件说明书和文件夹 README 不变。
 - 用户要求生成图片、封面图、配图、海报、插画、图标、贴纸、头像、banner、主视觉/KV、运营图、效果图、视觉稿、mockup、先看样子或先确认设计方向时，最终回复应给出 `imagegen` 生成的图片结果；只有实际发生 `imagegen` 调用后，才能汇报生图结果、失败或限流。Image 2 是工具路径，不是审美豁免；最终回复要能说明候选图是否满足用途、受众、气质和记忆点。生图结果先当候选效果图，并主动确认是否符合预期、是否纳入后续效果图/实现截图对比、以及是否按此继续实现。进入实现阶段后，已有确认参考图才给出 `openprd visual-compare --reference/--actual` 生成的 JPG 路径；如果参考图是一张整板、网格图或多对象组合，先运行 `openprd visual-prepare --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>` 并说明 contact sheet / compare-plan；没有参考图时先判断新建界面还是修改既有界面，新建界面先完成 3 方向方案评审，修改既有界面给出 `openprd visual-compare --before/--after` 生成的 JPG 路径；普通截图实测补 `openprd visual-compare --board <verification-board.json>`，同构列表、卡片、网格、表格或用户反馈没对齐时补 `openprd visual-compare --board <alignment-board.json>`，并说明相同槽位 spread 是否仍有偏差；最终同时说明是否仍有结构、气质、层级、颜色、字号、间距或记忆点差异。
 - 大界面改动应给出 3 方向横向候选效果图大图；Agent 可选最符合目标且可逆的方向继续，OpenPrd 不强制等待确认。用户明确选择时优先采用用户方向。

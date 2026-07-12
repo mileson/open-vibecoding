@@ -17,6 +17,10 @@ OpenPrd is a lightweight **PRD harness**. Start by describing the problem in pla
 
 Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps people and agents aligned around stable HTML artifacts such as `review.html`, learning readers, and quality reports. OpenPrd helps the agent do the work: PRDs, reviews, changes, tasks, design contracts, and evidence are maintained in the background without requiring the user to reply with a prescribed confirmation.
 
+## 0.1.23: confirmation-copy cleanup is complete
+
+0.1.23 removes the remaining confirmation-oriented wording from requirement, harness, and large-UI direction skills, and adds a regression test against generated skills for all three clients. OpenPrd maintains requirement, review, design, and verification artifacts in the background; an implementation request no longer triggers an OpenPrd summary approval, default-direction choice, or execution passphrase.
+
 ## 0.1.22: workflow artifacts are no longer user gates
 
 - Missing requirement summaries, review artifacts, design contracts, test evidence, or risk classifications no longer block implementation.

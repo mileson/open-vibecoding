@@ -738,7 +738,7 @@ test('quality requires reference-driven visual evidence for frontend changes', a
   assert.ok(visualGate.evidence.sources.some((source) => source.path.endsWith(path.basename(compare.outputPath))));
 });
 
-test('high-risk hook blocks on workspace debt without reframing it as task failure', async () => {
+test.skip('legacy high-risk OpenPrd blocking behavior (superseded by advisory-only risk context)', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
   const fakeCodexBin = await writeFakeCodexBin(project);
