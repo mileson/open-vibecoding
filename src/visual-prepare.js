@@ -706,8 +706,11 @@ async function renderContactSheet(projectRoot, sourcePath, items, outputPath, op
 function buildFocusBoardTemplate(paths, title, items) {
   return {
     mode: 'focus-board',
+    presentation: items.length === 1 ? 'local-first' : 'detailed',
     title: `${title} 局部焦点模板`,
-    summary: '把 right.path 替换成实现截图；如果实现截图布局与参考图不同，再分别调整 rightBox。',
+    summary: items.length === 1
+      ? '局部优先对比：把 right.path 替换成实现截图，使用独立 rightBox 定位同一语义对象，左右保持同一像素尺度。'
+      : '把 right.path 替换成实现截图；如果实现截图布局与参考图不同，再分别调整 rightBox。',
     left: {
       path: paths.source,
       label: '参考整板',

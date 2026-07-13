@@ -350,6 +350,66 @@ test('visual-compare writes side-by-side review images', async () => {
   assert.equal((await sharp(beforeAfterCliOut).metadata()).format, 'jpeg');
 });
 
+test('visual-compare local-first crops both sides at one shared scale without stretching', async () => {
+  const project = await makeTempProject();
+  await initWorkspace(project, { templatePack: 'consumer' });
+  const reference = path.join(project, 'reference-local.png');
+  const actual = path.join(project, 'actual-local.png');
+  await sharp({
+    create: { width: 400, height: 200, channels: 3, background: '#e5e7eb' },
+  }).png().toFile(reference);
+  await sharp({
+    create: { width: 400, height: 200, channels: 3, background: '#d1d5db' },
+  }).png().toFile(actual);
+
+  const result = await visualCompareWorkspace(project, {
+    reference,
+    actual,
+    referenceBox: '10,12,160,32',
+    actualBox: '20,18,104,32',
+    focusLabel: '提示框与按钮',
+    maxPanelWidth: 180,
+  });
+  assert.equal(result.mode, 'focus-board');
+  assert.equal(result.presentation, 'local-first');
+  assert.equal(result.reviewArtifact.presentation, 'local-first');
+  assert.equal(result.reviewArtifact.comparisonMode, 'reference-actual');
+  assert.equal(result.focusRegions[0].sharedScale, 1);
+  assert.equal(result.focusRegions[0].stretched, false);
+  assert.deepEqual(result.focusRegions[0].leftCrop, { width: 160, height: 32 });
+  assert.deepEqual(result.focusRegions[0].rightCrop, { width: 104, height: 32 });
+  assert.equal(result.context.placement, 'footer');
+  assert.equal(result.context.role, 'provenance-and-regression-only');
+  assert.equal(result.focusRegions[0].difference.blend, 'difference');
+  assert.equal((await sharp(result.outputPath).metadata()).format, 'jpeg');
+
+  const cliOut = path.join(project, '.openprd', 'harness', 'visual-reviews', 'local-first-cli.jpg');
+  const logs = [];
+  const originalLog = console.log;
+  console.log = (...args) => logs.push(args.join(' '));
+  try {
+    assert.equal(await main([
+      'visual-compare', project,
+      '--reference', reference,
+      '--actual', actual,
+      '--reference-box', '10,12,160,32',
+      '--actual-box', '20,18,104,32',
+      '--focus-label', '提示框与按钮',
+      '--presentation', 'local-first',
+      '--max-panel-width', '180',
+      '--out', cliOut,
+      '--json',
+    ]), 0);
+  } finally {
+    console.log = originalLog;
+  }
+  const cliResult = JSON.parse(logs.join('\n'));
+  assert.equal(cliResult.presentation, 'local-first');
+  assert.equal(cliResult.focusRegions[0].leftCrop.width, 160);
+  assert.equal(cliResult.focusRegions[0].rightCrop.width, 104);
+  assert.equal(cliResult.focusRegions[0].stretched, false);
+});
+
 test('visual-compare writes focus and parallel review boards and quality can detect them', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
@@ -427,6 +487,17 @@ test('visual-compare writes focus and parallel review boards and quality can det
   assert.equal(focusResult.focusRegions.length, 2);
   assert.equal(focusResult.reviewArtifact.mode, 'focus-board');
   assert.equal((await sharp(focusResult.outputPath).metadata()).format, 'jpeg');
+
+  const localFocusPayload = JSON.parse(await fs.readFile(focusBoardPath, 'utf8'));
+  localFocusPayload.presentation = 'local-first';
+  await fs.writeFile(focusBoardPath, `${JSON.stringify(localFocusPayload, null, 2)}\n`);
+  const localFocusResult = await visualCompareWorkspace(project, {
+    board: focusBoardPath,
+    maxPanelWidth: 180,
+  });
+  assert.equal(localFocusResult.presentation, 'local-first');
+  assert.ok(localFocusResult.focusRegions.every((region) => region.stretched === false));
+  assert.ok(localFocusResult.focusRegions.every((region) => region.difference.blend === 'difference'));
 
   const parallelBoardPath = path.join(project, 'parallel-board.json');
   await fs.writeFile(parallelBoardPath, `${JSON.stringify({

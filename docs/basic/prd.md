@@ -66,6 +66,7 @@ OpenPrd 的需求初始化默认不是重问卷，而是先建立一层轻量的
 - 包含：界面任务的设计前置门，要求按需补齐 `facts-sheet`、`asset-spec`、`image-preflight`、`direction-plan` 和 `selected-direction`，再进入真实编码。
 - 包含：参考图预处理工具，通过 `openprd visual-prepare --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>` 把确认后的整板、网格图或多对象效果图整理成 reference-set，并生成 crops、contact sheet、compare-plan 以及 board 模板。
 - 包含：界面视觉对比工具，通过 `openprd visual-compare --reference <效果图> --actual <实现截图> --locale <zh-CN|en>` 把两张图合成按当前用户主语言标注的左右对比图；没有参考图但改动界面时，通过 `openprd visual-compare --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>` 合成同语言策略的自检图。默认输出 JPG 到 `.openprd/harness/visual-reviews/`；该工具只用于实现阶段视觉证据，不能替代实现前效果图方向评审。
+- 包含：局部 UI 改动的 ROI-first 证据路径，通过 `--reference-box/--actual-box` 或 `--before-box/--after-box` 直接裁剪同一语义对象，使用共享像素尺度防止小区域被独立拉伸，并把局部参考、局部实现和差异图作为主证据；全屏缩略图只用于未改区域回归。
 - 包含：研发期 touched code files 标准层，通过 `openprd dev-check` 或 `scripts/openprd-dev-check.mjs` 返回代码文件行数、状态和下一步动作建议；需要关注的文件会形成按 🔴 → 🟠 → 🟡 排序的表格行。
 - 包含：dev-check 自动优化模式（默认开启），命中超行文件时指示 Agent 本轮直接完成高内聚低耦合小步拆分（不丢功能、行为不变、拆完重跑测试），wrap-up 标题变为“OpenPRD 自动优化报告”，表头换成优化后视角（问题级别、源文件规模、优化原因），并附“下次是否关闭自动优化”的确认话术；`openprd dev-check <path> --auto-refactor on|off` 持久化切换，关闭后回到“后续建议”推荐模式（表头回到关注程度、规模信号、预警原因）。
 - 包含：界面文件视觉证据提醒，dev-check 发现本轮触达 UI 文件且 `.openprd/harness/visual-reviews/` 24 小时内无新证据板时，输出 `visualEvidence` 提醒（建议命令 + 对话流嵌入提示）。
@@ -102,6 +103,7 @@ OpenPrd 的需求初始化默认不是重问卷，而是先建立一层轻量的
 - `init/setup/update` 后，新工作区默认会带出 `.openprd/design/` 设计框架层和 `openprd-frontend-design` 生成 skill，`doctor` 能检查它们是否缺失或漂移。
 - 如果确认参考图是一张整板、网格图或多对象组合，Agent guidance 会要求先运行 `openprd visual-prepare` 并检查 contact sheet；未生成 reference-set、compare-plan 或 board 模板前，不得把整板盲比当成充分验收。
 - 界面、页面、视觉、样式或前端体验任务在已有参考图并进入实现阶段时，会先截实现图并运行 `openprd visual-compare --reference/--actual --locale <zh-CN|en>`；输出图标签跟随用户当前主语言，中文语境默认“效果图 / 实现截图”，英文语境默认“Reference / Implementation”。
+  - 当验收重点是一个组件或不超过 3 个相邻区域时，Agent 默认自主选择左右裁剪框并运行 `local-first`，不向用户索要坐标，不用全屏对比代替局部返工循环。
   - 无参考图但改动界面时，Agent 会在动手前截修改前截图，完成后用同一入口、视口、账号和数据状态截修改后截图，并运行 `openprd visual-compare --before/--after --locale <zh-CN|en>`；输出图标签跟随同一语言策略。
   - Agent 需查看合成图并继续复刻或自检到无明显差异/漂移后才宣称视觉完成。
 - 明确实现类请求在新增或修改代码文件前后，可以运行 `openprd dev-check <path> <file...>` 获取改动文件的问题级别和下一步建议；自动优化开启（默认）时，需要关注的文件必须在最终回复以 **OpenPRD 自动优化报告** 为标题回填真实优化产出并附关闭确认话术，表格列为影响对象、问题级别、源文件规模、优化原因、本次处理结果和后续建议；关闭后回到 **后续建议** 标题的推荐表格，列名为影响对象、关注程度、规模信号、预警原因、本次处理结果和后续建议。

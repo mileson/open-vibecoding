@@ -19,7 +19,7 @@
  */
 function parseCommandArgs(argv) {
   const args = [...argv];
-  const flags = { json: false, force: false, fix: false, open: false, append: false, init: false, check: false, review: false, reject: false, resume: false, advance: false, verify: false, evidenceRequired: false, next: false, generate: false, validate: false, apply: false, archive: false, activate: false, close: false, keep: false, write: false, dryRun: false, repairAgent: false, allowDirtyMain: false, fleet: false, updateOpenprd: false, backfillWorkUnits: false, syncRegistry: false, setupMissing: false, doctor: false, context: false, recordHook: false, hookInject: false, plan: false, prompt: false, loopRun: false, finish: false, commit: false, html: false, template: false, failOnViolation: false, noExternalFacts: false, noBrandAssets: false, noRealImages: false, daemon: false, stop: false, bridgeOutbox: false, bridgeSent: false, bridgeFailed: false, mark: null, direction: null, autoRefactor: null, type: 'architecture', mode: 'auto', input: null, field: null, value: null, set: null, jsonFile: null, artifactMarkdown: null, contentJson: null, presentation: null, source: null, reference: null, actual: null, before: null, after: null, board: null, grid: null, boxes: null, out: null, format: null, quality: null, maxPanelWidth: null, referenceLabel: null, actualLabel: null, locale: null, classifyExternal: null, maxIterations: null, maxDepth: null, include: null, exclude: null, report: null, item: null, id: null, status: null, claim: null, notes: null, reason: null, confidence: null, threshold: null, change: null, starter: null, sections: null, brief: null, tools: 'all', hookProfile: null, templatePack: null, target: 'openprd', targetRoot: null, path: null, productType: null, title: null, owner: null, problem: null, whyNow: null, evidence: null, from: null, to: null, version: null, digest: null, workUnit: null, event: null, risk: null, outcome: null, preview: null, learn: null, genre: null, style: null, topic: null, enable: false, disable: false, agent: 'codex', agentCommand: null, worktree: null, branch: null, message: null, thread: null, threadTitle: null, conversationTitle: null, session: null, sessionTitle: null, host: null, port: null, openTarget: 'auto', runtimeAction: null, lane: null, task: null, claimId: null, client: null, leaseMs: null, expectedRevision: null, expectedLaneRevision: null, writeSet: null, baseCommit: null, gateId: null, approvalId: null, symlinkStrategy: null, installSafetyBackupRoot: null };
+  const flags = { json: false, force: false, fix: false, open: false, append: false, init: false, check: false, review: false, reject: false, resume: false, advance: false, verify: false, evidenceRequired: false, next: false, generate: false, validate: false, apply: false, archive: false, activate: false, close: false, keep: false, write: false, dryRun: false, repairAgent: false, allowDirtyMain: false, fleet: false, updateOpenprd: false, backfillWorkUnits: false, syncRegistry: false, setupMissing: false, doctor: false, context: false, recordHook: false, hookInject: false, plan: false, prompt: false, loopRun: false, finish: false, commit: false, html: false, template: false, failOnViolation: false, noExternalFacts: false, noBrandAssets: false, noRealImages: false, daemon: false, stop: false, bridgeOutbox: false, bridgeSent: false, bridgeFailed: false, mark: null, direction: null, autoRefactor: null, type: 'architecture', mode: 'auto', input: null, field: null, value: null, set: null, jsonFile: null, artifactMarkdown: null, contentJson: null, presentation: null, source: null, reference: null, actual: null, before: null, after: null, referenceBox: null, actualBox: null, beforeBox: null, afterBox: null, focusLabel: null, focusReason: null, board: null, grid: null, boxes: null, out: null, format: null, quality: null, maxPanelWidth: null, referenceLabel: null, actualLabel: null, locale: null, classifyExternal: null, maxIterations: null, maxDepth: null, include: null, exclude: null, report: null, item: null, id: null, status: null, claim: null, notes: null, reason: null, confidence: null, threshold: null, change: null, starter: null, sections: null, brief: null, tools: 'all', hookProfile: null, templatePack: null, target: 'openprd', targetRoot: null, path: null, productType: null, title: null, owner: null, problem: null, whyNow: null, evidence: null, from: null, to: null, version: null, digest: null, workUnit: null, event: null, risk: null, outcome: null, preview: null, learn: null, genre: null, style: null, topic: null, enable: false, disable: false, agent: 'codex', agentCommand: null, worktree: null, branch: null, message: null, thread: null, threadTitle: null, conversationTitle: null, session: null, sessionTitle: null, host: null, port: null, openTarget: 'auto', runtimeAction: null, lane: null, task: null, claimId: null, client: null, leaseMs: null, expectedRevision: null, expectedLaneRevision: null, writeSet: null, baseCommit: null, gateId: null, approvalId: null, symlinkStrategy: null, installSafetyBackupRoot: null };
   const positionals = [];
 
   while (args.length > 0) {
@@ -402,6 +402,30 @@ function parseCommandArgs(argv) {
       flags.after = args.shift() ?? null;
       continue;
     }
+    if (arg === '--reference-box') {
+      flags.referenceBox = args.shift() ?? null;
+      continue;
+    }
+    if (arg === '--actual-box') {
+      flags.actualBox = args.shift() ?? null;
+      continue;
+    }
+    if (arg === '--before-box') {
+      flags.beforeBox = args.shift() ?? null;
+      continue;
+    }
+    if (arg === '--after-box') {
+      flags.afterBox = args.shift() ?? null;
+      continue;
+    }
+    if (arg === '--focus-label') {
+      flags.focusLabel = args.shift() ?? null;
+      continue;
+    }
+    if (arg === '--focus-reason') {
+      flags.focusReason = args.shift() ?? null;
+      continue;
+    }
     if (arg === '--board') {
       flags.board = args.shift() ?? null;
       continue;
@@ -661,7 +685,7 @@ function usage() {
     '  openprd quality [path] [--init|--verify|--report --html|--learn [--review] --from <report-id-or-json-or-diagnostics-or-turn-state>] [--force] [--json]',
     '  openprd knowledge <candidates|reject|archive|restore> [path-or-id] [--status <pending-review|all|rejected|archived|promoted|merged>] [--id <candidate-id>] [--reason <text>] [--json]',
     '  openprd visual-prepare [path] --reference <effect-image> ((--grid <columns>x<rows>) | (--boxes <plan.json>)) [--include <csv>] [--id <reference-set-id>] [--title <text>] [--out <dir>] [--json]',
-    '  openprd visual-compare [path] ((--reference <effect-image> --actual <screenshot-image>) | (--before <before-screenshot> --after <after-screenshot>) | --board <board.json>) [--out <file.jpg>] [--format <jpg|png|webp>] [--quality <1..100>] [--max-panel-width <px>] [--locale <zh-CN|en>] [--json]',
+    '  openprd visual-compare [path] ((--reference <effect-image> --actual <screenshot-image>) | (--before <before-screenshot> --after <after-screenshot>) | --board <board.json>) [--reference-box <x,y,w,h>] [--actual-box <x,y,w,h>] [--before-box <x,y,w,h>] [--after-box <x,y,w,h>] [--focus-label <text>] [--focus-reason <text>] [--presentation <local-first>] [--out <file.jpg>] [--format <jpg|png|webp>] [--quality <1..100>] [--max-panel-width <px>] [--locale <zh-CN|en>] [--json]',
     '    --board modes: focus-board, parallel-board, verification-board, alignment-board, centering-board',
     '  openprd design-starter [path] [--starter <content-home|product-launch|ops-dashboard>] [--out <index.html>] [--title <name>] [--brief <text>] [--sections <a|b|c>] [--no-external-facts] [--no-brand-assets] [--no-real-images] [--force] [--json]',
     '  openprd dev-check [path] <file...> [--auto-refactor <on|off>] [--json]',

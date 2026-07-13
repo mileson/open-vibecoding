@@ -1,10 +1,10 @@
 {
   "id": "candidate-eval-20260621153509",
   "knowledgeCandidateId": "candidate-eval-20260621153509",
-  "title": "质量报告 eval-20260711192107",
+  "title": "质量报告 eval-20260713151529",
   "status": "needs-attention",
   "summary": {
-    "title": "质量报告 eval-20260711192107",
+    "title": "质量报告 eval-20260713151529",
     "status": "needs-attention",
     "message": "本轮围绕 11 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 12 条回顾信号。"
   },
@@ -27,12 +27,58 @@
     {
       "id": "doctor-green",
       "kind": "doctor-green",
-      "at": "2026-07-11 19:23:44",
+      "at": "2026-07-13 15:17:14",
       "ok": true,
       "productionReady": null,
       "attentionGates": [],
       "summary": "doctor passed",
       "touchedFiles": []
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-13 15:15:30",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/adapters/adapter-spi.js",
+        "src/adapters/capability-envelope.js",
+        "src/adapters/event-normalizer.js",
+        "src/adapters/index.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-13 15:15:29",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/adapters/adapter-spi.js",
+        "src/adapters/capability-envelope.js",
+        "src/adapters/event-normalizer.js",
+        "src/adapters/index.js"
+      ]
     },
     {
       "id": "quality-verify",
@@ -306,56 +352,6 @@
         "src/adapters/event-normalizer.js",
         "src/adapters/index.js"
       ]
-    },
-    {
-      "id": "quality-verify",
-      "kind": "quality-verify",
-      "at": "2026-07-11 03:12:08",
-      "ok": false,
-      "productionReady": false,
-      "attentionGates": [
-        "feature-coverage"
-      ],
-      "summary": "quality needs-attention",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/adapters/adapter-spi.js",
-        "src/adapters/capability-envelope.js",
-        "src/adapters/event-normalizer.js",
-        "src/adapters/index.js"
-      ]
-    },
-    {
-      "id": "quality-verify",
-      "kind": "quality-verify",
-      "at": "2026-07-11 03:11:37",
-      "ok": false,
-      "productionReady": false,
-      "attentionGates": [
-        "feature-coverage"
-      ],
-      "summary": "quality needs-attention",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/adapters/adapter-spi.js",
-        "src/adapters/capability-envelope.js",
-        "src/adapters/event-normalizer.js",
-        "src/adapters/index.js"
-      ]
     }
   ],
   "abstraction": {
@@ -406,7 +402,47 @@
       "status": "pass",
       "message": "doctor passed",
       "touchedFiles": [],
-      "at": "2026-07-11 19:23:44"
+      "at": "2026-07-13 15:17:14"
+    },
+    {
+      "eventName": "quality-verify",
+      "status": "pass",
+      "message": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/adapters/adapter-spi.js",
+        "src/adapters/capability-envelope.js",
+        "src/adapters/event-normalizer.js",
+        "src/adapters/index.js"
+      ],
+      "at": "2026-07-13 15:15:30"
+    },
+    {
+      "eventName": "quality-verify",
+      "status": "pass",
+      "message": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/adapters/adapter-spi.js",
+        "src/adapters/capability-envelope.js",
+        "src/adapters/event-normalizer.js",
+        "src/adapters/index.js"
+      ],
+      "at": "2026-07-13 15:15:29"
     },
     {
       "eventName": "quality-verify",
@@ -651,46 +687,6 @@
         "src/adapters/index.js"
       ],
       "at": "2026-07-11 03:17:54"
-    },
-    {
-      "eventName": "quality-verify",
-      "status": "needs-attention",
-      "message": "quality needs-attention",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/adapters/adapter-spi.js",
-        "src/adapters/capability-envelope.js",
-        "src/adapters/event-normalizer.js",
-        "src/adapters/index.js"
-      ],
-      "at": "2026-07-11 03:12:08"
-    },
-    {
-      "eventName": "quality-verify",
-      "status": "needs-attention",
-      "message": "quality needs-attention",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/adapters/adapter-spi.js",
-        "src/adapters/capability-envelope.js",
-        "src/adapters/event-normalizer.js",
-        "src/adapters/index.js"
-      ],
-      "at": "2026-07-11 03:11:37"
     }
   ],
   "timeline": [
@@ -699,7 +695,21 @@
       "message": "doctor passed",
       "status": "pass",
       "line": null,
-      "at": "2026-07-11 19:23:44"
+      "at": "2026-07-13 15:17:14"
+    },
+    {
+      "event": "quality-verify",
+      "message": "quality production-ready",
+      "status": "pass",
+      "line": null,
+      "at": "2026-07-13 15:15:30"
+    },
+    {
+      "event": "quality-verify",
+      "message": "quality production-ready",
+      "status": "pass",
+      "line": null,
+      "at": "2026-07-13 15:15:29"
     },
     {
       "event": "quality-verify",
@@ -763,20 +773,6 @@
       "status": "needs-attention",
       "line": null,
       "at": "2026-07-11 03:17:54"
-    },
-    {
-      "event": "quality-verify",
-      "message": "quality needs-attention",
-      "status": "needs-attention",
-      "line": null,
-      "at": "2026-07-11 03:12:08"
-    },
-    {
-      "event": "quality-verify",
-      "message": "quality needs-attention",
-      "status": "needs-attention",
-      "line": null,
-      "at": "2026-07-11 03:11:37"
     }
   ],
   "rootCauseCandidates": [],

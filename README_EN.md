@@ -578,6 +578,26 @@ The default output is a compact JPG under
 right panel is labeled `实现截图`. Inputs can be common image formats supported
 by `sharp`.
 
+For a local UI adjustment such as a button, hover state, tooltip, gap, radius,
+font size, or color, do not use the full-screen image as the primary verdict.
+Specify the effective region on each side directly:
+
+```bash
+openprd visual-compare /path/to/project \
+  --reference effect-image.png \
+  --actual implementation-screenshot.jpg \
+  --reference-box 0,0,516,130 \
+  --actual-box 1840,238,516,130 \
+  --presentation local-first
+```
+
+`local-first` crops both sides at one shared pixel scale, so a smaller region is
+not stretched independently to look as wide as a larger one. The board leads
+with the local reference, local implementation, and difference image; compact
+full-screen thumbnails move to the footer for regression context only. Use
+`--before-box` and `--after-box` for before/after comparisons. Coordinates are
+pixels by default and also accept `ratio:` or `percent:` prefixes.
+
 When UI work has no reference image, capture the current screen before editing,
 apply the change, then capture the same entry, viewport, account, and data state
 after editing:

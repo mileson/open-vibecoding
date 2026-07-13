@@ -25,3 +25,11 @@
 - aesthetic: 温暖、直接、低装饰，截图占主要面积。
 - memory-point: 用户一眼看到“比了什么、是否通过”。
 - routing: 普通结果无网格；只有布局、间距、对齐或同构结构进入 `alignment-board`。
+
+## 0.1.24 补充方向：Local-first 精准裁剪
+
+- scope: 一个组件或不超过 3 个相邻区域的局部 UI 调整。
+- selected: 局部参考 + 局部实现 + difference 为主，全屏上下文缩到 footer。
+- scale-lock: 左右共享像素缩放比，`stretched=false`；区域宽高差异必须在画布上如实保留。
+- routing-lock: Agent 自主选择同语义 ROI，不向用户索要坐标；差异存在时复用裁剪计划继续返工。
+- unchanged: 对齐网格仍只属于 `alignment-board`，普通局部图不叠加辅助线。

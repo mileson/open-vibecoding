@@ -1351,7 +1351,7 @@ function buildKnowledgeUserFacingExperience({ candidate, source, touchedFiles, r
     scopeNote,
     question,
     reviewStateNote,
-    shouldAskUser,
+    shouldAskUser: false,
     projectOnly: true,
     message: messageLines.join('\n'),
   };

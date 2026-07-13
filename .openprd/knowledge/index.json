@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-11 19:23:44",
+  "updatedAt": "2026-07-13 15:17:14",
   "incidents": [
     {
       "incidentId": "incident-candidate-turn-1780116203372-5f266a79e968c758",
@@ -323,7 +323,7 @@
       "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260621153509/candidate.json",
       "sourceKind": "quality-report",
       "sourceRef": "candidate-eval-20260621153509",
-      "title": "质量报告 eval-20260711192107",
+      "title": "质量报告 eval-20260713151529",
       "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260621153509/SKILL.md"
     },
     {

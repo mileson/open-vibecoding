@@ -45,6 +45,7 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `src/test-strategy.js`: 测试策略分流核心规则，负责测试层级、测试规模、验证范围、证据计划、默认推导、任务策略汇总和测试能力识别。
 - `src/visual-prepare.js`: `openprd visual-prepare` 的参考图预处理工具，负责把确认后的整板、网格图或多对象效果图整理成 reference-set，生成 crops、contact sheet、compare-plan 和 board 模板，供后续逐项视觉对比复用。
 - `src/visual-compare.js`: `openprd visual-compare` 的图片合成工具，负责读取效果图和实现截图、修改前后截图，或基于 board JSON 生成局部焦点证据板、并行实验证据板、截图实测证据板、对齐辅助线证据板和内部居中证据板；会缩放面板、按当前用户主语言添加标签，并输出 JPG / PNG / WebP 视觉评审图。
+- `src/visual-compare-focus.js`: `local-first` 局部证据板渲染层，负责左右独立裁剪、共享像素尺度、无拉伸展示、difference blend 和底部全屏回归缩略图。
 - `src/learning-review.js`: 复盘学习包的证据收集、Agent 写作工具包、内容合同校验、图文解释字段校验和 reader 归档。
 - `src/quality.js`: 质量契约、质量场景与证据检测、日志/追踪检测、业务成本与滥用护栏检测、评估执行环境检测、HTML 回归测试报告和项目经验 Skill 沉淀。
 - `src/run-harness.js`: `openprd run` 的 ContextCapsule 编译、hook cache/telemetry、scoped gate 裁剪、verify 与执行策略；历史会话恢复会先查全局 session registry，再回到目标 workspace 的 repo-local 线索解析具体 change/task/work unit。

@@ -149,7 +149,8 @@ test('quality verify writes html eval report and learn creates experience skill'
   assert.equal(quality.knowledgeReview.status, 'pending-review');
   assert.ok(quality.knowledgeReview.userFacingExperience.message.includes('这次我观察到一个以后可能重复出现的情况：'));
   assert.ok(quality.knowledgeReview.userFacingExperience.message.includes('这条经验只会保留在当前项目里。'));
-  assert.ok(quality.knowledgeReview.userFacingExperience.question?.includes('要我把它一起保留下来吗'));
+  assert.equal(quality.knowledgeReview.userFacingExperience.question, null);
+  assert.equal(quality.knowledgeReview.userFacingExperience.shouldAskUser, false);
   assert.equal(quality.growthCheckpoint.recorded || quality.growthCheckpoint.reason === 'duplicate-checkpoint', true);
   assert.equal(quality.report.gates.some((gate) => gate.id === 'knowledge' && gate.status === 'pass'), true);
   assert.equal(quality.report.gates.some((gate) => gate.id === 'growth' && gate.status === 'pass'), true);

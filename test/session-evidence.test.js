@@ -99,7 +99,8 @@ test('knowledge review can create an evidence-only candidate from clean session 
   assert.equal(result.sourceKind, 'session-evidence-review');
   assert.match(result.summary, /只读证据/);
   assert.match(result.summary, /没有把 AGENTS、system 或 tool schema 命中当成用户证据/);
-  assert.match(result.userFacingExperience.message, /要我把它一起保留下来吗/);
+  assert.doesNotMatch(result.userFacingExperience.message, /要我把它一起保留下来吗/);
+  assert.equal(result.userFacingExperience.shouldAskUser, false);
 
   const candidate = JSON.parse(await fs.readFile(result.files.candidate, 'utf8'));
   assert.equal(candidate.sourceKind, 'session-evidence-review');

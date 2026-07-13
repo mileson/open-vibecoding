@@ -507,6 +507,19 @@ openprd visual-compare /path/to/project \
 默认会在 `.openprd/harness/visual-reviews/` 下输出体积较小的 JPG。左侧标注
 `效果图`，右侧标注 `实现截图`。输入可以是 `sharp` 支持的常见图片格式。
 
+如果只调整按钮、hover、提示框、间距、圆角、字号或颜色等局部 UI，不要用全屏图作为主裁决。直接指定左右有效区域：
+
+```bash
+openprd visual-compare /path/to/project \
+  --reference effect-image.png \
+  --actual implementation-screenshot.jpg \
+  --reference-box 0,0,516,130 \
+  --actual-box 1840,238,516,130 \
+  --presentation local-first
+```
+
+`local-first` 使用同一像素尺度裁剪两侧，较小区域不会被单独拉伸成同宽。输出先展示局部参考、局部实现和差异图，全屏缩略图只放在底部检查未改区域漂移。修改前后模式使用 `--before-box` 和 `--after-box`。坐标默认是像素，也支持 `ratio:` 或 `percent:` 前缀。
+
 如果界面任务没有明确效果图，Agent 应先截修改前截图，完成改动后用同一入口、
 视口、账号和数据状态再截修改后截图：
 

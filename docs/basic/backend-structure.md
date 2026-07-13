@@ -91,6 +91,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
 - 视觉对比工具: `src/visual-compare.js` 负责 `openprd visual-compare` 的位图处理。
   - 使用 `sharp` 读取常见图片、按面板宽度缩放、在左上角按当前用户主语言叠加标签，默认输出 JPG 到 `.openprd/harness/visual-reviews/`。
   - 覆盖界面复刻、修改前后自检、局部焦点证据板、并行实验证据板、截图实测证据板、对齐辅助线证据板和内部居中证据板这些阶段性评审证据。
+  - `src/visual-compare-focus.js` 单独承接 `local-first` 路径：左右裁剪框可不同，但必须指向同一语义对象；两侧使用共享缩放比且不放大小区域，主画布先展示局部参考/实现和差异图，全屏只放在 footer 作来源与回归上下文。
   - `centering-board` 基于像素 mask 计算主体外接框中心和视觉重心相对画布中心的偏移，适用于单个 logo、icon、avatar、badge、按钮图形或图片裁切的内部居中验收。
 - 大界面视觉方案评审: 不新增 CLI 命令，由 agent guidance 编排 Codex Computer Use、`imagegen`（Codex 原生 Image 2）和 `.openprd/harness/visual-reviews/` 归档。该流程发生在 PRD 定稿或实现开工前，用于让用户选择界面设计方向；`visual-compare` 仍只负责实现后的参考图/实现图对比，或无参考图界面改动的修改前/修改后自检。
 - 对话协同画布: `src/canvas-workspace.js` 负责 `openprd canvas` 的本地 HTTP 服务、daemon 生命周期、thread/session 绑定、scene/assets/exports/ops/relays 文件存储、Agent 图片操作队列、图片回填、选中图片下载和 Codex handoff 记录。
@@ -220,6 +221,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
 - `openprd visual-prepare <path> --reference <效果图> --grid <列>x<行> [--include <csv>]` 或 `openprd visual-prepare <path> --reference <效果图> --boxes <plan.json>` 是整板、网格图和多对象参考图的预处理入口；它输出 reference-set、contact sheet、compare-plan 和 board 模板，但不直接宣称视觉实现完成。
 - `openprd visual-compare` 是实现阶段的视觉证据入口，输出结构化结果和图片路径，默认使用 JPG 降低文件体积，也支持 PNG / WebP；工具不负责生成图片内容或确认用效果图，这类图片由 `imagegen`（Codex 原生 Image 2）承接。
   - `--reference <效果图> --actual <实现截图>` 是界面视觉复刻证据入口。
+  - `--reference-box <x,y,w,h> --actual-box <x,y,w,h> --presentation local-first` 是局部复刻的快速入口；修改前后模式对应 `--before-box/--after-box`。坐标默认为 px，也接受 `ratio:` 和 `percent:`。
   - `--before <修改前截图> --after <修改后截图>` 是无参考图界面改动的修改前后自检入口。
   - `--board <board.json>` 承接局部焦点证据板和并行实验证据板。
   - 通用可选参数包括 `--locale <zh-CN|en>`、`--out <file>`、`--format <jpg|png|webp>`、`--quality <1..100>`、`--max-panel-width <px>`。
@@ -283,6 +285,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - 画布右侧的线程复制入口不新增后端状态，只基于当前 binding 的标题和 ID 拼出可粘贴到 Codex 的固定操作提示；浏览器复制后会再调用本地 `/api/clipboard` 做系统剪贴板兜底，并复用绿色状态反馈。
 - `visual-prepare` 先把确认后的参考图规范化为 reference-set：整板图可按网格或手工 boxes 切片，输出 contact sheet 供人类检查裁剪边界，再生成 compare-plan 和 board 模板给后续实现验收复用。
 - `visual-compare` 读取命令传入的参考图和实现截图，按当前用户主语言合成左右对比位图；中文语境默认使用“效果图 / 实现截图”，英文语境默认使用“Reference / Implementation”。
+  - 局部任务存在任一 box 参数或 focus-board 声明 `presentation=local-first` 时，工具切换到 ROI-first；artifact 记录左右绝对坐标、`sharedScale`、`stretched=false`、difference blend 与 context footer 角色。
   - 它也可以读取修改前和修改后截图，按同一语言策略合成自检图，并把产物归档到 `.openprd/harness/visual-reviews/`。
   - Agent guidance 要求界面任务在有参考图并进入实现阶段时查看该图并继续返工到无明显差异；参考图来自整板、网格图或多对象组合时，还要先检查 `visual-prepare` 产出的 contact sheet 和 compare-plan。
   - 无参考图但改动界面时，动手前留修改前截图，完成后留同条件修改后截图，并检查预期变化与未改区域漂移。
@@ -291,7 +294,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
 - `agent-integration` 将 canonical skills 和 AGENTS 合同渲染到各端 adapter，并从 `codex-hook-runner-template` 读取自包含 Codex hook runner 源码。
 - canonical skills 与 command catalog 的长文案内容单独放在 `src/agent-canonical-content.js`，`agent-integration.js` 只保留 install/update/doctor 编排逻辑。
 - `src/codex-hook-runner-template.mjs` 是结构性单文件模板（整体 readFileSync 后安装到用户项目，运行时不能依赖包内模块），已在 `.openprd/standards/config.json` 的 `additionalExemptFilePatterns` 登记行数豁免与理由。
-- `visual-compare` 拆成三层：`src/visual-compare-core.js` 承载文案表、locale、board 归一化、SVG 原语与图像管道；`src/visual-compare-centering.js` 承载内部居中证据板分析与渲染；`src/visual-compare.js` 保留对比/焦点/并行/实测/对齐板渲染与 workspace 入口。
+- `visual-compare` 拆成四层：`src/visual-compare-core.js` 承载文案表、locale、board 归一化、SVG 原语与图像管道；`src/visual-compare-focus.js` 承载 local-first 同尺度裁剪、差异图和上下文 footer；`src/visual-compare-centering.js` 承载内部居中证据板分析与渲染；`src/visual-compare.js` 保留标准对比、传统 focus/并行/实测/对齐板渲染与 workspace 入口。
 - CLI 命令分发拆出 `src/cli/quality-commands.js`：standards、quality、knowledge、visual-prepare、visual-compare、design-starter、grow、docs-compact、guide、dev-check 十条质量/视觉类命令由它承接，`openprd.js` 只保留路由调用。
   - 生成物必须包含：意图门禁、轻量 hook profile、`openprd-requirement-intake` 需求分流、base / consumer / b2b / agent 这组 PRD 场景视角、需求入口自省、对话内轻量确认、review HTML 正式评审。
   - 生成物还必须包含：图片内容与效果图生成默认走 Codex Image 2 的提醒、大界面改动先用 Computer Use 截产品内图并生成 3 方向横向效果图评审的提醒、logo/icon/avatar/badge 等开发素材默认按 `standalone asset` 生成且避免容器套壳的约束。

@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.1.23",
+  "currentVersion": "0.1.24",
   "versions": [
     {
       "version": "0.1.2",
@@ -834,9 +834,9 @@
     },
     {
       "version": "0.1.23",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-07-12 22:36:54",
-      "updatedAt": "2026-07-12 22:36:54",
+      "updatedAt": "2026-07-13 15:03:26",
       "notes": null,
       "items": [
         {
@@ -852,8 +852,29 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.1.24",
+      "status": "current",
+      "createdAt": "2026-07-13 15:03:26",
+      "updatedAt": "2026-07-13 15:03:26",
+      "notes": null,
+      "items": [
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "局部 UI 改动默认使用 ROI-first 视觉证据：参考与实现精准裁剪、共享像素尺度、禁止独立拉伸，并以局部差异图为主证据、全屏缩略图为回归上下文；新增直接裁剪 CLI 参数并同步 Codex、Claude Code、Cursor 使用规范",
+          "sentence": "调整：局部 UI 改动默认使用 ROI-first 视觉证据：参考与实现精准裁剪、共享像素尺度、禁止独立拉伸，并以局部差异图为主证据、全屏缩略图为回归上下文；新增直接裁剪 CLI 参数并同步 Codex、Claude Code、Cursor 使用规范",
+          "recordedAt": "2026-07-13 15:03:26",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1783926206525"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-07-12 22:36:54"
+  "updatedAt": "2026-07-13 15:03:26"
 }

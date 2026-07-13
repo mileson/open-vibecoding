@@ -362,7 +362,7 @@ test('Stop hook asks for project-level experience in structured plain language',
   assert.match(context, /这次我观察到一个以后可能重复出现的情况：/);
   assert.match(context, /我计划保留一条项目经验：/);
   assert.match(context, /这条经验只会保留在当前项目里。/);
-  assert.match(context, /要我把它一起保留下来吗？/);
+  assert.doesNotMatch(context, /要我把它一起保留下来吗？/);
   assert.doesNotMatch(context, /Draft Skill:/);
   assert.doesNotMatch(context, /Promote:/);
 });

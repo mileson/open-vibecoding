@@ -21,3 +21,9 @@
 - 吸收 A 的左侧议程与逐步确认，避免双轨变成工程后台。
 - C 保留为后续 Project Cockpit 投影，不塞进本轮 Review 主页面。
 
+## 0.1.24 局部视觉证据方向
+
+- lens: evidence-first + local precision
+- aesthetic: 直接、克制、尺度可信，不用巨大全屏画布稀释有效区域。
+- layout: 标题后直接展示局部参考/实现，紧接 difference，全屏回归缩略图收在 footer。
+- memory-point: 一眼看到真正改了哪里，尺寸差异不会被拉伸掩盖。

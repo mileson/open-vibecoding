@@ -465,6 +465,7 @@ async function buildVisualEvidenceReminder(projectRoot, files) {
       : '本轮触达界面文件，最近已有拼图证据板产出；确认它覆盖了本轮改动，并把证据图嵌入对话流。',
     suggestedCommands: [
       'openprd visual-compare . --before <改前截图> --after <改后截图>',
+      'openprd visual-compare . --reference <参考图> --actual <实现截图> --reference-box <x,y,w,h> --actual-box <x,y,w,h> --presentation local-first（局部改动主证据）',
       'openprd visual-compare . --board <alignment-board.json>（同构列表/卡片/网格/表格对齐，含容器轨道与内容槽位）',
       '网格与基线只进入 alignment-board；普通结果画布不得自动叠加',
       'openprd visual-compare . --board <centering-board.json>（单素材内部居中/视觉重心）',

@@ -76,6 +76,7 @@ export const VISUAL_COPY = {
     alignmentTitle: DEFAULT_ALIGNMENT_TITLE,
     centeringTitle: DEFAULT_CENTERING_TITLE,
     focusSummary: '先看整体标框，再看编号对应的局部放大；局部差异优先在这里复核。',
+    localFocusSummary: '直接对比同一个有效区域：左右保持同一像素尺度，差异图用于定位返工点，全屏只作上下文。',
     focusEyebrow: '视觉验收 / 局部焦点',
     focusRegionLabel: (index) => `焦点 ${index + 1}`,
     referenceEyebrow: '视觉验收 / 效果对比',
@@ -143,6 +144,11 @@ export const VISUAL_COPY = {
       '若局部区域仍有问题，优先围绕该编号返工，并重新生成焦点证据板。',
       '局部证据板适合补充整体对比，不建议只看整体图就结束界面验收。',
     ],
+    localFocusNextActions: [
+      '先看局部参考图和实现图，再用差异图定位尺寸、间距、字号、颜色和表面角色偏差。',
+      '如果仍有明显差异，围绕该局部返工，在相同状态下重新截图并复用同一裁剪计划。',
+      '底部全屏缩略图只用于检查未改区域是否漂移，不代替局部裁决。',
+    ],
     parallelNextActions: [
       '横向比较每个实验卡片，再结合指标和结论判断是否要保留多条方向继续迭代。',
       '如果某个方向需要局部细看，再补一张局部焦点证据板，不要只盯整体缩略图。',
@@ -176,6 +182,7 @@ export const VISUAL_COPY = {
     alignmentTitle: 'Alignment Evidence Board',
     centeringTitle: 'Element Centering Board',
     focusSummary: 'Review the marked overview first, then inspect each numbered zoomed region.',
+    localFocusSummary: 'Compare the same effective region at one shared pixel scale. Use the difference image to locate rework; full-screen images are context only.',
     focusEyebrow: 'Visual QA / Focus Regions',
     focusRegionLabel: (index) => `Focus ${index + 1}`,
     referenceEyebrow: 'Visual QA / Reference Comparison',
@@ -242,6 +249,11 @@ export const VISUAL_COPY = {
       'Review the numbered overview first, then inspect the matching zoomed regions below.',
       'If a focused region still has issues, iterate on that numbered region and regenerate the board.',
       'Use focus boards as supporting evidence for the overall comparison instead of closing on the overview alone.',
+    ],
+    localFocusNextActions: [
+      'Compare the local reference and implementation first, then use the difference image to locate geometry, spacing, typography, color, and surface-role drift.',
+      'If a meaningful difference remains, rework that region, capture the same state again, and reuse the crop plan.',
+      'Use the compact full-screen thumbnails only to check for drift outside the edited region.',
     ],
     parallelNextActions: [
       'Compare each experiment card side by side, then use the metrics and verdicts to decide which directions remain.',
@@ -764,6 +776,66 @@ export async function extractCrop(inputPath, box, outputWidth) {
     height: info.height,
     source,
     absolute: box,
+  };
+}
+
+export async function extractCropAtScale(inputPath, box, scale = 1) {
+  const source = path.resolve(inputPath);
+  const normalizedScale = Number(scale);
+  if (!Number.isFinite(normalizedScale) || normalizedScale <= 0) {
+    throw new Error('Crop scale must be a positive number.');
+  }
+  const width = Math.max(1, Math.round(box.width * normalizedScale));
+  const height = Math.max(1, Math.round(box.height * normalizedScale));
+  let image = sharp(source)
+    .rotate()
+    .extract({
+      left: box.x,
+      top: box.y,
+      width: box.width,
+      height: box.height,
+    });
+  if (width !== box.width || height !== box.height) {
+    image = image.resize({ width, height, fit: 'fill' });
+  }
+  const { data, info } = await image.png().toBuffer({ resolveWithObject: true });
+  return {
+    input: data,
+    width: info.width,
+    height: info.height,
+    source,
+    absolute: box,
+    scale: normalizedScale,
+    stretched: false,
+  };
+}
+
+export function parseCropBoxInput(value, label = 'crop box') {
+  if (value && typeof value === 'object') {
+    return value;
+  }
+  const source = String(value ?? '').trim();
+  if (!source) {
+    return null;
+  }
+  const unitMatch = source.match(/^(px|pixel|pixels|ratio|percent):(.+)$/i);
+  const unit = unitMatch ? unitMatch[1].toLowerCase() : 'px';
+  const dimensions = (unitMatch ? unitMatch[2] : source)
+    .split(',')
+    .map((item) => Number(item.trim()));
+  if (dimensions.length !== 4 || dimensions.some((item) => !Number.isFinite(item))) {
+    throw new Error(`${label} must use x,y,width,height, optionally prefixed with px:, ratio:, or percent:.`);
+  }
+  const [x, y, width, height] = dimensions;
+  if (width <= 0 || height <= 0) {
+    throw new Error(`${label} width and height must be positive.`);
+  }
+  return {
+    unit: unit === 'pixel' || unit === 'pixels' ? 'px' : unit,
+    x,
+    y,
+    width,
+    height,
   };
 }
 

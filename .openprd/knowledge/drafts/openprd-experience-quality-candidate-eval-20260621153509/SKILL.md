@@ -53,7 +53,7 @@ use_when: Use when the current task overlaps this draft project experience and y
 - `src/adapters/capability-envelope.js`
 - `src/adapters/event-normalizer.js`
 - `src/adapters/index.js`
-- `/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260711192107.json`
+- `/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260713151529.json`
 
 ## 不要直接套用
 

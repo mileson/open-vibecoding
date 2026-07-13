@@ -28,6 +28,7 @@
 - `node ./bin/openprd.js quality . --learn --from <report>`: 将审查过的问题修复抽象为 `.openprd/knowledge/skills/` 下的项目级经验 skill。
 - `node ./bin/openprd.js visual-prepare . --reference <效果图> --grid <列>x<行>` / `--boxes <plan.json>`: 把确认后的整板、网格图或多对象效果图整理成 reference-set，输出 crops、contact sheet、compare-plan 和 board 模板，供后续逐项视觉验收使用。
 - `node ./bin/openprd.js visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en>`: 把参考图和实现截图合成左右对比图。
+  - 局部 UI 改动用 `--reference-box <x,y,w,h> --actual-box <x,y,w,h> --presentation local-first`；左右共享像素尺度，不独立拉伸，并生成差异图与底部全屏上下文。
   - `--before <修改前截图> --after <修改后截图>` 在无参考图界面改动中生成修改前后自检图。
   - `--board <board.json>` 生成局部焦点证据板或并行实验证据板。
   - 默认输出 JPG 到 `.openprd/harness/visual-reviews/`，可用 `--format jpg|png|webp`、`--quality` 和 `--max-panel-width` 调整。

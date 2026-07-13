@@ -294,6 +294,9 @@ function printVisualCompareResult(result, json) {
   console.log('OpenPrd visual compare: 已生成');
   console.log(`输出图片: ${result.outputPath}`);
   console.log(`模式: ${modeLabel}`);
+  if (result.presentation === 'local-first') {
+    console.log('呈现: 局部优先（共享像素尺度，无独立拉伸）');
+  }
   console.log(`格式: ${result.format}${result.quality ? `, quality=${result.quality}` : ''}`);
   console.log(`画布: ${result.canvas.width}x${result.canvas.height}`);
   if (result.labels?.reference && result.reference?.rendered) {
@@ -304,6 +307,11 @@ function printVisualCompareResult(result, json) {
   }
   if (Array.isArray(result.focusRegions) && result.focusRegions.length > 0) {
     console.log(`焦点区域: ${result.focusRegions.length}`);
+    if (result.presentation === 'local-first') {
+      for (const region of result.focusRegions) {
+        console.log(`  - ${region.label}: sharedScale=${region.sharedScale}, stretched=${region.stretched}`);
+      }
+    }
   }
   if (Array.isArray(result.items) && result.items.length > 0) {
     console.log(`实验卡片: ${result.items.length}`);

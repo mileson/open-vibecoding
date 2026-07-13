@@ -30,6 +30,7 @@ import {
   normalizeImageSpec,
   normalizeMetricList,
   normalizeVerificationItems,
+  parseCropBoxInput,
   parsePositiveInteger,
   parseQuality,
   readBoardSpec,
@@ -46,6 +47,7 @@ import {
   visualCopyForLocale,
 } from './visual-compare-core.js';
 import { renderCenteringBoard } from './visual-compare-centering.js';
+import { isLocalFirstPresentation, renderLocalFirstFocusBoard } from './visual-compare-focus.js';
 
 async function renderStandardComparison(projectRoot, comparison, options = {}) {
   const format = normalizeFormat(options.format, options.out);
@@ -995,6 +997,37 @@ function attachChatEmbed(result) {
   return result;
 }
 
+function directFocusBoard(request, options) {
+  const beforeAfter = request.mode === 'before-after';
+  const chinese = String(request.locale ?? '').toLowerCase().startsWith('zh');
+  const leftRaw = beforeAfter ? options.beforeBox : options.referenceBox;
+  const rightRaw = beforeAfter ? options.afterBox : options.actualBox;
+  if (!leftRaw && !rightRaw) {
+    return null;
+  }
+  return {
+    mode: 'focus-board',
+    sourcePath: null,
+    payload: {
+      mode: 'focus-board',
+      presentation: 'local-first',
+      comparisonMode: request.mode,
+      left: { path: request.left, label: request.leftLabel },
+      right: { path: request.right, label: request.rightLabel },
+      focusRegions: [{
+        label: options.focusLabel ?? (chinese
+          ? (beforeAfter ? '局部修改区域' : '局部复刻区域')
+          : (beforeAfter ? 'Edited region' : 'Recreated region')),
+        reason: options.focusReason ?? (chinese
+          ? '精准裁剪后保持同一像素尺度对比。'
+          : 'Compare precise crops at the same pixel scale.'),
+        leftBox: parseCropBoxInput(leftRaw, beforeAfter ? '--before-box' : '--reference-box'),
+        rightBox: parseCropBoxInput(rightRaw, beforeAfter ? '--after-box' : '--actual-box'),
+      }],
+    },
+  };
+}
+
 async function visualCompareWorkspace(projectRoot, options = {}) {
   const request = resolveComparisonInputs(options);
   if (request.mode === 'board') {
@@ -1002,6 +1035,9 @@ async function visualCompareWorkspace(projectRoot, options = {}) {
     const locale = resolveBoardLocale(options, board.payload);
     validateBoardVisibleLanguage(board, locale);
     const renderOptions = { ...options, locale };
+    if (board.mode === 'focus-board' && isLocalFirstPresentation(options.presentation ?? board.payload.presentation)) {
+      return attachChatEmbed(await renderLocalFirstFocusBoard(projectRoot, board, renderOptions));
+    }
     if (board.mode === 'focus-board') {
       return attachChatEmbed(await renderFocusBoard(projectRoot, board, renderOptions));
     }
@@ -1018,6 +1054,13 @@ async function visualCompareWorkspace(projectRoot, options = {}) {
       return attachChatEmbed(await renderCenteringBoard(projectRoot, board, renderOptions));
     }
     throw new Error(`Unsupported board mode: ${board.mode}`);
+  }
+  const focusBoard = directFocusBoard(request, options);
+  if (focusBoard) {
+    return attachChatEmbed(await renderLocalFirstFocusBoard(projectRoot, focusBoard, {
+      ...options,
+      locale: request.locale,
+    }));
   }
   return attachChatEmbed(await renderStandardComparison(projectRoot, request, options));
 }
