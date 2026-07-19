@@ -55,6 +55,14 @@ async function isDirectoryPath(candidate) {
   return Boolean(stat?.isDirectory());
 }
 
+function standardsHasStructuralFailure(result) {
+  const errors = [
+    ...(Array.isArray(result?.errors) ? result.errors : []),
+    ...(Array.isArray(result?.report?.errors) ? result.report.errors : []),
+  ];
+  return errors.some((error) => String(error).includes('.openprd/standards/config.json'));
+}
+
 export async function runQualityCommand(command, { projectPath, flags, positionals }) {
   if (command === 'standards') {
     const result = flags.init
@@ -63,7 +71,8 @@ export async function runQualityCommand(command, { projectPath, flags, positiona
         ? await classifyExternalReferenceWorkspace(projectPath, { externalReference: flags.classifyExternal })
         : await checkStandardsWorkspace(projectPath);
     printStandardsResult(result, flags.json);
-    return result.ok ? 0 : 1;
+    const strict = flags.failOnViolation === true;
+    return standardsHasStructuralFailure(result) || (strict && !result.ok) ? 1 : 0;
   }
 
   if (command === 'quality') {
@@ -76,6 +85,8 @@ export async function runQualityCommand(command, { projectPath, flags, positiona
       review: flags.review,
       from: flags.from,
       force: flags.force,
+      strict: flags.failOnViolation === true,
+      advisory: flags.failOnViolation !== true,
     });
     printQualityResult(result, flags.json);
     return result.ok ? 0 : 1;

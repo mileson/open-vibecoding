@@ -6,6 +6,7 @@ import {
   syncSessionBindingFromReview,
   syncSessionBindingFromSnapshot,
 } from '../src/session-binding.js';
+import { printReviewResult, printSynthesizeResult } from '../src/cli/workflow-print.js';
 
 import {
   assert,
@@ -270,7 +271,7 @@ test('clarify returns user questions and capture writes answers into state', asy
 
   const clarify = await clarifyWorkspace(project, {});
   assert.ok(clarify.clarification.mustAskUser.length > 0);
-  assert.ok(clarify.inlineClarification.lines.some((line) => line.includes('先整理需求摘要给你确认')));
+  assert.ok(clarify.inlineClarification.lines.some((line) => line.includes('不作为实现授权或用户回复门槛')));
   assert.equal(clarify.inlineClarification.lines.some((line) => line.includes('确认执行')), false);
 
   const captured = await captureWorkspace(project, {
@@ -529,6 +530,66 @@ test('capture keeps explicit review presentation when new content and presentati
   assert.equal(reviewHtml.includes('旧展示一步'), false);
 });
 
+test('legacy-frozen PRD stays context-only while capture opens a new current requirement', async () => {
+  const project = await makeTempProject();
+  await initWorkspace(project, { templatePack: 'agent' });
+  const historical = await synthesizeWorkspace(project, {
+    title: '历史 Agent 需求',
+    owner: 'PM',
+    problemStatement: '旧版本只用于历史参考。',
+    whyNow: '历史版本已经结束。',
+    productType: 'agent',
+  });
+  const snapshotPath = path.join(project, '.openprd', 'state', 'versions', 'v0001.json');
+  const historicalSnapshot = JSON.parse(await fs.readFile(snapshotPath, 'utf8'));
+  historicalSnapshot.lifecycleStatus = 'legacy-frozen';
+  historicalSnapshot.semanticMode = 'context-only';
+  await fs.writeFile(snapshotPath, `${JSON.stringify(historicalSnapshot, null, 2)}\n`);
+  const currentPath = path.join(project, '.openprd', 'state', 'current.json');
+  const currentState = JSON.parse(await fs.readFile(currentPath, 'utf8'));
+  currentState.lifecycleStatus = 'legacy-frozen';
+  currentState.semanticMode = 'context-only';
+  currentState.reviewStatus.status = 'legacy-frozen';
+  currentState.reviewStatus.lifecycleStatus = 'legacy-frozen';
+  await fs.writeFile(currentPath, `${JSON.stringify(currentState, null, 2)}\n`);
+  const frozenSnapshotText = await fs.readFile(snapshotPath, 'utf8');
+  const reviewText = await fs.readFile(historical.reviewPath, 'utf8');
+
+  const blockedReview = await reviewWorkspace(project, {
+    mark: 'confirmed',
+    version: historical.snapshot.versionId,
+    digest: historical.snapshot.digest,
+    workUnit: historical.workUnitId,
+  });
+  assert.equal(blockedReview.ok, false);
+  assert.equal(blockedReview.status, 'legacy-frozen');
+  assert.equal(blockedReview.historicalContextOnly, true);
+  assert.equal(await fs.readFile(historical.reviewPath, 'utf8'), reviewText);
+
+  const captured = await captureWorkspace(project, {
+    field: 'meta.title',
+    value: '新的 Agent 需求',
+    source: 'agent-inferred',
+  });
+  assert.equal(captured.workspaceAttention[0].kind, 'historical-context');
+  assert.equal(captured.workspaceAttention[0].blocking, false);
+  const freshState = JSON.parse(await fs.readFile(currentPath, 'utf8'));
+  assert.equal(freshState.lifecycleStatus, undefined);
+  assert.equal(freshState.title, '新的 Agent 需求');
+  assert.equal(freshState.historicalContext.versionId, 'v0001');
+  assert.equal(freshState.historicalContext.mode, 'context-only');
+  assert.equal(await fs.readFile(snapshotPath, 'utf8'), frozenSnapshotText);
+
+  const reopened = await synthesizeWorkspace(project, {
+    title: '新的 Agent 需求',
+    problemStatement: '新需求使用新的当前工作单元。',
+    productType: 'agent',
+  });
+  assert.equal(reopened.snapshot.versionId, 'v0002');
+  assert.notEqual(reopened.workUnitId, historical.workUnitId);
+  assert.equal(await fs.readFile(snapshotPath, 'utf8'), frozenSnapshotText);
+});
+
 test('diagram creates reviewable architecture artifacts', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
@@ -574,7 +635,9 @@ test('diagram creates reviewable architecture artifacts', async () => {
 
   assert.ok(html.includes('架构评审'));
   assert.ok(html.includes('AI 操作导师'));
-  assert.ok(html.includes('需求定稿前'));
+  assert.ok(html.includes('作为后台参考'));
+  assert.ok(html.includes('不暂停当前实现'));
+  assert.equal(html.includes('需求定稿前请用户确认'), false);
   assert.equal(/freeze/i.test(html), false);
   assert.ok(mermaid.includes('flowchart LR'));
   assert.ok(mermaid.includes('方案边界'));
@@ -629,8 +692,9 @@ test('diagram creates reviewable product flow artifacts', async () => {
 
   assert.ok(html.includes('产品流程评审'));
   assert.ok(html.includes('AI 操作导师'));
-  assert.ok(html.includes('需求定稿前'));
-  assert.ok(html.includes('进入实现前确认'));
+  assert.ok(html.includes('作为后台参考'));
+  assert.ok(html.includes('不暂停当前实现'));
+  assert.equal(html.includes('进入实现前确认'), false);
   assert.equal(/freeze/i.test(html), false);
   assert.ok(mermaid.includes('flowchart LR'));
   assert.ok(mermaid.includes('决策点'));
@@ -812,13 +876,15 @@ test('next suggests classify for a fresh workspace', async () => {
 
   const result = await nextWorkspace(project);
   assert.equal(result.recommendation.nextAction, 'clarify-user');
-  assert.equal(result.recommendation.currentGate, 'clarify-user');
-  assert.equal(result.recommendation.upcomingGate, 'freeze review');
+  assert.equal(result.recommendation.currentStage, 'clarification suggestion');
+  assert.equal(result.recommendation.upcomingStage, 'freeze snapshot');
+  assert.equal(result.recommendation.currentGate, null);
+  assert.equal(result.recommendation.blocking, false);
   assert.ok(result.recommendation.suggestedQuestions.length > 0);
   assert.match(result.recommendation.suggestedCommand, /openprd clarify/);
 });
 
-test('status prints current gate, upcoming gate, scenario, and user participation mode', async () => {
+test('status prints current and upcoming guidance, scenario, and user participation mode', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'agent' });
 
@@ -835,8 +901,35 @@ test('status prints current gate, upcoming gate, scenario, and user participatio
   const text = logs.join('\n');
   assert.match(text, /场景:/);
   assert.match(text, /用户参与模式:/);
-  assert.match(text, /当前门禁:/);
-  assert.match(text, /后续门禁:/);
+  assert.match(text, /当前建议:/);
+  assert.match(text, /后续参考:/);
+});
+
+test('workflow printers present review artifacts as nonblocking background material', () => {
+  const logs = [];
+  const originalLog = console.log;
+  console.log = (...args) => logs.push(args.join(' '));
+  try {
+    printSynthesizeResult({
+      snapshot: { title: '测试需求', productType: 'consumer' },
+      reviewPresentationRequired: false,
+      reviewPath: '/tmp/review.html',
+      opened: false,
+    }, false);
+    printReviewResult({
+      ok: true,
+      status: 'pending',
+      marked: false,
+      opened: false,
+    }, false);
+  } finally {
+    console.log = originalLog;
+  }
+
+  const output = logs.join('\n');
+  assert.match(output, /评审页面可用于记录反馈/);
+  assert.match(output, /页面状态不影响当前实现/);
+  assert.doesNotMatch(output, /用户认可后|请先让用户查看确认页面|还没到可以直接确认/);
 });
 
 test('next suggests interview after product type is classified', async () => {
@@ -846,8 +939,9 @@ test('next suggests interview after product type is classified', async () => {
 
   const result = await nextWorkspace(project);
   assert.equal(result.recommendation.nextAction, 'clarify-user');
-  assert.equal(result.recommendation.currentGate, 'clarify-user');
-  assert.equal(result.recommendation.upcomingGate, 'freeze review');
+  assert.equal(result.recommendation.currentStage, 'clarification suggestion');
+  assert.equal(result.recommendation.upcomingStage, 'freeze snapshot');
+  assert.equal(result.recommendation.currentGate, null);
   assert.ok(result.recommendation.suggestedQuestions.includes('我们要解决什么问题？'));
   assert.match(result.recommendation.suggestedCommand, /openprd clarify/);
   assert.equal(result.taskGraph.nextReadyNode, 'clarify');
@@ -895,12 +989,17 @@ test('next suggests freeze after a complete PRD has been synthesized', async () 
   });
 
   const result = await nextWorkspace(project);
-  assert.equal(result.recommendation.nextAction, 'diagram');
-  assert.equal(result.recommendation.currentGate, 'product-flow diagram review');
-  assert.equal(result.recommendation.upcomingGate, 'freeze review');
+  assert.equal(result.recommendation.nextAction, 'freeze');
+  assert.equal(result.recommendation.currentStage, 'freeze snapshot');
+  assert.equal(result.recommendation.upcomingStage, 'handoff bundle');
+  assert.equal(result.recommendation.currentGate, null);
+  assert.equal(result.recommendation.blocking, false);
   assert.equal(result.analysis.missingRequiredFields, 0);
-  assert.match(result.recommendation.suggestedCommand, /openprd diagram/);
-  assert.equal(result.taskGraph.nextReadyNode, 'diagram');
+  assert.match(result.recommendation.suggestedCommand, /openprd freeze/);
+  assert.equal(result.taskGraph.nextReadyNode, 'freeze');
+  assert.equal(result.diagramState.shouldGateFreeze, false);
+  assert.equal(result.diagramState.attentionNeeded, true);
+  assert.ok(result.taskGraph.attentionNodes.includes('diagram'));
 });
 
 test('next does not trigger business guardrails for compliance-only token wording', async () => {
@@ -944,8 +1043,10 @@ test('next does not trigger business guardrails for compliance-only token wordin
   });
 
   const result = await nextWorkspace(project);
-  assert.equal(result.recommendation.nextAction, 'diagram');
-  assert.equal(result.recommendation.currentGate, 'product-flow diagram review');
+  assert.equal(result.recommendation.nextAction, 'freeze');
+  assert.equal(result.recommendation.currentStage, 'freeze snapshot');
+  assert.equal(result.recommendation.currentGate, null);
+  assert.equal(result.diagramState.attentionNeeded, true);
   assert.equal(result.analysis.missingFields.some((field) => field.path.startsWith('businessGuardrails.')), false);
 });
 
@@ -991,7 +1092,8 @@ test('next asks for business guardrails when a PRD includes free metered AI usag
 
   const result = await nextWorkspace(project);
   assert.equal(result.recommendation.nextAction, 'clarify-user');
-  assert.equal(result.recommendation.currentGate, 'clarify-user');
+  assert.equal(result.recommendation.currentStage, 'clarification suggestion');
+  assert.equal(result.recommendation.currentGate, null);
   assert.ok(result.recommendation.suggestedQuestions.includes('哪些用户行为、第三方服务或模型调用会产生成本？'));
   assert.ok(result.analysis.missingFields.some((field) => field.path === 'businessGuardrails.costDrivers'));
 });
@@ -1072,8 +1174,10 @@ test('confirmed review absorbs inferred business guardrails instead of asking ag
   await reviewWorkspace(project, { mark: 'confirmed' });
 
   const afterReview = await nextWorkspace(project);
-  assert.equal(afterReview.recommendation.nextAction, 'diagram');
-  assert.equal(afterReview.recommendation.currentGate, 'product-flow diagram review');
+  assert.equal(afterReview.recommendation.nextAction, 'freeze');
+  assert.equal(afterReview.recommendation.currentStage, 'freeze snapshot');
+  assert.equal(afterReview.recommendation.currentGate, null);
+  assert.equal(afterReview.diagramState.attentionNeeded, true);
 });
 
 test('generated changes include business guardrail tasks for metered free usage', async () => {
@@ -1125,7 +1229,7 @@ test('generated changes include business guardrail tasks for metered free usage'
   assert.ok(tasks.includes('Verify Cost Monitoring, Alerts, And Stop-Loss'));
 });
 
-test('next suggests freeze after required diagram and PRD review have been confirmed', async () => {
+test('pending PRD review remains nonblocking background attention after diagram confirmation', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
 
@@ -1167,9 +1271,13 @@ test('next suggests freeze after required diagram and PRD review have been confi
 
   await diagramWorkspace(project, { open: false, type: 'product-flow', mark: 'confirmed' });
   const reviewGate = await nextWorkspace(project);
-  assert.equal(reviewGate.recommendation.nextAction, 'review');
-  assert.equal(reviewGate.recommendation.currentGate, 'prd review');
-  assert.match(reviewGate.recommendation.suggestedCommand, /openprd review/);
+  assert.equal(reviewGate.recommendation.nextAction, 'freeze');
+  assert.equal(reviewGate.recommendation.currentStage, 'freeze snapshot');
+  assert.equal(reviewGate.recommendation.currentGate, null);
+  assert.equal(reviewGate.prdReviewState.status, 'pending-confirmation');
+  assert.equal(reviewGate.prdReviewState.shouldGateFreeze, false);
+  assert.equal(reviewGate.prdReviewState.needsAttention, true);
+  assert.equal(reviewGate.prdReviewState.blocking, false);
 
   const reviewed = await reviewWorkspace(project, { mark: 'confirmed' });
   assert.equal(reviewed.ok, true);
@@ -1181,7 +1289,8 @@ test('next suggests freeze after required diagram and PRD review have been confi
 
   const result = await nextWorkspace(project);
   assert.equal(result.recommendation.nextAction, 'freeze');
-  assert.equal(result.recommendation.currentGate, 'freeze review');
-  assert.equal(result.recommendation.upcomingGate, 'handoff review');
+  assert.equal(result.recommendation.currentStage, 'freeze snapshot');
+  assert.equal(result.recommendation.upcomingStage, 'handoff bundle');
+  assert.equal(result.recommendation.currentGate, null);
   assert.match(result.recommendation.suggestedCommand, /openprd freeze/);
 });

@@ -303,13 +303,30 @@ async function doctorWorkspace(projectRoot, options = {}) {
     ...((workspaceRegistry?.staleEntries ?? []).map((entry) => `registry: stale workspace ${entry.workspaceRoot} (${entry.reason})`)),
     ...((sessionRegistry?.staleEntries ?? []).map((entry) => `session-registry: stale session ${entry.sessionId} (${entry.reason})`)),
   ];
-  const doctorOk = projectManifest.ok && agentIntegration.ok && (codexRuntime?.ok ?? true) && standards.ok && validation.valid;
+  const integrationsReady = projectManifest.ok && agentIntegration.ok && (codexRuntime?.ok ?? true);
+  const structuralReady = validation.structuralValid ?? validation.valid;
+  const standardsReady = standards.ok;
+  const workspaceReady = integrationsReady && structuralReady && standardsReady;
+  const doctorOk = integrationsReady && structuralReady;
+  const standardsAttention = standardsReady
+    ? null
+    : {
+        kind: 'standards',
+        scope: 'workspace',
+        blocking: false,
+        summary: 'Standards and documentation need attention, but they do not make doctor integration or structure checks fail.',
+        errors: [...(standards.errors ?? [])],
+        warnings: [...(standards.warnings ?? [])],
+      };
   const latestQuality = await readJson(cjoin(projectRoot, '.openprd', 'quality', 'reports', 'latest.json')).catch(() => null);
   const doctorSignal = doctorOk
     ? {
       kind: 'doctor-green',
       ok: true,
-      summary: 'doctor passed',
+      workspaceReady,
+      summary: workspaceReady
+        ? 'doctor integration, structure, and standards passed'
+        : 'doctor integration and structure passed; workspace standards need attention',
     }
     : null;
   if (doctorSignal) {
@@ -361,6 +378,16 @@ async function doctorWorkspace(projectRoot, options = {}) {
     codexRuntime,
     standards,
     validation,
+    standardsAttention,
+    readiness: {
+      integrationsReady,
+      structuralReady,
+      standardsReady,
+      workspaceReady,
+      actionReady: doctorOk,
+      claimReady: workspaceReady,
+      workspaceClaimReady: workspaceReady,
+    },
     registry: {
       workspace: workspaceRegistry,
       sessions: sessionRegistry,
@@ -373,8 +400,7 @@ async function doctorWorkspace(projectRoot, options = {}) {
       ...agentIntegration.errors,
       ...(!projectManifest.ok ? [`project-manifest: ${projectManifest.error}`] : []),
       ...(codexRuntime?.errors ?? []).map((error) => `codex-runtime: ${error}`),
-      ...(standards.errors ?? []).map((error) => `standards: ${error}`),
-      ...(validation.errors ?? []).map((error) => `validate: ${error}`),
+      ...(validation.structuralErrors ?? validation.errors ?? []).map((error) => `validate: ${error}`),
     ],
     warnings: registryWarnings,
   };
@@ -422,51 +448,83 @@ const fleetWorkspace = createFleetWorkspace({ setupAgentIntegrationWorkspace, up
 async function freezeWorkspace(projectRoot) {
   const validation = await validateWorkspace(projectRoot);
   const { report } = validation;
-  if (!report.valid) {
+  if (!(await exists(validation.ws.workspaceRoot))) {
     await appendWorkflowEvent(validation.ws, 'freeze_failed', {
-      errors: report.errors,
+      errors: report.structuralErrors ?? report.errors,
       warnings: report.warnings,
     });
     await appendVerification(validation.ws, [
       'Freeze 验证失败。',
-      ...report.errors.map((error) => `错误: ${error}`),
+      ...(report.structuralErrors ?? report.errors).map((error) => `错误: ${error}`),
       ...report.warnings.map((warning) => `警告: ${warning}`),
     ]);
     return { ok: false, report, ws: validation.ws };
   }
 
   let ws = validation.ws;
-  let latest = await loadCurrentLaneSnapshot(ws, { fallbackToLatest: true });
-  if (!latest) {
+  let latest = await loadCurrentLaneSnapshot(ws, { fallbackToLatest: !ws.data.currentSessionId });
+  if (!latest && !ws.data.currentSessionId) {
     const synthesized = await synthesizeWorkspace(projectRoot, {});
     ws = synthesized.ws;
     latest = { indexEntry: synthesized.indexEntry, snapshot: synthesized.snapshot };
   }
 
-  const guidance = await computeWorkspaceGuidance(ws, { questionLimit: 5 });
-  if (guidance.nextAction !== 'freeze' && (ws.data.currentState?.status ?? null) !== 'frozen') {
-    const gateReport = {
-      ...report,
+  const artifactErrors = [];
+  const sourceSnapshot = latest?.snapshot ?? null;
+  if (!sourceSnapshot) {
+    artifactErrors.push('Missing current-lane PRD artifact. Synthesize the current work unit before freeze.');
+  } else {
+    if (!normalizeVersionId(sourceSnapshot.versionId)) {
+      artifactErrors.push('Current PRD artifact is missing a valid versionId.');
+    }
+    if (!Number.isInteger(Number(sourceSnapshot.versionNumber)) || Number(sourceSnapshot.versionNumber) <= 0) {
+      artifactErrors.push('Current PRD artifact is missing a positive versionNumber.');
+    }
+    if (!sourceSnapshot.sections || typeof sourceSnapshot.sections !== 'object') {
+      artifactErrors.push('Current PRD artifact is missing structured sections.');
+    }
+    if (typeof sourceSnapshot.content !== 'string' || sourceSnapshot.content.trim().length === 0) {
+      artifactErrors.push('Current PRD artifact is missing rendered content.');
+    }
+    if (typeof sourceSnapshot.digest !== 'string' || sourceSnapshot.digest.trim().length === 0) {
+      artifactErrors.push('Current PRD artifact is missing its digest.');
+    }
+  }
+  if (artifactErrors.length > 0) {
+    const artifactReport = {
       valid: false,
-      errors: [
-        ...(report.errors ?? []),
-        `Freeze blocked by ${guidance.gates.currentGate}: ${guidance.reason}`,
-      ],
+      taskReady: false,
+      actionReady: false,
+      claimReady: false,
+      workspaceReady: report.workspaceReady ?? report.valid,
+      errors: artifactErrors,
+      warnings: report.warnings ?? [],
+      workspaceAttention: report.workspaceAttention ?? null,
     };
     await appendWorkflowEvent(ws, 'freeze_failed', {
-      errors: gateReport.errors,
-      warnings: gateReport.warnings,
-      gate: guidance.gates.currentGate,
-      nextAction: guidance.nextAction,
+      errors: artifactErrors,
+      warnings: artifactReport.warnings,
+      gate: 'current-artifact-structure',
     });
     await appendVerification(ws, [
-      'Freeze 门禁失败。',
-      `当前门禁: ${guidance.gates.currentGate}`,
-      `原因: ${guidance.reason}`,
-      `建议命令: ${guidance.suggestedCommand}`,
+      'Freeze 当前 artifact 检查失败。',
+      ...artifactErrors.map((error) => `错误: ${error}`),
     ]);
-    return { ok: false, report: gateReport, ws, guidance };
+    return { ok: false, report: artifactReport, ws, latest };
   }
+
+  const guidance = await computeWorkspaceGuidance(ws, { questionLimit: 5 }).catch(() => null);
+  const workflowAttention = guidance && !['freeze', 'handoff'].includes(guidance.nextAction)
+    ? {
+        kind: 'workflow-guidance',
+        scope: 'workspace',
+        blocking: false,
+        nextAction: guidance.nextAction,
+        summary: guidance.reason,
+        suggestedCommand: guidance.suggestedCommand,
+      }
+    : null;
+  const workspaceAttention = report.workspaceAttention ?? workflowAttention;
 
   const digest = await computeWorkspaceDigest(ws);
   const snapshot = {
@@ -498,11 +556,14 @@ async function freezeWorkspace(projectRoot) {
   await appendWorkflowEvent(ws, 'frozen', {
     versionId: snapshot.latestVersionId,
     digest,
+    workspaceReady: report.workspaceReady ?? report.valid,
+    workspaceAttention: Boolean(workspaceAttention),
   });
   await appendVerification(ws, [
-    '定稿前检查通过。',
+    '当前 PRD artifact 结构检查通过。',
     `本次确认稿: ${snapshot.latestVersionId}`,
     `需求稿版本序号: ${snapshot.prdVersion}`,
+    workspaceAttention ? '工作区仍有非阻断提醒；未撤销本次 freeze 动作。' : null,
   ]);
   await appendProgress(ws, [
     `这版需求已经定稿。`,
@@ -513,10 +574,36 @@ async function freezeWorkspace(projectRoot) {
   ]);
   await writeJson(ws.paths.taskGraph, buildWorkflowTaskGraph(storedCurrentState));
 
-  return { ok: true, ws: { ...ws, data: { ...ws.data, currentState: storedCurrentState } }, report, snapshot, latest };
+  return {
+    ok: true,
+    taskReady: true,
+    actionReady: true,
+    claimReady: report.workspaceReady ?? report.valid,
+    workspaceReady: report.workspaceReady ?? report.valid,
+    workspaceAttention,
+    workflowAttention,
+    guidance,
+    ws: { ...ws, data: { ...ws.data, currentState: storedCurrentState } },
+    report,
+    snapshot,
+    latest,
+  };
 }
 
 async function handoffWorkspace(projectRoot, target) {
+  const normalizedTarget = typeof target === 'string' ? target.trim() : '';
+  if (!normalizedTarget || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(normalizedTarget) || normalizedTarget === '.' || normalizedTarget === '..') {
+    return {
+      ok: false,
+      action: 'handoff',
+      taskReady: false,
+      actionReady: false,
+      claimReady: false,
+      projectRoot,
+      target: target ?? null,
+      errors: ['Handoff target must be a non-empty safe identifier using letters, numbers, dot, underscore, or hyphen.'],
+    };
+  }
   const freeze = await freezeWorkspace(projectRoot);
   if (!freeze.ok) {
     return freeze;
@@ -524,7 +611,7 @@ async function handoffWorkspace(projectRoot, target) {
 
   const { ws, snapshot } = freeze;
   const sourceSnapshot = freeze.latest?.snapshot ?? snapshot;
-  const exportDir = cjoin(ws.paths.exportsDir, target);
+  const exportDir = cjoin(ws.paths.exportsDir, normalizedTarget);
   const releaseState = await loadReleaseLedger(projectRoot);
   const releaseSummary = buildReleaseLedgerSummary(releaseState.ledger);
   const releaseChangeSummary = releaseSummary.enabled && releaseSummary.currentVersion
@@ -540,7 +627,7 @@ async function handoffWorkspace(projectRoot, target) {
     versionId: snapshot.latestVersionId,
     versionNumber: snapshot.prdVersion,
     projectVersion: releaseSummary.currentVersion,
-    target,
+    target: normalizedTarget,
     generatedAt: timestamp(),
     workspaceRoot: ws.workspaceRoot,
     projectRoot: ws.projectRoot,
@@ -562,7 +649,7 @@ async function handoffWorkspace(projectRoot, target) {
       ...((await exists(ws.paths.activeProductFlowDiagramJson)) ? ['engagements/active/product-flow-diagram.json'] : []),
       ...((await exists(ws.paths.activeProductFlowDiagramMermaid)) ? ['engagements/active/product-flow-diagram.mmd'] : []),
     ],
-    nextStep: target === 'openprd' || target === 'openspec'
+    nextStep: normalizedTarget === 'openprd' || normalizedTarget === 'openspec'
       ? 'Generate an OpenPrd change and continue with specs/design/tasks.'
       : 'Consume the handoff bundle in the downstream system.',
   };
@@ -571,7 +658,7 @@ async function handoffWorkspace(projectRoot, target) {
   const summarySection = handoff.changeSummary.markdown
     ? `\n## 变化摘要\n\n${handoff.changeSummary.markdown}\n`
     : '';
-  const handoffMarkdown = `# 交接\n\n- 交接去向: ${target}\n${handoff.projectVersion ? `- 项目版本: ${handoff.projectVersion}\n` : ''}- 使用格式: ${handoff.schema}\n- 场景模板: ${formatTemplatePackDisplay(handoff.templatePack, { fallback: '待确认' })}\n- 下一步: ${handoff.nextStep}\n${summarySection}`;
+  const handoffMarkdown = `# 交接\n\n- 交接去向: ${normalizedTarget}\n${handoff.projectVersion ? `- 项目版本: ${handoff.projectVersion}\n` : ''}- 使用格式: ${handoff.schema}\n- 场景模板: ${formatTemplatePackDisplay(handoff.templatePack, { fallback: '待确认' })}\n- 下一步: ${handoff.nextStep}\n${summarySection}`;
   await writeText(cjoin(exportDir, 'handoff.md'), handoffMarkdown);
   await writeText(ws.paths.activeHandoff, handoffMarkdown);
   if (await exists(ws.paths.activeArchitectureDiagramHtml)) {
@@ -593,15 +680,17 @@ async function handoffWorkspace(projectRoot, target) {
     await fs.copyFile(ws.paths.activeProductFlowDiagramMermaid, cjoin(exportDir, 'product-flow-diagram.mmd'));
   }
   await appendWorkflowEvent(ws, 'handoff', {
-    target,
+    target: normalizedTarget,
     versionId: handoff.versionId,
+    workspaceReady: freeze.workspaceReady,
+    workspaceAttention: Boolean(freeze.workspaceAttention),
   });
   await appendProgress(ws, [
-    `已生成面向 ${target} 的交接包。`,
+    `已生成面向 ${normalizedTarget} 的交接包。`,
     `版本: ${handoff.versionId}`,
   ]);
   await appendDecision(ws, [
-    `交接目标已设置为 ${target}。`,
+    `交接目标已设置为 ${normalizedTarget}。`,
     `版本 ${handoff.versionId} 已导出到 ${exportDir}。`,
   ]);
 
@@ -609,12 +698,24 @@ async function handoffWorkspace(projectRoot, target) {
     ...(ws.data.currentState ?? {}),
     status: 'handed_off',
     handedOffAt: handoff.generatedAt,
-    handoffTarget: target,
+    handoffTarget: normalizedTarget,
   };
   const storedCurrentState = await persistWorkspaceCurrentState(ws, currentState);
   await writeJson(ws.paths.taskGraph, buildWorkflowTaskGraph(storedCurrentState));
 
-  return { ok: true, ws: { ...ws, data: { ...ws.data, currentState: storedCurrentState } }, report: freeze.report, snapshot, handoff, exportDir };
+  return {
+    ok: true,
+    taskReady: true,
+    actionReady: true,
+    claimReady: freeze.workspaceReady,
+    workspaceReady: freeze.workspaceReady,
+    workspaceAttention: freeze.workspaceAttention,
+    ws: { ...ws, data: { ...ws.data, currentState: storedCurrentState } },
+    report: freeze.report,
+    snapshot,
+    handoff,
+    exportDir,
+  };
 }
 
 async function releaseWorkspace(projectRoot, options = {}) {
@@ -725,30 +826,40 @@ function reviewConfirmationCommand(snapshot) {
   return command;
 }
 
-function assertPrdReviewConfirmedForChange(currentState, snapshot) {
+function buildPrdReviewAttentionForChange(currentState, snapshot) {
   if (['frozen', 'handed_off'].includes(snapshot?.status)) {
-    return;
+    return null;
   }
   const review = currentState?.reviewStatus ?? null;
-  const confirmed = review?.versionId === snapshot?.versionId && review?.status === 'confirmed';
+  const confirmed = review?.versionId === snapshot?.versionId
+    && review?.status === 'confirmed'
+    && (!review?.digest || review.digest === snapshot?.digest)
+    && (!review?.workUnitId || review.workUnitId === snapshot?.workUnitId);
   if (confirmed) {
-    return;
+    return null;
   }
-  throw new Error([
-    '生成 OpenPrd change 前需要先确认最新 PRD review.html。',
-    `当前版本: ${snapshot?.versionId ?? '未知'}。`,
-    `当前评审状态: ${review?.status ?? 'missing'}。`,
-    `建议: ${reviewConfirmationCommand(snapshot)}。`,
-  ].join('\n'));
+  return {
+    kind: 'prd-review',
+    blocking: false,
+    versionId: snapshot?.versionId ?? null,
+    digest: snapshot?.digest ?? null,
+    workUnitId: snapshot?.workUnitId ?? null,
+    status: review?.status ?? 'missing',
+    recordedVersionId: review?.versionId ?? null,
+    recordedDigest: review?.digest ?? null,
+    recordedWorkUnitId: review?.workUnitId ?? null,
+    summary: '当前 PRD review 尚未确认，Agent 可在后台维护，不阻断 change generation。',
+    suggestedCommand: reviewConfirmationCommand(snapshot),
+  };
 }
 
 async function generateOpenSpecChangeWorkspace(projectRoot, options = {}) {
   const ws = await loadWorkspace(projectRoot);
   const versionIndex = await readVersionIndex(ws);
-  const latest = await loadCurrentLaneSnapshot(ws, { fallbackToLatest: true });
+  const latest = await loadCurrentLaneSnapshot(ws, { fallbackToLatest: !ws.data.currentSessionId });
   const currentState = ws.data.currentState ?? {};
   const snapshot = latest?.snapshot ?? buildCurrentStateSnapshot(ws, currentState, versionIndex);
-  assertPrdReviewConfirmedForChange(currentState, snapshot);
+  const reviewAttention = buildPrdReviewAttentionForChange(currentState, snapshot);
   const analysis = analyzePrdSnapshot(snapshot);
   const result = await writeOpenSpecChangeWorkspace(projectRoot, {
     ...options,
@@ -756,17 +867,40 @@ async function generateOpenSpecChangeWorkspace(projectRoot, options = {}) {
     analysis,
   });
   const validation = await validateOpenSpecChangeWorkspace(projectRoot, { change: result.changeId });
+  const standardsErrors = new Set(validation.standards?.errors ?? []);
+  const changeErrors = (validation.errors ?? []).filter((error) => !standardsErrors.has(error));
+  const changeReady = validation.ok || (changeErrors.length === 0 && standardsErrors.size > 0);
+  const workspaceReady = validation.ok && (validation.standards?.ok ?? true);
+  const validationWithScope = {
+    ...validation,
+    taskReady: changeReady,
+    workspaceReady,
+    actionReady: changeReady,
+    claimReady: workspaceReady,
+    workspaceClaimReady: workspaceReady,
+    errors: changeErrors,
+    workspaceAttention: standardsErrors.size > 0
+      ? {
+          kind: 'standards',
+          blocking: false,
+          summary: 'OpenPrd change 已生成；工作区 standards 仍待维护。',
+          errors: [...standardsErrors],
+        }
+      : null,
+  };
   await activateOpenPrdChangeWorkspace(projectRoot, { change: result.changeId });
 
   await appendWorkflowEvent(ws, 'openprd_change_generated', {
     changeId: result.changeId,
     taskCount: result.taskCount,
-    valid: validation.valid,
+    valid: changeReady,
+    workspaceReady,
   });
   await appendProgress(ws, [
     `已生成 OpenPrd change ${result.changeId}。`,
     `任务数: ${result.taskCount}。`,
-    `验证: ${validation.valid ? '通过' : '失败'}。`,
+    `当前 change 结构: ${changeReady ? '通过' : '失败'}。`,
+    validationWithScope.workspaceAttention ? '工作区 standards 待维护，不阻断本次 change generation。' : null,
   ]);
   await syncSessionBindingFromChange(projectRoot, result.changeId, {
     sessionId: ws.data.currentSessionId ?? null,
@@ -785,8 +919,9 @@ async function generateOpenSpecChangeWorkspace(projectRoot, options = {}) {
     ws,
     snapshot,
     analysis,
-    validation,
-    ok: result.ok && validation.ok,
+    validation: validationWithScope,
+    reviewAttention,
+    ok: result.ok && changeReady,
   };
 }
 

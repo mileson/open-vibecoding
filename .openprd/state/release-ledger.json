@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.1.24",
+  "currentVersion": "0.2.0",
   "versions": [
     {
       "version": "0.1.2",
@@ -855,9 +855,9 @@
     },
     {
       "version": "0.1.24",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-07-13 15:03:26",
-      "updatedAt": "2026-07-13 15:03:26",
+      "updatedAt": "2026-07-20 00:49:27",
       "notes": null,
       "items": [
         {
@@ -873,8 +873,73 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.2.0",
+      "status": "current",
+      "createdAt": "2026-07-20 00:49:27",
+      "updatedAt": "2026-07-20 00:49:31",
+      "notes": null,
+      "items": [
+        {
+          "type": "修复",
+          "summary": "修复",
+          "detail": "OpenPrd 不再因需求、评审、变更、任务、说明书或质量证据尚未补齐而阻断用户已经要求的实现、自动任务和发布动作",
+          "sentence": "修复：OpenPrd 不再因需求、评审、变更、任务、说明书或质量证据尚未补齐而阻断用户已经要求的实现、自动任务和发布动作",
+          "recordedAt": "2026-07-20 00:49:27",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784479767817"
+          }
+        },
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "无人值守自动任务默认进入 automation-safe 模式；除非任务明确启用 OpenPrd，否则不注入上下文、不要求 dev-check、quality 或 doctor",
+          "sentence": "新增：无人值守自动任务默认进入 automation-safe 模式；除非任务明确启用 OpenPrd，否则不注入上下文、不要求 dev-check、quality 或 doctor",
+          "recordedAt": "2026-07-20 00:49:28",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784479768562"
+          }
+        },
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "历史 requirement、PRD、review、change、tasks 与实现记录保持冻结；旧功能重新进入当前范围时创建新的需求与变更并关联历史",
+          "sentence": "调整：历史 requirement、PRD、review、change、tasks 与实现记录保持冻结；旧功能重新进入当前范围时创建新的需求与变更并关联历史",
+          "recordedAt": "2026-07-20 00:49:29",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784479769145"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "taskReady、workspaceAttention、claimReady 与 actionReady 分层判断，工作区维护欠账只作为提示，真实任务失败和发布条件仍严格验证",
+          "sentence": "优化：taskReady、workspaceAttention、claimReady 与 actionReady 分层判断，工作区维护欠账只作为提示，真实任务失败和发布条件仍严格验证",
+          "recordedAt": "2026-07-20 00:49:30",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784479770287"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "Codex、Claude Code、Cursor 的生成式规则、hooks、CLI 输出和旧项目升级逻辑统一为用户任务优先、后台材料非阻断",
+          "sentence": "优化：Codex、Claude Code、Cursor 的生成式规则、hooks、CLI 输出和旧项目升级逻辑统一为用户任务优先、后台材料非阻断",
+          "recordedAt": "2026-07-20 00:49:31",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784479771515"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-07-13 15:03:26"
+  "updatedAt": "2026-07-20 00:49:31"
 }

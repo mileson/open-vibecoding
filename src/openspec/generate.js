@@ -5,7 +5,7 @@ import { needsBusinessGuardrails } from '../prd-core.js';
 import { EXECUTION_STRATEGY_METADATA_KEYS, formatTaskExecutionStrategyMetadata } from '../execution-strategy.js';
 import { TEST_STRATEGY_METADATA_KEYS, formatTaskTestStrategyMetadata } from '../test-strategy.js';
 import { OPENSPEC_TASK_MAX_ITEMS_PER_FILE } from './constants.js';
-import { openPrdChangeRoot, openPrdDiscoveryConfigPath, readDiscoveryConfig } from './paths.js';
+import { openPrdArchiveChangeRoot, openPrdChangeRoot, openPrdDiscoveryConfigPath, readDiscoveryConfig } from './paths.js';
 
 function cjoin(...parts) {
   return path.join(...parts);
@@ -103,9 +103,9 @@ const OPENSPEC_COPY = {
     specReviewTitle: '评审生成的 spec 覆盖',
     specReviewDone: (capability) => `生成的 ${capability} spec 符合 PRD 意图`,
     docsTitle: '维护 docs/basic 项目基础文档',
-    docsDone: '已检查 docs/basic 是否缺失或因本次需求、流程、结构、依赖、产品行为变化而过期；若涉及后端、脚本、Agent 或工具链变更，已同步评估 CLI 与 API 接入面，并在 backend-structure.md 中记录事实或不适用原因；需要更新的基础文档已同步',
+    docsDone: '已检查本次代码变化是否直接使 docs/basic 失真；直接受影响的当前基础文档已后台同步，其他缺失项已记入 workspaceAttention，不影响当前任务或动作',
     manualsTitle: '更新文件说明书和文件夹 README',
-    manualsDone: '本次变更涉及的文件说明书和文件夹 README 已检查；缺失的已补齐，过期的已更新',
+    manualsDone: '本次代码变化直接影响的文件说明书和文件夹 README 已后台同步；其他缺失项已记入 workspaceAttention，不回填历史实现材料',
     finalValidateTitle: '运行 OpenPrd spec 校验',
     finalValidateDone: '生成的 change 通过 OpenPrd 校验',
     tasksTitle: '# 任务',
@@ -188,9 +188,9 @@ const OPENSPEC_COPY = {
     specReviewTitle: 'Review Generated Spec Coverage',
     specReviewDone: (capability) => `The generated ${capability} spec matches the PRD intent`,
     docsTitle: 'Maintain docs/basic Project Docs',
-    docsDone: 'docs/basic has been checked for missing or stale content caused by this requirement, flow, structure, dependency, or product behavior change; backend, script, agent, or toolchain changes have been reflected in backend-structure.md or marked not applicable.',
+    docsDone: 'Current docs/basic content directly made stale by this code change has been updated in the background; unrelated missing docs remain workspace attention and do not block the current task or action.',
     manualsTitle: 'Update File Manuals And Folder READMEs',
-    manualsDone: 'Affected file manuals and folder READMEs have been checked; missing docs were added and stale docs were updated',
+    manualsDone: 'Current file manuals and folder READMEs directly made stale by this code change have been updated in the background; unrelated gaps remain workspace attention and historical implementation material is not reconstructed',
     finalValidateTitle: 'Run OpenPrd Spec Validation',
     finalValidateDone: 'The generated change passes OpenPrd validation',
     tasksTitle: '# Tasks',
@@ -218,6 +218,8 @@ const OPENSPEC_COPY = {
     },
   },
 };
+
+const HISTORICAL_CHANGE_STATUSES = new Set(['applied', 'archived', 'closed', 'historical', 'legacy-frozen']);
 
 function copyForLocale(locale) {
   return isChineseLocale(locale) ? OPENSPEC_COPY.zh : OPENSPEC_COPY.en;
@@ -666,6 +668,7 @@ function buildTaskItems({ changeId, snapshot, capability }) {
     {
       key: 'documentation:docs-basic',
       type: 'documentation',
+      blocking: false,
       title: copy.docsTitle,
       done: copy.docsDone,
       verify: 'openprd standards . --verify',
@@ -674,6 +677,7 @@ function buildTaskItems({ changeId, snapshot, capability }) {
     {
       key: 'documentation:manuals',
       type: 'documentation',
+      blocking: false,
       title: copy.manualsTitle,
       done: copy.manualsDone,
       verify: 'openprd standards . --verify',
@@ -711,6 +715,7 @@ function buildTaskItems({ changeId, snapshot, capability }) {
       type: item.type,
       phase: item.phase,
       done: item.done,
+      blocking: item.blocking ?? !['documentation', 'governance'].includes(item.type),
       deps: [],
     };
     task.verify = item.verify ?? defaultTaskVerifyCommand(changeId, task);
@@ -727,46 +732,39 @@ function buildTaskItems({ changeId, snapshot, capability }) {
     governanceEnd: tasks.filter((task) => task.phase === 'governance-end'),
   };
 
-  const anchorTask = phaseTasks.governanceStart.at(-1) ?? null;
-  let previousId = anchorTask?.id ?? null;
+  let previousId = null;
   for (const task of phaseTasks.architecture) {
     task.deps = previousId ? [previousId] : [];
     previousId = task.id;
   }
 
-  const implementationAnchor = previousId ?? anchorTask?.id ?? null;
+  const implementationAnchor = previousId;
   previousId = implementationAnchor;
   for (const task of phaseTasks.implementation) {
     task.deps = previousId ? [previousId] : [];
     previousId = task.id;
   }
 
-  const integrationAnchor = previousId ?? implementationAnchor ?? anchorTask?.id ?? null;
+  const integrationAnchor = previousId ?? implementationAnchor;
   previousId = integrationAnchor;
   for (const task of phaseTasks.integration) {
     task.deps = previousId ? [previousId] : [];
     previousId = task.id;
   }
 
-  const verificationAnchor = previousId ?? integrationAnchor ?? implementationAnchor ?? anchorTask?.id ?? null;
+  const verificationAnchor = previousId ?? integrationAnchor ?? implementationAnchor;
   previousId = verificationAnchor;
   for (const task of phaseTasks.verification) {
     task.deps = previousId ? [previousId] : [];
     previousId = task.id;
   }
 
-  const documentationAnchor = previousId ?? verificationAnchor ?? integrationAnchor ?? implementationAnchor ?? anchorTask?.id ?? null;
-  previousId = documentationAnchor;
-  for (const task of phaseTasks.documentation) {
-    task.deps = previousId ? [previousId] : [];
-    previousId = task.id;
+  const backgroundAnchor = previousId ?? verificationAnchor ?? integrationAnchor ?? implementationAnchor;
+  for (const task of phaseTasks.governanceStart) {
+    task.deps = [];
   }
-
-  const governanceEndAnchor = previousId ?? documentationAnchor ?? verificationAnchor ?? integrationAnchor ?? implementationAnchor ?? anchorTask?.id ?? null;
-  previousId = governanceEndAnchor;
-  for (const task of phaseTasks.governanceEnd) {
-    task.deps = previousId ? [previousId] : [];
-    previousId = task.id;
+  for (const task of [...phaseTasks.documentation, ...phaseTasks.governanceEnd]) {
+    task.deps = backgroundAnchor ? [backgroundAnchor] : [];
   }
 
   return tasks.map(({ phase, ...task }) => task);
@@ -793,6 +791,7 @@ function renderTaskFiles(tasks, maxItemsPerFile, locale = 'zh-CN') {
     for (const task of chunk) {
       lines.push(`- [ ] ${task.id} ${task.title}`);
       lines.push(`  - type: ${task.type}`);
+      lines.push(`  - blocking: ${task.blocking ? 'true' : 'false'}`);
       if (task.deps.length > 0) {
         lines.push(`  - deps: ${task.deps.join(', ')}`);
       }
@@ -831,6 +830,7 @@ async function writeDiscoveryConfig(projectRoot, changeId) {
   const optionalMetadata = [
     'deps',
     'type',
+    'blocking',
     ...TEST_STRATEGY_METADATA_KEYS,
     ...EXECUTION_STRATEGY_METADATA_KEYS,
   ];
@@ -862,6 +862,12 @@ export async function generateOpenSpecChangeWorkspace(projectRoot, options = {})
   const locale = resolveSnapshotLocale(snapshot);
   const capability = resolveCapability(snapshot);
   const changeDir = cjoin(openPrdChangeRoot(projectRoot), changeId);
+  const historicalChangeDir = cjoin(openPrdArchiveChangeRoot(projectRoot), changeId);
+  const changeState = await readJson(cjoin(projectRoot, '.openprd', 'state', 'changes.json')).catch(() => null);
+  const historicalStatus = String(changeState?.changes?.[changeId]?.status ?? '').trim().toLowerCase();
+  if (await exists(historicalChangeDir) || HISTORICAL_CHANGE_STATUSES.has(historicalStatus)) {
+    throw new Error(`OpenPrd change id ${changeId} 已用于 legacy-frozen 历史上下文；请为新的当前 requirement 使用新的 change id。`);
+  }
   const files = [
     {
       path: cjoin(changeDir, '.openprd.yaml'),

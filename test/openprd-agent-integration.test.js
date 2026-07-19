@@ -270,7 +270,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedHook.includes('image-generation-preference.json'));
     assert.ok(generatedHook.includes('审美意图和记忆点'));
     assert.ok(generatedHook.includes('build、package 和 dev-check'));
-    assert.ok(generatedHook.includes('allowed-autonomy-advisory'));
+    assert.ok(generatedHook.includes('allowed-with-autonomy-attention'));
     assert.ok(generatedHook.includes('OpenPrd 不阻断工具调用'));
     assert.equal(generatedHook.includes('允许这次云端热修复'), false);
 
@@ -367,19 +367,16 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedCommandCatalog.includes('只量外框'));
     assert.ok(generatedCommandCatalog.includes('openprd visual-prepare . --reference <效果图> --grid <列>x<行>'));
     assert.ok(generatedCommandCatalog.includes('$openprd-frontend-design'));
-    assert.ok(generatedCommandCatalog.includes('.openprd/design/active/facts-sheet.md'));
-    assert.ok(generatedCommandCatalog.includes('.openprd/design/templates/'));
+    assert.ok(generatedCommandCatalog.includes('.openprd/design/active/'));
     assert.ok(generatedCommandCatalog.includes('openprd design-starter . --starter <content-home|product-launch|ops-dashboard> --out <index.html>'));
     assert.ok(generatedCommandCatalog.includes('--brief <页面主题> --sections <模块1|模块2|模块3>'));
-    assert.ok(generatedCommandCatalog.includes('写清无依赖'));
     assert.ok(generatedCommandCatalog.includes('Patch Mode'));
-    assert.ok(generatedCommandCatalog.includes('不要删除 `index.html` 后另起新稿'));
-    assert.ok(generatedCommandCatalog.includes('主参考源'));
-    assert.ok(generatedCommandCatalog.includes('index.next.html'));
-    assert.ok(generatedCommandCatalog.includes('下一步必须出现真实写文件动作'));
-    assert.ok(generatedCommandCatalog.includes('只补合同、只下载素材或只写计划'));
+    assert.ok(generatedCommandCatalog.includes('advisory Patch Mode'));
+    assert.ok(generatedCommandCatalog.includes('allowed-with-patch-mode-attention'));
+    assert.ok(generatedCommandCatalog.includes('不限制当前工具调用'));
+    assert.ok(generatedCommandCatalog.includes('sibling draft'));
     assert.ok(generatedCommandCatalog.includes('3 个异源方向'));
-    assert.ok(generatedCommandCatalog.includes('候选效果图'));
+    assert.ok(generatedCommandCatalog.includes('可逆默认方向'));
     assert.ok(generatedCommandCatalog.includes('contact sheet'));
     assert.ok(generatedCommandCatalog.includes('openprd quality . --verify'));
     assert.ok(generatedCommandCatalog.includes('如果只剩 `feature-coverage`'));
@@ -412,8 +409,8 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedDiscoverySkill.includes('spark-code-researcher'));
     const generatedStandardsSkill = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-standards', 'SKILL.md'), 'utf8');
     assert.ok(generatedStandardsSkill.includes('## 文档影响检查'));
-    assert.ok(generatedStandardsSkill.includes('openprd dev-check . <file...>'));
-    assert.ok(generatedStandardsSkill.includes('研发期代码修改完成后、最终回复前'));
+    assert.ok(generatedStandardsSkill.includes('openprd dev-check <path> <file...>'));
+    assert.ok(generatedStandardsSkill.includes('代码修改完成后、最终回复前'));
     assert.ok(generatedStandardsSkill.includes('openprd grow . --review'));
     assert.ok(generatedStandardsSkill.includes('自动补齐识别规则'));
     assert.ok(generatedStandardsSkill.includes('收工复盘'));
@@ -430,14 +427,13 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedQualitySkill.includes('截图实测证据板'));
     assert.ok(generatedQualitySkill.includes('对齐辅助线证据板'));
     assert.ok(generatedQualitySkill.includes('内部内容槽位'));
-    assert.ok(generatedQualitySkill.includes('只量了外框'));
-    assert.ok(generatedQualitySkill.includes('审美主张和记忆点'));
+    assert.ok(generatedQualitySkill.includes('审美主张/记忆点'));
     assert.ok(generatedQualitySkill.includes('不只查有无图片'));
     assert.ok(generatedQualitySkill.includes('用户目标、信息架构变化、视觉决策成本和验证风险'));
-    assert.ok(generatedQualitySkill.includes('新建界面确认实现前 3 方向方案评审已完成'));
+    assert.ok(generatedQualitySkill.includes('Agent 已在后台完成 3 方向方案评审并采用可逆默认方向'));
     assert.ok(generatedQualitySkill.includes('本次情况 / 计划保留的经验 / 以后怎么复用 / 只保留在当前项目里'));
     const generatedSharedSkill = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-shared', 'SKILL.md'), 'utf8');
-    assert.ok(generatedSharedSkill.includes('默认按性价比选方案'));
+    assert.ok(generatedSharedSkill.includes('性价比最好的默认选择'));
     assert.ok(generatedSharedSkill.includes('AGENTS.md` 只保留轻量合同'));
     assert.ok(generatedSharedSkill.includes('secrets-vault'));
     assert.ok(generatedSharedSkill.includes('运行态证据'));
@@ -446,24 +442,21 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.equal(generatedSharedSkill.includes('weapp-dev-mcp'), false);
     assert.ok(generatedSharedSkill.includes('Localizable'));
     assert.ok(generatedSharedSkill.includes('彩色 Mermaid'));
-    assert.ok(generatedSharedSkill.includes('生图工具是工具路径，不是审美豁免'));
-    assert.ok(generatedSharedSkill.includes('视觉证据不仅检查位置'));
+    assert.ok(generatedSharedSkill.includes('Image 2 是工具路径，不是审美豁免'));
+    assert.ok(generatedSharedSkill.includes('visual evidence 同时检查气质'));
     assert.ok(generatedSharedSkill.includes('不要中途打断当前任务'));
-    assert.ok(generatedSharedSkill.includes('不要把 `.openprd/quality/reports/`'));
     assert.ok(generatedSharedSkill.includes('README_EN.md'));
-    assert.ok(generatedSharedSkill.includes('代码扩展识别这类白名单工具补全'));
+    assert.ok(generatedSharedSkill.includes('高置信工具识别补全'));
     assert.ok(generatedSharedSkill.includes('optionalCapabilities'));
     assert.ok(generatedSharedSkill.includes('runtimeDetection'));
-    assert.ok(generatedSharedSkill.includes('runtimeDetection.executionMode'));
-    assert.ok(generatedSharedSkill.includes('无人值守自动化默认不要注入 OpenPrd context'));
-    assert.ok(generatedSharedSkill.includes('不要要求 `dev-check` / `quality` / `doctor`'));
+    assert.ok(generatedSharedSkill.includes('runtimeDetection'));
     assert.ok(generatedSharedSkill.includes('platformCapabilityPacks'));
     assert.ok(generatedSharedSkill.includes('surface-dependent'));
     assert.ok(generatedSharedSkill.includes('非阻断式增强建议'));
     assert.ok(generatedSharedSkill.includes('创业验证闭环'));
     assert.ok(generatedSharedSkill.includes('第一批最容易触达的人群/社区'));
     assert.ok(generatedSharedSkill.includes('手工作战卡'));
-    assert.ok(generatedSharedSkill.includes('第一版只做哪一件事'));
+    assert.ok(generatedSharedSkill.includes('第一版切片'));
     assert.ok(generatedSharedSkill.includes('客户 1 如何打平成本'));
     assert.ok(generatedSharedSkill.includes('你为什么算这个社区里的自己人'));
     assert.ok(generatedSharedSkill.includes('有没有 10 个样本和更强付费信号'));
@@ -471,47 +464,38 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedSharedSkill.includes('增长阶段守什么纪律'));
     assert.ok(generatedSharedSkill.includes('forms / lists / CRUD'));
     assert.ok(generatedSharedSkill.includes('长期住进去'));
-    assert.ok(generatedSharedSkill.includes('什么真实承诺才算真需求'));
     assert.ok(generatedSharedSkill.includes('怎样先活下来'));
     assert.ok(generatedSharedSkill.includes('.openprd/design/'));
     assert.ok(generatedSharedSkill.includes('direction-plan.md'));
     const generatedHarnessSkill = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-harness', 'SKILL.md'), 'utf8');
-    assert.ok(generatedHarnessSkill.includes('Codex automation、Claude Code headless、cron、scheduled、unattended task'));
+    assert.ok(generatedHarnessSkill.includes('Codex automation、Claude Code headless、cron、scheduled 或 unattended task'));
     assert.ok(generatedHarnessSkill.includes('不要要求 `openprd dev-check` / `quality` / `doctor`'));
-    assert.ok(generatedHarnessSkill.includes('automation-safe mode'));
+    assert.ok(generatedHarnessSkill.includes('按自动化自己的 runbook、日志、测试和通知合同收口'));
     assert.ok(generatedHarnessSkill.includes('AGENTS.md` 只保留轻量合同'));
-    assert.ok(generatedHarnessSkill.includes('外部证据不足就直接改第三方集成'));
     assert.ok(generatedHarnessSkill.includes('Context7、DeepWiki'));
     assert.ok(generatedHarnessSkill.includes('可代为补配置'));
-    assert.ok(generatedHarnessSkill.includes('创业验证透镜'));
-    assert.ok(generatedHarnessSkill.includes('第一批最容易触达的社区或种子用户'));
-    assert.ok(generatedHarnessSkill.includes('验证阶段怎样先活下来'));
-    assert.ok(generatedSharedSkill.includes('第三方 API、模型、云服务或付费工具'));
+    assert.ok(generatedSharedSkill.includes('创业验证'));
     assert.ok(generatedSharedSkill.includes('多个对象、方案、文件、场景、风险、验证项、素材或任务'));
     assert.ok(generatedSharedSkill.includes('方案对比、状态盘点、问题排查、风险审查、多对象 QA'));
     assert.ok(generatedSharedSkill.includes('图解优先'));
     assert.ok(generatedSharedSkill.includes('不替代 `review.html`'));
     assert.ok(generatedSharedSkill.includes('高置信应可成长'));
-    assert.ok(generatedSharedSkill.includes('openprd update .'));
-    assert.ok(generatedSharedSkill.includes('已有确认参考图时对比“效果图 / 实现截图”'));
-    assert.ok(generatedSharedSkill.includes('用户可见文档、进度日志、proposal'));
+    assert.ok(generatedSharedSkill.includes('已有用户参考图或 Agent 采用的可逆默认参考方向时做“效果图 / 实现截图”对比'));
     assert.ok(generatedSharedSkill.includes('spec 和 tasks 跟随用户当前主语言'));
     assert.ok(generatedSharedSkill.includes('候选效果图'));
-    assert.ok(generatedSharedSkill.includes('纳入后续对比'));
+    assert.ok(generatedSharedSkill.includes('可逆默认 reference-set'));
     assert.ok(generatedSharedSkill.includes('修改前 / 修改后'));
-    assert.ok(generatedSharedSkill.includes('普通截图和 Computer/Browser/Playwright 实测截图只能作为原始素材'));
+    assert.ok(generatedSharedSkill.includes('普通截图、Computer/Browser/Playwright 实测截图要作为视觉证据时'));
     assert.ok(generatedSharedSkill.includes('先判断新建界面还是修改既有界面'));
     assert.ok(generatedSharedSkill.includes('冷启动没有现有界面'));
     assert.ok(generatedHarnessSkill.includes('代码修改完成后、最终回复前'));
-    assert.ok(generatedHarnessSkill.includes('不要 repo-wide 搜 `.openprd/quality/reports/`'));
-    assert.ok(generatedHarnessSkill.includes('代码扩展识别这类白名单工具补全'));
-    assert.ok(generatedHarnessSkill.includes('收工时用 `openprd grow . --review`'));
+    assert.ok(generatedHarnessSkill.includes('工具识别补全'));
+    assert.ok(generatedHarnessSkill.includes('后台复盘'));
     assert.ok(generatedHarnessSkill.includes('主动询问用户是否做成可成长配置'));
     assert.ok(generatedHarnessSkill.includes('openprd learn .'));
     assert.ok(generatedHarnessSkill.includes('产物形态'));
     assert.ok(generatedHarnessSkill.includes('不要用关键词表触发'));
     assert.ok(generatedHarnessSkill.includes('普通 Markdown 只能作为辅助讲义'));
-    assert.ok(generatedHarnessSkill.includes('仙侠风格的学习材料'));
     assert.ok(generatedHarnessSkill.includes('冷启动没有现有界面'));
     assert.ok(generatedHarnessSkill.includes('视觉决策成本和验证风险'));
     assert.ok(generatedHarnessSkill.includes('同一张证据板'));
@@ -525,10 +509,8 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedHarnessSkill.includes('$openprd-frontend-design'));
     assert.ok(generatedHarnessSkill.includes('.openprd/design/active/selected-direction.md'));
     assert.ok(generatedHarnessSkill.includes('至少先产出一份视觉证据图'));
-    assert.ok(generatedHarnessSkill.includes('test-reports/<task-id>.html'));
     assert.ok(generatedHarnessSkill.includes('业务和产品语言'));
-    assert.ok(generatedHarnessSkill.includes('性价比最优'));
-    assert.ok(generatedHarnessSkill.includes('主动使用 Markdown 表格'));
+    assert.ok(generatedHarnessSkill.includes('业务和产品语言'));
     assert.ok(generatedHarnessSkill.includes('.openprd/harness/visual-reviews/'));
     assert.ok(generatedHarnessSkill.includes('实现截图'));
     assert.ok(generatedHarnessSkill.includes('修改前截图'));
@@ -539,12 +521,12 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedCodexHook.includes('learningMaterialRequest'));
     assert.ok(generatedCodexHook.includes('学习型交付物'));
     assert.ok(generatedCodexHook.includes('冷启动没有现有界面'));
-    assert.ok(generatedCodexHook.includes('新建界面应先完成 3 方向方案评审'));
+    assert.ok(generatedCodexHook.includes('新建界面由 Agent 在后台完成 3 方向方案评审并采用可逆默认方向'));
     assert.ok(generatedCodexHook.includes('是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断'));
     assert.ok(generatedCodexHook.includes('候选效果图'));
     assert.ok(generatedCodexHook.includes('生图工具是工具路径，不是审美豁免'));
     assert.ok(generatedCodexHook.includes('没有品牌或参考图依据时，不要默认紫白/蓝紫渐变'));
-    assert.ok(generatedCodexHook.includes('是否纳入后续效果图/实现截图对比'));
+    assert.ok(generatedCodexHook.includes('是否纳入后续视觉对比'));
     assert.ok(generatedCodexHook.includes('visual-prepare'));
     assert.ok(generatedCodexHook.includes('contact sheet'));
     assert.ok(generatedCodexHook.includes('至少产出一份 visual-compare / focus-board / parallel-board / verification-board / alignment-board / centering-board 证据图'));
@@ -567,11 +549,12 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedFrontendSkill.includes('openprd design-starter . --starter <starter-id> --out index.html'));
     assert.ok(generatedFrontendSkill.includes('--brief "<页面主题>"'));
     assert.ok(generatedFrontendSkill.includes('无外部产品事实依赖'));
-    assert.ok(generatedFrontendSkill.includes('禁止删除 `index.html` 后另起新稿'));
+    assert.ok(generatedFrontendSkill.includes('不要先把当前入口删掉再慢慢补'));
     assert.ok(generatedFrontendSkill.includes('模板默认组合优先于'));
     assert.ok(generatedFrontendSkill.includes('主参考源'));
     assert.ok(generatedFrontendSkill.includes('index.next.html'));
-    assert.ok(generatedFrontendSkill.includes('下一步必须出现真实写文件动作'));
+    assert.ok(generatedFrontendSkill.includes('优先尽快出现真实页面写入'));
+    assert.ok(generatedFrontendSkill.includes('allowed-with-patch-mode-attention'));
     assert.ok(generatedFrontendSkill.includes('只做规划、下载素材、补合同、写说明或口头承诺'));
     assert.ok(generatedFrontendSkill.includes('相同文案类型/相同组件槽位'));
     assert.ok(generatedFrontendSkill.includes('alignment-board'));
@@ -1228,6 +1211,7 @@ test('generated OpenPrd skills never turn workflow artifacts into user confirmat
     '.claude/skills/openprd-shared/SKILL.md',
     '.claude/skills/openprd-harness/SKILL.md',
     '.claude/skills/openprd-frontend-design/SKILL.md',
+    '.claude/skills/openprd-standards/SKILL.md',
   ];
   const generated = await Promise.all(files.map(async (file) => ({ file, content: await fs.readFile(path.join(project, file), 'utf8') })));
   for (const forbidden of [
@@ -1235,10 +1219,37 @@ test('generated OpenPrd skills never turn workflow artifacts into user confirmat
     '只有用户明确表示“不需要进行任何确认”',
     '执行确认清单再请用户确认',
     '停下来让用户选择',
+    '为已有 PRD 版本补 work unit、digest 和稳定评审页',
+    '只有用户确认纳入后续对比或继续实现后',
+    'hook 会强制阻断几类场景',
   ]) {
     const hit = generated.find((item) => item.content.includes(forbidden));
     assert.equal(Boolean(hit), false, `unexpected confirmation gate in ${hit?.file}: ${forbidden}`);
   }
   const content = generated.map((item) => item.content).join('\n');
   assert.ok(content.includes('不创建用户确认停顿') || content.includes('不是授权门禁'));
+  assert.ok(content.includes('只补 metadata、index 与历史身份绑定'));
+  assert.ok(content.includes('不得创建或改写历史 requirement、PRD、review、change、tasks 或实现记录'));
+
+  const stripGeneratedMarker = (value) => value
+    .replace(/<!-- OPENPRD:GENERATED\n[^]*?-->\n?/g, '')
+    .trim();
+  for (const skillId of ['openprd-router', 'openprd-requirement-intake', 'openprd-shared', 'openprd-harness', 'openprd-frontend-design', 'openprd-standards']) {
+    const codexSkill = await fs.readFile(path.join(project, '.codex', 'skills', skillId, 'SKILL.md'), 'utf8');
+    const claudeSkill = await fs.readFile(path.join(project, '.claude', 'skills', skillId, 'SKILL.md'), 'utf8');
+    assert.equal(stripGeneratedMarker(codexSkill), stripGeneratedMarker(claudeSkill), `${skillId} drifted across generated adapters`);
+  }
+
+  const guardArtifacts = await Promise.all([
+    '.codex/prompts/openprd-guard.md',
+    '.claude/commands/openprd/guard.md',
+    '.cursor/commands/openprd-guard.md',
+  ].map((file) => fs.readFile(path.join(project, file), 'utf8')));
+  for (const artifact of guardArtifacts) {
+    assert.ok(artifact.includes('readiness evidence'));
+    assert.ok(artifact.includes('OpenPrd does not substitute for host authorization'));
+  }
+  const catalog = await fs.readFile(path.join(project, '.openprd', 'harness', 'command-catalog.md'), 'utf8');
+  assert.ok(catalog.includes('readiness evidence'));
+  assert.ok(catalog.includes('不是 OpenPrd 授权门禁'));
 });

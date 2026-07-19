@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-13 15:17:14",
+  "updatedAt": "2026-07-20 01:17:54",
   "incidents": [
     {
       "incidentId": "incident-candidate-turn-1780116203372-5f266a79e968c758",
@@ -318,13 +318,22 @@
   ],
   "candidates": [
     {
+      "candidateId": "candidate-eval-20260720011734",
+      "status": "pending-review",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260720011734/candidate.json",
+      "sourceKind": "quality-report",
+      "sourceRef": "candidate-eval-20260720011734",
+      "title": "质量报告 eval-20260720011734",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260720011734/SKILL.md"
+    },
+    {
       "candidateId": "candidate-eval-20260621153509",
       "status": "pending-review",
       "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/candidates/candidate-eval-20260621153509/candidate.json",
-      "sourceKind": "quality-report",
+      "sourceKind": "diagnostic-report",
       "sourceRef": "candidate-eval-20260621153509",
-      "title": "质量报告 eval-20260713151529",
-      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260621153509/SKILL.md"
+      "title": "围绕 package.json 等 11 个文件的实现经验",
+      "draftSkillPath": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260621153509/SKILL.md"
     },
     {
       "candidateId": "candidate-eval-20260706202136",
@@ -701,14 +710,20 @@
   ],
   "drafts": [
     {
-      "skillName": "openprd-experience-quality-candidate-eval-20260621153509",
-      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260621153509/SKILL.md",
-      "candidateId": "candidate-eval-20260621153509",
+      "skillName": "openprd-experience-quality-candidate-eval-20260720011734",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260720011734/SKILL.md",
+      "candidateId": "candidate-eval-20260720011734",
       "status": "pending-review"
     },
     {
       "skillName": "openprd-experience-diagnostic-candidate-eval-20260621153509",
       "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-diagnostic-candidate-eval-20260621153509/SKILL.md",
+      "candidateId": "candidate-eval-20260621153509",
+      "status": "pending-review"
+    },
+    {
+      "skillName": "openprd-experience-quality-candidate-eval-20260621153509",
+      "path": "/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/knowledge/drafts/openprd-experience-quality-candidate-eval-20260621153509/SKILL.md",
       "candidateId": "candidate-eval-20260621153509",
       "status": "pending-review"
     },

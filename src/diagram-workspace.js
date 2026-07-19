@@ -95,20 +95,22 @@ async function getDiagramReviewState(ws, snapshot) {
   const targetStatus = normalizeDiagramReviewStatus(target?.metadata?.reviewStatus);
   const targetExists = Boolean(target);
 
-  const shouldGateFreeze = complexity.needed && (!targetExists || targetStatus !== 'confirmed');
+  const attentionNeeded = complexity.needed && (!targetExists || targetStatus !== 'confirmed');
   let reason = complexity.reason;
-  if (shouldGateFreeze && targetExists && targetStatus === 'needs-revision') {
-    reason = `The ${preferred} diagram exists but is marked needs-revision and should be updated before freeze.`;
-  } else if (shouldGateFreeze && targetExists && targetStatus === 'pending-confirmation') {
-    reason = `The ${preferred} diagram exists but is still pending confirmation before freeze.`;
-  } else if (shouldGateFreeze && !targetExists) {
-    reason = `A ${preferred} diagram has not been generated yet and should be reviewed before freeze.`;
+  if (attentionNeeded && targetExists && targetStatus === 'needs-revision') {
+    reason = `The ${preferred} diagram is marked needs-revision and remains background review attention; it does not block freeze or implementation.`;
+  } else if (attentionNeeded && targetExists && targetStatus === 'pending-confirmation') {
+    reason = `The ${preferred} diagram is pending review as background attention; it does not block freeze or implementation.`;
+  } else if (attentionNeeded && !targetExists) {
+    reason = `A ${preferred} diagram would improve reviewability, but its absence does not block freeze or implementation.`;
   }
 
   return {
     preferredType: preferred,
     needed: complexity.needed,
-    shouldGateFreeze,
+    shouldGateFreeze: false,
+    attentionNeeded,
+    blocking: false,
     reason,
     architecture: {
       exists: Boolean(architecture),

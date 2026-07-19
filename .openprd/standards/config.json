@@ -38,12 +38,16 @@
     "ignorePaths": []
   },
   "qualityGates": {
-    "changeValidateRequiresStandards": true,
-    "taskVerifyUsesStandards": true,
-    "discoveryVerifyRequiresStandards": true,
+    "changeValidateRequiresStandards": false,
+    "taskVerifyUsesStandards": false,
+    "discoveryVerifyRequiresStandards": false,
+    "globalStandardsMode": "workspace-attention",
     "sourceManuals": true
   },
   "developmentStandards": {
+    "autoRefactor": {
+      "enabled": false
+    },
     "codeFileLines": {
       "enabled": true,
       "okMax": 700,

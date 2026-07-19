@@ -75,8 +75,8 @@ function printStatus(ws, report, guidance, json) {
     activeEngagementStatus: ws.data.currentState?.status ?? 'unknown',
     scenario: guidance?.clarification?.scenario?.label ?? null,
     userParticipationMode: guidance?.clarification?.scenario?.userParticipation ?? null,
-    currentGate: guidance?.gates?.currentGate ?? null,
-    upcomingGate: guidance?.gates?.upcomingGate ?? null,
+    currentStage: guidance?.gates?.currentStage ?? guidance?.gates?.currentGate ?? null,
+    upcomingStage: guidance?.gates?.upcomingStage ?? guidance?.gates?.upcomingGate ?? null,
     projectRelease: projectRelease
       ? {
         enabled: projectRelease.enabled,
@@ -115,11 +115,11 @@ function printStatus(ws, report, guidance, json) {
   if (summary.userParticipationMode) {
     console.log(`用户参与模式: ${summary.userParticipationMode}`);
   }
-  if (summary.currentGate) {
-    console.log(`当前门禁: ${summary.currentGate}`);
+  if (summary.currentStage) {
+    console.log(`当前建议: ${summary.currentStage}`);
   }
-  if (summary.upcomingGate) {
-    console.log(`后续门禁: ${summary.upcomingGate}`);
+  if (summary.upcomingStage) {
+    console.log(`后续参考: ${summary.upcomingStage}`);
   }
   if (summary.learningReview) {
     console.log(`复盘学习模式: ${summary.learningReview.enabled !== false ? '开启' : '关闭'}`);
@@ -203,16 +203,16 @@ function printClarifyResult(result, json) {
 
   const projectFraming = result.intakeReflection?.projectContext?.projectFraming ?? null;
 
-  console.log(`需要澄清: ${result.ws.workspaceRoot}`);
+  console.log(`需求补充建议: ${result.ws.workspaceRoot}`);
   console.log(`场景: ${result.clarification.scenario.label}`);
   console.log(`用户参与: ${result.clarification.scenario.userParticipation}`);
-  console.log(`待确认关键信息: ${result.clarification.missingRequiredFields}`);
-  console.log(`待确认问题: ${result.clarification.mustAskUser.length}`);
+  console.log(`待补基础字段: ${result.clarification.missingRequiredFields}`);
+  console.log(`高价值待澄清点: ${result.clarification.mustAskUser.length}`);
   if (result.clarifyPresentation) {
     console.log(`澄清呈现: ${result.clarifyPresentation.label}`);
     console.log(`呈现原因: ${result.clarifyPresentation.reason}`);
   }
-  console.log('建议先确认的问题:');
+  console.log('建议优先补充（不阻断）:');
   for (const item of result.clarification.mustAskUser) {
     console.log(`- ${item.prompt}`);
   }
@@ -233,7 +233,7 @@ function printClarifyResult(result, json) {
     for (const line of result.inlineClarification.lines) {
       console.log(line);
     }
-    console.log('无需打开 HTML；请把上面的项目画像、目标、范围、非目标和验收方式压缩给用户确认。');
+    console.log('无需打开 HTML；请用简短摘要说明项目画像、目标、范围、非目标、验收方式和当前可逆假设，用户后续可直接覆盖，不形成确认停顿。');
   }
   if (result.clarification.canInferLater.length > 0) {
     console.log('之后可以再补充或细化:');

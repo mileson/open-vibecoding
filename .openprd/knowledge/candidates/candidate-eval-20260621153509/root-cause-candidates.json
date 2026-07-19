@@ -31,5 +31,38 @@
   },
   {
     "title": "Inspect src/adapters/index.js"
+  },
+  {
+    "title": "Inspect package.json"
+  },
+  {
+    "title": "Inspect scripts/dev-check-wrapup-copy.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-codex-isolated-worker.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-dev-check.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-github-release-notes.mjs"
+  },
+  {
+    "title": "Inspect scripts/openprd-review-presentation.mjs"
+  },
+  {
+    "title": "Inspect scripts/quality-perf-check.mjs"
+  },
+  {
+    "title": "Inspect src/adapters/adapter-spi.js"
+  },
+  {
+    "title": "Inspect src/adapters/capability-envelope.js"
+  },
+  {
+    "title": "Inspect src/adapters/event-normalizer.js"
+  },
+  {
+    "title": "Inspect src/adapters/index.js"
   }
 ]

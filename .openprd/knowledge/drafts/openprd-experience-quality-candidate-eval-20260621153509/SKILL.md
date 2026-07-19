@@ -15,7 +15,7 @@ use_when: Use when the current task overlaps this draft project experience and y
 - 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。
 - 这次改动直接影响 Agent / harness / hook / skill 行为，后续很容易再次踩到同类判断问题。
 - 这次修复已经带有验证或收尾证据，适合尽快抽象成项目级研发经验。
-- doctor-green: doctor passed
+- doctor-green: doctor integration, structure, and standards passed
 - quality-verify: quality production-ready | touched: README.md, package.json, scripts/dev-check-wrapup-copy.mjs, scripts/openprd-codex-isolated-worker.mjs, scripts/openprd-dev-check.mjs, scripts/openprd-github-release-notes.mjs
 - dev-check: dev-check attention=5, warning=7 | touched: src/adapters/adapter-spi.js, src/adapters/capability-envelope.js, src/adapters/event-normalizer.js, src/adapters/index.js, src/adapters/install-safety.js, src/agent-canonical-content.js
 - quality-verify: quality needs-attention | attention gates: feature-coverage | touched: README.md, package.json, scripts/dev-check-wrapup-copy.mjs, scripts/openprd-codex-isolated-worker.mjs, scripts/openprd-dev-check.mjs, scripts/openprd-github-release-notes.mjs
@@ -37,7 +37,7 @@ use_when: Use when the current task overlaps this draft project experience and y
 
 - 项目经验候选与诊断包
 - 待确认的项目经验草案
-- 验证结论: doctor passed
+- 验证结论: doctor integration, structure, and standards passed
 - 可复用的验证链路与收尾动作
 
 ## 下次触发时先看什么
@@ -53,7 +53,7 @@ use_when: Use when the current task overlaps this draft project experience and y
 - `src/adapters/capability-envelope.js`
 - `src/adapters/event-normalizer.js`
 - `src/adapters/index.js`
-- `/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260713151529.json`
+- `/Users/chaojifeng/Projects/harness-engineer/openprd/.openprd/quality/reports/eval-20260719232013.json`
 
 ## 不要直接套用
 
@@ -67,7 +67,7 @@ use_when: Use when the current task overlaps this draft project experience and y
 
 ## 验证方式
 
-- doctor passed
+- doctor integration, structure, and standards passed
 - quality production-ready
 - dev-check attention=5, warning=7
 - quality needs-attention

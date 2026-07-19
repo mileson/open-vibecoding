@@ -73,9 +73,9 @@ function printStandardsResult(result, json) {
   const candidates = result.manualReport?.externalReferenceCandidates ?? [];
   if (candidates.length > 0) {
     console.log('外部参考源码候选:');
-    console.log('请先询问用户这些目录是否只作为外部参考；用户确认后再运行归类命令。');
+    console.log('这些候选只是后台建议，不阻断当前任务。Agent 先核验实际归属；证据明确时可归类，证据不足时保留候选。');
     for (const candidate of candidates) {
-      console.log(`- ${candidate.path}: ${candidate.missingFiles} 个文件、${candidate.missingFolders} 个文件夹缺说明书；原因: ${candidate.reason}；建议确认后运行 ${candidate.suggestedCommand}`);
+      console.log(`- ${candidate.path}: ${candidate.missingFiles} 个文件、${candidate.missingFolders} 个文件夹缺说明书；原因: ${candidate.reason}；核验归属后可运行 ${candidate.suggestedCommand}`);
     }
   }
 }
@@ -87,15 +87,16 @@ function printDevelopmentStandardsResult(result, json) {
   }
 
   if (result.action === 'dev-check-auto-refactor') {
-    console.log(`OpenPrd dev-check 自动优化: 已${result.autoRefactor?.enabled ? '开启' : '关闭'}`);
-    console.log(`当前模式: ${result.autoRefactor?.enabled ? '自动执行优化（OpenPRD 自动优化报告）' : '仅推荐（后续建议）'}`);
+    console.log(`OpenPrd dev-check 主动结构优化建议: 已${result.autoRefactor?.enabled ? '开启' : '关闭'}`);
+    console.log(`当前模式: ${result.autoRefactor?.enabled ? '同范围内主动建议' : '普通建议'}`);
+    console.log('该设置不会强制扩大当前任务范围。');
     console.log(`配置文件: ${result.configPath}`);
     return;
   }
 
-  const autoMode = result.autoRefactor?.enabled !== false;
-  console.log(`OpenPrd ${autoMode ? '自动优化报告' : '后续建议'}: ${result.ok ? '完成' : '失败'}`);
-  console.log(`自动优化: ${autoMode ? '开启（超行文件本轮直接拆分，收口附开关确认）' : '关闭（仅输出拆分推荐）'}`);
+  const autoMode = result.autoRefactor?.enabled === true;
+  console.log(`OpenPrd ${autoMode ? '结构优化建议' : '后续建议'}: ${result.ok ? '完成' : '失败'}`);
+  console.log(`结构建议: ${autoMode ? '主动（仅限当前目标同范围，不阻断任务）' : '普通（仅提示，不阻断任务）'}`);
   const attentionFiles = result.files.filter((file) => ['attention', 'warning', 'error'].includes(file.status));
   if (attentionFiles.length > 0) {
     console.log(`${autoMode ? '问题级别' : '关注程度'}: 🟡 低风险｜建议留意，🟠 中风险｜建议优先关注，🔴 高风险｜需要先处理。`);
@@ -107,10 +108,10 @@ function printDevelopmentStandardsResult(result, json) {
     console.log(`- ${file.statusLabel ?? file.status}: ${file.path} (${lineText})`);
     console.log(`  ${file.nextAction}`);
   }
-  if (result.wrapUp?.required && result.wrapUp.markdownTable) {
+  if (result.wrapUp?.recommended && result.wrapUp.markdownTable) {
     console.log(result.wrapUp.markdownBlock ?? result.wrapUp.markdownTable);
   }
-  if (result.wrapUp?.required && result.wrapUp.switchHint) {
+  if (result.wrapUp?.recommended && result.wrapUp.switchHint) {
     console.log(`- 开关提示: ${result.wrapUp.switchHint}`);
   }
   if (result.visualEvidence?.required) {
@@ -187,7 +188,11 @@ function printQualityResult(result, json) {
   if (result.report) {
     console.log(`质量状态: ${result.report.summary.status}`);
     console.log(`生产就绪: ${result.report.readiness.productionReady ? '是' : '否'}`);
-    console.log(`执行模式: ${result.report.readiness.enforcement}`);
+    const effectiveEnforcement = result.report.readiness.effectiveEnforcement ?? result.effectiveEnforcement ?? null;
+    console.log(`整体就绪声明模式: ${effectiveEnforcement?.mode ?? result.report.readiness.enforcement}`);
+    if (effectiveEnforcement?.source) {
+      console.log(`生效来源: ${effectiveEnforcement.source}`);
+    }
     if (result.report.qualityPolicy) {
       console.log(`场景标签: ${result.report.qualityPolicy.scenarioTags.join(', ')}`);
       console.log(`必需门禁: ${result.report.qualityPolicy.requiredGates.join(', ') || '无'}`);

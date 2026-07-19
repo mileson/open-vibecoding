@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { listOpenSpecTaskWorkspace } from './openspec/execute.js';
 
 const PLACEHOLDER_TEXT = /^待(补充|澄清|确认)/u;
 
@@ -13,20 +14,20 @@ export const GUIDE_STAGES = [
   {
     id: 'draft',
     title: '需求摘要',
-    description: '把已确认的信息整理成一份可评审的 PRD 草稿。',
+    description: '把当前可验证信息和可逆假设整理成一份 PRD 草稿。',
     nextAction: '让 Agent 运行 openprd synthesize，生成 PRD 草稿和评审页面。',
   },
   {
     id: 'review',
-    title: '评审确认',
-    description: '打开 review.html，逐块确认主流程、功能、护栏和风险。',
-    nextAction: '打开评审页面逐块看完，用底部按钮告诉 Agent「认可并继续」或「需要调整」。',
+    title: '后台评审记录',
+    description: 'Agent 用 review.html 记录主流程、功能、护栏和风险；它不是实现授权门禁。',
+    nextAction: '让 Agent 在后台生成或更新 review.html；只有真实不可逆歧义才需要提问。',
   },
   {
     id: 'direction',
-    title: '交互方向选择',
-    description: '界面类需求会给出 2 到 4 个交互稿方向，选定一个再继续。',
-    nextAction: '在评审页面或画布里比较各方向，点「选这个方向」把选择发回 Agent。',
+    title: '交互方向参考',
+    description: '界面类需求会给出 2 到 4 个交互稿方向，Agent 采用可逆默认方向继续，用户后续可覆盖。',
+    nextAction: '让 Agent 展示候选并说明默认方向；无需等待选择即可继续当前安全范围。',
   },
   {
     id: 'tasks',
@@ -56,12 +57,6 @@ async function readJson(filePath) {
   } catch {
     return null;
   }
-}
-
-function taskProgressFromMarkdown(text) {
-  const done = (text.match(/^\s*-\s*\[x\]/gim) ?? []).length;
-  const open = (text.match(/^\s*-\s*\[ \]/gim) ?? []).length;
-  return { done, total: done + open };
 }
 
 async function latestQualityReadiness(projectRoot) {
@@ -103,16 +98,20 @@ export async function guideWorkspace(projectRoot) {
   const activeChange = changesState?.activeChange ?? null;
   let taskProgress = null;
   if (activeChange) {
-    const tasksText = await fs.readFile(
-      path.join(resolvedRoot, '.openprd', 'changes', activeChange, 'tasks.md'),
-      'utf8',
-    ).catch(() => null);
-    if (tasksText !== null) {
-      taskProgress = taskProgressFromMarkdown(tasksText);
+    const taskState = await listOpenSpecTaskWorkspace(resolvedRoot, { change: activeChange }).catch(() => null);
+    if (taskState) {
+      const blockingTotal = Number(taskState.summary?.blockingTotal ?? taskState.summary?.total ?? 0);
+      const blockingPending = Number(taskState.summary?.blockingPending ?? taskState.summary?.pending ?? 0);
+      taskProgress = {
+        done: Math.max(0, blockingTotal - blockingPending),
+        total: blockingTotal,
+        pending: blockingPending,
+        backgroundPending: Number(taskState.summary?.backgroundPending ?? 0),
+      };
     }
   }
-  const tasksReady = reviewConfirmed && taskProgress !== null && taskProgress.total > 0;
-  const buildDone = tasksReady && taskProgress.done === taskProgress.total;
+  const tasksReady = taskProgress !== null;
+  const buildDone = tasksReady && taskProgress.pending === 0;
 
   const readiness = await latestQualityReadiness(resolvedRoot);
   const wrappedUp = buildDone && readiness?.productionReady === true;
@@ -120,8 +119,8 @@ export async function guideWorkspace(projectRoot) {
   const completion = {
     clarify: clarified,
     draft: drafted,
-    review: reviewConfirmed,
-    direction: directionApplicable ? directionChosen : null,
+    review: drafted,
+    direction: directionApplicable ? true : null,
     tasks: tasksReady,
     build: buildDone,
     wrapup: wrappedUp,
@@ -149,18 +148,22 @@ export async function guideWorkspace(projectRoot) {
       detail = '问题定义已记录。';
     } else if (spec.id === 'draft' && drafted) {
       detail = `已生成第 ${prdVersion} 版需求摘要。`;
-    } else if (spec.id === 'review' && reviewStatus) {
-      detail = reviewConfirmed ? `评审版本 ${versionId} 已确认。` : `评审版本 ${versionId} 等待确认。`;
+    } else if (spec.id === 'review' && drafted) {
+      detail = reviewStatus
+        ? (reviewConfirmed
+            ? `评审版本 ${versionId} 已记录用户选择。`
+            : `评审版本 ${versionId} 已作为后台材料记录，不阻断实现。`)
+        : '评审材料待 Agent 后台补齐，不阻断任务拆解或实现。';
     } else if (spec.id === 'direction') {
       if (!directionApplicable) {
         detail = '本次需求不涉及界面方向选择，自动跳过。';
       } else if (directionChosen) {
         detail = `已选定方向「${reviewStatus.designDirection.title ?? reviewStatus.designDirection.id}」。`;
       } else {
-        detail = `${designDirections.length} 个交互方向等待选择。`;
+        detail = `${designDirections.length} 个交互方向可供参考；Agent 可采用可逆默认方向继续。`;
       }
     } else if (spec.id === 'tasks' && activeChange && taskProgress) {
-      detail = `变更 ${activeChange} 已有 ${taskProgress.total} 个任务。`;
+      detail = `变更 ${activeChange} 已有 ${taskProgress.total} 个当前动作任务${taskProgress.backgroundPending > 0 ? `，另有 ${taskProgress.backgroundPending} 个后台维护项` : ''}。`;
     } else if (spec.id === 'build' && taskProgress) {
       detail = `任务进度 ${taskProgress.done}/${taskProgress.total}。`;
     } else if (spec.id === 'wrapup' && readiness && buildDone) {

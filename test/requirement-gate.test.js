@@ -27,7 +27,7 @@ import {
 process.env.OPENPRD_HOME = path.join(os.tmpdir(), 'openprd-test-home-requirement-gate');
 
 describe('Codex requirement gate', () => {
-  test('synthesize blocks active requirement gate when no fresh capture or explicit PRD fields exist', async () => {
+  test('synthesize reports active requirement capture debt as nonblocking workspace attention', async () => {
     const project = await makeTempProject();
     await initWorkspace(project, { templatePack: 'agent' });
 
@@ -48,10 +48,10 @@ describe('Codex requirement gate', () => {
       requiredFlow: ['clarify', 'capture', 'synthesize', 'review', 'change-generate', 'tasks', 'implementation'],
     }, null, 2));
 
-    await assert.rejects(
-      () => synthesizeWorkspace(project, {}),
-      /current\.json 还没有记录本轮确认答案/
-    );
+    const attentionOnly = await synthesizeWorkspace(project, {});
+    assert.equal(attentionOnly.snapshot.versionId, 'v0002');
+    assert.ok(attentionOnly.workspaceAttention.some((item) => item.kind === 'requirement-capture'));
+    assert.ok(attentionOnly.workspaceAttention.every((item) => item.blocking === false));
 
     await captureFreshRequirementState(project, '用户已经确认 AI 生产线命名需要保留空格。');
     await fs.writeFile(path.join(project, '.openprd', 'harness', 'requirement-gate.json'), JSON.stringify({
@@ -72,7 +72,7 @@ describe('Codex requirement gate', () => {
       productType: 'agent',
     });
     assert.equal(explicit.snapshot.title, 'AI 生产线命名空格调整');
-    assert.equal(explicit.snapshot.versionId, 'v0002');
+    assert.equal(explicit.snapshot.versionId, 'v0003');
   });
 
   test('Codex hook keeps non-requirement prompts outside the requirement gate', async () => {
@@ -124,13 +124,14 @@ describe('Codex requirement gate', () => {
     assert.ok(imageGenerationPayload.hookSpecificOutput.additionalContext.includes('付费生图 API'));
     assert.ok(imageGenerationPayload.hookSpecificOutput.additionalContext.includes('独立素材输出（standalone asset）'));
     assert.ok(imageGenerationPayload.hookSpecificOutput.additionalContext.includes('候选效果图'));
-    assert.ok(imageGenerationPayload.hookSpecificOutput.additionalContext.includes('是否符合预期'));
-    assert.ok(imageGenerationPayload.hookSpecificOutput.additionalContext.includes('后续效果图/实现截图对比'));
+    assert.ok(imageGenerationPayload.hookSpecificOutput.additionalContext.includes('可逆默认方向'));
+    assert.ok(imageGenerationPayload.hookSpecificOutput.additionalContext.includes('用户明确指定方向时再覆盖'));
     assert.equal(await pathExists(path.join(project, '.openprd', 'harness', 'requirement-gate.json')), false);
     const imageStopReminder = runCodexHook(project, 'Stop', {});
     assert.equal(imageStopReminder.continue, true);
     assert.ok(imageStopReminder.hookSpecificOutput.additionalContext.includes('候选效果图'));
-    assert.ok(imageStopReminder.hookSpecificOutput.additionalContext.includes('是否按此继续后续实现'));
+    assert.ok(imageStopReminder.hookSpecificOutput.additionalContext.includes('可逆默认方向'));
+    assert.ok(imageStopReminder.hookSpecificOutput.additionalContext.includes('用户明确选择时再覆盖'));
 
     const largeUiDirectionPayload = runCodexHook(project, 'UserPromptSubmit', {
       prompt: '这个设置页面界面改动比较大，先用 Computer Use 截产品内页面，再给我三种设计方向效果图确认。',
@@ -198,7 +199,7 @@ describe('Codex requirement gate', () => {
     assert.ok(riskyBugfixPromptPayload.hookSpecificOutput.additionalContext.includes('runs in background'));
     const riskyBugfixGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'requirement-gate.json'), 'utf8'));
     assert.equal(riskyBugfixGate.active, true);
-    assert.equal(riskyBugfixGate.status, 'requires-clarification');
+    assert.equal(riskyBugfixGate.status, 'requirement-background-attention');
 
     await fs.rm(path.join(project, '.openprd', 'harness', 'requirement-gate.json'));
 
@@ -292,7 +293,7 @@ describe('Codex requirement gate', () => {
 
     const gate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'requirement-gates', `${sessionId}.json`), 'utf8'));
     assert.equal(gate.active, true);
-    assert.equal(gate.status, 'requires-clarification');
+    assert.equal(gate.status, 'requirement-background-attention');
   });
 
   test('Codex hook keeps semantic requirement maintenance in the background', async () => {
@@ -305,7 +306,7 @@ describe('Codex requirement gate', () => {
 
     const requirementGatePath = path.join(project, '.openprd', 'harness', 'requirement-gate.json');
     let requirementGate = JSON.parse(await fs.readFile(requirementGatePath, 'utf8'));
-    assert.equal(requirementGate.approvalPolicy.reviewPolicy, 'required');
+    assert.equal(requirementGate.approvalPolicy.reviewPolicy, 'background-record');
 
     const blockedCapturePayload = runCodexHook(project, 'PreToolUse', {
       tool_name: 'Bash',
@@ -313,7 +314,6 @@ describe('Codex requirement gate', () => {
     });
     assert.equal(blockedCapturePayload.decision, undefined);
     assert.equal(blockedCapturePayload.continue, true);
-    assert.ok(JSON.stringify(blockedCapturePayload).includes('does not block'));
 
     const allowedNormalizedCapturePayload = runCodexHook(project, 'PreToolUse', {
       tool_name: 'Bash',
@@ -328,7 +328,6 @@ describe('Codex requirement gate', () => {
     });
     assert.equal(blockedSynthesizePayload.decision, undefined);
     assert.equal(blockedSynthesizePayload.continue, true);
-    assert.ok(JSON.stringify(blockedSynthesizePayload).includes('does not block'));
 
     const clarificationConfirmPayload = runCodexHook(project, 'UserPromptSubmit', {
       prompt: '确认',
@@ -336,8 +335,8 @@ describe('Codex requirement gate', () => {
     assert.equal(clarificationConfirmPayload.continue, true);
 
     requirementGate = JSON.parse(await fs.readFile(requirementGatePath, 'utf8'));
-    assert.equal(requirementGate.status, 'clarification-confirmed');
-    assert.ok(requirementGate.clarificationConfirmedAt);
+    assert.equal(requirementGate.status, 'requirement-background-maintenance');
+    assert.equal(requirementGate.clarificationConfirmedAt, undefined);
 
     const allowedCapturePayload = runCodexHook(project, 'PreToolUse', {
       tool_name: 'Bash',
@@ -355,7 +354,7 @@ describe('Codex requirement gate', () => {
     assert.equal(allowedSynthesizePayload.continue, true);
   });
 
-  test('Codex hook treats short clarification follow-ups as confirmation', async () => {
+  test('Codex hook keeps short follow-ups in the same background requirement lane', async () => {
     const { project } = await makeCodexHookProject();
 
     const requirementPromptPayload = runCodexHook(project, 'UserPromptSubmit', {
@@ -370,10 +369,10 @@ describe('Codex requirement gate', () => {
 
     const requirementGatePath = path.join(project, '.openprd', 'harness', 'requirement-gate.json');
     const requirementGate = JSON.parse(await fs.readFile(requirementGatePath, 'utf8'));
-    assert.equal(requirementGate.status, 'clarification-confirmed');
+    assert.equal(requirementGate.status, 'requirement-background-maintenance');
   });
 
-  test('synthesize blocks clarification-confirmed lanes until required facts are rewritten as user-confirmed', async () => {
+  test('synthesize keeps unconfirmed canonical facts as attention until they are rewritten as user-confirmed', async () => {
     const project = await makeTempProject();
     await initWorkspace(project, { templatePack: 'consumer' });
 
@@ -394,24 +393,24 @@ describe('Codex requirement gate', () => {
       source: 'agent-inferred',
     });
 
-    await assert.rejects(
-      () => synthesizeWorkspace(project, {
-        title: '个人博客网站第一版',
-        owner: 'OpenPrd',
-        problemStatement: '从零实现一个个人博客网站。',
-        whyNow: '用户已经确认先做第一版博客站。',
-        primaryUsers: ['博客访问者'],
-        goals: ['展示个人内容与文章'],
-        successMetrics: ['访问者可打开首页并进入文章详情'],
-        acceptanceGoals: ['首页和文章详情可访问'],
-        inScope: ['首页与文章详情'],
-        outOfScope: ['评论系统'],
-        primaryFlows: ['访问首页并打开文章详情'],
-        functional: ['展示个人介绍与文章内容'],
-        productType: 'consumer',
-      }),
-      /当前需求摘要虽已确认|canonical|user-confirmed/
-    );
+    const attentionOnly = await synthesizeWorkspace(project, {
+      title: '个人博客网站第一版',
+      owner: 'OpenPrd',
+      problemStatement: '从零实现一个个人博客网站。',
+      whyNow: '用户已经确认先做第一版博客站。',
+      primaryUsers: ['博客访问者'],
+      goals: ['展示个人内容与文章'],
+      successMetrics: ['访问者可打开首页并进入文章详情'],
+      acceptanceGoals: ['首页和文章详情可访问'],
+      inScope: ['首页与文章详情'],
+      outOfScope: ['评论系统'],
+      primaryFlows: ['访问首页并打开文章详情'],
+      functional: ['展示个人介绍与文章内容'],
+      productType: 'consumer',
+    });
+    assert.equal(attentionOnly.snapshot.versionId, 'v0001');
+    assert.ok(attentionOnly.workspaceAttention.some((item) => item.kind === 'requirement-capture'));
+    assert.ok(attentionOnly.workspaceAttention.every((item) => item.blocking === false));
 
     await captureWorkspace(project, {
       field: 'problem.problemStatement',
@@ -440,10 +439,10 @@ describe('Codex requirement gate', () => {
       functional: ['展示个人介绍与文章内容'],
       productType: 'consumer',
     });
-    assert.equal(synthesized.snapshot.versionId, 'v0001');
+    assert.equal(synthesized.snapshot.versionId, 'v0002');
   });
 
-  test('synthesize blocks clarification-confirmed lanes when the requirement lane still recommends classify or interview', async () => {
+  test('synthesize reports incomplete requirement lanes as nonblocking attention', async () => {
     const project = await makeTempProject();
     await initWorkspace(project, { templatePack: 'consumer' });
 
@@ -469,24 +468,26 @@ describe('Codex requirement gate', () => {
       source: 'user-confirmed',
     });
 
-    await assert.rejects(
-      () => synthesizeWorkspace(project, {
-        title: '个人博客网站第一版',
-        owner: 'OpenPrd',
-        problemStatement: '从零实现一个个人博客网站。',
-        whyNow: '用户已经确认先做第一版博客站。',
-        primaryUsers: ['博客访问者'],
-        goals: ['展示个人内容与文章'],
-        successMetrics: ['访问者可打开首页并进入文章详情'],
-        acceptanceGoals: ['首页和文章详情可访问'],
-        inScope: ['首页与文章详情'],
-        outOfScope: ['评论系统'],
-        primaryFlows: ['访问首页并打开文章详情'],
-        functional: ['展示个人介绍与文章内容'],
-        productType: 'consumer',
-      }),
-      /还没有离开需求补齐阶段|建议先执行: openprd (clarify|classify|interview)/
-    );
+    const synthesized = await synthesizeWorkspace(project, {
+      title: '个人博客网站第一版',
+      owner: 'OpenPrd',
+      problemStatement: '从零实现一个个人博客网站。',
+      whyNow: '用户已经确认先做第一版博客站。',
+      primaryUsers: ['博客访问者'],
+      goals: ['展示个人内容与文章'],
+      successMetrics: ['访问者可打开首页并进入文章详情'],
+      acceptanceGoals: ['首页和文章详情可访问'],
+      inScope: ['首页与文章详情'],
+      outOfScope: ['评论系统'],
+      primaryFlows: ['访问首页并打开文章详情'],
+      functional: ['展示个人介绍与文章内容'],
+      productType: 'consumer',
+    });
+    const completenessAttention = synthesized.workspaceAttention
+      .find((item) => item.kind === 'requirement-completeness');
+    assert.equal(synthesized.snapshot.versionId, 'v0001');
+    assert.equal(completenessAttention?.blocking, false);
+    assert.match(completenessAttention?.nextAction ?? '', /clarify-user|classify|interview/);
   });
 
   test('Codex hook injects matched project knowledge skills without mutating adoption state', async () => {
@@ -692,8 +693,20 @@ describe('Codex requirement gate', () => {
     assert.equal(executionAuthorizedGate.status, 'execution-authorized');
   });
 
-  test('run context keeps cold-start implementation prompts in clarify-summary mode', async () => {
+  test('run context keeps requirement maintenance in the background after explicit implementation intent', async () => {
     const { project } = await makeCodexHookProject();
+
+    const context = await runWorkspace(project, {
+      context: true,
+      message: '请帮我实现一个个人博客网站',
+    });
+    const interactionContract = context.contextCapsule.entries
+      .find((entry) => entry.id === 'agent-interaction-contract');
+    assert.equal(context.executionIntent.explicit, true);
+    assert.equal(context.executionIntent.repeatedAuthorizationRequired, false);
+    assert.equal(context.recommendation.executionConfirmationChecklist, null);
+    assert.equal(interactionContract.value.replyBoundary, null);
+    assert.equal(interactionContract.value.approvalBoundary, null);
 
     const result = spawnSync(process.execPath, [
       path.resolve('bin/openprd.js'),
@@ -708,9 +721,11 @@ describe('Codex requirement gate', () => {
     });
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /建议下一步: (继续本轮需求入口澄清|clarify-user)/);
-    assert.match(result.stdout, /当前回复目标: 先在对话里输出 requirement 摘要或只追问 1 个最高价值澄清点/);
-    assert.match(result.stdout, /不要承诺“按默认方案直接实现”/);
-    assert.match(result.stdout, /不要把“请帮我实现\/继续实现”当成跳过 requirement 摘要确认的依据/);
+    assert.match(result.stdout, /用户已明确要求执行/);
+    assert.match(result.stdout, /后台维护/);
+    assert.match(result.stdout, /不重复索取授权/);
+    assert.doesNotMatch(result.stdout, /不要承诺“按默认方案直接实现”/);
+    assert.doesNotMatch(result.stdout, /开始动手前提/);
 
   });
 
@@ -744,7 +759,8 @@ describe('Codex requirement gate', () => {
     assert.match(result.stdout, /先不要急着加 `--no-real-images`/);
     assert.match(result.stdout, /先把它当主参考源/);
     assert.match(result.stdout, /Patch Mode/);
-    assert.match(result.stdout, /下一步必须出现真实写文件动作/);
+    assert.match(result.stdout, /下一步就应进入真实写入口/);
+    assert.match(result.stdout, /hook 只提供 Patch Mode attention，不阻断用户已要求的写入/);
     assert.match(result.stdout, /index\.next\.html/);
     assert.match(result.stdout, /不要删除 `index.html` 后重起/);
     assert.match(result.stdout, /主要占位已清掉/);

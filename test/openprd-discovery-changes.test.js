@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { activateOpenPrdChangeWorkspace, closeOpenPrdChangeWorkspace } from '../src/openspec/change-lifecycle.js';
+import { isOpenSpecTaskBlocking } from '../src/openspec/tasks.js';
 
 import {
   assert,
@@ -92,6 +94,19 @@ import {
   synthesizeWorkspace,
   writeMinimalChange,
 } from './helpers/openprd-test-helpers.js';
+
+test('explicit blocking metadata keeps a user-requested documentation task in current-task validation', () => {
+  assert.equal(isOpenSpecTaskBlocking({
+    metadata: { type: 'documentation', blocking: 'true' },
+  }), true);
+  assert.equal(isOpenSpecTaskBlocking({
+    metadata: { type: 'documentation', blocking: 'false' },
+  }), false);
+  assert.equal(isOpenSpecTaskBlocking({
+    metadata: { type: 'documentation' },
+  }), false);
+});
+
 test('openprd discovery initializes a resumable coverage run', async () => {
   const project = await makeTempProject();
   await fs.mkdir(path.join(project, 'src'), { recursive: true });
@@ -150,11 +165,14 @@ test('openprd discovery initializes a resumable coverage run', async () => {
     .map((line) => JSON.parse(line));
   assert.ok(persistedClaims.some((claim) => claim.id === advanced.claim.id));
 
+  await fs.rm(path.join(project, 'docs', 'basic', 'prd.md'));
   const verified = await openspecDiscoveryWorkspace(project, { verify: true });
   assert.equal(verified.verified, true);
   assert.equal(verified.ok, true);
   assert.equal(verified.verification.valid, true);
   assert.equal(verified.verification.coverage.pending, advanced.coverageMatrix.summary.pending);
+  assert.equal(verified.workspaceAttention.find((item) => item.id === 'standards')?.ok, false);
+  assert.ok(verified.workspaceAttention.find((item) => item.id === 'standards')?.errors.some((error) => error.includes('docs/basic/prd.md')));
 });
 
 test('openprd discovery ignores dependency folders and enforces task shards', async () => {
@@ -314,6 +332,13 @@ test('openprd validates change structure without external spec cli', async () =>
   assert.equal(result.valid, true);
   assert.ok(result.checks.some((check) => check.includes('OpenPrd change desktop-rebuild')));
 
+  await fs.rm(path.join(project, 'docs', 'basic', 'prd.md'));
+  const workspaceDebt = await validateOpenSpecChangeWorkspace(project, { change: 'desktop-rebuild' });
+  assert.equal(workspaceDebt.ok, true);
+  assert.equal(workspaceDebt.errors.length, 0);
+  assert.equal(workspaceDebt.workspaceAttention.find((item) => item.id === 'standards')?.ok, false);
+  assert.ok(workspaceDebt.workspaceAttention.find((item) => item.id === 'standards')?.errors.some((error) => error.includes('docs/basic/prd.md')));
+
   await fs.writeFile(path.join(changeDir, 'specs', 'desktop-shell', 'spec.md'), [
     '## 新增需求',
     '',
@@ -404,12 +429,10 @@ test('openprd generates a change from the latest prd snapshot', async () => {
     productType: 'consumer',
   });
 
-  await assert.rejects(
-    () => generateOpenSpecChangeWorkspace(project, { change: 'signup-flow' }),
-    /review\.html/,
-  );
-  await reviewWorkspace(project, { mark: 'confirmed' });
   const result = await generateOpenSpecChangeWorkspace(project, { change: 'signup-flow' });
+  assert.equal(result.reviewAttention.blocking, false);
+  assert.equal(result.reviewAttention.status, 'pending-confirmation');
+  await reviewWorkspace(project, { mark: 'confirmed' });
   assert.equal(result.ok, true);
   assert.equal(result.changeId, 'signup-flow');
   assert.ok(result.files.includes(path.join('.openprd', 'changes', 'signup-flow', 'proposal.md')));
@@ -437,6 +460,7 @@ test('openprd generates a change from the latest prd snapshot', async () => {
   assert.equal(discoveryConfig.activeChange, 'signup-flow');
   assert.ok(discoveryConfig.taskMetadata.optional.includes('execution-mode'));
   assert.ok(discoveryConfig.taskMetadata.optional.includes('write-scope'));
+  assert.ok(discoveryConfig.taskMetadata.optional.includes('blocking'));
 
   const changesState = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'state', 'changes.json'), 'utf8'));
   assert.equal(changesState.activeChange, 'signup-flow');
@@ -481,13 +505,37 @@ test('openprd applies accepted specs and archives changes', async () => {
   assert.equal(listed.activeChange, 'checkout-flow');
   assert.ok(listed.changes.some((change) => change.id === 'checkout-flow' && change.active));
 
+  await fs.rm(path.join(project, 'docs', 'basic', 'prd.md'));
   const blockedApply = await applyOpenPrdChangeWorkspace(project, { change: 'checkout-flow' });
   assert.equal(blockedApply.ok, false);
   assert.ok(blockedApply.errors.some((error) => error.includes('未完成任务')));
 
+  const taskPath = path.join(project, '.openprd', 'changes', 'checkout-flow', 'tasks.md');
+  const taskText = await fs.readFile(taskPath, 'utf8');
+  const taskBlocks = taskText.split(/(?=^- \[ \] T\d{3}\.\d+)/m);
+  await fs.writeFile(taskPath, taskBlocks.map((block) => (
+    block.includes('  - blocking: true') ? block.replace('- [ ]', '- [x]') : block
+  )).join(''));
+  const backgroundOnlyState = await listOpenSpecTaskWorkspace(project, { change: 'checkout-flow' });
+  assert.equal(backgroundOnlyState.summary.blockingPending, 0);
+  assert.ok(backgroundOnlyState.summary.backgroundPending > 0);
+  const backgroundOnlyContext = await runWorkspace(project, { context: true, message: '继续实现当前范围' });
+  assert.equal(backgroundOnlyContext.recommendation.type, 'change-review');
+  assert.equal(backgroundOnlyContext.recommendation.workspaceAttention?.blocking, false);
+  const untrackedAcceptedSpec = path.join(project, '.openprd', 'specs', 'consumer-requirements', 'spec.md');
+  await fs.mkdir(path.dirname(untrackedAcceptedSpec), { recursive: true });
+  await fs.writeFile(untrackedAcceptedSpec, '# Unknown historical accepted spec\n');
+  const conflictedApply = await applyOpenPrdChangeWorkspace(project, { change: 'checkout-flow' });
+  assert.equal(conflictedApply.ok, false);
+  assert.equal(conflictedApply.conflicts[0].code, 'untracked-accepted-spec');
+
   const applied = await applyOpenPrdChangeWorkspace(project, { change: 'checkout-flow', force: true });
   assert.equal(applied.ok, true);
   assert.ok(applied.appliedSpecs.some((spec) => spec.capability === 'consumer-requirements'));
+  assert.equal(applied.workspaceAttention.find((item) => item.id === 'standards')?.ok, false);
+  assert.equal(applied.taskState.incomplete.length, 0);
+  assert.ok(applied.taskState.backgroundIncomplete.length > 0);
+  assert.equal(applied.workspaceAttention.find((item) => item.id === 'background-change-tasks')?.blocking, false);
 
   const specs = await listAcceptedSpecsWorkspace(project);
   assert.equal(specs.specs.length, 1);
@@ -499,6 +547,37 @@ test('openprd applies accepted specs and archives changes', async () => {
   assert.equal(archived.removedSource, true);
   assert.ok(await fs.stat(path.join(project, '.openprd', 'archive', 'changes', 'checkout-flow')).then(() => true));
   assert.equal(await fs.stat(path.join(project, '.openprd', 'changes', 'checkout-flow')).then(() => true).catch(() => false), false);
+  const historicalValidation = await validateOpenSpecChangeWorkspace(project, { change: 'checkout-flow' });
+  assert.equal(historicalValidation.ok, true);
+  assert.equal(historicalValidation.valid, null);
+  assert.equal(historicalValidation.historicalContextOnly, true);
+  assert.equal(historicalValidation.workspaceAttention[0].blocking, false);
+  const historicalApply = await applyOpenPrdChangeWorkspace(project, { change: 'checkout-flow', force: true });
+  assert.equal(historicalApply.ok, false);
+  assert.equal(historicalApply.historicalContextOnly, true);
+  assert.match(historicalApply.errors[0], /不能再次应用/);
+  const historicalClose = await closeOpenPrdChangeWorkspace(project, { change: 'checkout-flow' });
+  assert.equal(historicalClose.ok, false);
+  assert.equal(historicalClose.historicalContextOnly, true);
+  const archivedProposalPath = path.join(project, '.openprd', 'archive', 'changes', 'checkout-flow', 'proposal.md');
+  const archivedProposalBefore = await fs.readFile(archivedProposalPath, 'utf8');
+  await assert.rejects(
+    () => archiveOpenPrdChangeWorkspace(project, { change: 'checkout-flow' }),
+    /不能再次归档或覆盖历史快照.*--force 也不会绕过/s,
+  );
+  await assert.rejects(
+    () => archiveOpenPrdChangeWorkspace(project, { change: 'checkout-flow', force: true }),
+    /不能再次归档或覆盖历史快照.*--force 也不会绕过/s,
+  );
+  assert.equal(await fs.readFile(archivedProposalPath, 'utf8'), archivedProposalBefore);
+  await assert.rejects(
+    () => generateOpenSpecChangeWorkspace(project, { change: 'checkout-flow' }),
+    /legacy-frozen.*新的 change id/s,
+  );
+  await assert.rejects(
+    () => activateOpenPrdChangeWorkspace(project, { change: 'checkout-flow' }),
+    /legacy-frozen.*新的当前 change/s,
+  );
 });
 
 test('openprd exposes natural change task and specs cli commands', async () => {
@@ -555,9 +634,11 @@ test('openprd exposes natural change task and specs cli commands', async () => {
   assert.ok(generatedProposal.includes('## Impact'));
   const generatedTasks = await fs.readFile(path.join(project, '.openprd', 'changes', 'profile-settings', 'tasks.md'), 'utf8');
   assert.ok(generatedTasks.includes('  - type: implementation'));
+  assert.ok(generatedTasks.includes('  - blocking: true'));
   assert.ok(generatedTasks.includes('  - type: documentation'));
+  assert.ok(generatedTasks.includes('  - blocking: false'));
   assert.ok(generatedTasks.includes('docs/basic'));
-  assert.ok(generatedTasks.includes('missing docs were added and stale docs were updated'));
+  assert.ok(generatedTasks.includes('unrelated gaps remain workspace attention'));
   assert.ok(generatedTasks.includes('openprd standards . --verify'));
   assert.ok(generatedTasks.includes('--evidence-required'));
   assert.equal(generatedTasks.includes('openprd run . --verify'), false);
@@ -565,6 +646,9 @@ test('openprd exposes natural change task and specs cli commands', async () => {
   assert.equal(/^(?:- \[ \] )?T\d{3}\.\d+\s+(Implement primary flow|Implement requirement|Validate acceptance goal|Validate non-functional requirement)\s*[:：]/m.test(generatedTasks), false);
   const taskState = await listOpenSpecTaskWorkspace(project, { change: 'profile-settings' });
   assert.ok(taskState.summary.implementation.total >= 2);
+  assert.ok(taskState.summary.blockingPending > 0);
+  assert.ok(taskState.summary.backgroundPending > 0);
+  assert.equal(taskState.nextTask.metadata.blocking, 'true');
   assert.ok(taskState.tasks.some((task) => task.metadata.type === 'implementation' && /--evidence-required\b/.test(task.metadata.verify ?? '')));
   assert.equal(taskState.tasks.some((task) => task.metadata.type === 'implementation' && task.metadata.verify === 'openprd run . --verify'), false);
   assert.equal(
@@ -1031,7 +1115,7 @@ test('loop repair-agent explicitly repairs Codex then launches the child session
   assert.equal(sessions.some((event) => event.action === 'agent-exit' && event.ok === true), true);
 });
 
-test('loop finish blocks the final task when EVO quality is not production-ready', async () => {
+test('loop finish keeps a verified committed task done when workspace EVO is not production-ready', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
   const changeDir = path.join(project, '.openprd', 'changes', 'loop-evo');
@@ -1071,12 +1155,29 @@ test('loop finish blocks the final task when EVO quality is not production-ready
 
   await initLoopWorkspace(project, { agent: 'codex' });
   await planLoopWorkspace(project, { change: 'loop-evo' });
-  const finish = await finishLoopWorkspace(project, { item: 'T001.01', commit: false });
+  for (const args of [
+    ['init'],
+    ['config', 'user.email', 'openprd@example.com'],
+    ['config', 'user.name', 'OpenPrd Test'],
+    ['add', '-A'],
+    ['commit', '-m', 'baseline'],
+  ]) {
+    const result = spawnSync('git', args, { cwd: project, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  }
+  const finish = await finishLoopWorkspace(project, { item: 'T001.01', commit: true });
 
-  assert.equal(finish.ok, false);
-  assert.ok(finish.errors.some((error) => error.includes('Final EVO quality gate')));
+  assert.equal(finish.ok, true);
+  assert.equal(finish.commit.ok, true);
+  assert.equal(finish.commit.skipped, false);
+  assert.match(finish.commit.sha, /^[a-f0-9]{7,40}$/);
   assert.equal(finish.quality.report.readiness.productionReady, false);
   assert.ok(finish.quality.report.readiness.attentionGates.includes('smoke'));
+  assert.equal(finish.workspaceAttention.kind, 'quality-readiness');
+  assert.equal(finish.workspaceAttention.scope, 'workspace-claim');
+  assert.equal(finish.workspaceAttention.blocking, false);
   const featureList = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'feature-list.json'), 'utf8'));
-  assert.equal(featureList.tasks.find((task) => task.id === 'T001.01').status, 'failed');
+  const completedTask = featureList.tasks.find((task) => task.id === 'T001.01');
+  assert.equal(completedTask.status, 'done');
+  assert.equal(completedTask.commitSha, finish.commit.sha);
 });

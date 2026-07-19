@@ -10,7 +10,9 @@
     "status": "synthesized",
     "digest": "dc988d7a94c07d2a8070968a71ddacffb374eaeee12aa85eb93231e06dd7b077",
     "workUnitId": "wu-20260524015648-6d33ded7",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 2,
@@ -23,7 +25,9 @@
     "status": "synthesized",
     "digest": "e44eccd0d6fe1a7fd962ece31187f920e1a71de76122d15b826fb0a66d934d35",
     "workUnitId": "wu-20260602113956-a99b5b88",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 3,
@@ -36,7 +40,9 @@
     "status": "synthesized",
     "digest": "f1b18bc47cbd76f784b7682483eafa24eb02230e23189dad29a2202b61544918",
     "workUnitId": "wu-20260602122244-78656aaf",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 4,
@@ -49,7 +55,9 @@
     "status": "synthesized",
     "digest": "0dbead578a9472100fb0c7cf185cd5500acd2d59830794cfa120f4f6976ee3f7",
     "workUnitId": "wu-20260602122442-e96489e2",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 5,
@@ -62,7 +70,9 @@
     "status": "synthesized",
     "digest": "7f0e2d2730982a2ae96647d2377f6204e54f8adadf1b18b05f4bc7167046c575",
     "workUnitId": "wu-20260602132835-695429e8",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 6,
@@ -75,7 +85,9 @@
     "status": "synthesized",
     "digest": "a3dbf01f4a3309d372002e417ffc2bc596b5e5c68a5a60c393547894ef72cefc",
     "workUnitId": "wu-20260607130707-4f012e44",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 7,
@@ -88,7 +100,9 @@
     "status": "synthesized",
     "digest": "d7b80133987917a5b01dae9180e307af3bb27f07eec1a7b7c237c6ae3ab03466",
     "workUnitId": "wu-20260703144525-7ca0851c",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 8,
@@ -101,7 +115,9 @@
     "status": "synthesized",
     "digest": "e1f4ff20b3ea267615a18066166840f2a353a536579ec9e9d96aae033d2f0c8b",
     "workUnitId": "wu-20260703171417-ea36f6b6",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 9,
@@ -114,7 +130,9 @@
     "status": "synthesized",
     "digest": "b03167a5e7ad80ab1291055307d5e1a8d75747f2c521f53a1c1a48a624868c7e",
     "workUnitId": "wu-20260703182619-46900486",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 10,
@@ -127,7 +145,9 @@
     "status": "synthesized",
     "digest": "fdc00ecd76e453dc9ecd1790b778c05ddcbb85220224c604ae1c973b1e21eee9",
     "workUnitId": "wu-20260703182733-89ece1ae",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 11,
@@ -140,7 +160,9 @@
     "status": "synthesized",
     "digest": "c79abbd6ff06c02edcc219570657a56a2cfe677f0fc322d4225a0295fdf9b759",
     "workUnitId": "wu-20260703182740-23297ef0",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 12,
@@ -153,7 +175,9 @@
     "status": "synthesized",
     "digest": "ecce1dcbd85b8bd72e83bfde3d020e941c6c9691a934c28cbb148e9f892aa898",
     "workUnitId": "wu-20260703182806-96de2c67",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 13,
@@ -166,7 +190,9 @@
     "status": "synthesized",
     "digest": "58693e1f976a10361989aa9d3903233f89b0b02c0718b267d5a0a12f1620237f",
     "workUnitId": "wu-20260706224842-f12588b9",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 14,
@@ -179,7 +205,9 @@
     "status": "synthesized",
     "digest": "47217811dd6896b2cb3e03bb665375ae1a4af7469fb5ed00dd8332b205f4c027",
     "workUnitId": "wu-20260706224920-24f85a4b",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 15,
@@ -192,7 +220,9 @@
     "status": "synthesized",
     "digest": "b257d949bf0be69a67952a1043c82f2ddc66b1962f70af41e99c6e5a623dcbaa",
     "workUnitId": "wu-20260707105132-a46c0606",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 16,
@@ -205,7 +235,9 @@
     "status": "synthesized",
     "digest": "ddb9b4bb6d7f695e70ebf4674607f7d9fe958a52bacc3347a1ed58ee3b3106ec",
     "workUnitId": "wu-20260707105202-93b741e2",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 17,
@@ -218,7 +250,9 @@
     "status": "synthesized",
     "digest": "9e3783650f946922422469f295ccd3e6984630ce0375d61a0cea57690a1c6db5",
     "workUnitId": "wu-20260707105303-0c5fc49f",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   },
   {
     "versionNumber": 18,
@@ -231,6 +265,8 @@
     "status": "synthesized",
     "digest": "0dee60e2458f30efa56f1b5950cf97aba66dc2aa56338a4858ef2443af7f92c8",
     "workUnitId": "wu-20260710230712-67dc688f",
-    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd"
+    "targetRoot": "/Users/chaojifeng/Projects/harness-engineer/openprd",
+    "lifecycleStatus": null,
+    "semanticMode": null
   }
 ]

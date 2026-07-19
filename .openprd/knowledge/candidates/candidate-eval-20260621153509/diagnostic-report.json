@@ -1,16 +1,27 @@
 {
   "id": "candidate-eval-20260621153509",
   "knowledgeCandidateId": "candidate-eval-20260621153509",
-  "title": "质量报告 eval-20260713151529",
-  "status": "needs-attention",
+  "title": "围绕 package.json 等 11 个文件的实现经验",
+  "status": "pass",
   "summary": {
-    "title": "质量报告 eval-20260713151529",
-    "status": "needs-attention",
-    "message": "本轮围绕 11 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 12 条回顾信号。"
+    "title": "围绕 package.json 等 11 个文件的实现经验",
+    "status": "pass",
+    "message": "本轮围绕 22 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 12 条回顾信号。"
   },
-  "problem": "本轮围绕 11 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 12 条回顾信号。",
-  "message": "本轮围绕 11 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 12 条回顾信号。",
+  "problem": "本轮围绕 22 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 12 条回顾信号。",
+  "message": "本轮围绕 22 个可沉淀文件生成回顾。 本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。 已记录 12 条回顾信号。",
   "touchedFiles": [
+    "package.json",
+    "scripts/dev-check-wrapup-copy.mjs",
+    "scripts/openprd-codex-isolated-worker.mjs",
+    "scripts/openprd-dev-check.mjs",
+    "scripts/openprd-github-release-notes.mjs",
+    "scripts/openprd-review-presentation.mjs",
+    "scripts/quality-perf-check.mjs",
+    "src/adapters/adapter-spi.js",
+    "src/adapters/capability-envelope.js",
+    "src/adapters/event-normalizer.js",
+    "src/adapters/index.js",
     "package.json",
     "scripts/dev-check-wrapup-copy.mjs",
     "scripts/openprd-codex-isolated-worker.mjs",
@@ -25,14 +36,114 @@
   ],
   "reviewSignals": [
     {
-      "id": "doctor-green",
-      "kind": "doctor-green",
-      "at": "2026-07-13 15:17:14",
+      "id": "run-verify",
+      "kind": "run-verify",
+      "at": "2026-07-20 01:17:37",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "run verify passed",
+      "touchedFiles": []
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-20 01:17:36",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/adapters/adapter-spi.js",
+        "src/adapters/capability-envelope.js",
+        "src/adapters/event-normalizer.js",
+        "src/adapters/index.js"
+      ]
+    },
+    {
+      "id": "dev-check",
+      "kind": "dev-check",
+      "at": "2026-07-20 01:17:02",
       "ok": true,
       "productionReady": null,
       "attentionGates": [],
-      "summary": "doctor passed",
-      "touchedFiles": []
+      "summary": "dev-check attention=13, warning=9",
+      "touchedFiles": [
+        "scripts/dev-check-wrapup-copy.mjs",
+        "src/agent-canonical-content.js",
+        "src/agent-integration.js",
+        "src/cli/args.js",
+        "src/cli/basic-print.js",
+        "src/cli/doctor-print.js",
+        "src/cli/quality-commands.js",
+        "src/cli/quality-print.js",
+        "src/cli/run-print.js",
+        "src/cli/workflow-print.js",
+        "src/codex-hook-runner-template.mjs",
+        "src/dev-standards.js",
+        "src/diagram-core.js",
+        "src/diagram-workspace.js",
+        "src/discovery.js",
+        "src/guide.js",
+        "src/html-artifacts.js",
+        "src/loop.js",
+        "src/openprd.js",
+        "src/openspec/change-lifecycle.js",
+        "src/openspec/change-validate.js",
+        "src/openspec/execute.js",
+        "src/openspec/generate.js",
+        "src/openspec/tasks.js",
+        "src/quality.js",
+        "src/run-harness.js",
+        "src/standards.js",
+        "src/work-unit-migration.js",
+        "src/workspace-core.js",
+        "src/workspace-workflow.js",
+        "test/openprd-agent-integration.test.js",
+        "test/openprd-codex-hook-gates.test.js",
+        "test/openprd-dev-check.test.js",
+        "test/openprd-discovery-changes.test.js",
+        "test/openprd-guide-canvas.test.js",
+        "test/openprd-quality-standards.test.js",
+        "test/openprd-review-model.test.js",
+        "test/openprd-run-fleet.test.js",
+        "test/openprd-vibe-automation.test.js",
+        "test/openprd-workspace-flow.test.js",
+        "test/openprd.test.js",
+        "test/requirement-gate-safety-design.test.js",
+        "test/requirement-gate.test.js"
+      ]
+    },
+    {
+      "id": "quality-verify",
+      "kind": "quality-verify",
+      "at": "2026-07-20 01:17:25",
+      "ok": true,
+      "productionReady": true,
+      "attentionGates": [],
+      "summary": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/adapters/adapter-spi.js",
+        "src/adapters/capability-envelope.js",
+        "src/adapters/event-normalizer.js",
+        "src/adapters/index.js"
+      ]
     },
     {
       "id": "quality-verify",
@@ -281,77 +392,6 @@
         "src/adapters/event-normalizer.js",
         "src/adapters/index.js"
       ]
-    },
-    {
-      "id": "quality-verify",
-      "kind": "quality-verify",
-      "at": "2026-07-11 03:18:33",
-      "ok": true,
-      "productionReady": true,
-      "attentionGates": [],
-      "summary": "quality production-ready",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/adapters/adapter-spi.js",
-        "src/adapters/capability-envelope.js",
-        "src/adapters/event-normalizer.js",
-        "src/adapters/index.js"
-      ]
-    },
-    {
-      "id": "quality-verify",
-      "kind": "quality-verify",
-      "at": "2026-07-11 03:18:30",
-      "ok": true,
-      "productionReady": true,
-      "attentionGates": [],
-      "summary": "quality production-ready",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/adapters/adapter-spi.js",
-        "src/adapters/capability-envelope.js",
-        "src/adapters/event-normalizer.js",
-        "src/adapters/index.js"
-      ]
-    },
-    {
-      "id": "quality-verify",
-      "kind": "quality-verify",
-      "at": "2026-07-11 03:17:54",
-      "ok": false,
-      "productionReady": false,
-      "attentionGates": [
-        "feature-coverage"
-      ],
-      "summary": "quality needs-attention",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/adapters/adapter-spi.js",
-        "src/adapters/capability-envelope.js",
-        "src/adapters/event-normalizer.js",
-        "src/adapters/index.js"
-      ]
     }
   ],
   "abstraction": {
@@ -359,50 +399,143 @@
       "本轮结果里已经出现可复用的症状、排查线索或根因模式，不应该只留在当前对话里。",
       "这次改动直接影响 Agent / harness / hook / skill 行为，后续很容易再次踩到同类判断问题。",
       "这次修复已经带有验证或收尾证据，适合尽快抽象成项目级研发经验。",
-      "doctor-green: doctor passed",
-      "quality-verify: quality production-ready | touched: README.md, package.json, scripts/dev-check-wrapup-copy.mjs, scripts/openprd-codex-isolated-worker.mjs, scripts/openprd-dev-check.mjs, scripts/openprd-github-release-notes.mjs",
-      "dev-check: dev-check attention=5, warning=7 | touched: src/adapters/adapter-spi.js, src/adapters/capability-envelope.js, src/adapters/event-normalizer.js, src/adapters/index.js, src/adapters/install-safety.js, src/agent-canonical-content.js",
-      "quality-verify: quality needs-attention | attention gates: feature-coverage | touched: README.md, package.json, scripts/dev-check-wrapup-copy.mjs, scripts/openprd-codex-isolated-worker.mjs, scripts/openprd-dev-check.mjs, scripts/openprd-github-release-notes.mjs"
+      "run-verify",
+      "quality-verify",
+      "dev-check",
+      "doctor-green",
+      "只回复 ok"
     ],
     "applicability": [
-      "抽象模式: 质量缺口反复出现，通常是因为可观测性、护栏、测试与复盘知识被分散维护，没有进入同一套项目级诊断闭环。",
+      "抽象模式: 同类故障通常会先在 runtime-events、timeline、root-cause-candidates 和 diagnostic-report 中留下证据。只要实现阶段就把这些结构化诊断面铺好，后续多数问题都能先靠现有证据定位，而不是临时补日志。",
       "适用于项目源码或核心流程已经落地、需要把实现经验固化为项目知识的任务。",
       "特别适用于 Agent、hook、harness、quality 或 growth 工作流改动，避免下次再次靠聊天上下文兜底。"
     ],
     "verificationSteps": [
-      "doctor passed",
+      "run verify passed",
       "quality production-ready",
+      "dev-check attention=13, warning=9",
       "dev-check attention=5, warning=7",
-      "quality needs-attention",
-      "运行 openprd quality . --verify 并确认需要关注的门禁已经闭环。",
-      "打开 HTML 报告，核对证据链、评估结论和后续动作是否一致。",
-      "重新执行任务级 verify 命令，并把最终证据路径保留在质量报告里。"
+      "复现一次同类路径，确认新的诊断包仍能导出 runtime-events、timeline、root-cause-candidates 和 diagnostic-report。",
+      "重点核对 run-verify -> quality-verify -> dev-check 的顺序是否符合预期。",
+      "修复后再次执行同一路径，确认时间线不再在历史失败断点中断。",
+      "把最终诊断包与质量报告一起归档，确保后续 Agent 能直接复用已有排查路径。"
     ],
     "typicalInputs": [
-      "任务场景: 质量门禁收口",
+      "任务场景: run-verify",
       "相关文件: package.json、scripts/dev-check-wrapup-copy.mjs、scripts/openprd-codex-isolated-worker.mjs、scripts/openprd-dev-check.mjs、scripts/openprd-github-release-notes.mjs、scripts/openprd-review-presentation.mjs",
-      "已有证据类型: quality-report",
-      "验证信号: doctor-green、quality-verify、dev-check"
+      "已有证据类型: diagnostic-report",
+      "验证信号: run-verify、quality-verify、dev-check"
     ],
     "typicalOutputs": [
       "项目经验候选与诊断包",
       "待确认的项目经验草案",
-      "验证结论: doctor passed",
+      "验证结论: run verify passed",
       "可复用的验证链路与收尾动作"
     ],
     "antiPatterns": [
       "如果只是文件名、路径或个别词相似，但当前目标和验证方式不同，不要直接套用。",
-      "如果当前任务还没进入验证或收尾阶段，不要把这条经验当成通用实现模板。",
+      "如果当前问题没有出现相似症状、事件或证据入口，不要因为改到相似模块就直接照搬旧结论。",
       "如果本轮已经有更新的现场证据，先核对新证据，再决定是否复用旧经验。"
     ]
   },
   "runtimeEvents": [
     {
-      "eventName": "doctor-green",
+      "eventName": "run-verify",
       "status": "pass",
-      "message": "doctor passed",
+      "message": "run verify passed",
       "touchedFiles": [],
-      "at": "2026-07-13 15:17:14"
+      "at": "2026-07-20 01:17:37"
+    },
+    {
+      "eventName": "quality-verify",
+      "status": "pass",
+      "message": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/adapters/adapter-spi.js",
+        "src/adapters/capability-envelope.js",
+        "src/adapters/event-normalizer.js",
+        "src/adapters/index.js"
+      ],
+      "at": "2026-07-20 01:17:36"
+    },
+    {
+      "eventName": "dev-check",
+      "status": "pass",
+      "message": "dev-check attention=13, warning=9",
+      "touchedFiles": [
+        "scripts/dev-check-wrapup-copy.mjs",
+        "src/agent-canonical-content.js",
+        "src/agent-integration.js",
+        "src/cli/args.js",
+        "src/cli/basic-print.js",
+        "src/cli/doctor-print.js",
+        "src/cli/quality-commands.js",
+        "src/cli/quality-print.js",
+        "src/cli/run-print.js",
+        "src/cli/workflow-print.js",
+        "src/codex-hook-runner-template.mjs",
+        "src/dev-standards.js",
+        "src/diagram-core.js",
+        "src/diagram-workspace.js",
+        "src/discovery.js",
+        "src/guide.js",
+        "src/html-artifacts.js",
+        "src/loop.js",
+        "src/openprd.js",
+        "src/openspec/change-lifecycle.js",
+        "src/openspec/change-validate.js",
+        "src/openspec/execute.js",
+        "src/openspec/generate.js",
+        "src/openspec/tasks.js",
+        "src/quality.js",
+        "src/run-harness.js",
+        "src/standards.js",
+        "src/work-unit-migration.js",
+        "src/workspace-core.js",
+        "src/workspace-workflow.js",
+        "test/openprd-agent-integration.test.js",
+        "test/openprd-codex-hook-gates.test.js",
+        "test/openprd-dev-check.test.js",
+        "test/openprd-discovery-changes.test.js",
+        "test/openprd-guide-canvas.test.js",
+        "test/openprd-quality-standards.test.js",
+        "test/openprd-review-model.test.js",
+        "test/openprd-run-fleet.test.js",
+        "test/openprd-vibe-automation.test.js",
+        "test/openprd-workspace-flow.test.js",
+        "test/openprd.test.js",
+        "test/requirement-gate-safety-design.test.js",
+        "test/requirement-gate.test.js"
+      ],
+      "at": "2026-07-20 01:17:02"
+    },
+    {
+      "eventName": "quality-verify",
+      "status": "pass",
+      "message": "quality production-ready",
+      "touchedFiles": [
+        "README.md",
+        "package.json",
+        "scripts/dev-check-wrapup-copy.mjs",
+        "scripts/openprd-codex-isolated-worker.mjs",
+        "scripts/openprd-dev-check.mjs",
+        "scripts/openprd-github-release-notes.mjs",
+        "scripts/openprd-review-presentation.mjs",
+        "scripts/quality-perf-check.mjs",
+        "src/adapters/adapter-spi.js",
+        "src/adapters/capability-envelope.js",
+        "src/adapters/event-normalizer.js",
+        "src/adapters/index.js"
+      ],
+      "at": "2026-07-20 01:17:25"
     },
     {
       "eventName": "quality-verify",
@@ -627,75 +760,36 @@
         "src/adapters/index.js"
       ],
       "at": "2026-07-11 03:18:44"
-    },
-    {
-      "eventName": "quality-verify",
-      "status": "pass",
-      "message": "quality production-ready",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/adapters/adapter-spi.js",
-        "src/adapters/capability-envelope.js",
-        "src/adapters/event-normalizer.js",
-        "src/adapters/index.js"
-      ],
-      "at": "2026-07-11 03:18:33"
-    },
-    {
-      "eventName": "quality-verify",
-      "status": "pass",
-      "message": "quality production-ready",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/adapters/adapter-spi.js",
-        "src/adapters/capability-envelope.js",
-        "src/adapters/event-normalizer.js",
-        "src/adapters/index.js"
-      ],
-      "at": "2026-07-11 03:18:30"
-    },
-    {
-      "eventName": "quality-verify",
-      "status": "needs-attention",
-      "message": "quality needs-attention",
-      "touchedFiles": [
-        "README.md",
-        "package.json",
-        "scripts/dev-check-wrapup-copy.mjs",
-        "scripts/openprd-codex-isolated-worker.mjs",
-        "scripts/openprd-dev-check.mjs",
-        "scripts/openprd-github-release-notes.mjs",
-        "scripts/openprd-review-presentation.mjs",
-        "scripts/quality-perf-check.mjs",
-        "src/adapters/adapter-spi.js",
-        "src/adapters/capability-envelope.js",
-        "src/adapters/event-normalizer.js",
-        "src/adapters/index.js"
-      ],
-      "at": "2026-07-11 03:17:54"
     }
   ],
   "timeline": [
     {
-      "event": "doctor-green",
-      "message": "doctor passed",
+      "event": "run-verify",
+      "message": "run verify passed",
       "status": "pass",
       "line": null,
-      "at": "2026-07-13 15:17:14"
+      "at": "2026-07-20 01:17:37"
+    },
+    {
+      "event": "quality-verify",
+      "message": "quality production-ready",
+      "status": "pass",
+      "line": null,
+      "at": "2026-07-20 01:17:36"
+    },
+    {
+      "event": "dev-check",
+      "message": "dev-check attention=13, warning=9",
+      "status": "pass",
+      "line": null,
+      "at": "2026-07-20 01:17:02"
+    },
+    {
+      "event": "quality-verify",
+      "message": "quality production-ready",
+      "status": "pass",
+      "line": null,
+      "at": "2026-07-20 01:17:25"
     },
     {
       "event": "quality-verify",
@@ -752,43 +846,27 @@
       "status": "pass",
       "line": null,
       "at": "2026-07-11 03:18:44"
-    },
-    {
-      "event": "quality-verify",
-      "message": "quality production-ready",
-      "status": "pass",
-      "line": null,
-      "at": "2026-07-11 03:18:33"
-    },
-    {
-      "event": "quality-verify",
-      "message": "quality production-ready",
-      "status": "pass",
-      "line": null,
-      "at": "2026-07-11 03:18:30"
-    },
-    {
-      "event": "quality-verify",
-      "message": "quality needs-attention",
-      "status": "needs-attention",
-      "line": null,
-      "at": "2026-07-11 03:17:54"
     }
   ],
-  "rootCauseCandidates": [],
+  "rootCauseCandidates": [
+    {
+      "title": "只回复 ok"
+    }
+  ],
   "verificationSteps": [
-    "doctor passed",
+    "run verify passed",
     "quality production-ready",
+    "dev-check attention=13, warning=9",
     "dev-check attention=5, warning=7",
-    "quality needs-attention",
-    "运行 openprd quality . --verify 并确认需要关注的门禁已经闭环。",
-    "打开 HTML 报告，核对证据链、评估结论和后续动作是否一致。",
-    "重新执行任务级 verify 命令，并把最终证据路径保留在质量报告里。"
+    "复现一次同类路径，确认新的诊断包仍能导出 runtime-events、timeline、root-cause-candidates 和 diagnostic-report。",
+    "重点核对 run-verify -> quality-verify -> dev-check 的顺序是否符合预期。",
+    "修复后再次执行同一路径，确认时间线不再在历史失败断点中断。",
+    "把最终诊断包与质量报告一起归档，确保后续 Agent 能直接复用已有排查路径。"
   ],
   "prevention": [
     "把本轮修复抽象成项目级 skill，而不是只保留一次性聊天上下文。",
-    "阶段性开发后运行质量验证。",
-    "声明就绪前先审阅 HTML 质量评估报告。",
-    "把重复或高影响修复沉淀为带日志入口和验证步骤的项目经验 Skill。"
+    "关键路径默认保留 runtime-events、timeline、root-cause-candidates、diagnostic-report 四类证据，而不是等故障出现后再补日志。",
+    "失败事件和补偿事件使用稳定事件名，避免把根因埋在自由文本里。",
+    "修复完成后保留一份成功与失败对照诊断包，并运行 openprd quality . --learn --from <diagnostics-dir> 更新项目经验。"
   ]
 }

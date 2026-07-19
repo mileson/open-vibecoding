@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { validateOpenSpecChangeWorkspace, resolveOpenSpecChangeId } from './change-validate.js';
-import { listOpenSpecStructuredTasks } from './tasks.js';
+import { isOpenSpecTaskBlocking, listOpenSpecStructuredTasks } from './tasks.js';
 import { timestamp } from '../time.js';
 import {
   cjoin,
@@ -92,6 +92,44 @@ async function writeAcceptedIndex(projectRoot, index) {
   });
 }
 
+function historicalChangeStatus(status) {
+  return ['applied', 'archived', 'closed', 'historical', 'legacy-frozen'].includes(status);
+}
+
+async function detectAcceptedSpecConflicts(projectRoot, specs, acceptedIndex) {
+  const acceptedRoot = openPrdAcceptedSpecRoot(projectRoot);
+  const conflicts = [];
+  for (const spec of specs) {
+    const targetPath = cjoin(acceptedRoot, spec.capability, 'spec.md');
+    const indexed = acceptedIndex.capabilities?.[spec.capability] ?? null;
+    const indexedPath = indexed?.specPath ? path.resolve(projectRoot, indexed.specPath) : null;
+    if (indexedPath && indexedPath !== path.resolve(targetPath)) {
+      conflicts.push({
+        capability: spec.capability,
+        code: 'accepted-index-path-mismatch',
+        targetPath,
+        indexedPath,
+      });
+      continue;
+    }
+    if (!indexed && await exists(targetPath)) {
+      const [incoming, existing] = await Promise.all([
+        readText(spec.sourcePath),
+        readText(targetPath),
+      ]);
+      if (incoming !== existing) {
+        conflicts.push({
+          capability: spec.capability,
+          code: 'untracked-accepted-spec',
+          targetPath,
+          indexedPath: null,
+        });
+      }
+    }
+  }
+  return conflicts;
+}
+
 async function collectChangeSpecs(changeDir) {
   const specsRoot = cjoin(changeDir, 'specs');
   const specs = [];
@@ -121,13 +159,15 @@ async function collectChangeSpecs(changeDir) {
 async function allStructuredTasksComplete(projectRoot, changeId) {
   const { tasks } = await listOpenSpecStructuredTasks(projectRoot, { changeId });
   if (tasks.length === 0) {
-    return { complete: true, total: 0, incomplete: [] };
+    return { complete: true, total: 0, incomplete: [], backgroundIncomplete: [] };
   }
-  const incomplete = tasks.filter((task) => !task.checked);
+  const incomplete = tasks.filter((task) => !task.checked && isOpenSpecTaskBlocking(task));
+  const backgroundIncomplete = tasks.filter((task) => !task.checked && !isOpenSpecTaskBlocking(task));
   return {
     complete: incomplete.length === 0,
     total: tasks.length,
     incomplete: incomplete.map((task) => task.id),
+    backgroundIncomplete: backgroundIncomplete.map((task) => task.id),
   };
 }
 
@@ -153,8 +193,12 @@ async function updateChangeStatus(projectRoot, changeId, status, extra = {}) {
 export async function listOpenPrdChangesWorkspace(projectRoot) {
   const state = await readChangesState(projectRoot);
   const discoveryConfig = await readDiscoveryConfig(projectRoot, readJson);
-  const activeChange = state.activeChange ?? discoveryConfig.activeChange ?? null;
   const changes = await listChangeDirs(projectRoot);
+  const requestedActiveChange = state.activeChange ?? discoveryConfig.activeChange ?? null;
+  const activeChange = changes.some((change) => change.id === requestedActiveChange && !change.archived)
+    && !historicalChangeStatus(state.changes?.[requestedActiveChange]?.status)
+    ? requestedActiveChange
+    : null;
   const rows = [];
 
   for (const change of changes) {
@@ -162,12 +206,13 @@ export async function listOpenPrdChangesWorkspace(projectRoot) {
     rows.push({
       id: change.id,
       source: change.source,
-      status: state.changes?.[change.id]?.status ?? (change.archived ? 'archived' : 'draft'),
-      active: change.id === activeChange,
+      status: change.archived ? 'archived' : (state.changes?.[change.id]?.status ?? 'draft'),
+      active: !change.archived && change.id === activeChange,
       archived: change.archived,
       changeDir: change.changeDir,
       taskTotal: taskState.total,
       taskIncomplete: taskState.incomplete.length,
+      taskBackgroundIncomplete: taskState.backgroundIncomplete?.length ?? 0,
     });
   }
 
@@ -186,6 +231,13 @@ export async function activateOpenPrdChangeWorkspace(projectRoot, options = {}) 
   if (!(await exists(changeDir))) {
     throw new Error(`Missing OpenPrd change directory: ${path.relative(projectRoot, changeDir)}`);
   }
+  const state = await readChangesState(projectRoot);
+  const archivedRoot = path.resolve(openPrdArchiveChangeRoot(projectRoot));
+  const resolvedChangeDir = path.resolve(changeDir);
+  const archived = resolvedChangeDir === archivedRoot || resolvedChangeDir.startsWith(`${archivedRoot}${path.sep}`);
+  if (archived || historicalChangeStatus(state.changes?.[changeId]?.status)) {
+    throw new Error(`Change ${changeId} 已是 legacy-frozen 历史上下文，不能重新激活；请创建新的当前 change，并把旧材料仅作为 context。`);
+  }
   await writeActiveChange(projectRoot, changeId);
   return {
     ok: true,
@@ -198,6 +250,21 @@ export async function activateOpenPrdChangeWorkspace(projectRoot, options = {}) 
 
 export async function closeOpenPrdChangeWorkspace(projectRoot, options = {}) {
   const changeId = await resolveOpenSpecChangeId(projectRoot, options.change);
+  const current = await readChangesState(projectRoot);
+  const changeDir = await resolveChangeDir(projectRoot, changeId);
+  const archivedRoot = path.resolve(openPrdArchiveChangeRoot(projectRoot));
+  const resolvedChangeDir = path.resolve(changeDir);
+  const archived = resolvedChangeDir === archivedRoot || resolvedChangeDir.startsWith(`${archivedRoot}${path.sep}`);
+  if (archived || historicalChangeStatus(current.changes?.[changeId]?.status)) {
+    return {
+      ok: false,
+      action: 'close',
+      projectRoot,
+      changeId,
+      historicalContextOnly: true,
+      errors: [`Change ${changeId} 已是 legacy-frozen 历史上下文，不能改写其生命周期状态。`],
+    };
+  }
   const state = await updateChangeStatus(projectRoot, changeId, 'closed', {
     closedAt: timestamp(),
     reason: options.notes ?? null,
@@ -213,6 +280,22 @@ export async function closeOpenPrdChangeWorkspace(projectRoot, options = {}) {
 
 export async function applyOpenPrdChangeWorkspace(projectRoot, options = {}) {
   const changeId = await resolveOpenSpecChangeId(projectRoot, options.change);
+  const state = await readChangesState(projectRoot);
+  const changeDir = await resolveChangeDir(projectRoot, changeId);
+  const archivedRoot = path.resolve(openPrdArchiveChangeRoot(projectRoot));
+  const resolvedChangeDir = path.resolve(changeDir);
+  const archived = resolvedChangeDir === archivedRoot || resolvedChangeDir.startsWith(`${archivedRoot}${path.sep}`);
+  if (archived || historicalChangeStatus(state.changes?.[changeId]?.status)) {
+    return {
+      ok: false,
+      action: 'apply',
+      projectRoot,
+      changeId,
+      historicalContextOnly: true,
+      appliedSpecs: [],
+      errors: [`Change ${changeId} 已是 legacy-frozen 历史上下文，不能再次应用；请创建新的当前 change，并把旧材料仅作为 context。`],
+    };
+  }
   const validation = await validateOpenSpecChangeWorkspace(projectRoot, { change: changeId });
   if (!validation.ok) {
     return {
@@ -239,10 +322,26 @@ export async function applyOpenPrdChangeWorkspace(projectRoot, options = {}) {
     };
   }
 
-  const changeDir = await resolveChangeDir(projectRoot, changeId);
   const specs = await collectChangeSpecs(changeDir);
   const acceptedRoot = openPrdAcceptedSpecRoot(projectRoot);
   const acceptedIndex = await readAcceptedIndex(projectRoot);
+  const conflicts = await detectAcceptedSpecConflicts(projectRoot, specs, acceptedIndex);
+  if (conflicts.length > 0 && !options.force) {
+    return {
+      ok: false,
+      action: 'apply',
+      projectRoot,
+      changeId,
+      validation,
+      appliedSpecs: [],
+      conflicts,
+      errors: conflicts.map((conflict) => (
+        conflict.code === 'untracked-accepted-spec'
+          ? `Capability ${conflict.capability} 的 accepted spec 已存在但未登记到 index；为避免覆盖未知历史，请先核对差异或显式使用 --force。`
+          : `Capability ${conflict.capability} 的 accepted index 路径与目标路径冲突；请先修复 index 或显式使用 --force。`
+      )),
+    };
+  }
   const appliedSpecs = [];
   const now = timestamp();
 
@@ -284,21 +383,42 @@ export async function applyOpenPrdChangeWorkspace(projectRoot, options = {}) {
     appliedSpecs,
     acceptedRoot,
     taskState,
+    conflicts,
+    workspaceAttention: [
+      ...(validation.workspaceAttention ?? []),
+      ...(taskState.backgroundIncomplete.length > 0
+        ? [{
+            id: 'background-change-tasks',
+            ok: false,
+            summary: `${taskState.backgroundIncomplete.length} 个后台治理或文档任务尚未完成`,
+            items: taskState.backgroundIncomplete,
+            blocking: false,
+          }]
+        : []),
+    ],
   };
 }
 
 export async function archiveOpenPrdChangeWorkspace(projectRoot, options = {}) {
   const changeId = await resolveOpenSpecChangeId(projectRoot, options.change);
+  const state = await readChangesState(projectRoot);
   const changeDir = await resolveChangeDir(projectRoot, changeId);
   if (!(await exists(changeDir))) {
     throw new Error(`Missing OpenPrd change directory: ${path.relative(projectRoot, changeDir)}`);
   }
   const archiveDir = cjoin(openPrdArchiveChangeRoot(projectRoot), changeId);
-  if (await exists(archiveDir)) {
-    if (!options.force) {
-      throw new Error(`Archived change already exists: ${path.relative(projectRoot, archiveDir)}. Use --force to overwrite.`);
-    }
-    await fs.rm(archiveDir, { recursive: true, force: true });
+  const resolvedChangeDir = path.resolve(changeDir);
+  const resolvedArchiveDir = path.resolve(archiveDir);
+  const status = state.changes?.[changeId]?.status ?? null;
+  const immutableHistoricalStatus = ['archived', 'closed', 'historical', 'legacy-frozen'].includes(status);
+  if (
+    resolvedChangeDir === resolvedArchiveDir
+    || immutableHistoricalStatus
+    || await exists(archiveDir)
+  ) {
+    throw new Error(
+      `Change ${changeId} 已是 legacy-frozen 历史上下文，不能再次归档或覆盖历史快照；--force 也不会绕过此边界。请为当前工作创建新的 change，并仅引用旧材料。`,
+    );
   }
   await fs.mkdir(path.dirname(archiveDir), { recursive: true });
   await fs.cp(changeDir, archiveDir, { recursive: true });

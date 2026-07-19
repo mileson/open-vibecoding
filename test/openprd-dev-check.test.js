@@ -121,34 +121,35 @@ test('dev-check reports code file line status and next actions', async () => {
   assert.equal(result.thresholds.attentionMax, 1500);
   assert.equal(result.files.find((file) => file.path === 'src/small.js').status, 'ok');
   assert.equal(result.files.find((file) => file.path === 'src/medium.js').status, 'attention');
-  assert.match(result.files.find((file) => file.path === 'src/medium.js').nextAction, /小步拆分/);
+  assert.match(result.files.find((file) => file.path === 'src/medium.js').nextAction, /当前目标/);
   assert.equal(result.files.find((file) => file.path === 'src/medium.js').statusLabel, '🟡 低风险｜建议留意');
   assert.match(result.files.find((file) => file.path === 'src/medium.js').wrapUp.reason, /评审、回归和交接成本/);
   assert.equal(result.files.find((file) => file.path === 'src/large.js').status, 'warning');
   assert.equal(result.files.find((file) => file.path === 'src/large.js').statusLabel, '🟠 中风险｜建议优先关注');
   assert.match(result.files.find((file) => file.path === 'src/large.js').nextAction, /拆分/);
-  assert.equal(result.wrapUp.required, true);
-  assert.deepEqual(result.wrapUp.columns, ['影响对象', '问题级别', '源文件规模', '优化原因', '本次处理结果', '后续建议']);
+  assert.equal(result.wrapUp.required, false);
+  assert.equal(result.wrapUp.recommended, true);
+  assert.deepEqual(result.wrapUp.columns, ['影响对象', '关注程度', '规模信号', '预警原因', '本次处理结果', '后续建议']);
   assert.equal(result.wrapUp.rows.length, 2);
   assert.equal(result.wrapUp.rows[0].影响对象, 'src/large.js');
-  assert.equal(result.wrapUp.rows[0].问题级别, '🟠 中风险｜建议优先关注');
-  assert.equal(result.wrapUp.rows[0].源文件规模, '1501 行（> 1500 行/文件）');
-  assert.equal(result.wrapUp.rows[0].优化原因, '文件太大，后续改动风险高');
-  assert.equal(result.wrapUp.rows[0].本次处理结果, '本轮执行拆分后回填');
-  assert.equal(result.wrapUp.rows[0].后续建议, '拆完重跑测试验证');
+  assert.equal(result.wrapUp.rows[0].关注程度, '🟠 中风险｜建议优先关注');
+  assert.equal(result.wrapUp.rows[0].规模信号, '1501 行（> 1500 行/文件）');
+  assert.equal(result.wrapUp.rows[0].预警原因, '文件太大，后续改动风险高');
+  assert.equal(result.wrapUp.rows[0].本次处理结果, '当前任务不受影响');
+  assert.equal(result.wrapUp.rows[0].后续建议, '后续按职责拆分');
   assert.equal(result.wrapUp.rows[1].影响对象, 'src/medium.js');
-  assert.equal(result.wrapUp.rows[1].源文件规模, '701 行（> 700 行/文件）');
-  assert.equal(result.wrapUp.rows[1].优化原因, '文件偏大，维护成本升');
-  assert.equal(result.wrapUp.rows[1].本次处理结果, '按需小步拆分后回填');
-  assert.equal(result.wrapUp.rows[1].后续建议, '保持职责边界清晰');
-  assert.equal(result.wrapUp.mode, 'auto-refactor');
-  assert.match(result.wrapUp.markdownBlock, /^\*\*OpenPRD 自动优化报告\*\*/);
-  assert.match(result.wrapUp.markdownTable, /\| 影响对象 \| 问题级别 \| 源文件规模 \| 优化原因 \| 本次处理结果 \| 后续建议 \|/);
+  assert.equal(result.wrapUp.rows[1].规模信号, '701 行（> 700 行/文件）');
+  assert.equal(result.wrapUp.rows[1].预警原因, '文件偏大，维护成本升');
+  assert.equal(result.wrapUp.rows[1].本次处理结果, '本轮小改，未扩职责');
+  assert.equal(result.wrapUp.rows[1].后续建议, '继续演进时再拆小');
+  assert.equal(result.wrapUp.mode, 'recommend');
+  assert.match(result.wrapUp.markdownBlock, /^\*\*后续建议\*\*/);
+  assert.match(result.wrapUp.markdownTable, /\| 影响对象 \| 关注程度 \| 规模信号 \| 预警原因 \| 本次处理结果 \| 后续建议 \|/);
   assert.match(result.wrapUp.markdownTable, /src\/large\.js/);
   assert.match(result.wrapUp.markdownTable, /1501 行（> 1500 行\/文件）/);
   for (const row of result.wrapUp.rows) {
-    assert.ok(Array.from(row.源文件规模).length <= 20);
-    assert.ok(Array.from(row.优化原因).length <= 20);
+    assert.ok(Array.from(row.规模信号).length <= 20);
+    assert.ok(Array.from(row.预警原因).length <= 20);
     assert.ok(Array.from(row.本次处理结果).length <= 20);
     assert.ok(Array.from(row.后续建议).length <= 20);
   }
@@ -165,7 +166,8 @@ test('dev-check reports code file line status and next actions', async () => {
   }
   const cliResult = JSON.parse(logs.join('\n'));
   assert.equal(cliResult.files[0].status, 'warning');
-  assert.equal(cliResult.wrapUp.required, true);
+  assert.equal(cliResult.wrapUp.required, false);
+  assert.equal(cliResult.wrapUp.recommended, true);
   assert.match(cliResult.wrapUp.markdownTable, /src\/large\.js/);
 
   const cwdLogs = [];
@@ -181,9 +183,10 @@ test('dev-check reports code file line status and next actions', async () => {
   const cwdCliResult = JSON.parse(cwdLogs.join('\n'));
   assert.equal(await fs.realpath(cwdCliResult.projectRoot), await fs.realpath(project));
   assert.deepEqual(cwdCliResult.files.map((file) => file.path), ['src/small.js', 'src/medium.js']);
-  assert.equal(cwdCliResult.wrapUp.required, true);
+  assert.equal(cwdCliResult.wrapUp.required, false);
+  assert.equal(cwdCliResult.wrapUp.recommended, true);
   assert.equal(cwdCliResult.wrapUp.rows[0].影响对象, 'src/medium.js');
-  assert.equal(cwdCliResult.wrapUp.rows[0].问题级别, '🟡 低风险｜建议留意');
+  assert.equal(cwdCliResult.wrapUp.rows[0].关注程度, '🟡 低风险｜建议留意');
 
   const userLogs = [];
   console.log = (...args) => userLogs.push(args.join(' '));
@@ -236,7 +239,7 @@ test('dev-check knowledge review attributes current touched files instead of sta
   assert.equal(candidate.reviewSignals.some((signal) => signal.touchedFiles?.includes('src/old-agent-one.js')), false);
 });
 
-test('Stop hook injects dev-check wrap-up table for touched large files', async () => {
+test('Stop hook injects nonblocking dev-check advice for touched large files', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
   await fs.mkdir(path.join(project, 'src'), { recursive: true });
@@ -264,14 +267,11 @@ test('Stop hook injects dev-check wrap-up table for touched large files', async 
   const payload = JSON.parse(stop.stdout);
   assert.equal(payload.continue, true);
   assert.equal(payload.hookSpecificOutput.hookEventName, 'Stop');
-  assert.match(payload.hookSpecificOutput.additionalContext, /\*\*OpenPRD 自动优化报告\*\*/);
-  assert.match(payload.hookSpecificOutput.additionalContext, /自动优化默认开启/);
-  assert.match(payload.hookSpecificOutput.additionalContext, /关闭自动优化/);
-  assert.match(payload.hookSpecificOutput.additionalContext, /🔴 → 🟠 → 🟡/);
-  assert.match(payload.hookSpecificOutput.additionalContext, /直接复用下面的 Markdown 表格/);
-  assert.match(payload.hookSpecificOutput.additionalContext, /不要把“问题级别”列改写成纯 emoji/);
-  assert.match(payload.hookSpecificOutput.additionalContext, /dev-check-wrapup-copy\.mjs --validate/);
-  assert.match(payload.hookSpecificOutput.additionalContext, /\| 影响对象 \| 问题级别 \| 源文件规模 \| 优化原因 \| 本次处理结果 \| 后续建议 \|/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /建议，不是收尾门禁/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /工作区规模债归入 workspaceAttention/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前为普通建议模式/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /\*\*后续建议\*\*/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /\| 影响对象 \| 关注程度 \| 规模信号 \| 预警原因 \| 本次处理结果 \| 后续建议 \|/);
   assert.match(payload.hookSpecificOutput.additionalContext, /src\/large\.js/);
   assert.match(payload.hookSpecificOutput.additionalContext, /🟠 中风险｜建议优先关注/);
   assert.match(payload.hookSpecificOutput.additionalContext, /1501 行（> 1500 行\/文件）/);
@@ -384,14 +384,14 @@ test('dev-check wrap-up copy script keeps copy compact', () => {
   assert.deepEqual(payload.rows[0], {
     规模信号: '2507 行（> 1500 行/文件）',
     预警原因: '文件太大，后续改动风险高',
-    本次处理结果: '这次先完成需求，暂不拆分',
-    后续建议: '优先拆出独立职责',
+    本次处理结果: '当前任务不受影响',
+    后续建议: '后续按职责拆分',
   });
   assert.deepEqual(payload.rows[1], {
     规模信号: '1313 行（> 700 行/文件）',
     预警原因: '文件偏大，维护成本升',
     本次处理结果: '本轮小改，未扩职责',
-    后续建议: '继续改前先拆小',
+    后续建议: '继续演进时再拆小',
   });
   for (const row of payload.rows) {
     assert.ok(Array.from(row.规模信号).length <= payload.limit);

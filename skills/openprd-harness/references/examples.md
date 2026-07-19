@@ -22,5 +22,5 @@ User:
 Expected routing:
 
 - inspect current state
-- inspect next/blockers
+- inspect next/status attention
 - if system shape still needs confirmation, recommend diagram review first

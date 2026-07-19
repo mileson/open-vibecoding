@@ -6,6 +6,7 @@ import { cjoin, resolveChangeDir } from './paths.js';
 import { timestamp } from '../time.js';
 import {
   listOpenSpecStructuredTasks,
+  isOpenSpecTaskBlocking,
   parseOpenSpecTaskDeps,
   summarizeOpenSpecTaskTypes,
 } from './tasks.js';
@@ -58,12 +59,21 @@ function summarizeOpenSpecTasks(tasks, taskById) {
       dependencyState: getDependencyState(task, taskById),
     }))
     .filter((item) => !item.dependencyState.ready);
-  const nextReady = pending.find((task) => getDependencyState(task, taskById).ready) ?? null;
+  const ready = pending.filter((task) => getDependencyState(task, taskById).ready);
+  const nextReady = ready.find((task) => isOpenSpecTaskBlocking(task)) ?? ready[0] ?? null;
+  const blockingTasks = tasks.filter((task) => isOpenSpecTaskBlocking(task));
+  const backgroundTasks = tasks.filter((task) => !isOpenSpecTaskBlocking(task));
+  const blockingPending = pending.filter((task) => isOpenSpecTaskBlocking(task));
+  const backgroundPending = pending.filter((task) => !isOpenSpecTaskBlocking(task));
 
   return {
     total: tasks.length,
     completed: completed.length,
     pending: pending.length,
+    blockingTotal: blockingTasks.length,
+    blockingPending: blockingPending.length,
+    backgroundTotal: backgroundTasks.length,
+    backgroundPending: backgroundPending.length,
     blocked: blocked.length,
     taskTypes,
     implementation: taskTypes.implementation ?? { total: 0, completed: 0, pending: 0 },
@@ -253,6 +263,10 @@ export async function listOpenSpecTaskWorkspace(projectRoot, options = {}) {
       total: state.summary.total,
       completed: state.summary.completed,
       pending: state.summary.pending,
+      blockingTotal: state.summary.blockingTotal,
+      blockingPending: state.summary.blockingPending,
+      backgroundTotal: state.summary.backgroundTotal,
+      backgroundPending: state.summary.backgroundPending,
       blocked: state.summary.blocked,
       taskTypes: state.summary.taskTypes,
       implementation: state.summary.implementation,
@@ -368,6 +382,10 @@ export async function advanceOpenSpecTaskWorkspace(projectRoot, options = {}) {
       total: updatedState.summary.total,
       completed: updatedState.summary.completed,
       pending: updatedState.summary.pending,
+      blockingTotal: updatedState.summary.blockingTotal,
+      blockingPending: updatedState.summary.blockingPending,
+      backgroundTotal: updatedState.summary.backgroundTotal,
+      backgroundPending: updatedState.summary.backgroundPending,
       blocked: updatedState.summary.blocked,
       taskTypes: updatedState.summary.taskTypes,
       implementation: updatedState.summary.implementation,

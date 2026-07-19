@@ -136,8 +136,25 @@ function printDoctorResult(result, json) {
     console.log(`Hook 模式: ${result.agentIntegration.hookProfile}`);
   }
   printRuntimeEnvironmentSummary(result.agentIntegration);
-  console.log(`标准化: ${result.standards.ok ? '通过' : '失败'}`);
-  console.log(`工作区验证: ${result.validation.valid ? '通过' : '失败'}`);
+  const readiness = result.readiness ?? {};
+  const integrationsReady = readiness.integrationsReady ?? result.agentIntegration.ok;
+  const structuralReady = readiness.structuralReady ?? result.validation.structuralValid ?? result.validation.valid;
+  const standardsReady = readiness.standardsReady ?? result.standards.ok;
+  const workspaceReady = readiness.workspaceReady ?? (integrationsReady && structuralReady && standardsReady);
+  console.log(`集成状态: ${integrationsReady ? '通过' : '失败'}`);
+  console.log(`工作区结构: ${structuralReady ? '通过' : '失败'}`);
+  console.log(`Standards: ${standardsReady ? '通过' : '待关注（不阻断当前动作）'}`);
+  console.log(`工作区整体状态: ${workspaceReady ? '就绪' : '待关注'}`);
+  if (result.standardsAttention) {
+    console.log(`Standards 提醒: ${result.standardsAttention.summary}`);
+    for (const error of (result.standardsAttention.errors ?? []).slice(0, 5)) {
+      console.log(`- ${error}`);
+    }
+    const hidden = Math.max(0, (result.standardsAttention.errors?.length ?? 0) - 5);
+    if (hidden > 0) {
+      console.log(`- 另有 ${hidden} 项 standards 提醒；使用 --json 查看完整明细。`);
+    }
+  }
   if (result.agentIntegration.drift) {
     console.log(`生成物漂移: ${result.agentIntegration.drift.ok ? '无' : '存在'}`);
   }
@@ -151,7 +168,7 @@ function printDoctorResult(result, json) {
     }
   }
   if (result.errors.length > 0) {
-    console.log('错误:');
+    console.log('阻断错误:');
     for (const error of result.errors) {
       console.log(`- ${error}`);
     }

@@ -3,8 +3,8 @@
   "version": 1,
   "projectId": "project_a63099e6-6438-424c-ac39-49337f485ede",
   "streamId": "workflow:workspace",
-  "revision": 7,
-  "lastEventId": "evt_be62679c8fd5bca8398fd4038607fa0b",
-  "ledgerPosition": 7,
-  "updatedAt": "2026-07-13T07:17:12.986Z"
+  "revision": 8,
+  "lastEventId": "evt_62fbdf050bbbfafc699dbdb06a7567b8",
+  "ledgerPosition": 8,
+  "updatedAt": "2026-07-19T15:40:19.792Z"
 }

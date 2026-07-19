@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 export const DEV_CHECK_WRAPUP_COPY_LIMIT = 20;
-// 自动优化模式（默认）与仅推荐模式使用不同表头；字段别名成对等价。
+// 主动结构优化建议与普通建议使用不同表头；两者都不扩大当前任务范围。
 const WRAPUP_FIELD_ALIASES = [
   ['源文件规模', '规模信号'],
   ['优化原因', '预警原因'],
@@ -65,10 +65,10 @@ function reasonText(file) {
 
 function currentResultText(file, autoRefactor) {
   if (file.status === 'warning') {
-    return autoRefactor ? '本轮执行拆分后回填' : '这次先完成需求，暂不拆分';
+    return autoRefactor ? '同范围时可顺手拆分' : '当前任务不受影响';
   }
   if (file.status === 'attention') {
-    return autoRefactor ? '按需小步拆分后回填' : '本轮小改，未扩职责';
+    return autoRefactor ? '同范围时小步优化' : '本轮小改，未扩职责';
   }
   if (file.status === 'error') return '本轮失败，未收口';
   if (file.status === 'ok') return '本轮已回顾';
@@ -77,10 +77,10 @@ function currentResultText(file, autoRefactor) {
 
 function followUpText(file, autoRefactor) {
   if (file.status === 'warning') {
-    return autoRefactor ? '拆完重跑测试验证' : '优先拆出独立职责';
+    return autoRefactor ? '不扩范围，拆后再验证' : '后续按职责拆分';
   }
   if (file.status === 'attention') {
-    return autoRefactor ? '保持职责边界清晰' : '继续改前先拆小';
+    return autoRefactor ? '保持职责边界清晰' : '继续演进时再拆小';
   }
   if (file.status === 'error') return '先修复后重跑';
   if (file.status === 'ok') return '无需额外动作';

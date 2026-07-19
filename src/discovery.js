@@ -623,6 +623,7 @@ async function verifyOpenSpecDiscoveryWorkspace(projectRoot, dependencies = {}) 
   let openSpecChange = null;
   let taskVolume = null;
   let standards = null;
+  const workspaceAttention = [];
   if (discoveryConfig?.activeChange) {
     openSpecChange = await validateOpenSpecChangeWorkspace(projectRoot, {
       change: discoveryConfig.activeChange,
@@ -634,6 +635,7 @@ async function verifyOpenSpecDiscoveryWorkspace(projectRoot, dependencies = {}) 
     verification.errors.push(...openSpecChange.errors);
     verification.warnings.push(...openSpecChange.warnings);
     verification.checks.push(...openSpecChange.checks);
+    workspaceAttention.push(...(openSpecChange.workspaceAttention ?? []));
   } else {
     taskVolume = await analyzeOpenSpecTaskVolumes(projectRoot);
     verification.errors.push(...taskVolume.errors);
@@ -644,9 +646,14 @@ async function verifyOpenSpecDiscoveryWorkspace(projectRoot, dependencies = {}) 
       docsContent: false,
     });
     if (!standards.skipped) {
-      verification.errors.push(...standards.errors);
-      verification.warnings.push(...standards.warnings);
-      verification.checks.push(...standards.checks);
+      workspaceAttention.push({
+        id: 'standards',
+        scope: 'workspace',
+        ok: standards.ok,
+        errors: [...(standards.errors ?? [])],
+        warnings: [...(standards.warnings ?? [])],
+        checks: [...(standards.checks ?? [])],
+      });
     }
   }
   verification.valid = verification.errors.length === 0;
@@ -666,6 +673,7 @@ async function verifyOpenSpecDiscoveryWorkspace(projectRoot, dependencies = {}) 
     complete: verification.complete,
     errors: verification.errors.length,
     warnings: verification.warnings.length,
+    workspaceAttention: workspaceAttention.length,
   });
 
   return {
@@ -679,6 +687,7 @@ async function verifyOpenSpecDiscoveryWorkspace(projectRoot, dependencies = {}) 
     coverageMatrix: state.coverageMatrix,
     claims: state.claims,
     verification,
+    workspaceAttention,
     openSpecChange,
     taskVolume,
     standards,

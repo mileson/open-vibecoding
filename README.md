@@ -18,6 +18,31 @@ OpenPrd 是一个轻量但结构化的 **PRD harness**。你只需要先把问�
 
 它把需求、决策和验证结果沉淀成稳定的 HTML 产物，而不是把状态散落在聊天记录或终端输出里。OpenPrd 的职责是帮助 Agent 做事：PRD、review、change、tasks、设计合同与测试证据由 Agent 在后台维护，不再要求用户回复指定内容才能继续。
 
+## 0.2.0：OpenPrd 只辅助，不阻断
+
+- 用户已经要求实现、继续或发布时，OpenPrd 不再因为需求、评审、变更、任务、说明书或质量证据尚未补齐而叫停工作。
+- Codex automation、定时任务和其他无人值守任务默认不注入 OpenPrd 流程；只有任务明确启用 OpenPrd 时才进入维护流程。
+- 历史 requirement、PRD、review、change、tasks 和实现记录保持原样，不用今天的代码倒推补写当时的需求；旧功能重新开发时，会创建今天的新需求并关联历史。
+- 工作区维护欠账继续可见，但只作为后台提示；当前任务失败、发布目标、权限、制品、测试和回滚等真实条件仍会严格验证。
+
+```bash
+npm install -g @openprd/cli@0.2.0
+```
+
+## 0.1.24：工作区欠账不再冒充当前任务失败
+
+- `taskReady`、`workspaceAttention`、`claimReady`、`actionReady` 分层输出：当前任务、全局维护、整体就绪声明和具体动作条件互不污染。
+- 缺少当前 `docs/basic/`、代码说明书、文件夹 README 或 EVO 证据时，OpenPrd 会提醒 Agent 后台维护，但不阻断当前实现、change apply、freeze/handoff、commit 或 release；历史 requirement/PRD/review/change/tasks 正文不进入待完善清单。
+- 历史 requirement、PRD、review、change 和 tasks 进入 `legacy-frozen`：保留原文和索引，不反推、不补写；旧功能重开时创建今天的新需求。
+- research、Patch Mode、设计合同和内部评审统一为 advisory；只有原始凭证读取、目标冲突等真实安全或动作边界可以拒绝执行。
+
+| 状态 | 回答的问题 | 能否阻断当前工作 |
+|---|---|---|
+| `taskReady` | 当前任务是否实现并完成最小足够验证 | 只受当前任务失败影响 |
+| `workspaceAttention` | 当前基础文档、代码说明书和全仓证据还应维护什么 | 否 |
+| `claimReady` | 能否声称整个项目 production-ready | 只能限制整体声明 |
+| `actionReady` | 当前 commit/release/handoff 等动作的精确目标、权限、制品、测试、冲突和回滚是否成立 | 只受当前动作真实条件影响 |
+
 ## 0.1.23：彻底移除流程确认残留
 
 0.1.23 在 0.1.22 的非阻断 hook 基础上，继续清除了 requirement、harness 与大界面方向规范中的旧确认文案，并增加生成后三端 skill 回归测试。Agent 会后台维护需求、评审、设计和验证材料；用户要求实现或继续时，不再被 OpenPrd 要求批准摘要、选择默认方向或回复执行口令。
@@ -80,7 +105,7 @@ OpenPrd 最有特色的地方，在于它把“这次到底在做什么、Agent 
 | 模糊产品需求，需要边做边收敛 | 区分用户原始表达、项目事实与 Agent 推断，在推进中持续沉淀稳定评审页。 | `clarify`、`capture`、`synthesize`、`review.html` |
 | 已有流程或登录入口改造 | 先从仓库与运行态重建当前事实，再决定下一步 change，而不是直接拍脑袋改。 | `discovery`、`diagram`、`review.html`、`change` |
 | 流程图、界面或架构确认 | 把理解差异放到图示和可评审产物里，而不是埋在聊天记录里。 | `diagram`、`visual-compare`、左右对比 JPG |
-| 长程 Agent 执行链路 | 把确认后的工作拆成按依赖可执行的小任务，每次新会话只推进一个任务并带验证门禁。 | `tasks`、`loop`、任务提示词、进度日志、验证报告 |
+| 长程 Agent 执行链路 | 把当前工作拆成按依赖可执行的小任务，每次新会话只推进一个任务并带任务级验证。 | `tasks`、`loop`、任务提示词、进度日志、验证报告 |
 | 发布、开源、交接前收口 | 让“现在能不能交付”变成有证据的显式判断，而不是靠感觉。 | `quality`、`run --verify`、`doctor`、`handoff` |
 | 一次需求或修复做完后沉淀学习资料 | 把最终需求、过程判断和结果整理成新成员可以直接学习的资料。 | 学习阅读器、`.openprd/knowledge/skills/`、docs 同步 |
 
@@ -104,7 +129,7 @@ OpenPrd 会生成可以直接分享的 HTML 面板，让产品、研发和 Agent
 
 ### 质量回归报告
 
-把准备就绪状态、必需门禁、验证材料和仍需人工判断的点放到一个可读页面里，再决定是否继续交付或发布。
+把任务验证、工作区提醒、整体就绪声明和仍需人工判断的点放到一个可读页面里。报告帮助判断和补证据，不替用户决定是否继续当前工作。
 
 ![OpenPrd quality HTML](https://raw.githubusercontent.com/mileson/openprd/main/docs/assets/openprd-quality-html.png)
 
@@ -169,7 +194,7 @@ OpenPrd 不只是帮你把协作流程说清楚，也会把“该去哪里找资
 - **Review status**：支持 `pending-confirmation` / `confirmed` / `needs-revision`
 - **用户视角变化摘要**：`loop commit`、`handoff` / 版本说明、`review` 摘要默认优先使用 `新增 / 修复 / 优化 / 调整 / 移除` 这类短标签
 - **项目级版本轨道**：可选维护 `0.1.23` 这类项目版本号、版本内变化条目，以及与本地 git tag 的协同，不和内部 PRD `v000x` 混用
-- **策略化评审门禁**：PRD review 记录和执行意图分离；不能把“可以开做”当成任意评审稿的 `review --mark confirmed`
+- **评审记录与执行分离**：PRD review 状态只记录 artifact；“可以开做 / 请实现 / 继续”足以表达执行意图，但不会伪造某份评审稿的用户确认
 - **OpenPrd 发现模式**：为已有项目、参考项目或不清晰需求初始化可持续推进的覆盖状态
 - **项目标准化**：初始化并验证 `docs/basic/`、文件说明书模板和文件夹 README 模板
 - **OpenPrd change 与任务执行**：从 PRD 快照生成 change 文件，校验结构，沉淀 accepted specs，归档变更，并按依赖顺序推进结构化任务
@@ -436,7 +461,7 @@ openprd changes /path/to/project
 - `.openprd/standards/file-manual-template.md`
 - `.openprd/standards/folder-readme-template.md`
 
-当项目已经存在源码文件时，`openprd standards --verify` 不只检查文件是否存在，还会阻断以下情况：
+当项目已经存在源码文件时，运行 `openprd standards --verify` 会以非阻断报告展示以下标准化缺口：
 
 - `docs/basic/` 仍停留在“待补充”等模板占位内容。
 - 源码文件头部缺少文件说明书。
@@ -448,14 +473,19 @@ openprd changes /path/to/project
 openprd standards /path/to/project --verify
 ```
 
-OpenPrd 生成的 change 会包含标准化维护任务，change 校验也会检查这套契约。
-项目基础文档的唯一标准路径是 `docs/basic/`。
+默认命令返回成功，避免文档债截停当前任务；需要在独立治理作业里严格检查时，显式追加 `--fail-on-violation`。
 
-实现阶段的标准化维护是明确的影响判定，不是最后顺手清理。每次新增或修改源码
-文件时，Agent 都要检查 `docs/basic/`、文件说明书、所在文件夹 README 是否缺失
-或已因本次变更过期。缺失的必须补齐；已有文档如果受到职责、流程、结构、依赖
-或产品行为变化影响，也必须同步更新。如果无需更新，应说明已经完成影响判定以及
-为什么现有文档仍然准确。
+OpenPrd 生成的 change 会包含标准化维护任务。项目基础文档的唯一标准路径是 `docs/basic/`。
+这些全仓缺口在 `run --context`、普通 doctor、change apply、freeze/handoff 和当前任务验证中只作为 `workspaceAttention`，不会让 `taskReady` 或 `actionReady` 变成失败。
+
+实现阶段的标准化维护是明确的影响判定。每次新增或修改源码文件时，Agent 检查
+`docs/basic/`、文件说明书、所在文件夹 README 是否因本次变更过期，并在后台同步
+能由当前源码验证的内容。与本任务无关的历史缺口留在工作区提醒中，不为了过门禁而
+反推旧需求、旧验收或旧实现理由。
+
+`openprd dev-check` 同样只检查本轮 touched files 并给出结构建议。默认不会要求超行
+文件在当前任务里先重构；显式开启 `--auto-refactor on` 也只在结构优化与当前目标同范围
+时建议顺手处理，不会让规模债变成任务失败或要求用户回复开关口令。
 
 ## 生图路由：自动选对免费生图工具
 
@@ -630,8 +660,9 @@ openprd quality /path/to/project --verify
 `quality --verify` 会额外检查是否存在成本来源、用户级限制、负向验证、用量/成本监控、
 报警阈值和止损动作，避免免费额度或高成本路径在上线后才暴露。
 
-`openprd quality --verify` 默认会在本期必测块未 production-ready 时返回失败；
-`openprd run --verify` 会再次执行这个质量门禁。Agent 不得在本期必测块缺证据或需关注时宣称就绪。
+`openprd quality --verify` 默认把未 production-ready 的本期必测块留在报告中并返回成功，避免
+证据债截停当前任务；独立治理作业可显式追加 `--fail-on-violation` 获得严格退出码。`openprd run --verify` 把它放入 `claimReady` 和
+`workspaceAttention`，不会把已经通过本任务验证的实现改成失败，也不会回滚已产生的 commit。
 如果界面任务已有参考图，视觉就绪还需要 `.openprd/harness/visual-reviews/`
 下存在本次 `openprd visual-compare --reference/--actual` 产物；如果没有参考图但改动界面，
 还需要存在 `openprd visual-compare --before/--after` 修改前后产物。普通截图实测需要截图实测证据板；
@@ -693,7 +724,7 @@ openprd loop /path/to/project --run --agent codex --dry-run
 里的 `optionalCapabilities` 建议。它们只用于提示“配上会更好”的能力，不会把
 初始化、诊断或当前任务变成失败。
 
-`doctor` 会检查三端引导、Codex hooks 开关、项目标准化和 OpenPrd 工作区验证是否健康，同时展示像 Context7 / DeepWiki 这类可选增强建议。`update` 会从 OpenPrd 的统一源刷新这些生成文件，并保留用户自己已有的 hook 分组。
+`doctor` 会检查三端引导、Codex hooks 开关和 OpenPrd 工作区结构，同时把项目标准化欠账单独显示为“工作区待关注”；说明书缺口不会让集成诊断本身失败。它也会展示像 Context7 / DeepWiki 这类可选增强建议。`update` 会从 OpenPrd 的统一源刷新生成文件，并保留用户自己已有的 hook 分组。
 
 新版本更新会自动识别旧项目遗留的根目录 `openprd/changes/`、`openprd/specs/` 和 `openprd/archive/changes/`，并把内容迁移到 `.openprd/` 对应位置；无冲突时会删除空的旧 `openprd/` 目录。若同名文件内容不同，旧文件会保留在原处并让本次更新失败，避免静默覆盖用户数据。
 
@@ -704,7 +735,7 @@ openprd loop /path/to/project --run --agent codex --dry-run
 `--dry-run`，预演时只打印安装和刷新命令，不修改 CLI、项目、registry 或 harness 状态。
 
 这套 harness 是有状态的，但 hook 重量由 profile 控制。默认 `lite` 保留轻量
-PreToolUse 非阻断式建议，并把匹配范围限制在直接编辑工具上，同时在 `Stop` 做一轮轻量项目经验回顾，避免只读 shell 噪声和完整工具级遥测；`guarded` 会额外覆盖 shell 工具，`full` 只建议用于临时深度诊断。`freeze`、`handoff`、accepted spec apply/archive、commit、push、release、publish 等动作会运行 `openprd run . --verify`，帮助 Agent 检查标准化、工作区、激活 change 和 discovery 状态，但不要求用户补流程确认。
+PreToolUse 非阻断式建议，并把匹配范围限制在直接编辑工具上，同时在 `Stop` 做一轮轻量项目经验回顾，避免只读 shell 噪声和完整工具级遥测；`guarded` 会额外覆盖 shell 工具，`full` 只建议用于临时深度诊断。`freeze`、`handoff`、accepted spec apply/archive、commit、push、release、publish 等动作可以读取 `openprd run . --verify` 的分层状态，但只由精确目标、权限、冲突、本次制品/测试和回滚条件决定 `actionReady`；全局文档和 EVO 债只作提醒。
 
 `openprd run . --context` 是类似 Ralph 的循环控制面。它会从激活 change 任务、discovery coverage 或普通 OpenPrd 工作流状态里选择下一项可执行单元，并把 hook turn 记录到 `.openprd/harness/iterations.jsonl`。
 
@@ -771,7 +802,9 @@ OpenPrd 面向用户的时间统一使用上海时区的 `YYYY-MM-DD HH:mm:ss` �
 英文语境保持英文，无法判断时回退到简体中文。结构字段继续兼容历史英文
 结构字段；明确要求 `zh-CN` 的图示和合同场景仍会强制使用中文。
 
-历史项目不要手写 shell 循环批量改。使用 `fleet` 先扫描报告；它现在会顺带提示全局 registry 里已经登记了多少 OpenPrd 工作区、当前 root 外还有多少已知项目。`--sync-registry` 用来把当前 root 下已初始化的 `.openprd/` 工作区回填到 `~/.openprd/registry/workspaces.jsonl`。`--update-openprd` 会刷新已有 `.openprd/` 的项目，也会把只包含旧根目录 `openprd/changes/`、`openprd/specs/` 或 `openprd/archive/changes/` 的历史项目识别为 OpenPrd 工作区并迁移到 `.openprd/`；项目自身 standards 或 validate 缺口会作为“项目健康需关注”报告，但不阻断生成引导更新。只有 agent 配置或普通项目默认保持不变，除非显式用 `--setup-missing` 接管。
+历史项目不要手写 shell 循环批量改。使用 `fleet` 先扫描报告；它现在会顺带提示全局 registry 里已经登记了多少 OpenPrd 工作区、当前 root 外还有多少已知项目。`--sync-registry` 用来把当前 root 下已初始化的 `.openprd/` 工作区回填到 `~/.openprd/registry/workspaces.jsonl`。`--update-openprd` 会刷新已有 `.openprd/` 的项目，也会把只包含旧根目录 `openprd/changes/`、`openprd/specs/` 或 `openprd/archive/changes/` 的历史项目识别为 OpenPrd 工作区并迁移到 `.openprd/`；项目自身 standards 或 validate 缺口会作为“项目健康需关注”报告，但不阻断生成引导更新。
+
+历史 requirement、PRD、review、change、tasks 和验收结论统一按 `legacy-frozen` 处理：迁移与 `--backfill-work-units` 只补文件身份、digest、版本索引和 work-unit 绑定等可验证元数据，不生成缺失正文，也不猜测当时的实现理由。旧功能重新进入开发时，Agent 以今天的目标和验收条件建立新 requirement/change，旧材料只作为 context。当前源码能够验证的代码说明书、文件夹 README 和 `docs/basic/` 当前态仍可后台维护。
 
 ## 怎么看 `status` / `next`
 
@@ -781,8 +814,9 @@ OpenPrd 面向用户的时间统一使用上海时区的 `YYYY-MM-DD HH:mm:ss` �
 
 - `Scenario`
 - `User participation mode`
-- `Current gate`
-- `Upcoming gate`
+- `Current stage`
+- `Upcoming stage`
+- `Action ready` / `Workspace attention`
 - `项目版本`（如果已启用 release 版本轨道）
 
 ### `openprd next`
@@ -790,10 +824,12 @@ OpenPrd 面向用户的时间统一使用上海时区的 `YYYY-MM-DD HH:mm:ss` �
 重点看：
 
 - `Next action`
-- `Current gate`
-- `Upcoming gate`
+- `Current stage`
+- `Upcoming stage`
 - `Suggested command`
 - `Suggested questions`
+
+`Current stage` / `Upcoming stage` 只表示当前建议和后续参考。`Workspace attention` 只表示 Agent 可以在后台继续完善的材料；只要 `Action ready=true`，就不得因这些材料缺口阻断用户当下要求的动作。
 
 ## 图 Contract
 

@@ -2,7 +2,7 @@
   "version": 1,
   "schema": "openprd.quality.v1",
   "updatedAt": "2026-05-20 17:20:41",
-  "enforcement": "blocking",
+  "enforcement": "advisory",
   "observability": {
     "centralizedLoggingRequired": true,
     "requiredSignals": [

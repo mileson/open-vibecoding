@@ -11,7 +11,7 @@ import { assertReviewPresentationReady, getReviewPresentationGate } from './revi
 import { syncSessionBindingFromReview, syncSessionBindingFromSnapshot } from './session-binding.js';
 import { timestamp } from './time.js';
 import { generateWorkUnitId, normalizeWorkUnitId, readWorkUnitBinding, resolveTargetRoot, writeWorkUnitBinding } from './work-unit.js';
-import { appendDecision, appendOpenQuestions, appendProgress, appendWorkflowEvent, buildClarificationPlan, buildClarificationState, buildCurrentStateSnapshot, buildWorkflowTaskGraph, CAPTURE_SOURCES, coerceCapturedValue, deriveGateLabels, detectWorkspaceScenario, extractMarkdownSection, FIELD_PATH_TO_STATE_KEY, isSupportedProductType, loadCurrentLaneSnapshot, loadLatestVersionSnapshot, loadWorkspace, normalizeVersionId, persistWorkspaceCurrentState, readActiveRequirementLane, readVersionIndex, readVersionSnapshot, renderFlowDoc, renderHandoffDoc, renderRolesDoc, resolveActiveTemplatePack, resolveCurrentProductType, USER_CLARIFICATION_PATHS, validateWorkspace, writeVersionIndex, writeVersionSnapshot } from './workspace-core.js';
+import { appendDecision, appendOpenQuestions, appendProgress, appendWorkflowEvent, buildClarificationPlan, buildClarificationState, buildCurrentStateSnapshot, buildWorkflowTaskGraph, CAPTURE_SOURCES, coerceCapturedValue, deriveGuidanceLabels, detectWorkspaceScenario, extractMarkdownSection, FIELD_PATH_TO_STATE_KEY, isSupportedProductType, loadCurrentLaneSnapshot, loadLatestVersionSnapshot, loadWorkspace, normalizeVersionId, persistWorkspaceCurrentState, readActiveRequirementLane, readVersionIndex, readVersionSnapshot, renderFlowDoc, renderHandoffDoc, renderRolesDoc, resolveActiveTemplatePack, resolveCurrentProductType, USER_CLARIFICATION_PATHS, validateWorkspace, writeVersionIndex, writeVersionSnapshot } from './workspace-core.js';
 
 function requirementGatePath(projectRoot) {
   return path.join(projectRoot, '.openprd', 'harness', 'requirement-gate.json');
@@ -21,7 +21,8 @@ function normalizedText(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
-const PRD_REVIEW_STATUSES = ['pending-confirmation', 'confirmed', 'needs-revision'];
+const PRD_REVIEW_MARK_STATUSES = ['pending-confirmation', 'confirmed', 'needs-revision'];
+const PRD_REVIEW_STATUSES = [...PRD_REVIEW_MARK_STATUSES, 'legacy-frozen'];
 const CURRENT_SNAPSHOT_CACHE_KEYS = [
   'versionId',
   'versionNumber',
@@ -233,6 +234,32 @@ function normalizePrdReviewStatus(status) {
   return PRD_REVIEW_STATUSES.includes(status) ? status : 'pending-confirmation';
 }
 
+function isLegacyFrozenState(currentState, snapshot = null, binding = null) {
+  return [
+    currentState?.lifecycleStatus,
+    currentState?.reviewStatus?.lifecycleStatus,
+    currentState?.reviewStatus?.status,
+    snapshot?.lifecycleStatus,
+    binding?.status,
+  ].some((status) => status === 'legacy-frozen');
+}
+
+function freshCurrentStateFromLegacy(currentState) {
+  return {
+    status: 'clarifying',
+    productType: currentState?.productType ?? null,
+    templatePack: currentState?.templatePack ?? null,
+    targetRoot: currentState?.targetRoot ?? null,
+    captureMeta: {},
+    historicalContext: {
+      versionId: currentState?.latestVersionId ?? currentState?.versionId ?? currentState?.reviewStatus?.versionId ?? null,
+      digest: currentState?.latestVersionDigest ?? currentState?.digest ?? null,
+      workUnitId: currentState?.activeWorkUnitId ?? currentState?.workUnitId ?? currentState?.reviewStatus?.workUnitId ?? null,
+      mode: 'context-only',
+    },
+  };
+}
+
 async function readActiveRequirementGate(projectRoot) {
   const lane = await readActiveRequirementLane(projectRoot).catch(() => null);
   return lane?.gate?.active ? lane.gate : null;
@@ -309,38 +336,39 @@ function gateQuestionLimit(gate, fallback) {
 
 function ensureFreshRequirementStateForSynthesize({ gate, currentState, overrides }) {
   if (!gate) {
-    return;
+    return null;
   }
   const gateAt = requirementGateReferenceTimestamp(gate);
   if (!gateAt) {
-    return;
+    return null;
   }
   const capturedAt = latestCaptureTimestamp(currentState);
   if (capturedAt && String(capturedAt) >= String(gateAt)) {
     if (!gateHasClarificationConfirmation(gate)) {
-      return;
+      return null;
     }
     const confirmedCaptureAt = latestConfirmedClarificationCaptureTimestamp(currentState);
     const hasDerivedCapture = hasDerivedClarificationCaptureSince(currentState, gateAt);
     if (confirmedCaptureAt && String(confirmedCaptureAt) >= String(gateAt) && !hasDerivedCapture) {
-      return;
+      return null;
     }
-    throw new Error([
-      'OpenPrd 已阻止 synthesize：当前需求摘要虽已确认，但 current.json 还没有把本轮确认内容稳定写回。',
-      hasDerivedCapture
-        ? '检测到本轮仍有 user clarification 字段被写成 agent-inferred / project-derived；请先改用 openprd capture 按 canonical 字段路径并以 user-confirmed 写回，再继续 synthesize。'
-        : '请先用 openprd capture 按 canonical 字段路径并以 user-confirmed 写回本轮确认事实，再继续 synthesize。',
-      hasSynthesizeContentOverrides(overrides)
-        ? 'partial override 不能替代这一步 requirement write-back。'
-        : null,
-    ].filter(Boolean).join(' '));
+    return {
+      kind: 'requirement-capture',
+      scope: 'workspace-record',
+      blocking: false,
+      reason: hasDerivedCapture ? 'derived-clarification-capture' : 'confirmation-not-captured',
+      summary: '当前 requirement 确认事实尚未完整写回；已继续生成后台 PRD 记录，但不得把缺失确认描述为用户已批准。',
+      suggestedAction: '使用 openprd capture 按 canonical 字段路径补充来源与确认事实。',
+    };
   }
-  throw new Error([
-    'OpenPrd 已阻止 synthesize：当前有新的需求入口，但 current.json 还没有记录本轮确认答案。',
-    hasSynthesizeContentOverrides(overrides)
-      ? '当前 requirement gate 处于进行中，partial override 不能替代 fresh capture；请先用 openprd capture 写入本轮目标、问题、范围和验收信息。'
-      : '请先用 openprd capture 写入本轮目标、问题、范围和验收信息。',
-  ].join(' '));
+  return {
+    kind: 'requirement-capture',
+    scope: 'workspace-record',
+    blocking: false,
+    reason: hasSynthesizeContentOverrides(overrides) ? 'partial-override-without-fresh-capture' : 'missing-fresh-capture',
+    summary: '当前 requirement 尚未完成本轮 canonical capture；已继续生成后台 PRD 记录，确认状态保持未确认。',
+    suggestedAction: '使用 openprd capture 补充本轮目标、问题、范围和验收信息。',
+  };
 }
 
 async function ensureRequirementLaneReadyForSynthesize(ws) {
@@ -351,17 +379,17 @@ async function ensureRequirementLaneReadyForSynthesize(ws) {
     || guidance.nextAction === 'interview'
     || (guidance.nextAction === 'clarify-user' && (lacksProductType || missingRequiredFields > 0));
   if (!blockedByStructuredGap) {
-    return;
+    return null;
   }
-  throw new Error([
-    'OpenPrd 已阻止 synthesize：当前 requirement lane 还没有离开需求补齐阶段。',
-    `当前下一步仍是 ${guidance.nextAction}。`,
-    guidance.reason ? `原因: ${guidance.reason}` : null,
-    guidance.suggestedCommand ? `建议先执行: ${guidance.suggestedCommand}。` : null,
-    Array.isArray(guidance.suggestedQuestions) && guidance.suggestedQuestions.length > 0
-      ? `优先补齐: ${guidance.suggestedQuestions.slice(0, 2).join('；')}。`
-      : null,
-  ].filter(Boolean).join(' '));
+  return {
+    kind: 'requirement-completeness',
+    scope: 'workspace-record',
+    blocking: false,
+    nextAction: guidance.nextAction,
+    summary: `当前 requirement 仍有结构化信息待补（下一步 ${guidance.nextAction}）；后台 PRD 可继续生成，但不能宣称需求完整。`,
+    suggestedCommand: guidance.suggestedCommand ?? null,
+    suggestedQuestions: Array.isArray(guidance.suggestedQuestions) ? guidance.suggestedQuestions.slice(0, 2) : [],
+  };
 }
 
 function resolveReviewPaths(ws, snapshot) {
@@ -1079,10 +1107,10 @@ function buildInlineClarification({ clarification, reflection, presentation }) {
   }
   lines.push('');
   if (primaryQuestion) {
-    lines.push('我建议这轮先确认这一点：');
+    lines.push('这轮最值得优先补充的一点（未补充时由 Agent 采用可逆默认假设）：');
     lines.push(`- ${primaryQuestion.prompt}`);
     if (followUpQuestions.length > 0) {
-      lines.push('这点定下来后，我再继续补下面这些：');
+      lines.push('后续还可以逐步补充这些信息：');
       for (const item of followUpQuestions) {
         lines.push(`- ${item.prompt}`);
       }
@@ -1095,12 +1123,11 @@ function buildInlineClarification({ clarification, reflection, presentation }) {
     for (const choice of directionChoices) {
       lines.push(`- ${choice}`);
     }
-    lines.push('你可以先回一个方向编号，或直接补一句你的倾向。');
-    lines.push('我收到后会先整理需求摘要给你确认；确认后再进入 PRD 和评审流程，不会直接跳到实现。');
+    lines.push('你可以回一个方向编号或补一句倾向；不回复也不形成 OpenPrd 停顿，Agent 会采用可逆默认方向继续。');
   } else {
-    lines.push('如果以上理解基本对，请先回复“可以”，或直接指出要调整的地方。');
-    lines.push('我收到后会先整理需求摘要给你确认；确认后再进入 PRD 和评审流程，不会直接跳到实现。');
+    lines.push('如果以上理解需要调整，可以直接指出；否则 Agent 会按当前可逆假设继续。');
   }
+  lines.push('requirement 摘要、PRD 和评审材料由 Agent 在后台维护，不作为实现授权或用户回复门槛。');
   return {
     mode: presentation.mode,
     title: presentation.label,
@@ -1186,12 +1213,12 @@ async function buildRequirementIntakeReflection({ projectRoot, ws, snapshot, ana
   const mvpAndSalesQuestion = reflectionQuestion(
     'mvp-sales',
     '最小 MVP 与首批成交',
-    '请确认第一版到底只做哪一件事、能不能压成周末级 MVP 或更轻试跑、能不能先用 spreadsheet 或 no-code 工具跑起来、第一批客户最现实的触达顺序是什么，以及从第一个客户开始准备怎么收费、有没有 10 个潜在用户样本和更强付费信号、达到什么条件才允许产品化。'
+    '建议明确第一版到底只做哪一件事、能不能压成周末级 MVP 或更轻试跑、能不能先用 spreadsheet 或 no-code 工具跑起来、第一批客户最现实的触达顺序是什么，以及从第一个客户开始准备怎么收费、有没有 10 个潜在用户样本和更强付费信号、达到什么条件才允许产品化。'
   );
   const minimalistReviewQuestion = reflectionQuestion(
     'minimalist-review',
     '可逆性 / 客户真问题 / 价值观',
-    '请确认如果验证结果一般，这条路有多可逆，是否会逼出重招聘、长期绑定或重平台化；这更像在解决客户真问题还是满足内部技术冲动；以及它是否符合团队现在想坚持的价值观、是不是你愿意长期住进去的业务形态。'
+    '建议明确如果验证结果一般，这条路有多可逆，是否会逼出重招聘、长期绑定或重平台化；这更像在解决客户真问题还是满足内部技术冲动；以及它是否符合团队现在想坚持的价值观、是不是你愿意长期住进去的业务形态。'
   );
   const needsDeliveryShapeQuestion = !needsInterfaceSketch
     && (
@@ -1200,22 +1227,22 @@ async function buildRequirementIntakeReflection({ projectRoot, ws, snapshot, ana
     );
   const mustConfirm = complexity.mode === 'deep'
     ? [
-        reflectionQuestion('intent', '意图与目标', '请确认我理解得对不对：这次主要是谁在什么场景下遇到什么问题，第一版最想先改善什么结果？'),
+        reflectionQuestion('intent', '意图与目标', '建议明确：这次主要是谁在什么场景下遇到什么问题，第一版最想先改善什么结果？'),
         lensQuestion,
         validationLoopQuestion,
         mvpAndSalesQuestion,
         minimalistReviewQuestion,
-        reflectionQuestion('project-context', '项目影响范围', '结合当前项目，请确认第一版最小可用切片是什么；哪些已有模块、入口、流程或历史需求必须复用，哪些可以调整？'),
-        reflectionQuestion('scope-quality', '范围与验收', '请确认这次先做到哪一步就算有价值；哪些这轮先不动；哪些老用户习惯、现有业务结果或交付节奏不能被影响？'),
+        reflectionQuestion('project-context', '项目影响范围', '结合当前项目，建议明确第一版最小可用切片是什么；哪些已有模块、入口、流程或历史需求可作为上下文，哪些可以调整？'),
+        reflectionQuestion('scope-quality', '范围与验收', '建议明确这次先做到哪一步就算有价值；哪些这轮先不动；哪些老用户习惯、现有业务结果或交付节奏不能被影响？'),
         needsInterfaceSketch
-          ? reflectionQuestion('interface-sketch', '界面或流程草图', '需求涉及界面或流程，请先确认主要区域、操作入口、预览/确认点和风险提示。')
+          ? reflectionQuestion('interface-sketch', '界面或流程草图', '需求涉及界面或流程，建议先记录主要区域、操作入口、预览点和风险提示；它是后台设计材料，不要求用户先确认。')
           : needsDeliveryShapeQuestion
-            ? reflectionQuestion('delivery-shape', '影响环节与业务风险', '请确认这次大概会牵动哪些环节，例如用户入口、内部流程、账号与权限、外部对接、AI 自动化或成本控制；其中最大的业务风险是什么。')
-            : reflectionQuestion('details-boundary', '关键状态与验收细节', '请确认用户会看到的关键状态、重要字段、例外场景和最小验收标准。'),
+            ? reflectionQuestion('delivery-shape', '影响环节与业务风险', '建议明确这次大概会牵动哪些环节，例如用户入口、内部流程、账号与权限、外部对接、AI 自动化或成本控制；其中最大的业务风险是什么。')
+            : reflectionQuestion('details-boundary', '关键状态与验收细节', '建议明确用户会看到的关键状态、重要字段、例外场景和最小验收标准。'),
       ]
     : [
-        reflectionQuestion('project-context', '项目映射', '请确认这个调整具体落在哪个页面、模块、入口或流程，以及第一版先做哪一小块最有价值。'),
-        reflectionQuestion('acceptance', '验收方式', '请确认完成后用户能明显感受到什么变化、哪些既有行为不能改变，以及最小验收标准是什么。'),
+        reflectionQuestion('project-context', '项目映射', '建议明确这个调整具体落在哪个页面、模块、入口或流程，以及第一版先做哪一小块最有价值。'),
+        reflectionQuestion('acceptance', '验收方式', '建议明确完成后用户能明显感受到什么变化、哪些既有行为不能改变，以及最小验收标准是什么。'),
       ];
 
   return {
@@ -1340,7 +1367,7 @@ function renderRequirementIntakeReflection(reflection) {
     }
     lines.push('');
   }
-  lines.push('## 必须确认的问题', '');
+  lines.push('## 高价值待澄清点（不阻断）', '');
   for (const question of reflection.mustConfirm) {
     lines.push(`- ${question.label}: ${question.prompt}`);
   }
@@ -1360,17 +1387,17 @@ async function writeRequirementIntakeReflection(ws, reflection) {
 function buildRequirementIntakeDepth(gate, reflection = null) {
   const needsInterfaceSketch = requirementLooksLikeInterfaceWork(gate);
   const fallbackLayers = [
-    reflectionQuestion('product-context', '用户 / 产品形态 / 问题', '先确认：这是给谁用的、它更像个人产品 / 团队流程 / Agent 协作中的哪一种、为什么现在值得解决？'),
-    reflectionQuestion('product-outcome', '第一版切片 / 目标 / 成功标准', '请确认第一版最小可用切片是什么；解决后用户先能完成什么，用什么业务结果或验收标准判断有效？'),
-    reflectionQuestion('product-validation', '验证闭环 / 承诺信号', '请确认第一批最容易触达的社区或用户是谁、你为什么算这个社区里的自己人、他们现在靠什么替代、问题到底有多痛、如果先不做完整产品怎么手工交付、手工作战卡怎么写、什么真实承诺最能证明值得继续，以及最低成本验证和先活下来底线是什么。'),
-    reflectionQuestion('product-mvp-sales', '最小 MVP / 首批成交', '请确认第一版到底只做哪一件事、能不能压成周末级 MVP 或更轻试跑、第一批客户最现实的触达顺序是什么，以及从第一个客户开始准备怎么收费、怎么验证客户 1 也能打平时间和交付成本。'),
-    reflectionQuestion('product-minimalist-review', '可逆性 / 客户真问题 / 价值观', '请确认如果验证结果一般，这条路有多可逆；这更像在解决客户真问题还是满足内部技术冲动；以及它是否符合团队现在想坚持的价值观、是不是你愿意长期住进去的业务形态。'),
+    reflectionQuestion('product-context', '用户 / 产品形态 / 问题', '建议明确：这是给谁用的、它更像个人产品 / 团队流程 / Agent 协作中的哪一种、为什么现在值得解决？'),
+    reflectionQuestion('product-outcome', '第一版切片 / 目标 / 成功标准', '建议明确第一版最小可用切片是什么；解决后用户先能完成什么，用什么业务结果或验收标准判断有效？'),
+    reflectionQuestion('product-validation', '验证闭环 / 承诺信号', '建议明确第一批最容易触达的社区或用户是谁、你为什么算这个社区里的自己人、他们现在靠什么替代、问题到底有多痛、如果先不做完整产品怎么手工交付、手工作战卡怎么写、什么真实承诺最能证明值得继续，以及最低成本验证和先活下来底线是什么。'),
+    reflectionQuestion('product-mvp-sales', '最小 MVP / 首批成交', '建议明确第一版到底只做哪一件事、能不能压成周末级 MVP 或更轻试跑、第一批客户最现实的触达顺序是什么，以及从第一个客户开始准备怎么收费、怎么验证客户 1 也能打平时间和交付成本。'),
+    reflectionQuestion('product-minimalist-review', '可逆性 / 客户真问题 / 价值观', '建议明确如果验证结果一般，这条路有多可逆；这更像在解决客户真问题还是满足内部技术冲动；以及它是否符合团队现在想坚持的价值观、是不是你愿意长期住进去的业务形态。'),
     reflectionQuestion('product-flow', '范围 / 非目标 / 异常路径', '请拆出本轮先做什么、不做什么、哪些既有行为不能被破坏，以及关键失败路径和恢复方式。'),
     reflectionQuestion(
       'product-detail',
       needsInterfaceSketch ? '界面草图 / 字段 / 状态' : '细节 / 状态 / 边界',
       needsInterfaceSketch
-        ? '这个需求涉及界面，请先给用户一版 ASCII 线框草图，标出主要区域、操作入口、预览/确认点和风险提示，让用户确认后再 synthesize。'
+        ? '这个需求涉及界面，先在后台补一版 ASCII 线框草图，标出主要区域、操作入口、预览点和风险提示；采用可逆默认假设继续 synthesize，用户后续明确选择时再覆盖。'
         : '请补齐用户会看到的关键状态、重要字段、业务边界和可验收细节；如果后续发现涉及界面，也要先补 ASCII 线框草图。'
     ),
   ];
@@ -1463,32 +1490,50 @@ async function getPrdReviewState(ws, latestSnapshot = null) {
   const currentState = ws.data.currentState ?? {};
   const latestVersionId = latestSnapshot?.versionId ?? currentState.latestVersionId ?? null;
   const stored = currentState.reviewStatus ?? null;
+  const binding = latestSnapshot?.workUnitId
+    ? await readWorkUnitBinding(ws, latestSnapshot.workUnitId)
+    : null;
+  const legacyFrozen = isLegacyFrozenState(currentState, latestSnapshot, binding);
   const reviewPath = stored?.reviewPath
     ?? stored?.stableArtifact
-    ?? (latestVersionId ? canonicalReviewPath(ws, latestVersionId) : null);
-  const entryPath = stored?.entryPath ?? stored?.artifact ?? defaultReviewArtifactPath(ws);
+    ?? binding?.reviewPath
+    ?? binding?.reviewArtifact
+    ?? (!legacyFrozen && latestVersionId ? canonicalReviewPath(ws, latestVersionId) : null);
+  const entryPath = stored?.entryPath
+    ?? stored?.artifact
+    ?? binding?.activeReviewPath
+    ?? binding?.activeReviewArtifact
+    ?? (!legacyFrozen ? defaultReviewArtifactPath(ws) : null);
   const artifactExists = reviewPath ? await exists(reviewPath) : false;
-  const status = stored?.versionId === latestVersionId
+  const status = legacyFrozen
+    ? 'legacy-frozen'
+    : stored?.versionId === latestVersionId
     ? normalizePrdReviewStatus(stored.status)
     : (artifactExists ? 'pending-confirmation' : 'missing');
-  let reason = '最新 PRD 评审产物已确认。';
-  if (!artifactExists) {
+  let reason = legacyFrozen
+    ? '该 PRD 已冻结为历史上下文，不能作为当前 requirement 重新确认或写回。'
+    : '最新 PRD 评审产物已确认。';
+  if (!legacyFrozen && !artifactExists) {
     const presentationGate = latestSnapshot ? getReviewPresentationGate(latestSnapshot) : null;
     reason = presentationGate && !presentationGate.ok
       ? '缺少已通过脚本校验的评审展示文案，先运行 openprd review-presentation 写入后再生成可确认评审页。'
       : '缺少最新 PRD 评审文件，freeze 前需要重新生成可评审产物。';
-  } else if (status === 'pending-confirmation') {
-    reason = '最新 PRD 评审文件尚未标记为用户已确认。';
-  } else if (status === 'needs-revision') {
-    reason = '最新 PRD 评审文件已标记为需要修改，不能直接 freeze。';
+  } else if (!legacyFrozen && status === 'pending-confirmation') {
+    reason = '最新 PRD 评审文件尚未标记为用户已确认；该状态作为后台记录，不阻断后续执行。';
+  } else if (!legacyFrozen && status === 'needs-revision') {
+    reason = '最新 PRD 评审文件已标记为需要修改；该状态作为后台记录，不等同于执行授权。';
   }
+  const needsAttention = Boolean(latestVersionId) && (legacyFrozen || !artifactExists || status !== 'confirmed');
   return {
     versionId: latestVersionId,
     status,
     artifactExists,
     artifact: reviewPath,
     entryArtifact: entryPath,
-    shouldGateFreeze: Boolean(latestVersionId) && (!artifactExists || status !== 'confirmed'),
+    shouldGateFreeze: false,
+    needsAttention,
+    blocking: false,
+    historicalContextOnly: legacyFrozen,
     reason,
     updatedAt: stored?.updatedAt ?? null,
     notes: stored?.notes ?? null,
@@ -1501,13 +1546,20 @@ async function synthesizeWorkspace(projectRoot, overrides = {}) {
     throw new Error(`Missing workspace: ${ws.workspaceRoot}`);
   }
   const requirementGate = await readActiveRequirementGate(projectRoot);
-  ensureFreshRequirementStateForSynthesize({
+  const workspaceAttention = [];
+  const freshCaptureAttention = ensureFreshRequirementStateForSynthesize({
     gate: requirementGate,
     currentState: ws.data.currentState ?? {},
     overrides,
   });
-  if (requirementGate?.active && gateHasClarificationConfirmation(requirementGate)) {
-    await ensureRequirementLaneReadyForSynthesize(ws);
+  if (freshCaptureAttention) {
+    workspaceAttention.push(freshCaptureAttention);
+  }
+  if (requirementGate?.active) {
+    const requirementCompletenessAttention = await ensureRequirementLaneReadyForSynthesize(ws);
+    if (requirementCompletenessAttention) {
+      workspaceAttention.push(requirementCompletenessAttention);
+    }
   }
 
   const versionIndex = await readVersionIndex(ws);
@@ -1518,10 +1570,24 @@ async function synthesizeWorkspace(projectRoot, overrides = {}) {
   const createdAt = overrides.createdAt ?? timestamp();
   const workUnitId = normalizeWorkUnitId(overrides.workUnit ?? overrides.workUnitId) ?? generateWorkUnitId();
   const targetRoot = resolveTargetRoot(ws, overrides.targetRoot);
+  const previousCurrentState = ws.data.currentState ?? {};
+  const legacyFrozen = isLegacyFrozenState(previousCurrentState);
+  const currentStateSeed = legacyFrozen
+    ? freshCurrentStateFromLegacy(previousCurrentState)
+    : previousCurrentState;
+  if (legacyFrozen) {
+    workspaceAttention.push({
+      kind: 'historical-context',
+      scope: 'workspace-record',
+      blocking: false,
+      summary: '旧版本保持 legacy-frozen；本次 synthesize 已创建新的当前 requirement，旧内容仅作为 context。',
+      historicalContext: currentStateSeed.historicalContext,
+    });
+  }
   const baseCurrentState = {
-    ...(ws.data.currentState ?? {}),
+    ...currentStateSeed,
     captureMeta: {
-      ...((ws.data.currentState ?? {}).captureMeta ?? {}),
+      ...(currentStateSeed.captureMeta ?? {}),
     },
   };
   if (shouldDropInheritedReviewPresentationFromOverrides(overrides)) {
@@ -1577,6 +1643,7 @@ async function synthesizeWorkspace(projectRoot, overrides = {}) {
     productType: snapshot.productType,
     reviewArtifact: presentationGate.ok ? reviewFiles.canonicalReview : null,
     reviewPresentationRequired: !presentationGate.ok,
+    workspaceAttention: workspaceAttention.map((item) => item.kind),
   });
   await appendDecision(ws, [
     `已整理出一版可确认的需求稿。`,
@@ -1648,6 +1715,7 @@ async function synthesizeWorkspace(projectRoot, overrides = {}) {
     reviewPresentationGate: presentationGate,
     workUnitId: snapshot.workUnitId,
     workUnit,
+    workspaceAttention,
     opened: Boolean(overrides.open && presentationGate.ok),
   };
 }
@@ -1750,6 +1818,20 @@ async function reviewWorkspace(projectRoot, options = {}) {
     };
   }
 
+  const bindingBefore = await readWorkUnitBinding(ws, snapshot.workUnitId);
+  if (isLegacyFrozenState(ws.data.currentState ?? {}, snapshot, bindingBefore)) {
+    return {
+      ok: false,
+      action: 'review',
+      projectRoot,
+      versionId: snapshot.versionId,
+      workUnitId: snapshot.workUnitId ?? null,
+      status: 'legacy-frozen',
+      historicalContextOnly: true,
+      errors: ['该历史 PRD 已是 legacy-frozen，只能作为 context；如需继续该功能，请先创建新的当前 requirement。'],
+    };
+  }
+
   const isLatest = normalizeVersionId(snapshot.versionId) === normalizeVersionId((latestSnapshot ?? snapshot).versionId);
   const presentationGate = getReviewPresentationGate(snapshot);
   if (!presentationGate.ok) {
@@ -1804,7 +1886,6 @@ async function reviewWorkspace(projectRoot, options = {}) {
   }
 
   const reviewFiles = await writeReviewFiles(ws, snapshot, { writeEntry: isLatest });
-  const bindingBefore = await readWorkUnitBinding(ws, snapshot.workUnitId);
   const before = isLatest
     ? await getPrdReviewState(ws, snapshot)
     : {
@@ -1815,10 +1896,10 @@ async function reviewWorkspace(projectRoot, options = {}) {
   let status = before.status;
   let workUnit = bindingBefore;
   if (options.mark) {
-    status = normalizePrdReviewStatus(options.mark);
-    if (status !== options.mark) {
+    if (!PRD_REVIEW_MARK_STATUSES.includes(options.mark)) {
       throw new Error(`Unsupported review status: ${options.mark}`);
     }
+    status = options.mark;
     if (isLatest) {
       const currentState = {
         ...(ws.data.currentState ?? {}),
@@ -2032,12 +2113,23 @@ async function captureWorkspace(projectRoot, options = {}) {
     throw new Error(`Missing workspace: ${ws.workspaceRoot}`);
   }
 
-  const currentState = {
-    ...(ws.data.currentState ?? {}),
-  };
+  const previousCurrentState = ws.data.currentState ?? {};
+  const legacyFrozen = isLegacyFrozenState(previousCurrentState);
+  const currentState = legacyFrozen
+    ? freshCurrentStateFromLegacy(previousCurrentState)
+    : { ...previousCurrentState };
   currentState.captureMeta = {
     ...(currentState.captureMeta ?? {}),
   };
+  const workspaceAttention = legacyFrozen
+    ? [{
+        kind: 'historical-context',
+        scope: 'workspace-record',
+        blocking: false,
+        summary: '旧版本保持 legacy-frozen；本次 capture 已开启新的当前 requirement，旧内容不会被改写。',
+        historicalContext: currentState.historicalContext,
+      }]
+    : [];
 
   const updates = [];
 
@@ -2193,6 +2285,7 @@ async function captureWorkspace(projectRoot, options = {}) {
     fields: applied.map((item) => item.field),
     sources: applied.map((item) => item.source),
     staleReview,
+    workspaceAttention: workspaceAttention.map((item) => item.kind),
   });
   await appendDecision(ws, [
     `Captured clarification for ${applied.map((item) => item.field).join(', ')}.`,
@@ -2210,6 +2303,7 @@ async function captureWorkspace(projectRoot, options = {}) {
     value: applied[0]?.value ?? null,
     source: applied[0]?.source ?? null,
     analysis,
+    workspaceAttention,
   };
 }
 
@@ -2273,7 +2367,7 @@ async function computeWorkspaceGuidance(ws, options = {}) {
 
   if (clarification.shouldAskUser) {
     nextAction = 'clarify-user';
-    reason = '工作区缺少用户确认的关键信息，需要先澄清再继续合成。';
+    reason = '工作区还有高价值待澄清信息；Agent 应优先采用可逆默认假设继续，只有真实歧义会显著改变或不可逆地扩大结果时才提问。';
     suggestedCommand = 'openprd clarify .';
     suggestedQuestions = clarification.mustAskUser.map((item) => item.prompt);
   } else if (!hasProductType) {
@@ -2313,17 +2407,17 @@ async function computeWorkspaceGuidance(ws, options = {}) {
           : 'openprd synthesize . --open');
     suggestedQuestions = [
       '这份 PRD 的问题、目标、范围、主流程、失败路径和风险是否符合你的理解？',
-      '如果已经确认，请运行 openprd review . --mark confirmed；如果需要修改，请运行 openprd review . --mark needs-revision。',
+      '如有反馈可记录为 needs-revision；没有反馈时 Agent 按可逆默认方向继续，review 记录不影响当前实现。',
     ];
   } else if (currentStatus === 'synthesized' || currentState.prdVersion > 0) {
     nextAction = 'freeze';
-    reason = '已有版本化 PRD，交接前应先 freeze。';
+    reason = '已有版本化 PRD；如果当前目标是交接，可以用 freeze 固化快照。该建议不影响当前实现或其他用户已要求的动作。';
     suggestedCommand = 'openprd freeze .';
     suggestedQuestions = [];
   }
 
   const taskGraph = buildWorkflowTaskGraph(analysisSnapshot, analysis, { diagramState, prdReviewState, clarificationState: clarification });
-  const gates = deriveGateLabels({ nextAction, diagramState, clarification });
+  const guidance = deriveGuidanceLabels({ nextAction, diagramState, clarification });
   const brainstormSuggestion = buildBrainstormSuggestion({
     currentState,
     analysis,
@@ -2344,7 +2438,13 @@ async function computeWorkspaceGuidance(ws, options = {}) {
     reason,
     suggestedCommand,
     suggestedQuestions,
-    gates,
+    gates: guidance,
+    currentStage: guidance.currentStage,
+    upcomingStage: guidance.upcomingStage,
+    currentGate: guidance.currentGate,
+    upcomingGate: guidance.upcomingGate,
+    advisory: guidance.advisory,
+    blocking: guidance.blocking,
     brainstormSuggestion,
   };
 }
@@ -2408,8 +2508,12 @@ async function nextWorkspace(projectRoot, options = {}) {
       reason,
       suggestedCommand,
       suggestedQuestions,
-      currentGate: gates.currentGate,
-      upcomingGate: gates.upcomingGate,
+      currentStage: guidance.currentStage,
+      upcomingStage: guidance.upcomingStage,
+      currentGate: guidance.currentGate,
+      upcomingGate: guidance.upcomingGate,
+      advisory: guidance.advisory,
+      blocking: guidance.blocking,
     },
     brainstormSuggestion: guidance.brainstormSuggestion,
     workflow: ['brainstorm', 'clarify', 'classify', 'interview', 'synthesize', 'diagram', 'review', 'freeze', 'handoff'],

@@ -27,7 +27,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '先分析一下并准备修改 skills/openprd-shared/SKILL.md 和 AGENTS.md，优化这个 skill workflow。',
     });
     assert.equal(skillPrompt.continue, true);
-    assert.ok(skillPrompt.hookSpecificOutput.additionalContext.includes('可视化确认门禁'));
+    assert.ok(skillPrompt.hookSpecificOutput.additionalContext.includes('可视化注意项'));
     assert.ok(skillPrompt.hookSpecificOutput.additionalContext.includes('彩色 Mermaid'));
     const skillGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'skill-visualization-gate.json'), 'utf8'));
     assert.equal(skillGate.active, true);
@@ -38,7 +38,7 @@ describe('Codex hook safety and design gates', () => {
     });
     assert.equal(blockedSkillPatch.decision, undefined);
     assert.equal(blockedSkillPatch.continue, true);
-    assert.ok(JSON.stringify(blockedSkillPatch).includes('visualization advisory'));
+    assert.ok(JSON.stringify(blockedSkillPatch).includes('visualization attention'));
 
     const confirmed = runCodexHook(project, 'UserPromptSubmit', {
       prompt: '确认执行',
@@ -55,24 +55,26 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(allowedSkillPatch.continue, true);
   });
 
-  test('Codex hook requires DeepWiki and Context7 evidence before mutating external-integration work', async () => {
+  test('Codex hook keeps DeepWiki and Context7 evidence as advisory attention while allowing in-scope mutations', async () => {
     const { project } = await makeCodexHookProject();
 
     const repoPrompt = runCodexHook(project, 'UserPromptSubmit', {
       prompt: '请参考 github.com/vercel/next.js 这个公开仓库的整体架构，对标下我们的 CLI 设计，然后直接修改实现。',
     });
     assert.equal(repoPrompt.continue, true);
-    assert.ok(repoPrompt.hookSpecificOutput.additionalContext.includes('外部仓库调研门禁'));
+    assert.ok(repoPrompt.hookSpecificOutput.additionalContext.includes('外部仓库证据注意项'));
     let researchGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'research-gate.json'), 'utf8'));
     assert.equal(researchGate.kind, 'deepwiki');
     assert.equal(researchGate.active, true);
 
-    const blockedRepoPatch = runCodexHook(project, 'PreToolUse', {
+    const repoPatchWithAttention = runCodexHook(project, 'PreToolUse', {
       tool_name: 'apply_patch',
       tool_input: '*** Begin Patch\n*** Update File: src/app.ts\n@@\n+// mutate before deepwiki\n*** End Patch',
     });
-    assert.equal(blockedRepoPatch.decision, 'block');
-    assert.ok(blockedRepoPatch.reason.includes('read_wiki_structure'));
+    assert.equal(repoPatchWithAttention.decision, undefined);
+    assert.equal(repoPatchWithAttention.continue, true);
+    assert.ok(JSON.stringify(repoPatchWithAttention).includes('research attention'));
+    assert.ok(JSON.stringify(repoPatchWithAttention).includes('read_wiki_structure'));
 
     runCodexHook(project, 'PreToolUse', {
       tool_name: 'deepwiki__read_wiki_structure',
@@ -90,17 +92,19 @@ describe('Codex hook safety and design gates', () => {
       prompt: '这个第三方 SDK 和 CLI 的配置、限制和迁移路径需要确认一下，然后直接改我们的集成实现。',
     });
     assert.equal(contextPrompt.continue, true);
-    assert.ok(contextPrompt.hookSpecificOutput.additionalContext.includes('外部技术调研门禁'));
+    assert.ok(contextPrompt.hookSpecificOutput.additionalContext.includes('外部技术证据注意项'));
     researchGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'research-gate.json'), 'utf8'));
     assert.equal(researchGate.kind, 'context7');
     assert.equal(researchGate.active, true);
 
-    const blockedContextPatch = runCodexHook(project, 'PreToolUse', {
+    const contextPatchWithAttention = runCodexHook(project, 'PreToolUse', {
       tool_name: 'apply_patch',
       tool_input: '*** Begin Patch\n*** Update File: src/app.ts\n@@\n+// mutate before context7\n*** End Patch',
     });
-    assert.equal(blockedContextPatch.decision, 'block');
-    assert.ok(blockedContextPatch.reason.includes('resolve_library_id'));
+    assert.equal(contextPatchWithAttention.decision, undefined);
+    assert.equal(contextPatchWithAttention.continue, true);
+    assert.ok(JSON.stringify(contextPatchWithAttention).includes('research attention'));
+    assert.ok(JSON.stringify(contextPatchWithAttention).includes('resolve_library_id'));
 
     runCodexHook(project, 'PreToolUse', {
       tool_name: 'context7__resolve_library_id',
@@ -145,8 +149,7 @@ describe('Codex hook safety and design gates', () => {
     });
     assert.equal(blockedPatchPayload.decision, undefined);
     assert.equal(blockedPatchPayload.continue, true);
-    assert.ok(JSON.stringify(blockedPatchPayload).includes('does not block'));
-    assert.ok(JSON.stringify(blockedPatchPayload).includes('do not ask the user to fill templates'));
+    assert.ok(JSON.stringify(blockedPatchPayload).includes('design attention'));
 
     const activeDir = path.join(project, '.openprd', 'design', 'active');
     await fs.writeFile(path.join(activeDir, 'facts-sheet.md'), '# Facts\n\n- 开放时间：10:00-17:00\n- 中文语音导览：7 GBP\n- 会员优先：已知用户输入\n');
@@ -171,7 +174,7 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(allowedPatchPayload.continue, true);
   });
 
-  test('Codex hook blocks Patch Mode hover after overwrite is announced and releases after target write lands', async () => {
+  test('Codex hook keeps Patch Mode hover advisory and releases after target write lands', async () => {
     const { project } = await makeCodexHookProject();
     const sessionId = '019ea999-0000-7000-8000-patchmode0001';
 
@@ -196,7 +199,7 @@ describe('Codex hook safety and design gates', () => {
       '我现在开始覆盖入口文件，下一步直接重写 index.html，把真实内容和图片约束落进去。'
     );
 
-    const blockedRead = runCodexHook(project, 'PreToolUse', {
+    const readWithAttention = runCodexHook(project, 'PreToolUse', {
       session_id: sessionId,
       transcript_path: transcriptPath,
       tool_name: 'Read',
@@ -204,10 +207,11 @@ describe('Codex hook safety and design gates', () => {
         file_path: path.join(project, 'docs', 'basic', 'frontend-guidelines.md'),
       },
     });
-    assert.equal(blockedRead.decision, 'block');
-    assert.ok(blockedRead.reason.includes('entry-overwrite stage'));
-    assert.ok(blockedRead.reason.includes('index.html'));
-    assert.ok(blockedRead.reason.includes('index.next.html'));
+    assert.equal(readWithAttention.decision, undefined);
+    assert.equal(readWithAttention.continue, true);
+    assert.ok(JSON.stringify(readWithAttention).includes('Patch Mode attention'));
+    assert.ok(JSON.stringify(readWithAttention).includes('index.html'));
+    assert.ok(JSON.stringify(readWithAttention).includes('index.next.html'));
 
     const allowedWrite = runCodexHook(project, 'PreToolUse', {
       session_id: sessionId,
@@ -247,7 +251,7 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(closedGate.status, 'write-observed');
   });
 
-  test('Codex hook only allows one immediate post-starter focus pass before requiring an entry write', async () => {
+  test('Codex hook records post-starter focus exhaustion as Patch Mode attention without blocking', async () => {
     const { project } = await makeCodexHookProject();
     const sessionId = '019ea999-0000-7000-8000-patchmode0003';
 
@@ -293,17 +297,17 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(gateAfterFocus.status, 'handoff-awaiting-entry-write');
     assert.equal(gateAfterFocus.focusAllowanceRemaining, 0);
 
-    const blockedSearch = runCodexHook(project, 'PreToolUse', {
+    const searchWithAttention = runCodexHook(project, 'PreToolUse', {
       session_id: sessionId,
       tool_name: 'WebSearch',
       tool_input: {
         query: '西双版纳 观鸟 官方',
       },
     });
-    assert.equal(blockedSearch.decision, 'block');
-    assert.ok(blockedSearch.reason.includes('post-starter hover'));
-    assert.ok(blockedSearch.reason.includes('docs/basic'));
-    assert.ok(blockedSearch.reason.includes('index.next.html'));
+    assert.equal(searchWithAttention.decision, undefined);
+    assert.equal(searchWithAttention.continue, true);
+    assert.ok(JSON.stringify(searchWithAttention).includes('Patch Mode attention'));
+    assert.ok(JSON.stringify(searchWithAttention).includes('index.next.html'));
 
     const allowedWrite = runCodexHook(project, 'PreToolUse', {
       session_id: sessionId,
@@ -433,7 +437,7 @@ describe('Codex hook safety and design gates', () => {
       session_id: sessionId,
     });
     assert.equal(stop.continue, true);
-    assert.ok(stop.hookSpecificOutput.additionalContext.includes('入口文件还没真正落盘'));
+    assert.ok(stop.hookSpecificOutput.additionalContext.includes('还没有观察到对应页面写入'));
     assert.ok(stop.hookSpecificOutput.additionalContext.includes('index.html'));
     assert.ok(stop.hookSpecificOutput.additionalContext.includes('index.next.html'));
   });
@@ -471,7 +475,7 @@ describe('Codex hook safety and design gates', () => {
     });
     assert.equal(stop.continue, true);
     assert.ok(stop.hookSpecificOutput.additionalContext.includes('design-starter 已经落地'));
-    assert.ok(stop.hookSpecificOutput.additionalContext.includes('Patch Mode handoff'));
+    assert.ok(stop.hookSpecificOutput.additionalContext.includes('完成度提醒'));
     assert.ok(stop.hookSpecificOutput.additionalContext.includes('index.html'));
   });
 
@@ -623,5 +627,14 @@ describe('Codex hook safety and design gates', () => {
     assert.match(context, /openprd quality \. --verify/);
     assert.match(context, /openprd run \. --verify/);
     assert.match(context, /Markdown \/ HTML 测试报告/);
+  });
+
+  test('Codex hook reserves blockHook for the raw vault safety boundary only', async () => {
+    const source = await fs.readFile(new URL('../src/codex-hook-runner-template.mjs', import.meta.url), 'utf8');
+    assert.equal((source.match(/return blockHook\(/g) ?? []).length, 1);
+    const callIndex = source.indexOf('return blockHook(');
+    const safetyContext = source.slice(Math.max(0, callIndex - 500), callIndex + 500);
+    assert.match(safetyContext, /isRawVaultReadAttempt/);
+    assert.match(safetyContext, /blocked-raw-vault-read/);
   });
 });

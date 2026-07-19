@@ -675,3 +675,4 @@
 {"type":"next","at":"2026-07-10 23:51:01","nextAction":"freeze","reason":"已有版本化 PRD，交接前应先 freeze。","missingRequiredFields":0}
 {"type":"work_units_backfilled","at":"2026-07-11 19:23:43","versions":18,"changedVersions":18}
 {"type":"work_units_backfilled","at":"2026-07-13 15:17:12","versions":18,"changedVersions":18}
+{"type":"work_units_backfilled","at":"2026-07-19 23:40:19","versions":18,"changedVersions":0}

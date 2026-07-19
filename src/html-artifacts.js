@@ -441,10 +441,10 @@ export function buildReviewExportPayload(snapshot) {
     targetRoot: snapshot.targetRoot ?? null,
     reviewStatus: 'pending-confirmation',
     recommendedActions: [
-      '确认问题与目标',
-      '确认范围内 / 范围外',
-      '确认主流程与失败路径',
-      '确认关键风险与开放问题',
+      '查看问题与目标',
+      '查看范围内 / 范围外',
+      '查看主流程与失败路径',
+      '补充关键风险与开放问题',
     ],
     summaryStyle: USER_CHANGE_SUMMARY_GUIDE,
     sectionKeys: Object.keys(sections),
@@ -466,7 +466,7 @@ const REVIEW_PRESENTATION_CONTRACT = {
     reviewPresentation: {
       diagram: {
         type: 'map',
-        note: '默认用关系图；只有确认为线性流程时改为 flow，并用 flowEdges 明确哪些节点有箭头。',
+        note: '默认用关系图；只有明确为线性流程时改为 flow，并用 flowEdges 明确哪些节点有箭头。',
       },
       mapNodes: {
         problem: { title: '问题定义', text: '30 字以内的图中正文' },
@@ -594,11 +594,11 @@ export function buildReviewPresentationFeedback(snapshot) {
     });
   } else {
     const relationshipNodes = [
-      ['problem', '问题定义', sectionsData.problem?.problemStatement || '待确认问题定义'],
-      ['goal', '目标', firstReviewMapValue(sectionsData.goals?.goals, sectionsData.goals?.successMetrics, '待确认目标')],
-      ['scope', '范围', firstReviewMapValue(sectionsData.scope?.inScope, sectionsData.scope?.outOfScope, '待确认范围')],
-      ['flow', '流程', firstReviewMapValue(sectionsData.scenarios?.primaryFlows, sectionsData.scenarios?.edgeCases, '待确认流程')],
-      ['risk', '风险', firstReviewMapValue(sectionsData.risks?.risks, sectionsData.risks?.openQuestions, '待确认风险')],
+      ['problem', '问题定义', sectionsData.problem?.problemStatement || '待完善问题定义'],
+      ['goal', '目标', firstReviewMapValue(sectionsData.goals?.goals, sectionsData.goals?.successMetrics, '待完善目标')],
+      ['scope', '范围', firstReviewMapValue(sectionsData.scope?.inScope, sectionsData.scope?.outOfScope, '待完善范围')],
+      ['flow', '流程', firstReviewMapValue(sectionsData.scenarios?.primaryFlows, sectionsData.scenarios?.edgeCases, '待完善流程')],
+      ['risk', '风险', firstReviewMapValue(sectionsData.risks?.risks, sectionsData.risks?.openQuestions, '待完善风险')],
     ];
     relationshipNodes.forEach(([key, fallbackLabel, fallbackValue]) => {
       const node = reviewPresentationMapNode(snapshot, key, fallbackLabel, reviewMapText(fallbackValue));
@@ -1038,7 +1038,7 @@ function renderReviewOverview(snapshot, sectionsData, agenda = []) {
     : null;
   const agendaMarkup = agenda.length === 0 ? '' : `
       <aside class="review-agenda" aria-label="评审清单">
-        <p class="review-agenda-title">这次评审要确认 ${agenda.length} 块内容</p>
+        <p class="review-agenda-title">这份参考包含 ${agenda.length} 块内容</p>
         <ol class="review-agenda-list">
           ${agenda.map((item) => `
           <li>
@@ -1048,7 +1048,7 @@ function renderReviewOverview(snapshot, sectionsData, agenda = []) {
             </a>
           </li>`).join('')}
         </ol>
-        <p class="review-agenda-foot">逐块看完后，用页面底部的按钮告诉我结论就可以。</p>
+        <p class="review-agenda-foot">如有不同意见，直接在页面底部反馈即可；Agent 会记录并覆盖当前默认方向，不影响已经开始的实现。</p>
       </aside>
   `;
   return `
@@ -1101,27 +1101,27 @@ function renderReviewGapPanel(sectionsData) {
     <section class="review-gap review-gap-clear" aria-label="信息完整度">
       <div class="review-gap-headline">
         <span class="review-gap-dot" aria-hidden="true"></span>
-        <strong>核心信息已补齐</strong>
-        <span class="review-gap-sub">问题、目标、范围和主流程都已经写清楚，可以放心往下确认。</span>
+        <strong>核心信息已记录</strong>
+        <span class="review-gap-sub">Agent 可按当前内容继续推进；后续反馈会覆盖相应记录。</span>
       </div>
     </section>
   `;
   }
   const blocking = gaps.filter((gap) => gap.priority === 1).length;
   const subText = blocking > 0
-    ? '其中带「关键」标记的内容建议先补齐，再做确认。'
-    : '都不是拦路的问题，但确认前补上会更稳。';
+    ? 'Agent 会优先采用可逆默认方向补齐；你的反馈可随时覆盖，当前实现不因此停下。'
+    : '这些内容由 Agent 在后台逐步补充；你的反馈可随时覆盖，当前实现不因此停下。';
   return `
     <section class="review-gap review-gap-pending" aria-label="信息完整度">
       <div class="review-gap-headline">
         <span class="review-gap-dot" aria-hidden="true"></span>
-        <strong>确认前还差 ${gaps.length} 件事</strong>
+        <strong>待完善信息 ${gaps.length} 项</strong>
         <span class="review-gap-sub">${escapeHtml(subText)}</span>
       </div>
       <ol class="review-gap-list">
         ${gaps.map((gap) => `
         <li class="review-gap-item">
-          <span class="review-gap-tag${gap.priority === 1 ? ' review-gap-tag-key' : ''}">${gap.priority === 1 ? '关键' : '建议'}</span>
+          <span class="review-gap-tag${gap.priority === 1 ? ' review-gap-tag-key' : ''}">${gap.priority === 1 ? '优先' : '建议'}</span>
           <strong>${escapeHtml(gap.label)}</strong>
           <span class="review-gap-hint">${escapeHtml(gap.hint)}</span>
         </li>`).join('')}
@@ -1136,10 +1136,10 @@ function renderReviewFlowSvg(snapshot, sectionsData) {
     return renderReviewMindMapSvg(snapshot, sectionsData);
   }
   const nodes = (flowItems.length ? flowItems : [
-    '确认问题定义',
-    '确认范围与边界',
-    '确认主流程',
-    '确认风险与开放问题',
+    '梳理问题定义',
+    '梳理范围与边界',
+    '梳理主流程',
+    '记录风险与开放问题',
   ]).slice(0, 4);
   const positions = [116, 360, 604, 848].slice(0, nodes.length);
   const nodeIds = nodes.map((_item, index) => reviewPresentationFlowNodeId(snapshot, index));
@@ -1189,13 +1189,13 @@ function renderReviewFlowSvg(snapshot, sectionsData) {
 }
 
 function renderReviewMindMapSvg(snapshot, sectionsData) {
-  const problem = sectionsData.problem?.problemStatement || '待确认问题定义';
+  const problem = sectionsData.problem?.problemStatement || '待完善问题定义';
   const center = { x: 480, y: 168 };
   const nodes = [
     {
       key: 'goal',
       label: '目标',
-      value: firstReviewMapValue(sectionsData.goals?.goals, sectionsData.goals?.successMetrics, '待确认目标'),
+      value: firstReviewMapValue(sectionsData.goals?.goals, sectionsData.goals?.successMetrics, '待完善目标'),
       x: 250,
       y: 94,
       className: 'node-1',
@@ -1203,7 +1203,7 @@ function renderReviewMindMapSvg(snapshot, sectionsData) {
     {
       key: 'scope',
       label: '范围',
-      value: firstReviewMapValue(sectionsData.scope?.inScope, sectionsData.scope?.outOfScope, '待确认范围'),
+      value: firstReviewMapValue(sectionsData.scope?.inScope, sectionsData.scope?.outOfScope, '待完善范围'),
       x: 710,
       y: 94,
       className: 'node-2',
@@ -1211,7 +1211,7 @@ function renderReviewMindMapSvg(snapshot, sectionsData) {
     {
       key: 'flow',
       label: '流程',
-      value: firstReviewMapValue(sectionsData.scenarios?.primaryFlows, sectionsData.scenarios?.edgeCases, '待确认流程'),
+      value: firstReviewMapValue(sectionsData.scenarios?.primaryFlows, sectionsData.scenarios?.edgeCases, '待完善流程'),
       x: 250,
       y: 242,
       className: 'node-3',
@@ -1219,7 +1219,7 @@ function renderReviewMindMapSvg(snapshot, sectionsData) {
     {
       key: 'risk',
       label: '风险',
-      value: firstReviewMapValue(sectionsData.risks?.risks, sectionsData.risks?.openQuestions, '待确认风险'),
+      value: firstReviewMapValue(sectionsData.risks?.risks, sectionsData.risks?.openQuestions, '待完善风险'),
       x: 710,
       y: 242,
       className: 'node-4',
@@ -1297,7 +1297,7 @@ function trimReviewChipBoundary(value) {
 function condensedReviewChipLabel(value) {
   const text = String(value ?? '').replace(/\s+/g, ' ').trim();
   const rules = [
-    { pattern: /截图|红框|口径|用户预期|预期不一致/u, label: '确认分类口径' },
+    { pattern: /截图|红框|口径|用户预期|预期不一致/u, label: '分类口径' },
     { pattern: /Playwright/i, label: 'Playwright 验证' },
     { pattern: /Host API/i, label: '不新增 Host API' },
     { pattern: /用量|额度|成本/u, label: '用量额度不变' },
@@ -1359,11 +1359,11 @@ function renderReviewJourneySvg({ primaryFlows, edgeCases, failureModes }) {
   const edges = reviewList(edgeCases);
   const failures = reviewList(failureModes);
   const primaryClauses = reviewJourneyClauses(primary);
-  const journey = reviewJourneyLabel(primaryClauses.length ? primaryClauses : primary, '待确认用户入口');
-  const step = reviewJourneyLabel(primaryClauses.slice(1).length ? primaryClauses.slice(1) : primary.slice(1), '待确认关键步骤');
-  const outcome = reviewJourneyLabel(primaryClauses.slice(2).length ? primaryClauses.slice(2) : primary.slice(2), '待确认完成状态');
-  const boundary = reviewJourneyLabel(edges, '待确认边界情况');
-  const recovery = reviewJourneyLabel(failures.length ? failures : edges.slice(1), '待确认恢复路径');
+  const journey = reviewJourneyLabel(primaryClauses.length ? primaryClauses : primary, '待完善用户入口');
+  const step = reviewJourneyLabel(primaryClauses.slice(1).length ? primaryClauses.slice(1) : primary.slice(1), '待完善关键步骤');
+  const outcome = reviewJourneyLabel(primaryClauses.slice(2).length ? primaryClauses.slice(2) : primary.slice(2), '待完善完成状态');
+  const boundary = reviewJourneyLabel(edges, '待完善边界情况');
+  const recovery = reviewJourneyLabel(failures.length ? failures : edges.slice(1), '待完善恢复路径');
   return `
     <div class="review-journey-map" aria-label="主流程小图">
       <svg viewBox="0 0 680 320" role="img" aria-label="用户旅程、关键步骤、边界情况和恢复路径" preserveAspectRatio="xMidYMid meet">
@@ -1395,7 +1395,7 @@ function renderReviewJourneySvg({ primaryFlows, edgeCases, failureModes }) {
           <rect class="review-journey-node stage-outcome" x="478" y="40" width="176" height="96" rx="8" />
           <circle class="review-journey-dot stage-outcome" cx="508" cy="64" r="12" />
           <text class="review-journey-number" x="508" y="64" text-anchor="middle">3</text>
-          <text class="review-journey-tag" x="566" y="66" text-anchor="middle">结果确认</text>
+          <text class="review-journey-tag" x="566" y="66" text-anchor="middle">完成状态</text>
           ${svgText(outcome, 566, 92, 'review-journey-label', 12, 13)}
         </g>
         <g>
@@ -1493,7 +1493,7 @@ function reviewCopyBundle({ label, command, payload, message = null }) {
 }
 
 function reviewContinueMessage(snapshot) {
-  return '这版需求确认稿已经通过。请先记录这次确认结果，并继续推进后续落地内容。只有后面确实需要额外授权时，再用人话说明影响和下一步。';
+  return '当前评审内容已记录为可逆默认方案。Agent 会继续推进实现；后续反馈可覆盖这份记录，不影响当前工作。';
 }
 
 function shellQuote(value) {
@@ -1540,10 +1540,10 @@ function renderReviewDesignDirections(snapshot) {
     const href = reviewDirectionImageHref(direction.image);
     const selectCommand = reviewCommand(snapshot, 'confirmed', null, { direction: id });
     const selectCopy = reviewCopyBundle({
-      label: `选定交互方向：${title}`,
+      label: `方向反馈：${title}`,
       command: selectCommand,
       payload: JSON.stringify({ versionId: snapshot.versionId, direction: id, title }, null, 2),
-      message: `我选定「${title}」这个交互方向，请按这个方向继续推进实现。`,
+      message: `我更偏好「${title}」；请把它记录为当前方向。后续反馈可以覆盖，当前实现继续推进。`,
     });
     const image = href
       ? `<a class="review-direction-image" href="${escapeHtml(href)}" target="_blank" rel="noopener"><img src="${escapeHtml(href)}" alt="${escapeHtml(title)} 交互稿" loading="lazy" /></a>`
@@ -1558,8 +1558,8 @@ function renderReviewDesignDirections(snapshot) {
             </div>
             ${summary ? `<p class="review-direction-summary">${escapeHtml(summary)}</p>` : ''}
             ${tradeoff ? `<p class="review-direction-tradeoff">取舍：${escapeHtml(tradeoff)}</p>` : ''}
-            <button type="button" class="review-direction-select" data-copy-value="${escapeHtml(selectCopy)}" title="复制这个方向的确认结果">
-              选这个方向
+            <button type="button" class="review-direction-select" data-copy-value="${escapeHtml(selectCopy)}" title="复制这个方向的反馈">
+              偏好这个方向
             </button>
           </div>
         </article>`;
@@ -1567,8 +1567,8 @@ function renderReviewDesignDirections(snapshot) {
   return `
       <section class="review-directions" id="review-panel-design-directions" aria-label="交互方向评审">
         <div class="review-section-heading">
-          <h2>交互方向评审</h2>
-          <p>这是本次界面需求最重要的决定：${block.directions.length} 个交互稿方向选一个。点图片看大图，点“选这个方向”后把复制内容发回给 Agent 即可。</p>
+          <h2>交互方向参考</h2>
+          <p>这里提供 ${block.directions.length} 个可参考方向。Agent 可先采用可逆默认方向继续实现；你的反馈会覆盖当前方向，不会成为开始或继续实现的前置条件。</p>
         </div>
         <div class="review-direction-grid">
           ${cards.join('\n')}
@@ -1581,20 +1581,20 @@ function renderReviewDecision(snapshot, reviewModel) {
   const confirmCommand = reviewCommand(snapshot, 'confirmed');
   const reviseCommand = reviewCommand(snapshot, 'needs-revision', '说明需要调整的点');
   const confirmCopy = reviewCopyBundle({
-    label: '认可并继续下一步',
+    label: '按当前方向推进',
     command: confirmCommand,
     payload,
     message: reviewContinueMessage(snapshot),
   });
   const reviseCopy = reviewCopyBundle({ label: '需要调整', command: reviseCommand, payload });
   return `
-    <nav class="review-bottom-bar" aria-label="评审决定" data-review-model-digest="${escapeHtml(reviewModel.digest)}">
+    <nav class="review-bottom-bar" aria-label="评审反馈" data-review-model-digest="${escapeHtml(reviewModel.digest)}">
       <div class="review-bottom-bar-inner">
         <button type="button" class="review-bottom-action revise" data-copy-value="${escapeHtml(reviseCopy)}" title="复制需要调整的反馈">
           需要调整
         </button>
-        <button type="button" class="review-bottom-action confirm" data-copy-value="${escapeHtml(confirmCopy)}" title="复制认可并继续的确认结果">
-          认可并继续
+        <button type="button" class="review-bottom-action confirm" data-copy-value="${escapeHtml(confirmCopy)}" title="复制当前方向的反馈">
+          按当前方向推进
         </button>
       </div>
     </nav>
@@ -1607,7 +1607,7 @@ function renderReviewWorkbenchHeader(reviewModel) {
       <div class="review-workbench-copy">
         <p class="review-kicker">双轨证据工作台</p>
         <h2 id="reviewWorkbenchTitle">同一份评审，两种读法</h2>
-        <p>先在业务视图看清价值、范围、流程和风险；需要追溯任务、约束或依据时，再切到工程视图。两边共享同一份确认内容。</p>
+        <p>先在业务视图看清价值、范围、流程和风险；需要追溯任务、约束或依据时，再切到工程视图。两边共享同一份评审记录。</p>
       </div>
       <div class="review-view-tabs" role="tablist" aria-label="选择评审视图">
         <button
@@ -1630,7 +1630,7 @@ function renderReviewWorkbenchHeader(reviewModel) {
           tabindex="-1"
         >工程视图<span>核对追溯</span></button>
       </div>
-      <p class="review-workbench-note" aria-live="polite">两种视图共享同一个确认基线，切换视图不会改变评审结论。</p>
+      <p class="review-workbench-note" aria-live="polite">两种视图共享同一份参考记录，切换视图不会改变内容。</p>
     </section>
   `;
 }
@@ -1749,7 +1749,7 @@ function renderReviewEngineeringProjection(projection) {
         <div>
           <p class="review-kicker">工程追溯</p>
           <h1>从同一结论核对任务、约束与证据</h1>
-          <p>这里展示落地所需的版本、任务、文件、测试与依据；底部确认动作仍绑定同一个评审基线。</p>
+          <p>这里展示落地所需的版本、任务、文件、测试与依据；底部反馈会写回同一份评审记录，但不会暂停实现。</p>
         </div>
         <label class="review-engineering-filter" for="reviewEngineeringFilter">
           <span>筛选工程内容</span>
@@ -1761,7 +1761,7 @@ function renderReviewEngineeringProjection(projection) {
         ${renderReviewEngineeringSection({
           id: 'review-engineering-trace',
           title: '版本与追溯',
-          description: '确认这次评审来自哪份内容，并核对两个视图的共同指纹。',
+          description: '查看这次评审来自哪份内容，并核对两个视图的共同指纹。',
           items: traceItems,
           emptyText: '暂无版本与追溯信息。',
         })}
@@ -1805,7 +1805,7 @@ function renderReviewEngineeringProjection(projection) {
         <header>
           <p class="review-kicker">共享证据</p>
           <h2 id="reviewEvidenceTitle">证据索引</h2>
-          <p>业务视图里的“查看依据”会定位到这里；筛选不会改变证据与评审结论的绑定关系。</p>
+          <p>业务视图里的“查看依据”会定位到这里；筛选不会改变证据与评审记录的关联。</p>
         </header>
         <div class="review-evidence-list">
           ${evidenceItems || '<p class="review-engineering-empty">当前评审稿尚未登记原始依据。</p>'}
@@ -1851,7 +1851,7 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
     {
       kind: 'flow',
       title: '主流程与边界情况',
-      description: '确认用户旅程、关键步骤和恢复路径是否已经讲清楚，能否进入实现前确认',
+      description: '查看用户旅程、关键步骤和恢复路径；信息不足时由 Agent 采用可逆默认方向并继续推进',
       emptyText: '暂无主流程、边界情况或失败路径。',
       visual: renderReviewJourneySvg({ primaryFlows, edgeCases, failureModes }),
       items: flowPanelItems,
@@ -1866,14 +1866,14 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
     {
       kind: 'guardrail',
       title: '业务成本与滥用护栏',
-      description: '涉及免费额度、消耗型成本或第三方调用时，先确认限制、报警和止损动作',
+      description: '涉及免费额度、消耗型成本或第三方调用时，记录限制、提醒和止损动作',
       emptyText: '暂无业务成本或滥用护栏。',
       items: guardrailPanelItems,
     },
     {
       kind: 'risk',
       title: '开放问题与风险',
-      description: '需求定稿前还没关掉的问题要留在这里，不要默默假定解决',
+      description: '尚未完善的问题留在这里，由 Agent 后台跟进，不影响当前实现',
       emptyText: '暂无假设、风险或开放问题。',
       items: riskPanelItems,
     },
@@ -1881,7 +1881,7 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
   const designDirectionsBlock = reviewDesignDirections(snapshot);
   const panelAgenda = [
     ...(designDirectionsBlock
-      ? [{ kind: 'design-directions', title: '交互方向评审（选一个方向）', count: designDirectionsBlock.directions.length, unit: '个方向' }]
+      ? [{ kind: 'design-directions', title: '交互方向参考（可随时反馈）', count: designDirectionsBlock.directions.length, unit: '个方向' }]
       : []),
     ...panelSpecs.map((spec) => ({
       kind: spec.kind,
@@ -3271,11 +3271,11 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
             document.querySelectorAll('.review-direction-card').forEach((card) => {
               card.classList.remove('selected');
               const cardButton = card.querySelector('.review-direction-select');
-              if (cardButton && cardButton !== button) cardButton.textContent = '选这个方向';
+              if (cardButton && cardButton !== button) cardButton.textContent = '偏好这个方向';
             });
             const ownCard = button.closest('.review-direction-card');
             if (ownCard) ownCard.classList.add('selected');
-            setTimeout(() => { button.textContent = '已选定，把复制内容发回给 Agent'; }, 1250);
+            setTimeout(() => { button.textContent = '已记录，可随时覆盖'; }, 1250);
           });
         });
       </script>

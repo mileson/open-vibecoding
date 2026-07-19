@@ -1,13 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { canonicalReviewPath, defaultReviewArtifactPath, renderReviewArtifact, renderReviewEntryHtml, writeHtmlArtifact } from './html-artifacts.js';
+import { canonicalReviewPath, defaultReviewArtifactPath } from './html-artifacts.js';
 import { summarizeSnapshot } from './prd-core.js';
-import { buildReleaseLedgerSummary } from './release-ledger.js';
-import { appendWorkflowEvent, buildWorkflowTaskGraph, loadWorkspace, readVersionIndex, readVersionSnapshot, writeVersionIndex, writeVersionSnapshot } from './workspace-core.js';
+import { appendWorkflowEvent, loadWorkspace, readVersionIndex, readVersionSnapshot, writeVersionIndex, writeVersionSnapshot } from './workspace-core.js';
 import { exists, readText, writeJson } from './fs-utils.js';
-import { writeWorkUnitBinding } from './work-unit.js';
+import { readWorkUnitBinding, writeWorkUnitBinding } from './work-unit.js';
 import { timestamp } from './time.js';
+
+const LEGACY_FROZEN_STATUS = 'legacy-frozen';
 
 function legacyWorkUnitId(ws, snapshot) {
   const versionId = snapshot.versionId ?? 'v0000';
@@ -58,6 +59,9 @@ async function loadBackfillSnapshot(ws, versionId) {
 }
 
 function resolveBackfillStatus(ws, snapshot, isLatest) {
+  if (snapshot.lifecycleStatus === LEGACY_FROZEN_STATUS) {
+    return LEGACY_FROZEN_STATUS;
+  }
   const currentState = ws.data.currentState ?? {};
   const stored = currentState.reviewStatus;
   if (isLatest && stored?.versionId === snapshot.versionId && stored.status) {
@@ -72,40 +76,85 @@ function resolveBackfillStatus(ws, snapshot, isLatest) {
 function buildBackfilledSnapshot(ws, snapshot, isLatest) {
   const content = snapshot.content ?? '';
   const digest = snapshot.digest ?? crypto.createHash('sha256').update(content).digest('hex');
+  const isLegacy = snapshot.lifecycleStatus === LEGACY_FROZEN_STATUS
+    || !snapshot.digest
+    || !snapshot.workUnitId
+    || !snapshot.targetRoot;
   return {
     ...snapshot,
     digest,
     workUnitId: snapshot.workUnitId ?? legacyWorkUnitId(ws, { ...snapshot, digest }),
     targetRoot: snapshot.targetRoot ?? (isLatest ? ws.data.currentState?.targetRoot : null) ?? ws.projectRoot,
+    ...(isLegacy ? {
+      lifecycleStatus: LEGACY_FROZEN_STATUS,
+      semanticMode: 'context-only',
+      backfillPolicy: 'metadata-only',
+    } : {}),
   };
 }
 
-async function writeReviewBundle(ws, snapshot, isLatest) {
-  const activeReviewArtifact = defaultReviewArtifactPath(ws);
-  const reviewPath = canonicalReviewPath(ws, snapshot.versionId);
-  await writeHtmlArtifact(reviewPath, renderReviewArtifact({
-    snapshot,
-    projectRelease: buildReleaseLedgerSummary(ws.data.releaseLedger),
-  }));
-
-  if (isLatest) {
-    await writeHtmlArtifact(activeReviewArtifact, renderReviewEntryHtml({
-      entryPath: activeReviewArtifact,
-      reviewPath,
-      title: `${snapshot.title} / 评审入口`,
-    }));
+function resolveStoredArtifactPath(ws, value) {
+  if (!value) {
+    return null;
   }
+  return path.isAbsolute(value) ? value : path.resolve(ws.projectRoot, value);
+}
 
+function workUnitBindingPath(ws, workUnitId) {
+  const fileName = `${String(workUnitId).replace(/[^A-Za-z0-9._-]/g, '_')}.json`;
+  return path.join(ws.workspaceRoot, 'engagements', 'work-units', fileName);
+}
+
+function bindingNeedsMetadataUpdate(binding, snapshot, status, reviewReferences) {
+  return !binding
+    || binding.latestVersionId !== snapshot.versionId
+    || binding.latestVersionDigest !== snapshot.digest
+    || binding.targetRoot !== snapshot.targetRoot
+    || binding.status !== status
+    || (binding.reviewPath ?? null) !== reviewReferences.reviewPath
+    || (binding.activeReviewPath ?? null) !== reviewReferences.activeReviewPath;
+}
+
+async function resolveExistingReviewReferences(ws, snapshot, isLatest, binding) {
+  const currentReview = isLatest && ws.data.currentState?.reviewStatus?.versionId === snapshot.versionId
+    ? ws.data.currentState.reviewStatus
+    : null;
+  const reviewCandidates = [
+    binding?.reviewPath,
+    binding?.reviewArtifact,
+    currentReview?.reviewPath,
+    currentReview?.stableArtifact,
+    canonicalReviewPath(ws, snapshot.versionId),
+  ];
+  const activeCandidates = [
+    binding?.activeReviewPath,
+    binding?.activeReviewArtifact,
+    currentReview?.entryPath,
+    currentReview?.artifact,
+    isLatest ? defaultReviewArtifactPath(ws) : null,
+  ];
+  const firstExisting = async (candidates) => {
+    for (const candidate of candidates) {
+      const resolved = resolveStoredArtifactPath(ws, candidate);
+      if (resolved && await exists(resolved)) {
+        return resolved;
+      }
+    }
+    return null;
+  };
   return {
-    activeReviewArtifact: isLatest ? activeReviewArtifact : null,
-    reviewPath,
+    reviewPath: await firstExisting(reviewCandidates),
+    activeReviewPath: await firstExisting(activeCandidates),
   };
 }
 
 function snapshotNeedsIdentityUpdate(before, after) {
   return before.digest !== after.digest
     || before.workUnitId !== after.workUnitId
-    || before.targetRoot !== after.targetRoot;
+    || before.targetRoot !== after.targetRoot
+    || before.lifecycleStatus !== after.lifecycleStatus
+    || before.semanticMode !== after.semanticMode
+    || before.backfillPolicy !== after.backfillPolicy;
 }
 
 async function backfillWorkUnitsWorkspace(projectRoot, options = {}) {
@@ -133,7 +182,9 @@ async function backfillWorkUnitsWorkspace(projectRoot, options = {}) {
     const nextSnapshot = buildBackfilledSnapshot(ws, snapshot, isLatest);
     const needsSnapshotUpdate = snapshotNeedsIdentityUpdate(snapshot, nextSnapshot);
     const status = resolveBackfillStatus(ws, nextSnapshot, isLatest);
-    const activeReviewArtifact = isLatest ? defaultReviewArtifactPath(ws) : null;
+    const bindingBefore = await readWorkUnitBinding(ws, nextSnapshot.workUnitId);
+    const reviewReferences = await resolveExistingReviewReferences(ws, nextSnapshot, isLatest, bindingBefore);
+    const needsBindingUpdate = bindingNeedsMetadataUpdate(bindingBefore, nextSnapshot, status, reviewReferences);
 
     changes.push({
       path: path.relative(ws.projectRoot, path.join(ws.paths.versionsDir, `${versionId}.json`)),
@@ -142,39 +193,38 @@ async function backfillWorkUnitsWorkspace(projectRoot, options = {}) {
       workUnitId: nextSnapshot.workUnitId,
     });
     changes.push({
-      path: path.relative(ws.projectRoot, canonicalReviewPath(ws, nextSnapshot.versionId)),
-      status: dryRun ? 'planned' : 'refreshed',
+      path: path.relative(ws.projectRoot, workUnitBindingPath(ws, nextSnapshot.workUnitId)),
+      status: dryRun ? (needsBindingUpdate ? 'planned' : 'unchanged') : (needsBindingUpdate ? 'updated' : 'unchanged'),
       versionId,
       workUnitId: nextSnapshot.workUnitId,
     });
 
     if (dryRun) {
-      changedVersions += 1;
+      if (needsSnapshotUpdate || needsBindingUpdate) {
+        changedVersions += 1;
+      }
       continue;
     }
 
     if (needsSnapshotUpdate) {
       await writeVersionSnapshot(ws, nextSnapshot);
     }
-    const writtenReview = await writeReviewBundle(ws, nextSnapshot, isLatest);
-    const binding = await writeWorkUnitBinding(ws, {
-      snapshot: nextSnapshot,
-      reviewPath: writtenReview.reviewPath,
-      activeReviewPath: writtenReview.activeReviewArtifact,
-      targetRoot: nextSnapshot.targetRoot,
-      status,
-    });
+    const binding = needsBindingUpdate
+      ? await writeWorkUnitBinding(ws, {
+        snapshot: nextSnapshot,
+        reviewPath: reviewReferences.reviewPath,
+        activeReviewPath: reviewReferences.activeReviewPath,
+        targetRoot: nextSnapshot.targetRoot,
+        status,
+      })
+      : (bindingBefore ? { ...bindingBefore, path: workUnitBindingPath(ws, nextSnapshot.workUnitId) } : null);
     if (binding) {
       bindings.push(binding);
-      changes.push({
-        path: path.relative(ws.projectRoot, binding.path),
-        status: 'updated',
-        versionId,
-        workUnitId: nextSnapshot.workUnitId,
-      });
     }
 
-    changedVersions += 1;
+    if (needsSnapshotUpdate || needsBindingUpdate) {
+      changedVersions += 1;
+    }
   }
 
   if (!dryRun && versionIds.length > 0) {
@@ -182,7 +232,11 @@ async function backfillWorkUnitsWorkspace(projectRoot, options = {}) {
     for (const versionId of versionIds) {
       const snapshot = await readVersionSnapshot(ws, versionId);
       if (snapshot) {
-        snapshots.push(summarizeSnapshot(snapshot));
+        snapshots.push({
+          ...summarizeSnapshot(snapshot),
+          lifecycleStatus: snapshot.lifecycleStatus ?? null,
+          semanticMode: snapshot.semanticMode ?? null,
+        });
       }
     }
     await writeVersionIndex(ws, snapshots);
@@ -191,26 +245,30 @@ async function backfillWorkUnitsWorkspace(projectRoot, options = {}) {
     if (latestSnapshot) {
       const currentState = ws.data.currentState ?? {};
       const status = resolveBackfillStatus(ws, latestSnapshot, true);
+      const legacyFrozen = status === LEGACY_FROZEN_STATUS;
       const nextState = {
         ...currentState,
         latestVersionId: latestSnapshot.versionId,
         latestVersionDigest: latestSnapshot.digest,
         activeWorkUnitId: latestSnapshot.workUnitId,
         targetRoot: latestSnapshot.targetRoot,
+        ...(legacyFrozen ? {
+          lifecycleStatus: LEGACY_FROZEN_STATUS,
+          semanticMode: 'context-only',
+        } : {}),
         reviewStatus: {
           ...(currentState.reviewStatus ?? {}),
           versionId: latestSnapshot.versionId,
           workUnitId: latestSnapshot.workUnitId,
           status,
-          reviewPath: canonicalReviewPath(ws, latestSnapshot.versionId),
-          entryPath: defaultReviewArtifactPath(ws),
-          artifact: defaultReviewArtifactPath(ws),
-          stableArtifact: canonicalReviewPath(ws, latestSnapshot.versionId),
+          ...(legacyFrozen ? {
+            historicalContextOnly: true,
+            lifecycleStatus: LEGACY_FROZEN_STATUS,
+          } : {}),
           updatedAt: currentState.reviewStatus?.updatedAt ?? timestamp(),
         },
       };
       await writeJson(ws.paths.currentState, nextState);
-      await writeJson(ws.paths.taskGraph, buildWorkflowTaskGraph(latestSnapshot));
     }
 
     await appendWorkflowEvent(ws, 'work_units_backfilled', {

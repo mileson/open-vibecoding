@@ -136,6 +136,14 @@ test('quality verify writes html eval report and learn creates experience skill'
 
   const quality = await verifyQualityWorkspace(project);
   assert.equal(quality.ok, true);
+  assert.deepEqual(quality.effectiveEnforcement, {
+    mode: 'advisory',
+    source: '.openprd/quality/config.json',
+    configuredMode: 'advisory',
+    scope: 'workspace-claim',
+    purpose: 'overall-readiness-claim',
+  });
+  assert.equal(quality.report.readiness.scope, 'workspace-claim');
   assert.ok(quality.reportPath.endsWith('.json'));
   assert.ok(quality.htmlPath.endsWith('.html'));
   assert.equal(quality.report.observability.centralizedTools.includes('@opentelemetry/'), true);
@@ -512,7 +520,8 @@ test('quality requires current smoke evidence and run verify separates task read
 
   const quality = await verifyQualityWorkspace(project);
   const smokeGate = quality.report.gates.find((gate) => gate.id === 'smoke');
-  assert.equal(quality.ok, false);
+  assert.equal(quality.ok, true);
+  assert.equal(quality.effectiveEnforcement.mode, 'advisory');
   assert.equal(quality.report.readiness.productionReady, false);
   assert.equal(smokeGate.required, true);
   assert.equal(smokeGate.status, 'needs-evidence');
@@ -596,7 +605,9 @@ test('run verify describes feature-coverage debt as task ledger attention instea
   assert.equal(quality.report.evalHarness.featureCoverage.activeTasks.blocked, 1);
   assert.equal(strategyTask?.done, true);
   assert.ok(featureCoverageGate?.warnings?.[0].includes('不等于当前实现失败'));
-  assert.ok(quality.errors.some((error) => error.includes('不等于当前实现失败')));
+  assert.equal(quality.ok, true);
+  assert.deepEqual(quality.errors, []);
+  assert.equal(quality.effectiveEnforcement.mode, 'advisory');
 
   const verified = await runWorkspace(project, { verify: true });
   const qualityCheck = verified.checks.find((check) => check.name === 'quality');
@@ -611,6 +622,82 @@ test('run verify describes feature-coverage debt as task ledger attention instea
   assert.ok(verified.workspaceAttention?.detail.includes('task bookkeeping or coverage evidence is incomplete'));
   assert.ok(verified.warnings.some((warning) => warning.includes('task bookkeeping or coverage evidence is incomplete')));
   assert.ok(qualityCheck.errors.some((error) => error.includes('不等于当前实现失败') || error.includes('task bookkeeping or coverage evidence is incomplete')));
+});
+
+test('quality excludes historical active changes from current feature coverage', async () => {
+  const project = await makeTempProject();
+  await initWorkspace(project, { templatePack: 'consumer' });
+  await writeMinimalChange(project, 'historical-ledger', {
+    title: 'Historical ledger',
+    requirementTitle: 'Historical task remains context only',
+    taskTitle: 'Do not reopen this historical task',
+  });
+  await fs.writeFile(path.join(project, '.openprd', 'changes', 'historical-ledger', 'tasks.md'), [
+    '# Tasks',
+    '',
+    '- [ ] T001.01 Historical unfinished bookkeeping',
+    '  - done: old bookkeeping is complete',
+    '  - verify: node --test',
+    '',
+  ].join('\n'));
+
+  for (const status of ['applied', 'archived', 'closed', 'historical', 'legacy-frozen']) {
+    await fs.writeFile(path.join(project, '.openprd', 'state', 'changes.json'), `${JSON.stringify({
+      version: 1,
+      activeChange: 'historical-ledger',
+      changes: {
+        'historical-ledger': { id: 'historical-ledger', status },
+      },
+    }, null, 2)}\n`);
+    const quality = await verifyQualityWorkspace(project);
+    const activeTasks = quality.report.evalHarness.featureCoverage.activeTasks;
+    const featureCoverageGate = quality.report.gates.find((gate) => gate.id === 'feature-coverage');
+    assert.equal(activeTasks.activeChange, null);
+    assert.equal(activeTasks.pending, 0);
+    assert.equal(activeTasks.excludedActiveChange.id, 'historical-ledger');
+    assert.equal(activeTasks.excludedActiveChange.status, status);
+    assert.equal(featureCoverageGate.scope, 'workspace-claim');
+    assert.notEqual(featureCoverageGate.status, 'needs-attention');
+  }
+});
+
+test('quality excludes legacy-frozen task metadata without hiding current tasks', async () => {
+  const project = await makeTempProject();
+  await initWorkspace(project, { templatePack: 'consumer' });
+  await writeMinimalChange(project, 'mixed-ledger', {
+    title: 'Mixed ledger',
+    requirementTitle: 'Only current task coverage counts',
+    taskTitle: 'Current completed task',
+  });
+  await fs.writeFile(path.join(project, '.openprd', 'changes', 'mixed-ledger', 'tasks.md'), [
+    '# Tasks',
+    '',
+    '- [ ] T001.01 Historical unfinished task',
+    '  - lifecycle: legacy-frozen',
+    '  - done: historical context only',
+    '  - verify: node --test',
+    '- [x] T001.02 Current completed task',
+    '  - lifecycle: active',
+    '  - done: current task is complete',
+    '  - verify: node --test',
+    '',
+  ].join('\n'));
+  await fs.writeFile(path.join(project, '.openprd', 'state', 'changes.json'), `${JSON.stringify({
+    version: 1,
+    activeChange: 'mixed-ledger',
+    changes: {
+      'mixed-ledger': { id: 'mixed-ledger', status: 'active' },
+    },
+  }, null, 2)}\n`);
+
+  const quality = await verifyQualityWorkspace(project);
+  const activeTasks = quality.report.evalHarness.featureCoverage.activeTasks;
+  assert.equal(quality.report.evalHarness.featureCoverage.scope, 'workspace-claim');
+  assert.equal(activeTasks.total, 1);
+  assert.equal(activeTasks.done, 1);
+  assert.equal(activeTasks.pending, 0);
+  assert.equal(activeTasks.excludedTasks.length, 1);
+  assert.equal(activeTasks.excludedTasks[0].id, 'T001.01');
 });
 
 test('quality requires reference-driven visual evidence for frontend changes', async () => {
@@ -669,7 +756,8 @@ test('quality requires reference-driven visual evidence for frontend changes', a
 
   const missing = await verifyQualityWorkspace(project);
   const missingGate = missing.report.gates.find((gate) => gate.id === 'visual-review');
-  assert.equal(missing.ok, false);
+  assert.equal(missing.ok, true);
+  assert.equal(missing.effectiveEnforcement.mode, 'advisory');
   assert.deepEqual(missing.report.qualityPolicy.requiredGates, ['smoke', 'feature-coverage', 'visual-review', 'knowledge', 'growth']);
   assert.equal(missing.report.visualReview.relevant, true);
   assert.equal(missing.report.visualReview.expectsReferenceCompare, true);
@@ -928,6 +1016,79 @@ test('standards require concrete docs plus file and folder manuals for source fi
   assert.equal(passed.ok, true);
   assert.ok(passed.checks.some((check) => check.includes('源文件说明书: 1/1。')));
   assert.ok(passed.checks.some((check) => check.includes('文件夹说明书: 1/1。')));
+});
+
+test('workspace standards debt stays visible without failing run context or current-task readiness', async () => {
+  const project = await makeTempProject();
+  await initWorkspace(project, { templatePack: 'consumer' });
+  await fs.mkdir(path.join(project, 'src'), { recursive: true });
+  await fs.writeFile(path.join(project, 'src', 'app.js'), 'export const app = true;\n');
+
+  const standards = await checkStandardsWorkspace(project);
+  assert.equal(standards.ok, false);
+  assert.equal(standards.scope, 'workspace');
+  assert.equal(standards.blocking, false);
+  assert.equal(standards.readiness.workspaceReady, false);
+  assert.equal(standards.readiness.actionReady, true);
+
+  const { report } = await validateWorkspace(project);
+  assert.equal(report.valid, false);
+  assert.equal(report.structuralValid, true);
+  assert.equal(report.workspaceReady, false);
+  assert.equal(report.actionReady, true);
+  assert.equal(report.claimReady, false);
+  assert.equal(report.workspaceAttention?.kind, 'workspace-validation');
+
+  const context = await runWorkspace(project, {
+    context: true,
+    message: '请继续实现当前任务并提交',
+  });
+  assert.equal(context.ok, true);
+  assert.equal(context.executionIntent.explicit, true);
+  assert.equal(context.readiness.actionReady, true);
+  assert.equal(context.readiness.claimReady, null);
+  assert.equal(context.readiness.workspaceReady, false);
+  assert.ok(context.workspaceAttention);
+
+  const verified = await runWorkspace(project, { verify: true });
+  assert.equal(verified.ok, true);
+  assert.equal(verified.readiness.taskReady, true);
+  assert.equal(verified.readiness.claimReady, false);
+  assert.equal(verified.readiness.actionReady, true);
+  assert.equal(verified.readiness.workspaceReady, false);
+  assert.equal(verified.readiness.workspaceClaimReady, false);
+  assert.equal(verified.errors.length, 0);
+  assert.equal(verified.checks.find((check) => check.name === 'standards')?.scope, 'workspace');
+
+  const logs = [];
+  const originalLog = console.log;
+  console.log = (...args) => logs.push(args.join(' '));
+  try {
+    assert.equal(await main(['run', project, '--context', '--message', '请继续实现当前任务并提交']), 0);
+    assert.equal(await main(['standards', project, '--verify']), 0);
+    assert.equal(await main(['standards', project, '--verify', '--fail-on-violation']), 1);
+    assert.equal(await main(['quality', project, '--verify']), 0);
+    assert.equal(await main(['quality', project, '--verify', '--fail-on-violation']), 1);
+  } finally {
+    console.log = originalLog;
+  }
+  assert.ok(logs.some((line) => line.includes('工作区整体状态: 待关注（不阻断当前请求）')));
+  assert.equal(logs.some((line) => line.includes('开始动手前提')), false);
+});
+
+test('standards and quality CLI still fail on missing structural configuration', async () => {
+  const project = await makeTempProject();
+  const logs = [];
+  const originalLog = console.log;
+  console.log = (...args) => logs.push(args.join(' '));
+  try {
+    assert.equal(await main(['standards', project, '--verify']), 1);
+    assert.equal(await main(['quality', project, '--verify']), 1);
+  } finally {
+    console.log = originalLog;
+  }
+  assert.ok(logs.some((line) => line.includes('.openprd/standards/config.json is required')));
+  assert.ok(logs.some((line) => line.includes('.openprd/quality/config.json is required')));
 });
 
 test('standards prefer package.json name over worktree folder name for folder manuals', async () => {

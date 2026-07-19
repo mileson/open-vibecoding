@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import YAML from 'yaml';
-import { listChangeDirs, readDiscoveryConfig, resolveChangeDir } from './paths.js';
+import { listChangeDirs, openPrdArchiveChangeRoot, readDiscoveryConfig, resolveChangeDir } from './paths.js';
 import { analyzeOpenSpecTaskVolumes } from './tasks.js';
 import { checkStandardsWorkspace } from '../standards.js';
 
@@ -35,7 +35,11 @@ export async function resolveOpenSpecChangeId(projectRoot, requestedChange) {
 
   const discoveryConfig = await readDiscoveryConfig(projectRoot, readJson);
   if (discoveryConfig?.activeChange) {
-    return discoveryConfig.activeChange;
+    const activeChange = (await listChangeDirs(projectRoot))
+      .find((change) => change.id === discoveryConfig.activeChange && !change.archived);
+    if (activeChange) {
+      return discoveryConfig.activeChange;
+    }
   }
 
   const changeDirs = [...new Set((await listChangeDirs(projectRoot))
@@ -65,6 +69,7 @@ const REQUIREMENT_HEADING_RE = /^###\s+(?:Requirement|需求)[：:]\s*(.+)$/gm;
 const SCENARIO_HEADING_RE = /^####\s+(?:Scenario|场景)[：:]\s*(.+)$/gm;
 const WHEN_STEP_RE = /^-\s+\*\*(?:WHEN|当)\*\*/im;
 const THEN_STEP_RE = /^-\s+\*\*(?:THEN|则|那么)\*\*/im;
+const HISTORICAL_CHANGE_STATUSES = new Set(['applied', 'archived', 'closed', 'historical', 'legacy-frozen']);
 
 function validateOpenSpecSpecText(relativePath, text, errors, checks) {
   const requirementMatches = [...text.matchAll(REQUIREMENT_HEADING_RE)];
@@ -111,6 +116,9 @@ export async function validateOpenSpecChangeWorkspace(projectRoot, options = {})
   const errors = [];
   const warnings = [];
   const checks = [];
+  const workspaceAttention = [];
+  const changeState = await readJson(cjoin(projectRoot, '.openprd', 'state', 'changes.json')).catch(() => null);
+  const lifecycleStatus = changeState?.changes?.[changeId]?.status ?? null;
 
   if (!(await exists(changeDir))) {
     errors.push(`缺少 OpenPrd change 目录: ${path.relative(projectRoot, changeDir)}`);
@@ -123,6 +131,40 @@ export async function validateOpenSpecChangeWorkspace(projectRoot, options = {})
       errors,
       warnings,
       checks,
+      workspaceAttention,
+      specs: [],
+      taskVolume: { errors: [], checks: [], files: [] },
+    };
+  }
+
+  const archivedRoot = path.resolve(openPrdArchiveChangeRoot(projectRoot));
+  const resolvedChangeDir = path.resolve(changeDir);
+  const archived = resolvedChangeDir === archivedRoot || resolvedChangeDir.startsWith(`${archivedRoot}${path.sep}`);
+  if (archived || HISTORICAL_CHANGE_STATUSES.has(lifecycleStatus)) {
+    const summary = `Change ${changeId} 已归档并冻结为历史上下文；保留原文，不按当前 schema 重新校验或补写。`;
+    checks.push(summary);
+    workspaceAttention.push({
+      id: 'historical-change-context',
+      scope: 'history',
+      blocking: false,
+      summary,
+      nextAction: '如需继续旧功能，请创建新的当前 change，并仅把旧材料作为参考。',
+    });
+    return {
+      ok: true,
+      valid: null,
+      evaluated: false,
+      skipped: true,
+      historicalContextOnly: true,
+      projectRoot,
+      changeId,
+      changeDir,
+      archived,
+      lifecycleStatus: 'legacy-frozen',
+      errors,
+      warnings,
+      checks,
+      workspaceAttention,
       specs: [],
       taskVolume: { errors: [], checks: [], files: [] },
     };
@@ -213,9 +255,14 @@ export async function validateOpenSpecChangeWorkspace(projectRoot, options = {})
     folderManualModuleName: options.folderManualModuleName,
   });
   if (!standards.skipped) {
-    errors.push(...standards.errors);
-    warnings.push(...standards.warnings);
-    checks.push(...standards.checks);
+    workspaceAttention.push({
+      id: 'standards',
+      scope: 'workspace',
+      ok: standards.ok,
+      errors: [...(standards.errors ?? [])],
+      warnings: [...(standards.warnings ?? [])],
+      checks: [...(standards.checks ?? [])],
+    });
     const hasStandardsTask = taskVolume.files.some((file) => file.text.includes('openprd standards') && file.text.includes('docs/basic'));
     if (!hasStandardsTask) {
       warnings.push(`${path.relative(projectRoot, changeDir)} 应包含 docs/basic 标准文档维护任务。`);
@@ -236,5 +283,6 @@ export async function validateOpenSpecChangeWorkspace(projectRoot, options = {})
     specs,
     taskVolume,
     standards,
+    workspaceAttention,
   };
 }

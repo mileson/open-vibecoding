@@ -3,7 +3,7 @@
  * 渲染 run / loop 相关命令的人类可读输出或 JSON 输出。
  *
  * 输入
- * 接收 run context、run verify、loop prompt/run/finish 和执行确认清单等结构化结果对象。
+ * 接收 run context、run verify、loop prompt/run/finish 等结构化结果对象。
  *
  * 输出
  * 向终端输出当前执行流、任务状态、Loop 运行信息和知识回顾摘要。
@@ -15,7 +15,7 @@
  * 依赖 shared-print 与 doctor-print 提供的复用 helper，不承担实际执行。
  *
  * 维护规则
- * run/loop 输出字段变更时要保持任务态、验证态和确认清单的展示顺序稳定，避免遗漏执行门槛。
+ * run/loop 输出字段变更时要保持任务态与验证态的展示顺序稳定；OpenPrd 不生成用户授权门槛。
  */
 import { labelExecutionMode } from '../execution-strategy.js';
 import { printCodexRuntimeResult } from './doctor-print.js';
@@ -32,34 +32,6 @@ function printLoopWorkspaceMeta(result, fallbackProjectRoot = null) {
   }
   if (result.workspace?.created) {
     console.log('隔离 worktree: 已创建');
-  }
-}
-
-function printExecutionConfirmationChecklist(checklist) {
-  if (!checklist?.required) {
-    return;
-  }
-  console.log(`${checklist.title ?? '开始动手前先确认这些'}:`);
-  if (checklist.objective) {
-    console.log(`- 这次要做什么: ${checklist.objective}`);
-  }
-  if (checklist.scope?.length > 0) {
-    console.log(`- 这次范围: ${checklist.scope.join('；')}`);
-  }
-  if (checklist.implementationItems?.length > 0) {
-    console.log(`- 我会这样推进: ${checklist.implementationItems.join('；')}`);
-  }
-  if (checklist.outOfScope?.length > 0) {
-    console.log(`- 这次先不做: ${checklist.outOfScope.join('；')}`);
-  }
-  if (checklist.verification?.length > 0) {
-    console.log(`- 完成后会检查: ${checklist.verification.join('；')}`);
-  }
-  if (checklist.risks?.length > 0) {
-    console.log(`- 需要提前知道: ${checklist.risks.join('；')}`);
-  }
-  if (checklist.confirmationPrompt) {
-    console.log(`- 如果要我现在继续: ${checklist.confirmationPrompt}`);
   }
 }
 
@@ -86,6 +58,8 @@ function printRunResult(result, json) {
     if (result.readiness) {
       console.log(`任务就绪: ${taskReady ? '是' : '否'}`);
       console.log(`工作区就绪: ${workspaceReady ? '是' : '否'}`);
+      console.log(`整体就绪可声明: ${result.readiness.claimReady !== false ? '是' : '否'}`);
+      console.log(`当前动作可继续: ${result.readiness.actionReady !== false ? '是' : '否'}`);
       if (result.readiness.qualityProductionReady !== null) {
         console.log(`质量门禁: ${result.readiness.qualityProductionReady ? 'production-ready' : '待补证据'}`);
       }
@@ -136,7 +110,11 @@ function printRunResult(result, json) {
     const confidence = typeof active.confidence === 'number' ? `，置信度 ${active.confidence}` : '';
     console.log(`当前 Agent 环境: ${active.activeClient}${active.surface ? ` / ${active.surface}` : ''}${confidence}`);
   }
-  console.log(`基础检查: ${result.validation.valid ? '通过' : '失败'}`);
+  console.log(`工作区结构: ${result.validation.structuralValid !== false ? '可用' : '需修复'}`);
+  console.log(`工作区整体状态: ${result.validation.workspaceReady !== false ? '就绪' : '待关注（不阻断当前请求）'}`);
+  if (result.workspaceAttention?.summary) {
+    console.log(`工作区提醒: ${result.workspaceAttention.summary}`);
+  }
   if (result.lane?.summary) {
     console.log(`当前处理路径: ${result.lane.summary}`);
   }
@@ -194,12 +172,16 @@ function printRunResult(result, json) {
     || result.recommendation.title === 'clarify-user'
     || result.recommendation.title === '继续本轮需求入口澄清'
   ) {
-    console.log('当前回复目标: 先在对话里输出 requirement 摘要或只追问 1 个最高价值澄清点；不要承诺“按默认方案直接实现”，也不要把“请帮我实现/继续实现”当成跳过 requirement 摘要确认的依据。');
+    console.log(result.executionIntent?.explicit
+      ? '当前回复目标: 用户已明确要求执行；直接继续当前范围，requirement/PRD/review/task 材料由 Agent 在后台维护，不重复索取授权。'
+      : '当前回复目标: 先在对话里输出 requirement 摘要或只追问 1 个最高价值澄清点。');
   }
-  if (result.recommendation.preparationCommand || result.recommendation.executionCommand || result.recommendation.commitCommand) {
-    console.log('开始动手前提: 只有在用户明确要求继续落地、实现、修复、深挖或提交时，才继续往下做；如果还缺这一步，就先用人话说明范围和影响。');
+  if (
+    !result.executionIntent?.explicit
+    && (result.recommendation.preparationCommand || result.recommendation.executionCommand || result.recommendation.commitCommand)
+  ) {
+    console.log('意图提示: 用户明确要求继续落地、实现、修复、深挖或提交时即可推进；如果用户只要求规划、分析或评审，则保持只读。');
   }
-  printExecutionConfirmationChecklist(result.recommendation.executionConfirmationChecklist);
   if (result.recommendation.preparationCommand) {
     console.log(`内部准备参考: ${result.recommendation.preparationCommand}`);
   }
@@ -338,7 +320,6 @@ function printLoopResult(result, json) {
 }
 
 export {
-  printExecutionConfirmationChecklist,
   printRunResult,
   printLoopResult,
 };

@@ -820,6 +820,14 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
       return {
         ok: true,
         valid: true,
+        scope: 'workspace',
+        blocking: false,
+        readiness: {
+          workspaceReady: true,
+          workspaceAttention: false,
+          actionReady: true,
+          claimReady: true,
+        },
         skipped: true,
         projectRoot,
         docsRoot: STANDARD_DOCS_ROOT,
@@ -834,6 +842,14 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
     return {
       ok: false,
       valid: false,
+      scope: 'workspace',
+      blocking: false,
+      readiness: {
+        workspaceReady: false,
+        workspaceAttention: true,
+        actionReady: true,
+        claimReady: false,
+      },
       skipped: false,
       projectRoot,
       docsRoot: STANDARD_DOCS_ROOT,
@@ -969,9 +985,18 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
   checks.push(`Development standards: code files ok <= ${lineConfig.okMax} lines, attention <= ${lineConfig.attentionMax} lines.`);
   checks.push(`Growth layer: ${config?.growth?.enabled === false ? 'disabled' : 'enabled'}; code-extension candidates can auto-apply, remaining candidates stay in wrap-up review.`);
 
+  const workspaceReady = errors.length === 0;
   return {
-    ok: errors.length === 0,
-    valid: errors.length === 0,
+    ok: workspaceReady,
+    valid: workspaceReady,
+    scope: 'workspace',
+    blocking: false,
+    readiness: {
+      workspaceReady,
+      workspaceAttention: !workspaceReady,
+      actionReady: true,
+      claimReady: workspaceReady,
+    },
     skipped: false,
     projectRoot,
     docsRoot: STANDARD_DOCS_ROOT,

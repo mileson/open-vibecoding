@@ -177,19 +177,29 @@ test('run exposes hook-stable context and records hook iterations', async () => 
   assert.equal(context.recommendation.parallelPlan.eligible, true);
   assert.equal(context.recommendation.parallelPlan.worktreeRecommended, true);
   assert.ok(context.recommendation.parallelPlan.workerCandidates.length > 0);
-  assert.equal(context.recommendation.intentGate.confirmationChecklistRequired, true);
-  assert.equal(context.recommendation.executionConfirmationChecklist.required, true);
-  assert.equal(context.recommendation.executionConfirmationChecklist.title, '开始动手前先确认这些');
-  assert.ok(context.recommendation.executionConfirmationChecklist.implementationItems.some((item) => item.includes('我会先核对当前情况')));
-  assert.ok(context.recommendation.executionConfirmationChecklist.implementationItems.some((item) => item.includes('如果需要多人配合')));
-  assert.ok(context.recommendation.executionConfirmationChecklist.outOfScope.some((item) => item.includes('不会默认处理这次范围以外的历史问题')));
-  assert.ok(context.recommendation.executionConfirmationChecklist.verification.some((item) => item.includes('完成后我会补做这次调整需要的检查')));
+  assert.equal(context.recommendation.intentGate.confirmationChecklistRequired, false);
+  assert.equal(context.recommendation.executionConfirmationChecklist, null);
   assert.ok(context.recommendation.command.includes('openprd tasks . --change'));
   assert.ok(context.recommendation.preparationCommand.includes('openprd loop . --plan --change'));
   assert.ok(context.recommendation.executionCommand.includes('openprd loop . --run --agent codex'));
   assert.equal(context.recommendation.executionCommand.includes('--commit'), false);
   assert.ok(context.recommendation.commitCommand.includes('openprd loop . --finish'));
   assert.equal(context.recommendation.intentGate.requiresExplicitIntent, true);
+  const initialInteractionContract = context.contextCapsule.entries
+    .find((entry) => entry.id === 'agent-interaction-contract');
+  assert.equal(initialInteractionContract.value.replyBoundary, null);
+  assert.equal(initialInteractionContract.value.approvalBoundary, null);
+  const discussionContext = await runWorkspace(project, {
+    context: true,
+    message: '先分析一下实现方案和发布计划，不要动手',
+  });
+  assert.equal(discussionContext.executionIntent.explicit, false);
+  assert.equal(discussionContext.recommendation.executionConfirmationChecklist, null);
+  const suffixDiscussionContext = await runWorkspace(project, {
+    context: true,
+    message: '这个功能的实现方案有哪些风险？',
+  });
+  assert.equal(suffixDiscussionContext.executionIntent.explicit, false);
   const continuationContext = await runWorkspace(project, {
     context: true,
     message: '继续执行这个记录：019e5ac7-088b-7ff2-86d1-4c026ff68105',
@@ -205,6 +215,15 @@ test('run exposes hook-stable context and records hook iterations', async () => 
   assert.ok(continuationContext.recommendation.reason.includes('工具无关的会话 ID'));
   assert.ok(continuationContext.recommendation.reason.includes('不能用相似历史、当前 active change'));
   assert.equal(continuationContext.recommendation.reason.includes('存在一个依赖已就绪的 OpenPrd 任务'), false);
+  assert.equal(continuationContext.executionIntent.explicit, true);
+  assert.equal(continuationContext.executionIntent.repeatedAuthorizationRequired, false);
+  assert.equal(continuationContext.recommendation.executionConfirmationChecklist, null);
+  assert.equal(continuationContext.recommendation.executionAuthorization?.granted, true);
+  const interactionContract = continuationContext.contextCapsule.entries
+    .find((entry) => entry.id === 'agent-interaction-contract');
+  assert.equal(interactionContract.value.executionIntent.explicit, true);
+  assert.equal(interactionContract.value.replyBoundary, null);
+  assert.equal(interactionContract.value.approvalBoundary, null);
   await assert.rejects(fs.stat(path.join(project, '.openprd', 'harness', 'run-state.json')), { code: 'ENOENT' });
   await assert.rejects(fs.stat(path.join(project, '.openprd', 'harness', 'iterations.jsonl')), { code: 'ENOENT' });
 
@@ -231,7 +250,7 @@ test('run exposes hook-stable context and records hook iterations', async () => 
   }
   assert.ok(logs.some((line) => line.includes('当前进展参考')));
   assert.ok(logs.some((line) => line.includes('对外表达:')));
-  assert.ok(logs.some((line) => line.includes('开始动手前提')));
+  assert.ok(logs.some((line) => line.includes('意图提示')));
   assert.ok(logs.some((line) => line.includes('环境建议:')));
   assert.ok(logs.some((line) => line.includes('内部检查参考:')));
 
@@ -362,8 +381,7 @@ test('run context keeps lightweight task advance below the implementation task t
   assert.equal(context.recommendation.loop.required, false);
   assert.equal(context.recommendation.executionMode, 'serial');
   assert.equal(context.recommendation.parallelPlan.eligible, false);
-  assert.equal(context.recommendation.executionConfirmationChecklist.required, true);
-  assert.ok(context.recommendation.executionConfirmationChecklist.implementationItems.some((item) => item.includes('我只会在这次已经确认的范围内继续')));
+  assert.equal(context.recommendation.executionConfirmationChecklist, null);
   assert.ok(context.recommendation.command.includes('openprd tasks . --change'));
 });
 
@@ -940,6 +958,10 @@ test('fleet dry-run plans historical updates without auto-claiming agent-only pr
     functional: ['历史评审产物带工作单元 ID'],
   });
   const legacyVersionPath = path.join(existing, '.openprd', 'state', 'versions', 'v0001.json');
+  const legacyReviewPath = path.join(existing, '.openprd', 'reviews', 'v0001.html');
+  const legacyReviewBefore = await fs.readFile(legacyReviewPath, 'utf8');
+  const taskGraphPath = path.join(existing, '.openprd', 'state', 'task-graph.json');
+  const taskGraphBefore = await fs.readFile(taskGraphPath, 'utf8');
   const legacySnapshot = JSON.parse(await fs.readFile(legacyVersionPath, 'utf8'));
   delete legacySnapshot.workUnitId;
   delete legacySnapshot.targetRoot;
@@ -988,13 +1010,26 @@ test('fleet dry-run plans historical updates without auto-claiming agent-only pr
   const backfilledSnapshot = JSON.parse(await fs.readFile(legacyVersionPath, 'utf8'));
   assert.match(backfilledSnapshot.workUnitId, /^wu-legacy-v0001-[a-f0-9]{8}$/);
   assert.equal(backfilledSnapshot.digest, synthesized.snapshot.digest);
-  const backfilledHtml = await fs.readFile(path.join(existing, '.openprd', 'reviews', 'v0001.html'), 'utf8');
-  assert.ok(backfilledHtml.includes(`--digest &#39;${synthesized.snapshot.digest}&#39;`));
-  assert.ok(backfilledHtml.includes(`--work-unit &#39;${backfilledSnapshot.workUnitId}&#39;`));
+  assert.equal(backfilledSnapshot.lifecycleStatus, 'legacy-frozen');
+  assert.equal(backfilledSnapshot.semanticMode, 'context-only');
+  assert.equal(backfilledSnapshot.backfillPolicy, 'metadata-only');
+  const backfilledHtml = await fs.readFile(legacyReviewPath, 'utf8');
+  assert.equal(backfilledHtml, legacyReviewBefore);
+  assert.equal(backfilledHtml.includes(`--work-unit &#39;${backfilledSnapshot.workUnitId}&#39;`), false);
+  assert.equal(await fs.readFile(taskGraphPath, 'utf8'), taskGraphBefore);
+  const workUnitPath = path.join(existing, '.openprd', 'engagements', 'work-units', `${backfilledSnapshot.workUnitId}.json`);
   assert.equal(
-    await fs.stat(path.join(existing, '.openprd', 'engagements', 'work-units', `${backfilledSnapshot.workUnitId}.json`)).then(() => true),
+    await fs.stat(workUnitPath).then(() => true),
     true
   );
+  const binding = JSON.parse(await fs.readFile(workUnitPath, 'utf8'));
+  assert.equal(binding.status, 'legacy-frozen');
+  assert.equal(binding.reviewPath, legacyReviewPath);
+  const backfilledState = JSON.parse(await fs.readFile(legacyStatePath, 'utf8'));
+  assert.equal(backfilledState.lifecycleStatus, 'legacy-frozen');
+  assert.equal(backfilledState.semanticMode, 'context-only');
+  assert.equal(backfilledState.reviewStatus.status, 'legacy-frozen');
+  assert.equal(backfilledState.reviewStatus.historicalContextOnly, true);
 
   const cliLogs = [];
   const originalLog = console.log;
@@ -1140,9 +1175,15 @@ test('fleet update backfills missing active artifacts and ignores legacy content
   assert.ok(await fs.stat(path.join(existing, '.openprd', 'engagements', 'active', 'handoff.md')).then(() => true));
 
   const strictDoctor = await doctorWorkspace(existing, { openprdHome });
-  assert.equal(strictDoctor.ok, false);
-  assert.ok(strictDoctor.errors.some((error) => error.includes('docs/basic/backend-structure.md')));
-  assert.ok(strictDoctor.errors.some((error) => error.includes('Output/wechat/article.html')));
+  assert.equal(strictDoctor.ok, true);
+  assert.equal(strictDoctor.readiness.integrationsReady, true);
+  assert.equal(strictDoctor.readiness.structuralReady, true);
+  assert.equal(strictDoctor.readiness.standardsReady, false);
+  assert.equal(strictDoctor.readiness.workspaceReady, false);
+  assert.equal(strictDoctor.readiness.actionReady, true);
+  assert.equal(strictDoctor.errors.length, 0);
+  assert.ok(strictDoctor.standardsAttention.errors.some((error) => error.includes('docs/basic/backend-structure.md')));
+  assert.ok(strictDoctor.standardsAttention.errors.some((error) => error.includes('Output/wechat/article.html')));
 
   const cliLogs = [];
   const originalLog = console.log;
@@ -1261,4 +1302,53 @@ test('freeze writes a snapshot and handoff exports openprd bundle', async () => 
   assert.ok(handoffMd.includes('## 变化摘要'));
   assert.ok(activeHandoff.includes('项目版本: 0.1.23'));
   assert.ok(activeHandoff.includes('## 变化摘要'));
+});
+
+test('change generation, freeze, and handoff treat review and workspace standards as nonblocking attention', async () => {
+  const project = await makeTempProject();
+  await initWorkspace(project, { templatePack: 'consumer' });
+  const synthesized = await synthesizeWorkspace(project, {
+    title: '个人任务收口',
+    owner: 'PM',
+    problemStatement: '用户需要把当前任务继续推进到可交接状态',
+    whyNow: '当前实现已经开始，需要保持动作连续性',
+    primaryUsers: ['个人用户'],
+    goals: ['完成当前任务并交接'],
+    successMetrics: ['当前任务可以继续执行'],
+    acceptanceGoals: ['生成的 change 与当前版本绑定'],
+    inScope: ['当前任务'],
+    outOfScope: ['历史工作区债务'],
+    primaryFlows: ['继续实现后生成交接包'],
+    functional: ['继续当前任务'],
+    productType: 'consumer',
+  });
+  await fs.mkdir(path.join(project, 'src'), { recursive: true });
+  await fs.writeFile(path.join(project, 'src', 'app.js'), 'export const app = true;\n');
+
+  const generated = await generateOpenSpecChangeWorkspace(project, { change: 'current-task' });
+  assert.equal(generated.ok, true);
+  assert.equal(generated.snapshot.versionId, synthesized.snapshot.versionId);
+  assert.equal(generated.snapshot.digest, synthesized.snapshot.digest);
+  assert.equal(generated.reviewAttention?.blocking, false);
+  assert.equal(generated.validation.taskReady, true);
+  assert.equal(generated.validation.workspaceReady, false);
+  assert.equal(generated.validation.claimReady, false);
+
+  const frozen = await freezeWorkspace(project);
+  assert.equal(frozen.ok, true);
+  assert.equal(frozen.actionReady, true);
+  assert.equal(frozen.claimReady, false);
+  assert.equal(frozen.workspaceReady, false);
+  assert.ok(frozen.workspaceAttention);
+
+  const handedOff = await handoffWorkspace(project, 'openprd');
+  assert.equal(handedOff.ok, true);
+  assert.equal(handedOff.actionReady, true);
+  assert.equal(handedOff.workspaceReady, false);
+  assert.equal(handedOff.handoff.versionId, synthesized.snapshot.versionId);
+
+  const invalidTarget = await handoffWorkspace(project, '../outside');
+  assert.equal(invalidTarget.ok, false);
+  assert.equal(invalidTarget.actionReady, false);
+  assert.match(invalidTarget.errors[0], /Handoff target/);
 });

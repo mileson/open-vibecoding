@@ -58,20 +58,24 @@ test('guide reports stage 1 on a fresh workspace', async () => {
   assert.ok(result.nextAction.includes('capture'));
 });
 
-test('guide walks through review and direction selection stages', async () => {
+test('guide keeps review and direction as nonblocking background stages', async () => {
   const { project, versionId } = await makeReviewedProject();
 
   let result = await guideWorkspace(project);
-  assert.equal(result.currentStage.id, 'review');
+  assert.equal(result.currentStage.id, 'tasks');
+  const reviewStage = result.stages.find((stage) => stage.id === 'review');
+  assert.equal(reviewStage.status, 'done');
+  assert.ok(reviewStage.detail.includes('不阻断实现'));
 
   await writeValidReviewPresentation(project, versionId, { designDirections: DESIGN_DIRECTIONS });
   await reviewWorkspace(project, { mark: 'confirmed' });
 
   result = await guideWorkspace(project);
-  assert.equal(result.currentStage.id, 'direction');
+  assert.equal(result.currentStage.id, 'tasks');
   const directionStage = result.stages.find((stage) => stage.id === 'direction');
-  assert.equal(directionStage.status, 'current');
+  assert.equal(directionStage.status, 'done');
   assert.ok(directionStage.detail.includes('2 个交互方向'));
+  assert.ok(directionStage.detail.includes('可逆默认方向'));
 
   await reviewWorkspace(project, { mark: 'confirmed', direction: 'direction-2' });
   result = await guideWorkspace(project);

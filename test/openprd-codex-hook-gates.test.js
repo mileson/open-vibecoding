@@ -8,6 +8,7 @@ import {
   setupAgentIntegrationWorkspace,
   makeTempProject,
   pathExists,
+  writeMinimalChange,
 } from './helpers/openprd-test-helpers.js';
 
 function makeHookRunner(project, hookPath, extraInput = {}) {
@@ -88,7 +89,7 @@ test('Codex hook keeps autonomy risks advisory without adding OpenPrd approval g
   assert.ok(JSON.stringify(blockedCloudHotfix).includes('OpenPrd 不阻断工具调用'));
 });
 
-test('Codex hook escalates confirmations, keeps requirement materials advisory, demotes tooling asks, and heals stale reviews', async () => {
+test('Codex hook keeps requirement materials in background without confirmation escalation, demotes tooling asks, and heals stale reviews', async () => {
   const project = await makeTempProject();
   const codexHome = path.join(project, 'codex-home');
   await setupAgentIntegrationWorkspace(project, {
@@ -131,27 +132,29 @@ test('Codex hook escalates confirmations, keeps requirement materials advisory, 
   });
   assert.notEqual(infraFallbackPatch.decision, 'block', JSON.stringify(infraFallbackPatch).slice(0, 400));
 
-  // 打开一个真正的 L2 需求门禁。
+  // 打开一个 L2 后台需求状态。
   runHook('UserPromptSubmit', {
     prompt: '新增一个团队协作审批工作流模块，串联多个入口和流程编排，做成一站式平台能力',
   });
   let gate = await readGate();
   assert.equal(gate.active, true);
-  assert.equal(gate.approvalPolicy.reviewPolicy, 'required');
+  assert.equal(gate.approvalPolicy.reviewPolicy, 'background-record');
+  assert.equal(gate.approvalPolicy.executionMode, 'direct-when-user-requested');
 
-  // 第一次确认：记录需求摘要确认。
+  // 自然语言确认只更新后台范围记录，不升级执行授权。
   runHook('UserPromptSubmit', { prompt: '确认这版需求摘要' });
   gate = await readGate();
-  assert.ok(gate.clarificationConfirmedAt, 'first confirmation should record clarification confirmation');
-  assert.equal(gate.approvalPolicy.reviewPolicy, 'required');
+  assert.equal(gate.status, 'requirement-background-maintenance');
+  assert.equal(gate.approvalPolicy.reviewPolicy, 'background-record');
 
-  // 第二次确认：升级为 silent-record + 自动执行授权，不再重复索取确认。
+  // 重复确认也不会形成另一套授权状态机。
   runHook('UserPromptSubmit', { prompt: '确定' });
   gate = await readGate();
-  assert.equal(gate.approvalPolicy.reviewPolicy, 'silent-record');
-  assert.equal(gate.approvalPolicy.executionMode, 'auto-after-review-and-tasks');
-  assert.equal(gate.executionIntent.source, 'repeated-user-confirmation');
-  assert.ok(Number(gate.confirmationCount) >= 2);
+  assert.equal(gate.status, 'requirement-background-maintenance');
+  assert.equal(gate.approvalPolicy.reviewPolicy, 'background-record');
+  assert.equal(gate.approvalPolicy.executionMode, 'direct-when-user-requested');
+  assert.equal(gate.executionIntent.source, 'original-user-scope');
+  assert.equal(gate.confirmationCount, undefined);
 
   // 需求材料由 Agent 后台维护，第一次实现写入就应直接放行。
   const patchPayload = {
@@ -170,7 +173,7 @@ test('Codex hook escalates confirmations, keeps requirement materials advisory, 
   const firstWrite = runHook('PreToolUse', patchPayload);
   assert.equal(firstWrite.decision, undefined, JSON.stringify(firstWrite));
   assert.equal(firstWrite.continue, true);
-  assert.ok(JSON.stringify(firstWrite).includes('does not block'));
+  assert.equal(JSON.stringify(firstWrite).includes('"decision":"block"'), false);
 
   // 僵尸稿自愈：全局 current.json 残留其他会话的确认稿时，不再要求确认旧稿。
   const staleProject = await makeTempProject();
@@ -203,10 +206,98 @@ test('Codex hook escalates confirmations, keeps requirement materials advisory, 
   assert.equal(staleWrite.decision, undefined);
   assert.equal(staleWrite.continue, true);
   assert.ok(!JSON.stringify(staleWrite).includes('version v0099'));
-  assert.ok(JSON.stringify(staleWrite).includes('does not block'));
+  assert.equal(JSON.stringify(staleWrite).includes('"decision":"block"'), false);
 });
 
-test('Codex hook turns one natural-language review confirmation into full-chain authorization', async () => {
+test('explicit implementation intent is never converted into a material requirement gate', async () => {
+  const project = await makeTempProject();
+  const codexHome = path.join(project, 'codex-home');
+  await setupAgentIntegrationWorkspace(project, {
+    tools: 'codex',
+    templatePack: 'agent',
+    enableUserCodexConfig: true,
+    codexHome,
+  });
+
+  const hookPath = path.join(project, '.codex', 'hooks', 'openprd-hook.mjs');
+  const runHook = makeHookRunner(project, hookPath);
+  const prompt = runHook('UserPromptSubmit', {
+    prompt: '请直接实现一个新的团队审批工作流模块，串联多个入口和流程编排；需求材料由你后台维护。',
+  });
+  assert.equal(prompt.continue, true);
+  assert.ok(prompt.hookSpecificOutput.additionalContext.includes('后台维护'));
+  assert.ok(prompt.hookSpecificOutput.additionalContext.includes('有效执行意图'));
+
+  const write = runHook('PreToolUse', {
+    tool_name: 'apply_patch',
+    tool_input: {
+      patch: [
+        '*** Begin Patch',
+        '*** Update File: src/workflow.js',
+        '@@',
+        '+export const approvalWorkflow = true;',
+        '*** End Patch',
+        '',
+      ].join('\n'),
+    },
+  });
+  assert.equal(write.continue, true);
+  assert.equal(write.decision, undefined);
+  assert.equal(JSON.stringify(write).includes('"decision":"block"'), false);
+
+  const events = (await fs.readFile(path.join(project, '.openprd', 'harness', 'events.jsonl'), 'utf8'))
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => JSON.parse(line));
+  assert.equal(events.some((event) => String(event.outcome).includes('blocked')), false);
+});
+
+test('Codex hook keeps an older active change as read-only context and routes reopened work to a new current change', async () => {
+  const project = await makeTempProject();
+  const codexHome = path.join(project, 'codex-home');
+  await setupAgentIntegrationWorkspace(project, {
+    tools: 'codex',
+    templatePack: 'agent',
+    enableUserCodexConfig: true,
+    codexHome,
+  });
+
+  const historicalChangeId = 'legacy-billing-flow';
+  await writeMinimalChange(project, historicalChangeId, {
+    title: 'Legacy Billing Flow',
+    taskTitle: 'Backfill the old billing requirement notes',
+  });
+  await fs.writeFile(path.join(project, '.openprd', 'state', 'changes.json'), `${JSON.stringify({
+    version: 1,
+    activeChange: historicalChangeId,
+    changes: {
+      [historicalChangeId]: {
+        id: historicalChangeId,
+        status: 'active',
+      },
+    },
+  }, null, 2)}\n`);
+
+  const hookPath = path.join(project, '.codex', 'hooks', 'openprd-hook.mjs');
+  const runHook = makeHookRunner(project, hookPath);
+  const payload = runHook('UserPromptSubmit', {
+    prompt: '新增一个团队协作审批工作流模块，串联多个入口和流程编排，做成一站式平台能力',
+  });
+  const context = payload.hookSpecificOutput.additionalContext;
+
+  assert.equal(payload.continue, true);
+  assert.ok(context.includes('OpenPrd 历史上下文提醒'));
+  assert.ok(context.includes('只作为只读上下文'));
+  assert.ok(context.includes('新 current requirement/change'));
+  assert.ok(context.includes('旧 change 不再作为本轮执行入口'));
+  assert.ok(context.includes('历史上下文标题: Legacy Billing Flow'));
+  assert.equal(context.includes('待判断的需求点'), false);
+  assert.equal(context.includes('查看这个历史需求还差什么'), false);
+  assert.equal(context.includes('如果未完成再切回继续'), false);
+  assert.equal(context.includes('项阻塞'), false);
+});
+
+test('Codex hook records a natural-language review decision without turning it into execution authorization', async () => {
   const project = await makeTempProject();
   const codexHome = path.join(project, 'codex-home');
   await setupAgentIntegrationWorkspace(project, {
@@ -250,18 +341,19 @@ test('Codex hook turns one natural-language review confirmation into full-chain 
   });
   assert.equal(prematureMark.decision, undefined);
   assert.equal(prematureMark.continue, true);
-  assert.ok(JSON.stringify(prematureMark).includes('does not block'));
+  assert.equal(JSON.stringify(prematureMark).includes('"decision":"block"'), false);
 
-  // 一句自然语言确认（带版本号 + 继续执行）应当同时授权评审记录并升级整条链。
+  // 一句自然语言确认（带版本号 + 继续执行）只记录后台 artifact 来源。
   runHook('UserPromptSubmit', { prompt: '确认 v0276 评审稿，继续执行' });
   gate = await readGate();
-  assert.equal(gate.status, 'review-confirmation-authorized');
-  assert.equal(gate.reviewActionAuthorization?.versionId, 'v0276');
-  assert.equal(gate.reviewActionAuthorization?.digest, digest);
-  assert.equal(gate.reviewActionAuthorization?.workUnitId, 'wu-tail-0001');
-  assert.equal(gate.reviewActionAuthorization?.continueAfterReview, true);
-  assert.equal(gate.approvalPolicy.reviewPolicy, 'silent-record');
-  assert.equal(gate.approvalPolicy.executionMode, 'auto-after-review-and-tasks');
+  assert.equal(gate.status, 'review-recorded-background');
+  assert.equal(gate.reviewArtifactRecord?.versionId, 'v0276');
+  assert.equal(gate.reviewArtifactRecord?.digest, digest);
+  assert.equal(gate.reviewArtifactRecord?.workUnitId, 'wu-tail-0001');
+  assert.equal(gate.reviewArtifactRecord?.source, 'explicit-user-review-decision');
+  assert.equal(gate.reviewActionAuthorization, undefined);
+  assert.equal(gate.approvalPolicy.reviewPolicy, 'background-record');
+  assert.equal(gate.approvalPolicy.executionMode, 'direct-when-user-requested');
 
   // 评审记录命令由 agent 自己带精确 artifact 执行，不再被拦。
   const authorizedMark = runHook('PreToolUse', {

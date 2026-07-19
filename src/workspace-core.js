@@ -467,9 +467,9 @@ function buildWorkflowTaskGraph(snapshot = null, analysis = null, options = {}) 
     status: 'blocked',
   })) ?? [];
   const diagramState = options.diagramState ?? null;
-  const diagramGateActive = Boolean(diagramState?.shouldGateFreeze);
+  const diagramAttentionActive = Boolean(diagramState?.attentionNeeded);
   const prdReviewState = options.prdReviewState ?? null;
-  const reviewGateActive = Boolean(prdReviewState?.shouldGateFreeze);
+  const reviewAttentionActive = Boolean(prdReviewState?.needsAttention);
   const clarificationState = options.clarificationState ?? null;
   const clarifyGateActive = Boolean(clarificationState?.shouldAskUser);
 
@@ -522,7 +522,7 @@ function buildWorkflowTaskGraph(snapshot = null, analysis = null, options = {}) 
       kind: 'workflow-step',
       status: !isSynthesized
         ? 'blocked'
-        : (diagramGateActive ? 'ready' : 'done'),
+        : (diagramAttentionActive ? 'ready' : 'done'),
       dependsOn: ['synthesize'],
     },
     {
@@ -531,19 +531,15 @@ function buildWorkflowTaskGraph(snapshot = null, analysis = null, options = {}) 
       kind: 'workflow-step',
       status: !isSynthesized
         ? 'blocked'
-        : (reviewGateActive ? 'ready' : 'done'),
+        : (reviewAttentionActive ? 'ready' : 'done'),
       dependsOn: ['synthesize'],
     },
     {
       id: 'freeze',
       label: 'freeze',
       kind: 'workflow-step',
-      status: isFrozen || isHandedOff ? 'done' : (snapshot?.digest && !diagramGateActive && !reviewGateActive ? 'ready' : 'blocked'),
-      dependsOn: [
-        'validate',
-        ...(diagramGateActive ? ['diagram'] : []),
-        ...(reviewGateActive ? ['review'] : []),
-      ],
+      status: isFrozen || isHandedOff ? 'done' : (snapshot?.digest ? 'ready' : 'blocked'),
+      dependsOn: ['validate'],
     },
     {
       id: 'handoff',
@@ -631,7 +627,7 @@ function buildWorkflowTaskGraph(snapshot = null, analysis = null, options = {}) 
       kind: 'artifact',
       status: isFrozen || isHandedOff
         ? 'done'
-        : (isSynthesized ? (reviewGateActive ? 'ready' : 'done') : 'blocked'),
+        : (isSynthesized ? (reviewAttentionActive ? 'ready' : 'done') : 'blocked'),
       dependsOn: ['synthesize', 'review'],
     },
     {
@@ -664,10 +660,6 @@ function buildWorkflowTaskGraph(snapshot = null, analysis = null, options = {}) 
     nextReadyNode = 'classify';
   } else if (analysis?.missingRequiredFields > 0) {
     nextReadyNode = 'interview';
-  } else if (diagramGateActive) {
-    nextReadyNode = 'diagram';
-  } else if (reviewGateActive) {
-    nextReadyNode = 'review';
   } else if (isFrozen) {
     nextReadyNode = 'handoff';
   } else if (isHandedOff) {
@@ -682,6 +674,10 @@ function buildWorkflowTaskGraph(snapshot = null, analysis = null, options = {}) 
     version: 1,
     generatedAt: timestamp(),
     nextReadyNode,
+    attentionNodes: [
+      ...(diagramAttentionActive ? ['diagram'] : []),
+      ...(reviewAttentionActive ? ['review'] : []),
+    ],
     workflow,
     artifacts,
     nodes: [
@@ -1564,6 +1560,69 @@ function listMissing(actual, expected) {
   return expected.filter((item) => !actualSet.has(item));
 }
 
+function excludeKnownErrors(errors, excludedErrors) {
+  const remaining = new Map();
+  for (const error of excludedErrors) {
+    remaining.set(error, (remaining.get(error) ?? 0) + 1);
+  }
+  return errors.filter((error) => {
+    const count = remaining.get(error) ?? 0;
+    if (count === 0) {
+      return true;
+    }
+    remaining.set(error, count - 1);
+    return false;
+  });
+}
+
+function finalizeWorkspaceValidationReport(report, options = {}) {
+  const workspaceExists = options.workspaceExists !== false;
+  const standards = options.standards ?? null;
+  const standardsErrors = standards?.errors ?? [];
+  const structuralErrors = excludeKnownErrors(report.errors, standardsErrors);
+  const structuralValid = workspaceExists && structuralErrors.length === 0;
+  const workspaceReady = report.valid;
+  const actionReady = workspaceExists;
+  const claimReady = workspaceReady;
+  const workspaceAttention = workspaceReady
+    ? null
+    : {
+        kind: structuralValid ? 'workspace-validation' : 'workspace-structure',
+        blocking: false,
+        summary: standardsErrors.length > 0 && structuralErrors.length === 0
+          ? 'standards and documentation need attention'
+          : 'workspace validation needs attention',
+        detail: structuralValid
+          ? 'Workspace-wide standards debt is reported separately and does not make the current task fail or revoke a user-authorized action.'
+          : 'Core workspace structure needs repair before structure readiness can be claimed. This workspace-level failure does not by itself revoke an unrelated user-authorized task.',
+        checks: [
+          { name: 'structure', ok: structuralValid, errors: structuralErrors.length },
+          ...(standards ? [{ name: 'standards', ok: standards.ok, errors: standardsErrors.length }] : []),
+        ],
+      };
+
+  return {
+    ...report,
+    structuralValid,
+    structuralErrors,
+    standardsReady: standards ? standards.ok : null,
+    standardsErrors,
+    workspaceReady,
+    actionReady,
+    claimReady,
+    workspaceClaimReady: workspaceReady,
+    workspaceAttention,
+    readiness: {
+      structuralReady: structuralValid,
+      standardsReady: standards ? standards.ok : null,
+      workspaceReady,
+      actionReady,
+      claimReady,
+      workspaceClaimReady: workspaceReady,
+    },
+  };
+}
+
 async function validateWorkspace(projectRoot, options = {}) {
   const report = {
     valid: true,
@@ -1577,7 +1636,7 @@ async function validateWorkspace(projectRoot, options = {}) {
   if (!(await exists(ws.workspaceRoot))) {
     report.valid = false;
     report.errors.push(`Missing workspace: ${ws.workspaceRoot}`);
-    return { report, ws };
+    return { report: finalizeWorkspaceValidationReport(report, { workspaceExists: false }), ws };
   }
 
   const requiredFiles = [
@@ -1626,31 +1685,31 @@ async function validateWorkspace(projectRoot, options = {}) {
   if (!ws.data.config) {
     report.valid = false;
     report.errors.push('Failed to parse config.yaml');
-    return { report, ws };
+    return { report: finalizeWorkspaceValidationReport(report), ws };
   }
 
   if (!ws.data.schema) {
     report.valid = false;
     report.errors.push('Failed to parse prd.schema.yaml');
-    return { report, ws };
+    return { report: finalizeWorkspaceValidationReport(report), ws };
   }
 
   if (!ws.data.diagramArchitectureSchema) {
     report.valid = false;
     report.errors.push('Failed to parse diagram-architecture.schema.yaml');
-    return { report, ws };
+    return { report: finalizeWorkspaceValidationReport(report), ws };
   }
 
   if (!ws.data.diagramProductFlowSchema) {
     report.valid = false;
     report.errors.push('Failed to parse diagram-product-flow.schema.yaml');
-    return { report, ws };
+    return { report: finalizeWorkspaceValidationReport(report), ws };
   }
 
   if (!ws.data.manifest) {
     report.valid = false;
     report.errors.push('Failed to parse templates/manifest.yaml');
-    return { report, ws };
+    return { report: finalizeWorkspaceValidationReport(report), ws };
   }
 
   const config = ws.data.config;
@@ -1853,7 +1912,7 @@ async function validateWorkspace(projectRoot, options = {}) {
   report.checks.push({ name: 'schema', ok: true });
   report.checks.push({ name: 'manifest', ok: true });
 
-  return { report, ws };
+  return { report: finalizeWorkspaceValidationReport(report, { standards }), ws };
 }
 
 async function computeWorkspaceDigest(ws) {
@@ -2105,8 +2164,8 @@ async function detectWorkspaceScenario(projectRoot, ws, versionIndex = []) {
     return {
       id: 'continuing-workspace',
       label: '继续已有工作区',
-      userParticipation: '定向确认',
-      reason: '该工作区已有合成结果或历史记录，只需要补充确认增量信息。',
+      userParticipation: '定向补充（不阻断）',
+      reason: '该工作区已有合成结果或历史记录；Agent 复用可验证上下文，用户可按需补充增量信息。',
     };
   }
 
@@ -2124,16 +2183,16 @@ async function detectWorkspaceScenario(projectRoot, ws, versionIndex = []) {
     return {
       id: 'cold-start-greenfield',
       label: '冷启动（全新项目）',
-      userParticipation: '高协作',
-      reason: '项目根目录基本为空，需要 Agent 与用户共同梳理初始需求形态。',
+      userParticipation: 'Agent 主导、用户可选补充',
+      reason: '项目根目录基本为空；Agent 先采用可逆默认假设形成第一版，用户可随时覆盖。',
     };
   }
 
   return {
     id: 'cold-start-existing-project',
     label: '冷启动（已有项目）',
-    userParticipation: '上下文复用加确认',
-    reason: '项目已经包含资料，但 OpenPrd 工作区是新的，需要复用既有上下文并向用户确认。',
+    userParticipation: '上下文复用、用户可选补充',
+    reason: '项目已经包含资料但 OpenPrd 工作区是新的；Agent 先复用可验证上下文，不把补充信息变成停顿。',
   };
 }
 
@@ -2244,38 +2303,44 @@ function buildClarificationPlan(snapshot, analysis) {
   };
 }
 
-function deriveGateLabels({ nextAction, diagramState, clarification }) {
-  let currentGate = nextAction;
+function deriveGuidanceLabels({ nextAction, diagramState, clarification }) {
+  let currentStage = nextAction;
   if (nextAction === 'diagram') {
-    currentGate = `${diagramState?.preferredType ?? 'architecture'} diagram review`;
+    currentStage = `${diagramState?.preferredType ?? 'architecture'} diagram suggestion`;
   } else if (nextAction === 'review') {
-    currentGate = 'prd review';
+    currentStage = 'prd review artifact';
   } else if (nextAction === 'freeze') {
-    currentGate = 'freeze review';
+    currentStage = 'freeze snapshot';
   } else if (nextAction === 'clarify-user') {
-    currentGate = 'clarify-user';
+    currentStage = 'clarification suggestion';
   }
 
-  let upcomingGate = null;
+  let upcomingStage = null;
   if (nextAction === 'clarify-user' || nextAction === 'classify' || nextAction === 'interview' || nextAction === 'synthesize') {
     if (diagramState?.needed) {
-      upcomingGate = `${diagramState.preferredType} diagram review`;
+      upcomingStage = `${diagramState.preferredType} diagram suggestion`;
     } else {
-      upcomingGate = 'freeze review';
+      upcomingStage = 'freeze snapshot';
     }
   } else if (nextAction === 'diagram') {
-    upcomingGate = 'freeze review';
+    upcomingStage = 'freeze snapshot';
   } else if (nextAction === 'review') {
-    upcomingGate = 'freeze review';
+    upcomingStage = 'freeze snapshot';
   } else if (nextAction === 'freeze') {
-    upcomingGate = 'handoff review';
+    upcomingStage = 'handoff bundle';
   } else if (nextAction === 'handoff') {
-    upcomingGate = 'post-handoff review';
+    upcomingStage = 'post-handoff follow-up';
   }
 
   return {
-    currentGate,
-    upcomingGate,
+    currentStage,
+    upcomingStage,
+    // Retained as null compatibility markers so older consumers do not mistake
+    // workflow guidance for an authorization gate.
+    currentGate: null,
+    upcomingGate: null,
+    advisory: true,
+    blocking: false,
   };
 }
 
@@ -2368,7 +2433,7 @@ export {
   computeWorkspaceDigest,
   CORE_TEMPLATE_FILES,
   USER_CLARIFICATION_PATHS,
-  deriveGateLabels,
+  deriveGuidanceLabels,
   detectWorkspaceScenario,
   ensureWorkspaceSkeleton,
   extractMarkdownSection,

@@ -17,6 +17,31 @@ OpenPrd is a lightweight **PRD harness**. Start by describing the problem in pla
 
 Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps people and agents aligned around stable HTML artifacts such as `review.html`, learning readers, and quality reports. OpenPrd helps the agent do the work: PRDs, reviews, changes, tasks, design contracts, and evidence are maintained in the background without requiring the user to reply with a prescribed confirmation.
 
+## 0.2.0: OpenPrd assists without blocking
+
+- Once the user asks to implement, continue, or publish, missing requirements, reviews, changes, tasks, manuals, or quality evidence no longer stop the work.
+- Codex automations, scheduled jobs, and other unattended tasks bypass the OpenPrd workflow by default. They opt in only when the task explicitly enables OpenPrd maintenance.
+- Historical requirements, PRDs, reviews, changes, tasks, and implementation records stay frozen. Reopened work creates a new current requirement linked to that history instead of reconstructing the past from today's code.
+- Workspace maintenance debt remains visible as background guidance. Real task failures and exact release conditions such as target, permissions, artifacts, tests, conflicts, and rollback are still verified.
+
+```bash
+npm install -g @openprd/cli@0.2.0
+```
+
+## 0.1.24: workspace debt no longer impersonates task failure
+
+- `taskReady`, `workspaceAttention`, `claimReady`, and `actionReady` now separate the current task, workspace maintenance, whole-project readiness claims, and exact action conditions.
+- Missing current baseline docs, code manuals, folder READMEs, or EVO evidence can guide background maintenance, but cannot block the current implementation, change apply, freeze/handoff, commit, or release. Historical requirement/PRD/review/change/task bodies never enter the maintenance backlog.
+- Historical requirements, PRDs, reviews, changes, and tasks are `legacy-frozen`: preserve and index them without reconstructing missing content. Reopened functionality starts a new requirement for today's context.
+- Research, Patch Mode, design contracts, and internal reviews are advisory. Only real safety boundaries such as raw credential access, or exact action conflicts, may reject an operation.
+
+| Status | What it answers | Can it block current work? |
+|---|---|---|
+| `taskReady` | Did the current task pass its scoped implementation and verification? | Only a current-task failure can change it |
+| `workspaceAttention` | What current baseline docs, code manuals, or workspace evidence still need maintenance? | No |
+| `claimReady` | Can the agent claim the whole project is production-ready? | It only limits that claim |
+| `actionReady` | Are the exact target, permissions, artifact, tests, conflicts, and rollback conditions ready for this action? | Only real conditions for that action apply |
+
 ## 0.1.23: confirmation-copy cleanup is complete
 
 0.1.23 removes the remaining confirmation-oriented wording from requirement, harness, and large-UI direction skills, and adds a regression test against generated skills for all three clients. OpenPrd maintains requirement, review, design, and verification artifacts in the background; an implementation request no longer triggers an OpenPrd summary approval, default-direction choice, or execution passphrase.
@@ -104,7 +129,7 @@ incident closure, and reusable learning handoff.
 | Fuzzy product request before anyone codes | Clarify first, separate user-confirmed facts from agent inference, then turn the result into a stable review surface. | `clarify`, `capture`, `synthesize`, `review.html` |
 | Existing flow or auth-entry redesign | Reconstruct current behavior from repo and runtime evidence before proposing the next change. | `discovery`, `diagram`, `review.html`, `change` |
 | Visual or product-flow confirmation | Keep architecture, product flow, or UI replication reviewable instead of burying decisions in chat. | `diagram`, `visual-compare`, side-by-side JPG reviews |
-| Long-running agent implementation chain | Turn accepted work into dependency-ready tasks and run one focused agent session per task with verify gates. | `tasks`, `loop`, prompts, progress logs, verification reports |
+| Long-running agent implementation chain | Turn current work into dependency-ready tasks and run one focused agent session per task with task-scoped verification. | `tasks`, `loop`, prompts, progress logs, verification reports |
 | Release, publish, or handoff readiness | Make "ready to ship" a visible decision with standards, regression evidence, abuse/cost guardrails, and workspace health. | `quality`, `run --verify`, `doctor`, `handoff` |
 | Learning handoff after a fix or project | Package the final requirement, reasoning, and outcome into something new collaborators can actually study. | learning reader, `.openprd/knowledge/skills/`, docs sync |
 
@@ -131,8 +156,9 @@ that new collaborators can study without replaying the whole thread.
 
 ### Quality regression report
 
-Summarize readiness, required gates, evidence coverage, and manual decisions in
-one human-readable quality surface before handoff, release, or publish.
+Summarize task evidence, workspace attention, whole-project readiness claims,
+and manual decisions in one readable surface. The report informs work; it does
+not replace the user's execution intent.
 
 ![OpenPrd quality HTML](https://raw.githubusercontent.com/mileson/openprd/main/docs/assets/openprd-quality-html.png)
 
@@ -505,17 +531,22 @@ Use:
 openprd standards /path/to/project --verify
 ```
 
-OpenPrd generated changes include standards maintenance tasks, and change validation
-checks the standards contract. The canonical project docs path is only
-`docs/basic/`.
+OpenPrd generated changes include standards maintenance tasks. The canonical
+project docs path is only `docs/basic/`. Explicit `standards --verify` may return
+success while reporting missing docs or manuals as advisory attention, so documentation
+debt cannot stop an active task through shell exit handling. Use `--fail-on-violation`
+only for an explicitly strict governance job. Reuse by run, doctor, change apply, or
+freeze/handoff keeps those global gaps in `workspaceAttention`.
 
-During implementation, standards maintenance is an explicit impact check, not a
-best-effort cleanup. For every added or modified source file, agents should check
-whether `docs/basic/`, the file manual, or the containing folder README is missing
-or stale. Missing docs must be created; existing docs should be updated whenever
-the change affects responsibilities, flows, structure, dependencies, or product
-behavior. If no documentation update is needed, agents should say the check was
-performed and why the existing docs still match the code.
+During implementation, agents maintain documentation directly affected by the
+current change and may update current-state docs that can be verified from source.
+Unrelated or historical gaps stay as workspace attention; agents must not invent
+old requirements, acceptance criteria, or implementation rationale to clear a gate.
+
+`openprd dev-check` follows the same rule. It defaults to non-blocking structural
+recommendations for touched files. Even explicit `--auto-refactor on` only suggests
+same-scope, reversible cleanup and never forces the current task to expand or asks
+the user for a switch passphrase.
 
 ## Image-generation routing: pick the right free tool automatically
 
@@ -723,11 +754,11 @@ generation, storage, downloads, or other metered costs, `quality --verify`
 also checks for cost drivers, user-level limits, negative abuse-path
 verification, usage/cost monitoring, alert thresholds, and stop-loss actions.
 
-`openprd quality --verify` is blocking by default when required test blocks are
-not production-ready. `openprd run --verify` repeats that quality gate so final
-readiness cannot ignore the report. Agents should not claim readiness until
-every required test block is either passing with evidence or explicitly out of
-scope for the scenario.
+`openprd quality --verify` reports required test blocks as advisory attention and
+returns success by default. An explicitly strict governance job can add
+`--fail-on-violation` for a non-zero readiness result. `openprd run --verify`
+reports that as `claimReady=false` and workspace attention; it does not rewrite a
+verified current task as failed or invalidate an existing commit.
 
 For UI work with an existing reference image, visual readiness also requires a
 current `openprd visual-compare` artifact under `.openprd/harness/visual-reviews/`.
@@ -802,11 +833,10 @@ or `openprd setup` inside a project.
 entries are only “better when configured” recommendations and never turn
 initialization, diagnostics, or the current task into a failure.
 
-`doctor` verifies that the generated rules, Codex hooks feature flag, standards,
-and workspace validation are healthy, and also surfaces optional enhancement
-recommendations such as Context7 or DeepWiki. `update` refreshes the generated
-adapter files from the canonical OpenPrd source while preserving unrelated user
-hook groups.
+`doctor` verifies generated rules, the Codex hooks feature flag, and workspace
+structure. Standards/manual debt is shown separately as workspace attention and
+does not make integration diagnostics fail. Optional enhancements such as Context7
+or DeepWiki remain recommendations.
 
 `self-update` updates the OpenPrd CLI itself from the public npm package.
 `upgrade` composes the two update layers: it first runs `self-update`, then
@@ -822,9 +852,10 @@ end-of-turn knowledge review instead of full telemetry. This avoids read-only sh
 noise while still nudging the agent to capture reusable project patterns. `guarded` also covers shell tools, while
 `full` restores SessionStart/PreToolUse/PostToolUse/Stop telemetry for temporary
 diagnostics. Actions such as freeze, handoff, accepted spec apply/archive,
-commit, push, release, or publish run `openprd run . --verify` to help the agent
-check standards, workspace validation, active change validation, and active
-discovery verification without requesting process confirmation from the user.
+commit, push, release, or publish may read the layered `openprd run . --verify`
+result, but only their exact target, permissions, conflicts, current artifacts,
+tests, and rollback conditions determine `actionReady`. Global docs and EVO debt
+remain advisory.
 
 `openprd run . --context` is the Ralph-style loop surface for agents. It selects
 the next executable unit from active change tasks, discovery coverage, or normal
@@ -908,9 +939,11 @@ workspaces into `~/.openprd/registry/workspaces.jsonl`. `--update-openprd`
 refreshes projects that already contain `.openprd/` and also backfills
 historical PRD work unit bindings. Project standards or validation gaps are
 reported as health items, but they do not block generated guidance updates. Use
-`--backfill-work-units` when you only want to refresh versioned review artifacts
-and identity bindings, while agent-only or plain projects stay untouched unless
-explicitly selected with `--setup-missing`.
+`--backfill-work-units` only fills verifiable identity, digest, version-index, and
+work-unit metadata. Historical artifacts remain `legacy-frozen`: no missing PRD,
+review, task, acceptance, or implementation narrative is regenerated. When old
+functionality is reopened, the agent creates a new current requirement and uses
+the legacy artifact only as context.
 
 ## How to Read `status` and `next`
 
@@ -922,16 +955,20 @@ Use it to understand:
 
 - current scenario
 - user participation mode
-- current gate
-- upcoming gate
+- current advisory stage
+- upcoming advisory stage
+- `actionReady` separately from `workspaceAttention`
 - current project version, if the release track is enabled
 
 Example signals:
 
 - `Scenario: Cold start (existing project)`
-- `User participation mode: context-plus-confirmation`
-- `Current gate: clarify-user`
-- `Upcoming gate: architecture diagram review`
+- `User participation mode: context reuse, optional user input`
+- `Current stage: clarification suggestion`
+- `Upcoming stage: freeze snapshot`
+- `Blocking: false`
+
+`Current stage` and `Upcoming stage` are advisory labels. Missing background artifacts belong in `workspaceAttention`; they must not stop the user's requested action when `actionReady=true`.
 
 ### `openprd next`
 

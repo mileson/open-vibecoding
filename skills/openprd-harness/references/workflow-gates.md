@@ -1,14 +1,14 @@
 # OpenPrd Workflow Gates
 
-## Clarification Gate
+## Clarification Attention
 
 Do not synthesize with false confidence. Surface gaps first.
 
 Scenario-aware expectations:
 
-- `cold-start-greenfield`: high user collaboration before structure is locked
-- `cold-start-existing-project`: reuse existing repo context, but still ask the user to confirm the new workspace boundary
-- `continuing-workspace`: ask only targeted delta questions
+- `cold-start-greenfield`: use source-labeled assumptions and a reversible default while structure is still forming
+- `cold-start-existing-project`: reuse existing repo context and record the inferred workspace boundary explicitly
+- `continuing-workspace`: maintain only the current delta in the background
 
 Examples:
 
@@ -17,7 +17,7 @@ Examples:
 - success metric missing
 - scope not explicit
 
-## Diagram Gate
+## Diagram Attention
 
 Route to diagram review before freeze if:
 
@@ -39,28 +39,30 @@ Required artifact:
 - current in-product screenshot captured with Codex Computer Use
 - at least three Image 2 image-to-image directions based on that screenshot
 - one horizontal contact sheet under `.openprd/harness/visual-reviews/`, with each option numbered 1/2/3 in the top-left corner
-- explicit user confirmation of the chosen direction before large UI implementation
+- one Agent-chosen reversible default direction, clearly labeled as such; an explicit user choice overrides it
 
-## Freeze Gate
+## Freeze Readiness
 
 Freeze is appropriate when:
 
 - the synthesized draft exists
-- the user has reviewed the latest critical artifact(s)
-- there are no blockers hidden behind assumptions that should be reviewed first
+- the latest critical artifacts have explicit source labels and are available for review
+- unresolved assumptions are visible as readiness attention rather than hidden or backfilled
 
-## Standards Gate
+## Standards Readiness Evidence
 
-Implementation readiness is appropriate when:
+An overall readiness claim is supported when:
 
 - `openprd standards <path> --verify` passes
 - `docs/basic/` reflects the latest product, flow, structure, and tech-stack facts
 - changed files and folders have had their file manuals and folder README docs checked
 
-## Handoff Gate
+Missing or historical workspace documentation is `workspaceAttention`; it does not restrict current task-scoped implementation.
+
+## Handoff Readiness
 
 Handoff is appropriate when:
 
 - freeze succeeded
 - target system is known
-- the user is ready to move from planning into execution transfer
+- the target and transfer scope are explicit; user-requested execution does not wait for an additional OpenPrd confirmation

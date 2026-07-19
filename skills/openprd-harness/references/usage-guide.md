@@ -2,10 +2,10 @@
 
 这份指南是给 **团队成员** 和 **Agent** 的 OpenPrd 实战使用说明。重点不是命令表，而是：
 
-- 什么时候先 `clarify`
-- 什么时候先 `diagram`
-- 什么时候检查 `standards`
-- 什么时候可以直接 `freeze`
+- 什么时候需要补充 `clarify`
+- 什么时候用 `diagram` 辅助理解
+- 什么时候把 `standards` 当作后台维护建议
+- 什么时候按需留下 `freeze` 快照
 - `status` / `next` 该怎么看
 - `batch capture` 怎么用
 
@@ -23,14 +23,14 @@ OpenPrd 现在会区分 3 种场景：
 
 协同方式：
 
-- 高协同
-- 先问用户
-- 不要自己先写完整 PRD
+- 从用户已经表达的目标起步
+- 优先选可逆的默认方案
+- 只有缺失信息会实质改变用户当下要求的结果时，才需要追问
 
 优先动作：
 
-- `openprd clarify`
-- 根据用户回答 `openprd capture`
+- 需要时用 `openprd clarify` 整理未知项，不把它当成实现门禁
+- 用 `openprd capture` 写回已有事实、用户新表达的选择或 Agent 的可逆假设
 
 ### 2. Cold start (existing project)
 
@@ -42,14 +42,14 @@ OpenPrd 现在会区分 3 种场景：
 协同方式：
 
 - 先复用现有上下文
-- 但关键产品事实必须让用户确认
+- 可核验的当前事实可由 Agent 直接记录；不为补材料要求用户重复确认
 
 优先动作：
 
 - `openprd status`
 - `openprd clarify`
 - 用 `openprd capture --source project-derived` 导入已有事实
-- 用 `openprd capture --source user-confirmed` 写回用户确认
+- 用 `openprd capture --source user-confirmed` 写回用户已经明确表达的事实
 - 用 `openprd standards <path> --verify` 检查 `docs/basic/` 和说明书模板
 
 ### 3. Continuing workspace
@@ -69,7 +69,7 @@ OpenPrd 现在会区分 3 种场景：
 - `openprd status`
 - `openprd next`
 - 只补变化部分
-- 每次功能落地前检查 `openprd standards <path> --verify`
+- 实现后可用 `openprd standards <path> --verify` 收集当前基础说明书的维护建议，不因历史缺失阻断当前任务
 
 ---
 
@@ -81,15 +81,15 @@ OpenPrd 现在会区分 3 种场景：
 - 关键产品字段缺失
 - 用户的目标、范围、成功标准还不清楚
 - 虽然 repo 有内容，但你还不能判断“这次 OpenPrd 到底定义什么”
-- 你手上只有技术上下文，没有用户确认
+- 你手上只有技术上下文，产品事实来源仍不完整
 
 ### 典型信号
 
 如果 `openprd next` 或 `openprd status` 显示：
 
-- `Current gate: clarify-user`
+- `Current attention: clarify-user`
 
-那么不要继续往 `synthesize`、`diagram`、`freeze` 推进。
+那么由 Agent 标注来源、采用可逆默认方案并在后台继续 `synthesize` / `diagram`；只有真实歧义会明显改变结果时才向用户提一个最高价值问题。`freeze` 仅反映 readiness 状态，不是实现许可。
 
 ### 推荐操作
 
@@ -153,25 +153,23 @@ openprd diagram <path> --type product-flow --input flow-contract.json
 
 ---
 
-## 四、什么场景可以直接 `freeze`
+## 四、什么场景可以按需 `freeze`
 
-只有在下面几件事都满足时，才建议 `freeze`：
+`freeze` 是一个可选的版本快照动作，不是实现、提交或交付的前置门禁。用户当下明确要求留快照或交接，或 Agent 需要保留一个当前版本时，都可以按需执行。
 
-1. 关键产品字段已经补齐
-2. 用户确认问题已经基本收敛
-3. 如果 diagram gate 生效，对应 diagram 已确认
-4. `openprd next` 不再提示 `clarify-user`
-5. `openprd next` 不再提示 `diagram`
+- 缺少 requirement、review、diagram、tasks 或历史说明材料，只记为后台待完善信息。
+- 历史需求和实现类文档保持冻结，不为了 `freeze` 反推或补写。
+- 如果某个精确快照动作自身无效（例如输出目标不存在），只拒绝该动作，不扩展成工作流阻断。
 
 ### 典型信号
 
-如果 `openprd next` 显示：
+`openprd next` 可能显示：
 
-- `Current gate: freeze review`
+- `Current stage: freeze snapshot`
 
 并且 `Suggested command: openprd freeze .`
 
-这时才适合 freeze。
+这表示快照是一个可选后续建议，不表示当前工作必须停在这里。
 
 ---
 
@@ -183,28 +181,28 @@ openprd diagram <path> --type product-flow --input flow-contract.json
 
 - 我现在处于什么场景？
 - 用户应该参与到什么程度？
-- 当前卡在哪一关？
-- 接下来最可能是哪一关？
+- 当前有什么建议阶段？
+- 接下来有什么可选参考？
 
 重点看这 4 个字段：
 
 - `Scenario`
 - `User participation mode`
-- `Current gate`
-- `Upcoming gate`
+- `Current stage`
+- `Upcoming stage`
 
 例如：
 
 - `Scenario: Cold start (existing project)`
-- `User participation mode: context-plus-confirmation`
-- `Current gate: clarify-user`
-- `Upcoming gate: freeze review`
+- `User participation mode: 上下文复用、用户可选补充`
+- `Current stage: clarification suggestion`
+- `Upcoming stage: freeze snapshot`
 
 这说明：
 
 - 项目里已有上下文可以用
-- 但当前仍然要先和用户确认
-- 还没到可以 freeze 的阶段
+- Agent 可先用可逆假设继续，仅在未知项会实质改变当下结果时追问
+- `freeze` 是后续参考，不影响当前实现
 
 ### `openprd next`
 
@@ -218,8 +216,8 @@ openprd diagram <path> --type product-flow --input flow-contract.json
 重点看：
 
 - `Next action`
-- `Current gate`
-- `Upcoming gate`
+- `Current stage`
+- `Upcoming stage`
 - `Suggested command`
 - `Suggested questions`
 
@@ -331,5 +329,6 @@ openprd capture <path> --json-file delta-answers.json
 ### 不要做什么
 
 - 不要把 `project-derived` 当成 `user-confirmed`
-- 不要在 `Current gate: clarify-user` 时急着 `synthesize`
-- 不要在 diagram gate 还没过时直接 `freeze`
+- `clarification suggestion` 只是待完善信息，不得用来阻断用户已经要求的实现或 `synthesize`
+- diagram 和 review 是辅助理解与反馈的 artifact，不得用来阻断 `freeze` 或当前工作
+- 不得为历史需求反推或补写实现类文档；旧功能重新开发时创建新的 current requirement/change

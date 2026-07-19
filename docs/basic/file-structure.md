@@ -13,12 +13,12 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `src/kernel/`: Project Manifest、事件信封、原子存储、Project Ledger、哈希链校验和投影重建。
 - `src/runtime/`: TaskRuntime 的 claim、lease、heartbeat、write-set 冲突、lane binding 与 CLI workspace 适配。
 - `src/context/`: ContextRequest / ContextCapsule v1 编译、预算、增量、脱敏、缓存和 telemetry。
-- `src/gates/`: 多级作用域门禁、evidence / approval 精确绑定、有效期和撤销状态存储。
+- `src/gates/`: 多级作用域动作条件、evidence 精确绑定、有效期和撤销状态存储；不承担 OpenPrd artifact 的用户授权。
 - `src/adapters/`: Codex、Claude Code、Cursor 的统一 SPI、能力信封、上下文渲染和安装安全策略。
 - `src/knowledge-v3/`: 带 scope、TTL、证据和 token 预算的项目经验生命周期。
 - `src/upgrade/`: 单项目与 fleet 的预演、preimage backup、CAS、原子应用、回滚和事务日志。
 - `src/review-model.js`: 同一 ReviewModel 的业务视角、工程视角、共享 digest 和证据投影。
-- `src/codex-hook-runner-template.mjs`: 生成到项目 `.codex/hooks/openprd-hook.mjs` 的自包含 Codex hook runner 模板，承接运行态门禁逻辑源码。
+- `src/codex-hook-runner-template.mjs`: 生成到项目 `.codex/hooks/openprd-hook.mjs` 的自包含 Codex hook runner 模板，承接运行态 advisory 和真实安全边界逻辑源码。
   - 把“生成图片/封面图/配图/海报/插画/图标/贴纸/头像/banner/主视觉/KV/运营图/效果图/视觉稿/mockup”识别为 Image 2 优先的图片内容请求。
   - 对大界面改动额外注入 Computer Use 截产品内图、Image 2 生成 3 方向效果图、横向拼图评审的实现前流程提醒。
   - 把“用户刚刚确认了 L1 mini-plan / 范围边界”与“还要再次向用户要确认”分开，要求后续承接写成“已确认，我按这个继续”而不是模糊的二次确认。
@@ -36,24 +36,24 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `src/openspec/`: OpenPrd change、spec、task 的结构化文件操作；新工作产物写入 `.openprd/changes/`、`.openprd/specs/` 和 `.openprd/archive/changes/`，旧根目录 `openprd/` 工作产物只由 update / setup / fleet 的自动迁移逻辑读取。
 - `src/diagram-workspace.js`: diagram 命令的 artifact 生成、评审状态和浏览器打开逻辑。
 - `src/discovery.js`: discovery 运行、覆盖矩阵、claims 和验证逻辑。
-- `src/fleet.js`: 历史项目扫描、批量 setup/update/doctor/work-unit backfill，以及事务化升级编排。
+- `src/fleet.js`: 历史项目扫描、批量 setup/update/doctor、仅元数据的 work-unit backfill，以及事务化升级编排。
 - `src/fs-utils.js`: 共享文件、JSON、YAML、JSONL 读写工具。
 - `src/html-artifacts.js`: HTML 协作 artifact 和复盘学习 reader 的渲染骨架；学习 reader 在这里承接章节级图文比喻卡、可选图片槽位和证据锚点，质量报告 HTML 通过独立渲染器接入，避免继续扩大通用 artifact 文件。
 - `src/session-registry.js`: 全局 session registry 读写层，负责 `~/.openprd/registry/sessions.jsonl` 的规范化、去重读取和 session -> workspace 归属回写。
 - `src/registry-hygiene.js`: workspace registry 卫生检查，负责识别过宽 root 和父子嵌套 workspace。
 - `src/quality-html-artifact.js`: `openprd quality --verify` 的 HTML 回归测试报告框架层，负责回归结论概览、工具生成的回归流程图和测试覆盖图、四个固定信息模块、底部双按钮操作栏和折叠明细。
 - `src/test-strategy.js`: 测试策略分流核心规则，负责测试层级、测试规模、验证范围、证据计划、默认推导、任务策略汇总和测试能力识别。
-- `src/visual-prepare.js`: `openprd visual-prepare` 的参考图预处理工具，负责把确认后的整板、网格图或多对象效果图整理成 reference-set，生成 crops、contact sheet、compare-plan 和 board 模板，供后续逐项视觉对比复用。
+- `src/visual-prepare.js`: `openprd visual-prepare` 的参考图预处理工具，负责把选定或 Agent 默认采用的整板、网格图或多对象效果图整理成 reference-set，生成 crops、contact sheet、compare-plan 和 board 模板。
 - `src/visual-compare.js`: `openprd visual-compare` 的图片合成工具，负责读取效果图和实现截图、修改前后截图，或基于 board JSON 生成局部焦点证据板、并行实验证据板、截图实测证据板、对齐辅助线证据板和内部居中证据板；会缩放面板、按当前用户主语言添加标签，并输出 JPG / PNG / WebP 视觉评审图。
 - `src/visual-compare-focus.js`: `local-first` 局部证据板渲染层，负责左右独立裁剪、共享像素尺度、无拉伸展示、difference blend 和底部全屏回归缩略图。
 - `src/learning-review.js`: 复盘学习包的证据收集、Agent 写作工具包、内容合同校验、图文解释字段校验和 reader 归档。
 - `src/quality.js`: 质量契约、质量场景与证据检测、日志/追踪检测、业务成本与滥用护栏检测、评估执行环境检测、HTML 回归测试报告和项目经验 Skill 沉淀。
-- `src/run-harness.js`: `openprd run` 的 ContextCapsule 编译、hook cache/telemetry、scoped gate 裁剪、verify 与执行策略；历史会话恢复会先查全局 session registry，再回到目标 workspace 的 repo-local 线索解析具体 change/task/work unit。
+- `src/run-harness.js`: `openprd run` 的 ContextCapsule 编译、hook cache/telemetry、scoped condition 裁剪、`taskReady/workspaceAttention/claimReady/actionReady` 分层 verify 与执行策略。
 - `src/github-release.js`: GitHub Release 渲染层，负责把 `package.json` 与 `release-ledger` 汇总成可直接发布的版本标题和 Markdown 正文。
 - `src/loop.js`: 长任务拆分、单任务 prompt、session 记录、任务 verify / finish，以及可跨对话引用的 `taskHandle` 与 worker 合同生成。
 - `src/source-inventory.js`: discovery 使用的源码盘点和忽略规则。
-- `src/work-unit.js`: 工具无关的需求工作单元 ID、目标根目录、版本评审 artifact 和确认状态绑定。
-- `src/work-unit-migration.js`: 历史 PRD 版本的 work unit 身份回填、稳定评审页刷新和绑定写入。
+- `src/work-unit.js`: 工具无关的需求工作单元 ID、目标根目录、版本评审 artifact 和记录状态绑定。
+- `src/work-unit-migration.js`: 历史 artifact 的 work unit 身份与 digest 元数据回填；不生成缺失的历史 PRD/review/tasks 正文。
 - `src/workspace-core.js`: workspace 骨架、迁移、校验、版本索引、事件日志和共享文档渲染，并负责随包 `.openprd/README.md` 与模板层 `README.md` 的简体中文默认文档、`README_EN.md` 英文切换入口以及兼容 README 跳转页；同时维护 workspace-scope `state/current.json` 与 session-scope `.openprd/harness/session-states/` 的双层状态装载。
 - `src/workspace-workflow.js`: classify、interview、clarify、capture、synthesize、review、diff、history、next、status guidance。
 - `docs/basic/`: 项目级基础说明。
@@ -85,7 +85,7 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `.openprd/harness/failed-approaches.md`: loop 死路账本，记录 reference/oracle 偏差、失败尝试及其原因，避免跨会话重复踩坑。
 - `.openprd/harness/agent-sessions.jsonl`: loop prompt / run / finish 的结构化事件日志，包含 `taskHandle` 与任务标题，便于跨会话续接。
 - `.openprd/harness/loop-state.json`: 当前 loop 任务 id、任务句柄、任务标题和最近一次 Agent 会话状态。
-- `.openprd/harness/visual-reviews/`: 界面视觉评审归档，存放大界面改动实现前的 3 方向横向效果图大图、确认后的 reference-set，以及实现阶段 `openprd visual-compare` 输出的效果图对比、修改前后自检 JPG、截图实测证据板、对齐辅助线证据板和内部居中证据板。
+- `.openprd/harness/visual-reviews/`: 界面视觉评审归档，存放大界面改动实现前的 3 方向横向效果图、选定或默认方向的 reference-set，以及实现阶段 `openprd visual-compare` 输出的各类证据板。
 - `~/.openprd/registry/sessions.jsonl`: 全局 session 归属表，把 sessionId 映射到 workspaceRoot、lane 元数据和 repo-local 绑定路径，供跨项目恢复与隔离执行决策使用。
 - `skills/`: OpenPrd 自带 agent skills。
 - `skills/openprd-frontend-design/`: 界面、页面、视觉和前端体验任务的前端设计框架 skill，负责 facts/asset/image/direction 这四类前置门与 `.openprd/design/` 资产层读取。

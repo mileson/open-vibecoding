@@ -37,6 +37,8 @@ const QUALITY_INDEX = cjoin(QUALITY_REPORTS_DIR, 'index.json');
 const QUALITY_LATEST = cjoin(QUALITY_REPORTS_DIR, 'latest.json');
 const KNOWLEDGE_DIR = cjoin('.openprd', 'knowledge');
 const KNOWLEDGE_INDEX = cjoin(KNOWLEDGE_DIR, 'index.json');
+const HISTORICAL_LIFECYCLE_STATUSES = new Set(['applied', 'archived', 'closed', 'historical', 'legacy-frozen']);
+const HISTORICAL_TASK_METADATA_VALUES = new Set([...HISTORICAL_LIFECYCLE_STATUSES, 'context-only']);
 
 const IGNORE_DIRS = new Set([
   '.git',
@@ -135,7 +137,7 @@ function defaultQualityConfig() {
     version: 1,
     schema: 'openprd.quality.v1',
     updatedAt: timestamp(),
-    enforcement: 'blocking',
+    enforcement: 'advisory',
     observability: {
       centralizedLoggingRequired: true,
       requiredSignals: ['logs', 'traces', 'metrics', 'errors'],
@@ -262,9 +264,13 @@ function defaultQualityConfig() {
 
 function normalizeQualityConfig(config = {}) {
   const defaults = defaultQualityConfig();
+  const enforcement = ['blocking', 'advisory'].includes(config.enforcement)
+    ? config.enforcement
+    : defaults.enforcement;
   return {
     ...defaults,
     ...config,
+    enforcement,
     observability: {
       ...defaults.observability,
       ...(config.observability ?? {}),
@@ -838,6 +844,7 @@ function detectEvalHarness({ config, files, texts, packageJson, activeTasks }) {
       evidence: files.filter((file) => /fixtures|extreme|stress|load|large-data|seed/i.test(file.path)).slice(0, 20).map((file) => file.path),
     },
     featureCoverage: {
+      scope: 'workspace-claim',
       activeTasks,
       requiredFlows: ['主流程', '异常流程', '逆向流程', '边界条件'],
     },
@@ -908,7 +915,36 @@ async function readActiveTasks(projectRoot) {
   const state = await readJson(cjoin(projectRoot, '.openprd', 'state', 'changes.json')).catch(() => null);
   const activeChange = state?.activeChange ?? null;
   if (!activeChange) {
-    return { activeChange: null, total: 0, done: 0, pending: 0, blocked: 0, tasks: [] };
+    return {
+      activeChange: null,
+      total: 0,
+      done: 0,
+      pending: 0,
+      blocked: 0,
+      tasks: [],
+      excludedTasks: [],
+      excludedActiveChange: null,
+    };
+  }
+  const lifecycleStatus = String(state?.changes?.[activeChange]?.status ?? '').trim().toLowerCase();
+  const currentChangeDir = cjoin(projectRoot, '.openprd', 'changes', activeChange);
+  const archivedChangeDir = cjoin(projectRoot, '.openprd', 'archive', 'changes', activeChange);
+  const archivedOnDisk = !(await exists(currentChangeDir)) && await exists(archivedChangeDir);
+  if (HISTORICAL_LIFECYCLE_STATUSES.has(lifecycleStatus) || archivedOnDisk) {
+    return {
+      activeChange: null,
+      total: 0,
+      done: 0,
+      pending: 0,
+      blocked: 0,
+      tasks: [],
+      excludedTasks: [],
+      excludedActiveChange: {
+        id: activeChange,
+        status: archivedOnDisk ? 'archived' : lifecycleStatus,
+        reason: 'historical-context-only',
+      },
+    };
   }
   const taskFiles = [];
   for (const root of [
@@ -952,8 +988,14 @@ async function readActiveTasks(projectRoot) {
       }
     }
   }
-  const taskById = new Map(tasks.filter((task) => task.id).map((task) => [task.id, task]));
-  const blockedTasks = tasks
+  const historicalMetadataKeys = ['status', 'lifecycle', 'lifecycle-status', 'lifecycle_status', 'history', 'mode', 'scope'];
+  const excludedTasks = tasks.filter((task) => historicalMetadataKeys.some((key) => (
+    HISTORICAL_TASK_METADATA_VALUES.has(String(task.metadata?.[key] ?? '').trim().toLowerCase())
+  )));
+  const excludedTaskSet = new Set(excludedTasks);
+  const currentTasks = tasks.filter((task) => !excludedTaskSet.has(task));
+  const taskById = new Map(currentTasks.filter((task) => task.id).map((task) => [task.id, task]));
+  const blockedTasks = currentTasks
     .filter((task) => !task.done)
     .map((task) => {
       const deps = parseOpenSpecTaskDeps(task.metadata?.deps);
@@ -980,11 +1022,13 @@ async function readActiveTasks(projectRoot) {
     .filter((item) => !item.ready);
   return {
     activeChange,
-    total: tasks.length,
-    done: tasks.filter((task) => task.done).length,
-    pending: tasks.filter((task) => !task.done).length,
+    total: currentTasks.length,
+    done: currentTasks.filter((task) => task.done).length,
+    pending: currentTasks.filter((task) => !task.done).length,
     blocked: blockedTasks.length,
-    tasks,
+    tasks: currentTasks,
+    excludedTasks,
+    excludedActiveChange: null,
   };
 }
 
@@ -1105,7 +1149,7 @@ function detectGrowth({ config, growthLedger, completionState }) {
   };
 }
 
-function buildGate({ id, label, baseStatus, baseWarnings, policy, evidenceLedger }) {
+function buildGate({ id, label, baseStatus, baseWarnings, policy, evidenceLedger, scope = 'workspace-claim' }) {
   const required = policy.requiredGates.includes(id);
   const evidence = evidenceLedger[id] ?? { present: false, sources: [], summary: '未找到本次执行证据' };
   let status = baseStatus;
@@ -1121,6 +1165,7 @@ function buildGate({ id, label, baseStatus, baseWarnings, policy, evidenceLedger
   return {
     id,
     label,
+    scope,
     status,
     required,
     evidence,
@@ -1254,9 +1299,15 @@ async function buildQualityReport(projectRoot, config, options = {}) {
   const blockingStatuses = new Set(['fail']);
   const attentionStatuses = new Set(['needs-attention', 'needs-evidence']);
   const readiness = {
+    scope: 'workspace-claim',
     ok: !gates.some((gate) => blockingStatuses.has(gate.status)),
     productionReady: !gates.some((gate) => attentionStatuses.has(gate.status) || blockingStatuses.has(gate.status)),
     enforcement: normalizedConfig.enforcement,
+    effectiveEnforcement: options.effectiveEnforcement ?? {
+      mode: normalizedConfig.enforcement,
+      source: QUALITY_CONFIG,
+      scope: 'workspace-claim',
+    },
     failingGates: gates.filter((gate) => blockingStatuses.has(gate.status)).map((gate) => gate.id),
     attentionGates: gates.filter((gate) => attentionStatuses.has(gate.status)).map((gate) => gate.id),
   };
@@ -1384,8 +1435,17 @@ export async function verifyQualityWorkspace(projectRoot, options = {}) {
     };
   }
   const config = normalizeQualityConfig(await readJson(configPath));
+  const strict = options.strict === true;
+  const advisory = options.advisory === true && !strict;
+  const effectiveEnforcement = {
+    mode: strict ? 'blocking' : advisory ? 'advisory' : config.enforcement,
+    source: strict ? 'invocation.strict' : advisory ? 'invocation.advisory' : QUALITY_CONFIG,
+    configuredMode: config.enforcement,
+    scope: 'workspace-claim',
+    purpose: 'overall-readiness-claim',
+  };
   await ensureQualityDirs(projectRoot);
-  const initialReport = await buildQualityReport(projectRoot, config);
+  const initialReport = await buildQualityReport(projectRoot, config, { effectiveEnforcement });
   let report = initialReport;
   let paths = await writeReport(projectRoot, report, config);
   const knowledgeSignal = {
@@ -1445,10 +1505,9 @@ export async function verifyQualityWorkspace(projectRoot, options = {}) {
       skipped: true,
       reason: 'reusable-knowledge-artifact-already-exists',
     };
-  report = await buildQualityReport(projectRoot, config, { reportId: initialReport.id });
+  report = await buildQualityReport(projectRoot, config, { reportId: initialReport.id, effectiveEnforcement });
   paths = await writeReport(projectRoot, report, config);
-  const strict = options.strict === true;
-  const blocking = (strict || config.enforcement === 'blocking') && !report.readiness.productionReady;
+  const blocking = effectiveEnforcement.mode === 'blocking' && !report.readiness.productionReady;
   const featureCoverageOnly = report.readiness.failingGates.length === 0
     && report.readiness.attentionGates.length === 1
     && report.readiness.attentionGates[0] === 'feature-coverage';
@@ -1456,6 +1515,8 @@ export async function verifyQualityWorkspace(projectRoot, options = {}) {
     ok: !blocking,
     action: 'quality-verify',
     projectRoot,
+    scope: 'workspace-claim',
+    effectiveEnforcement,
     report,
     reportPath: paths.jsonPath,
     htmlPath: paths.htmlPath,

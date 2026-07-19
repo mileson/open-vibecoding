@@ -24,6 +24,7 @@ const OPENSPEC_TASK_METADATA_KEYS = [
   'type',
   'category',
   'kind',
+  'blocking',
   'oracle',
   ...TEST_STRATEGY_METADATA_KEYS,
   ...EXECUTION_STRATEGY_METADATA_KEYS,
@@ -157,6 +158,17 @@ export function normalizeOpenSpecTaskType(taskOrType) {
     return 'documentation';
   }
   return 'governance';
+}
+
+export function isOpenSpecTaskBlocking(task) {
+  const raw = String(task?.metadata?.blocking ?? '').trim().toLowerCase();
+  if (['false', 'no', '0', 'advisory', 'background'].includes(raw)) {
+    return false;
+  }
+  if (['true', 'yes', '1', 'blocking', 'required'].includes(raw)) {
+    return true;
+  }
+  return !['documentation', 'governance'].includes(normalizeOpenSpecTaskType(task));
 }
 
 export function summarizeOpenSpecTaskTypes(tasks) {

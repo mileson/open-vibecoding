@@ -51,6 +51,12 @@ const EXPLICIT_ISOLATION_REQUEST_PATTERNS = [
   /(?:use|with|in)\s+(?:an?\s+)?(?:isolated|separate|dedicated)\s+(?:environment|session|cwd|worktree|branch)/i,
 ];
 const EXPLICIT_BRAINSTORM_REQUEST = /(脑暴|brainstorm|帮忙梳理|梳理一下|梳理下|先想清楚)/iu;
+const EXPLICIT_EXECUTION_INTENT_PATTERNS = [
+  /(?:请|麻烦|帮我|现在|直接|马上|开始|按这个|就这样)?\s*(?:实现|继续(?:实现|执行|推进|处理|完成|任务)?|接着做|修复|修改|改好|完成|执行|推进|落地|提交|推送|发布|部署|上线)/iu,
+  /\b(?:implement|continue|resume|proceed|execute|fix|complete|commit|push|publish|release|deploy|ship)\b/iu,
+];
+const EXECUTION_INTENT_NEGATION_PATTERN = /(?:不要|别|不用|无需|暂不|先不|不需要).{0,10}(?:实现|继续|执行|推进|提交|推送|发布|部署|上线|implement|continue|commit|push|publish|release|deploy)/iu;
+const EXECUTION_DISCUSSION_PATTERN = /(?:(?:怎么|如何|方案|规划|分析|评估|审查|review|plan|how\s+to).{0,12}(?:实现|继续|执行|推进|提交|推送|发布|部署|上线|implement|continue|commit|push|publish|release|deploy)|(?:实现|继续|执行|推进|提交|推送|发布|部署|上线|implement|continue|commit|push|publish|release|deploy).{0,12}(?:方案|规划|分析|评估|审查|review|plan|how))/iu;
 function harnessFile(projectRoot, relativePath) {
   return cjoin(projectRoot, relativePath);
 }
@@ -68,6 +74,29 @@ function hasExplicitIsolationRequest(message = null) {
     return false;
   }
   return EXPLICIT_ISOLATION_REQUEST_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function analyzeExecutionIntent(message = null) {
+  const text = String(message ?? '').trim();
+  const explicit = Boolean(
+    text
+    && !EXECUTION_INTENT_NEGATION_PATTERN.test(text)
+    && !EXECUTION_DISCUSSION_PATTERN.test(text)
+    && EXPLICIT_EXECUTION_INTENT_PATTERNS.some((pattern) => pattern.test(text))
+  );
+  const actions = [
+    /(?:实现|修复|修改|改好|完成|执行|推进|落地|implement|execute|fix|complete|proceed)/iu.test(text) ? 'implement' : null,
+    /(?:继续|接着做|continue|resume)/iu.test(text) ? 'continue' : null,
+    /(?:提交|commit)/iu.test(text) ? 'commit' : null,
+    /(?:推送|push)/iu.test(text) ? 'push' : null,
+    /(?:发布|部署|上线|publish|release|deploy|ship)/iu.test(text) ? 'publish' : null,
+  ].filter(Boolean);
+  return {
+    explicit,
+    actions,
+    source: explicit ? 'current-user-message' : null,
+    repeatedAuthorizationRequired: false,
+  };
 }
 
 async function ensureRunHarness(projectRoot) {
@@ -241,20 +270,6 @@ function buildRunContextCapsule(context, options = {}) {
         status: context.nextTask.status ?? null,
       }
     : null;
-  const confirmation = context.recommendation?.executionConfirmationChecklist;
-  const compactConfirmation = confirmation?.required
-    ? {
-        required: true,
-        objective: boundedContextText(confirmation.objective, 180),
-        scope: (confirmation.scope ?? []).slice(0, 2).map((item) => boundedContextText(item, 140)),
-        implementation: (confirmation.implementationItems ?? []).slice(0, 2).map((item) => boundedContextText(item, 140)),
-        verification: (confirmation.verification ?? []).slice(0, 2).map((item) => boundedContextText(item, 140)),
-        risks: (confirmation.risks ?? []).slice(0, 2).map((item) => boundedContextText(item, 140)),
-      }
-    : null;
-  const clarifyReplyRequired = (context.recommendation?.nextAction ?? '') === 'clarify-user'
-    || context.recommendation?.title === 'clarify-user'
-    || context.recommendation?.title === '继续本轮需求入口澄清';
   const candidates = [
     {
       id: 'requirement-gate',
@@ -314,12 +329,16 @@ function buildRunContextCapsule(context, options = {}) {
       relevance: 92,
       value: {
         expression: '面向用户使用普通人能理解的结果、影响和下一步；内部编号、命令和路径只在确有帮助时出现。',
-        replyBoundary: clarifyReplyRequired
-          ? '本轮只输出需求摘要或追问一个最高价值澄清点，不承诺直接实现。'
+        executionIntent: context.executionIntent?.explicit
+          ? {
+              explicit: true,
+              actions: context.executionIntent.actions,
+              source: context.executionIntent.source,
+              repeatedAuthorizationRequired: false,
+            }
           : null,
-        approvalBoundary: context.recommendation?.executionConfirmationChecklist?.required
-          ? '执行前必须使用当前任务绑定的确认清单，不能复用其他任务的泛化确认。'
-          : null,
+        replyBoundary: null,
+        approvalBoundary: null,
       },
     },
     {
@@ -368,7 +387,7 @@ function buildRunContextCapsule(context, options = {}) {
           260,
         ),
         verifyCommand: boundedContextText(context.recommendation?.verifyCommand, 220),
-        confirmation: compactConfirmation,
+        confirmation: null,
       },
     },
     {
@@ -658,85 +677,41 @@ function reviewMarkCommand(snapshot) {
 function executionGate() {
   return {
     requiresExplicitIntent: true,
-    confirmationChecklistRequired: true,
+    confirmationChecklistRequired: false,
     allowedIntents: ['开发', '实现', '修复', '继续任务', '落地执行', '深度调研', '深度对标', '复刻落地', '提交'],
     readOnlyIntents: ['看看', '规划', '梳理', '分析', '评估', '预计动哪些文件', '怎么改', '代码审查'],
     rule: '用户明确要求实现、继续、深度调研、对标、部署、发布或提交时才运行 executionCommand。requirement 摘要、capture/classify/synthesize、review、change、tasks、设计合同和验证材料由 Agent 在后台自动维护，不得要求用户补固定口令、digest、work-unit id 或命令，也不得仅因材料缺失阻断正常实现。云端、生产、支付、删除、账号切换、兜底、写死、权益或额度等信号只用于提醒 Agent 优先选择配置化、迁移、标准状态机、幂等脚本或可回滚发布路径；OpenPrd 不承担授权审批、不阻断工具调用、不索取用户确认，是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断。规划、分析、文件影响范围和审查类请求保持只读，并基于证据回答。',
   };
 }
 
-function buildExecutionConfirmationChecklist(recommendation) {
-  if (!recommendation?.executionCommand) {
-    return null;
-  }
-  const parallelPlan = recommendation.parallelPlan ?? null;
-  const scope = [
-    '只在这次已经确认的范围内继续推进',
-    parallelPlan?.eligible ? '如果需要分头推进，会先划清各自负责的部分，再统一收口' : null,
-  ].filter(Boolean);
-  return {
-    required: true,
-    title: '开始动手前先确认这些',
-    objective: recommendation.title ?? '继续推进本次调整',
-    scope,
-    implementationItems: [
-      '我会先核对当前情况，再继续整理后续落地内容。',
-      '我只会在这次已经确认的范围内继续，不会顺手扩到别的事项。',
-      parallelPlan?.eligible ? '如果需要多人配合，我会先划清边界，再统一收口检查。' : null,
-    ].filter(Boolean),
-    outOfScope: [
-      '不会默认处理这次范围以外的历史问题。',
-      '不会默认顺带做提交、发布或额外的全局调整。',
-      '不会默认做云端热修复、生产远端写入、业务兜底、写死逻辑或缓存补行。',
-      '如果真的需要扩大范围，我会先单独说明。',
-    ].filter(Boolean),
-    verification: [
-      '完成后我会补做这次调整需要的检查。',
-      parallelPlan?.eligible ? '如果是分头推进，会先各自自检，再统一做总检查。' : null,
-      '在宣布完成前，我会再做一次整体核对。',
-    ].filter(Boolean),
-    risks: [
-      '这一步会正式写入当前工作区。',
-      '如果牵出和本次无关的历史遗留问题，我会单列说明，不把它混成本次失败。',
-      '如果确实需要临时兜底或线上热修复，我会先单独说明影响、回滚和本地同步计划，等你明确批准。',
-      parallelPlan?.eligible ? '如果多人同时推进，我会避免范围互相踩踏。' : null,
-    ],
-    confirmationPrompt: '如果你希望我现在就按这次范围继续，我就直接往下做。',
-  };
-}
-
-function recommendationNeedsExtraExecutionConfirmation(recommendation, requirementGate) {
-  if (!recommendation?.executionCommand) {
-    return false;
-  }
-  const reviewContinuationAuthorized = Boolean(requirementGate?.reviewActionAuthorization?.continueAfterReview);
-  const silentReviewRecordingAuthorized = requirementGate?.status === 'review-recording-authorized';
-  const implementationAlreadyAuthorized = requirementGate?.status === 'execution-authorized';
-  const explicitExecution = Boolean(requirementGate?.intent?.explicitExecution);
-
-  if (recommendation.type === 'prd-change') {
-    return !(reviewContinuationAuthorized || silentReviewRecordingAuthorized);
-  }
-  if (recommendation.type === 'task' || recommendation.type === 'loop-task') {
-    return !(implementationAlreadyAuthorized || (explicitExecution && (reviewContinuationAuthorized || silentReviewRecordingAuthorized)));
-  }
-  return true;
-}
-
-function withExecutionConfirmationChecklist(recommendation, options = {}) {
-  if (!recommendationNeedsExtraExecutionConfirmation(recommendation, options.requirementGate)) {
-    return {
-      ...recommendation,
-      executionConfirmationChecklist: null,
-    };
-  }
-  const checklist = buildExecutionConfirmationChecklist(recommendation);
-  if (!checklist) {
+function applyExecutionIntentAuthorization(recommendation, executionIntent = null) {
+  if (!executionIntent?.explicit) {
     return recommendation;
   }
   return {
     ...recommendation,
-    executionConfirmationChecklist: checklist,
+    intentGate: recommendation.intentGate
+      ? {
+          ...recommendation.intentGate,
+          requiresExplicitIntent: false,
+          confirmationChecklistRequired: false,
+          authorizationSource: executionIntent.source,
+        }
+      : null,
+    executionAuthorization: {
+      granted: true,
+      source: executionIntent.source,
+      actions: executionIntent.actions,
+      repeatedAuthorizationRequired: false,
+    },
+  };
+}
+
+function withExecutionConfirmationChecklist(recommendation, options = {}) {
+  const authorizedRecommendation = applyExecutionIntentAuthorization(recommendation, options.executionIntent);
+  return {
+    ...authorizedRecommendation,
+    executionConfirmationChecklist: null,
   };
 }
 
@@ -839,7 +814,7 @@ function inferPromptDrivenLightweightRecommendation(message = null) {
       noConfirmationRequested
         ? '用户已经明确表示不需要先来回确认，可以先用 3-5 行 mini-plan 自定目标、范围内、范围外和验证方式，然后继续实现。'
         : '先用 3-5 行 mini-plan 收一下目标、范围内、范围外和验证方式，再继续实现。',
-      '如果是新界面或大幅首页调整，先补 `.openprd/design/active/` 下的 facts-sheet、asset-spec、image-preflight、direction-plan 和 selected-direction；空白工作区优先从 `.openprd/design/templates/` 里挑最近模板。若当前轮用户已经把页面主题、模块范围或“直接实现”的意图说清，优先改用 `openprd run . --context --message <用户原话>` 对齐建议，而不是先跑不带 message 的 context。若页面主题和模块范围已经明确，优先运行 `openprd design-starter . --starter <starter-id> --out index.html --brief "<页面主题>" --sections "<模块1|模块2|模块3>"`，让 starter 一次写实合同和首版文案；只有像个人博客、工具台、纯结构化产品页这类确认不靠真实图片成立的页面，才补 `--no-external-facts --no-brand-assets --no-real-images`。若任务更像旅游、导览、展览、博物馆、城市、自然观察或案例内容页，先不要带 `--no-real-images`，让 starter 先尝试补首批真实图片。若用户已经给了效果图、设计稿、参考截图或其他明确参考图，先把它当主参考源；只有现有 starter、theme、layout 足够接近时才复用，不接近就以参考图为准。若这类冷启动即使带 message 仍短暂返回 `clarify-user`，把它视为摘要级提醒：先用 3-5 行 mini-plan 收口，再进入 starter 后的 `Patch Mode`。`Patch Mode` 的默认动作是继续在当前 `index.html` 上补丁细化；就算想整页重写，也是在同一路径内覆盖，不做 delete-first。如果确实要整页重写，先把完整新稿写到 sibling draft，例如 `index.next.html`，确认内容成形后再覆盖回 `index.html`，不要让入口文件出现空窗。starter 一落地后，只允许做一轮就地对焦：快速读一次生成的入口文件和必要的 active design artifacts；这轮对焦结束后，下一步就必须是真实写入口，不要再回头搜网页、翻 `docs/basic/` 或继续模板漫游。把最后一批必要的查事实、查图、读模板动作放在口头宣布之前做完；一旦已经说“开始覆盖入口文件”或“开始整页重写”，下一步必须出现真实写文件动作，而不是继续只读浏览、压图或停在口头承诺；必要时 hook 会把这类非写入动作挡回去。真正完成还包括：入口文件本体已改完、主要占位已清掉、已准备好的真实图片或参考约束已落进页面，不是只补合同或只下载素材。',
+      '如果是新界面或大幅首页调整，先补 `.openprd/design/active/` 下的 facts-sheet、asset-spec、image-preflight、direction-plan 和 selected-direction；空白工作区优先从 `.openprd/design/templates/` 里挑最近模板。若当前轮用户已经把页面主题、模块范围或“直接实现”的意图说清，优先改用 `openprd run . --context --message <用户原话>` 对齐建议，而不是先跑不带 message 的 context。若页面主题和模块范围已经明确，优先运行 `openprd design-starter . --starter <starter-id> --out index.html --brief "<页面主题>" --sections "<模块1|模块2|模块3>"`，让 starter 一次写实合同和首版文案；只有像个人博客、工具台、纯结构化产品页这类确认不靠真实图片成立的页面，才补 `--no-external-facts --no-brand-assets --no-real-images`。若任务更像旅游、导览、展览、博物馆、城市、自然观察或案例内容页，先不要带 `--no-real-images`，让 starter 先尝试补首批真实图片。若用户已经给了效果图、设计稿、参考截图或其他明确参考图，先把它当主参考源；只有现有 starter、theme、layout 足够接近时才复用，不接近就以参考图为准。若这类冷启动即使带 message 仍短暂返回 `clarify-user`，把它视为摘要级提醒：先用 3-5 行 mini-plan 收口，再进入 starter 后的 `Patch Mode`。`Patch Mode` 的默认动作是继续在当前 `index.html` 上补丁细化；就算想整页重写，也是在同一路径内覆盖，不做 delete-first。如果确实要整页重写，先把完整新稿写到 sibling draft，例如 `index.next.html`，确认内容成形后再覆盖回 `index.html`，不要让入口文件出现空窗。starter 一落地后，只允许做一轮就地对焦：快速读一次生成的入口文件和必要的 active design artifacts；这轮对焦结束后，下一步就应进入真实写入口，不再回头做无关模板漫游。把最后一批必要的查事实、查图、读模板动作放在口头宣布之前做完；若出现偏离，hook 只提供 Patch Mode attention，不阻断用户已要求的写入。真正完成还包括：入口文件本体已改完、主要占位已清掉、已准备好的真实图片或参考约束已落进页面，不是只补合同或只下载素材。',
     ].join(' '),
     changeId: null,
     task: null,
@@ -2071,6 +2046,31 @@ function buildRunRecommendation({
   if (brainstormRecommendation) {
     return brainstormRecommendation;
   }
+  const blockingPendingTasks = taskState
+    ? Number(taskState.summary?.blockingPending ?? taskState.summary?.pending ?? 0)
+    : null;
+  if (taskState && blockingPendingTasks === 0 && focusedChangeId) {
+    const backgroundPending = Number(taskState.summary?.backgroundPending ?? 0);
+    return {
+      type: 'change-review',
+      title: '检查本次调整是否都已补齐',
+      command: `openprd change . --validate --change ${shellQuote(focusedChangeId)}`,
+      verifyCommand: `openprd change . --validate --change ${shellQuote(focusedChangeId)}`,
+      reason: backgroundPending > 0
+        ? `当前实现与验证任务已经处理完；另有 ${backgroundPending} 项后台文档或治理维护，不阻断当前 change 动作。`
+        : '当前这次调整里的后续任务已经处理完了。',
+      changeId: focusedChangeId,
+      task: null,
+      coverageItem: null,
+      workspaceAttention: backgroundPending > 0
+        ? {
+            kind: 'background-change-tasks',
+            pending: backgroundPending,
+            blocking: false,
+          }
+        : null,
+    };
+  }
   if (taskState?.nextTask) {
     const task = compactTask(taskState.nextTask);
     const totalTasks = Number(taskState.summary?.total ?? taskState.tasks?.length ?? 0);
@@ -2173,18 +2173,6 @@ function buildRunRecommendation({
       },
     };
   }
-  if (taskState && taskState.summary?.pending === 0 && focusedChangeId) {
-    return {
-      type: 'change-review',
-      title: '检查本次调整是否都已补齐',
-      command: `openprd change . --validate --change ${shellQuote(focusedChangeId)}`,
-      verifyCommand: `openprd change . --validate --change ${shellQuote(focusedChangeId)}`,
-      reason: '当前这次调整里的后续任务已经处理完了。',
-      changeId: focusedChangeId,
-      task: null,
-      coverageItem: null,
-    };
-  }
   const prdPromotion = buildPrdPromotionRecommendation({ changes, next });
   if (prdPromotion) {
     return prdPromotion;
@@ -2262,6 +2250,7 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
     || fallbackPrompt
     || null;
   const laneRequest = analyzeRunMessage(effectiveMessage);
+  const executionIntent = analyzeExecutionIntent(effectiveMessage);
   const validation = await validateWorkspace(projectRoot)
     .then(({ report }) => report)
     .catch((error) => ({
@@ -2370,7 +2359,7 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
   };
   const effectiveRecommendation = withExecutionConfirmationChecklist(
     applyLaneToRecommendation(recommendationWithGateReminder, lane),
-    { requirementGate },
+    { requirementGate, executionIntent },
   );
   const knowledgeSkillMatches = await resolveKnowledgeSkillMatches(projectRoot, {
     message: effectiveMessage,
@@ -2388,17 +2377,38 @@ async function buildRunContext(projectRoot, dependencies, options = {}) {
   }).catch(() => ({ matched: [], summary: { matched: 0 } }));
   const renderedKnowledgeSkills = knowledgeSkillMatches.matched ?? [];
 
+  const workspaceReady = validation.workspaceReady ?? validation.valid;
+  const actionReady = validation.actionReady ?? true;
   const context = {
-    ok: validation.valid,
+    ok: actionReady,
     action: 'run-context',
     projectRoot,
     generatedAt: timestamp(),
     runState,
     validation: {
       valid: validation.valid,
+      structuralValid: validation.structuralValid ?? validation.valid,
+      workspaceReady,
+      actionReady,
+      claimReady: validation.claimReady ?? validation.structuralValid ?? validation.valid,
       errors: validation.errors ?? [],
       warnings: validation.warnings ?? [],
     },
+    readiness: {
+      taskReady: null,
+      workspaceReady,
+      claimReady: null,
+      actionReady,
+      workspaceClaimReady: workspaceReady,
+    },
+    workspaceAttention: workspaceReady
+      ? null
+      : (validation.workspaceAttention ?? {
+          kind: 'workspace-validation',
+          summary: 'workspace validation needs attention',
+          detail: 'Workspace-wide debt is advisory for run context and does not revoke the current user request.',
+        }),
+    executionIntent,
     workflow: next?.workflow ?? [],
     next: next?.recommendation ?? null,
     activeRequirementGate: requirementGate
@@ -2588,8 +2598,13 @@ async function verifyRunWorkspace(projectRoot, dependencies, options = {}) {
   const standards = await checkStandardsWorkspace(projectRoot);
   const validation = await validateWorkspace(projectRoot).then(({ report }) => report);
   const checks = [
-    { name: 'standards', scope: 'task', ok: standards.ok, errors: standards.errors ?? [] },
-    { name: 'validate', scope: 'task', ok: validation.valid, errors: validation.errors ?? [] },
+    { name: 'standards', scope: 'workspace', ok: standards.ok, errors: standards.errors ?? [] },
+    {
+      name: 'validate',
+      scope: 'workspace',
+      ok: validation.structuralValid ?? validation.valid,
+      errors: validation.structuralErrors ?? validation.errors ?? [],
+    },
   ];
   if (verifyQualityWorkspace) {
     const quality = await verifyQualityWorkspace(projectRoot, { strict: false }).catch((error) => ({
@@ -2619,30 +2634,64 @@ async function verifyRunWorkspace(projectRoot, dependencies, options = {}) {
   const changeToVerify = context.focus?.changeId ?? context.recommendation?.changeId ?? context.activeChange ?? null;
   if (changeToVerify) {
     const change = await validateOpenSpecChangeWorkspace(projectRoot, { change: changeToVerify });
-    checks.push({ name: 'change', scope: 'task', ok: change.ok, errors: change.errors ?? [] });
+    const standardsErrors = new Set(change.standards?.errors ?? []);
+    const taskErrors = (change.errors ?? []).filter((error) => !standardsErrors.has(error));
+    const failedOnlyForWorkspaceStandards = !change.ok && taskErrors.length === 0 && standardsErrors.size > 0;
+    checks.push({
+      name: 'change',
+      scope: 'task',
+      ok: change.ok || failedOnlyForWorkspaceStandards,
+      errors: taskErrors,
+      workspaceAttention: failedOnlyForWorkspaceStandards ? 'standards' : null,
+    });
   }
   if (context.discovery) {
     const discovery = await verifyOpenSpecDiscoveryWorkspace(projectRoot);
-    checks.push({ name: 'discovery', scope: 'task', ok: discovery.ok, errors: discovery.verification.errors ?? [] });
+    const standardsErrors = new Set([
+      ...(discovery.standards?.errors ?? []),
+      ...(discovery.openSpecChange?.standards?.errors ?? []),
+    ]);
+    const taskErrors = (discovery.verification.errors ?? []).filter((error) => !standardsErrors.has(error));
+    const failedOnlyForWorkspaceStandards = !discovery.ok && taskErrors.length === 0 && standardsErrors.size > 0;
+    checks.push({
+      name: 'discovery',
+      scope: 'task',
+      ok: discovery.ok || failedOnlyForWorkspaceStandards,
+      errors: taskErrors,
+      workspaceAttention: failedOnlyForWorkspaceStandards ? 'standards' : null,
+    });
   }
   const taskChecks = checks.filter((check) => check.scope !== 'workspace');
   const workspaceChecks = checks;
   const taskReady = taskChecks.every((check) => check.ok);
   const workspaceReady = workspaceChecks.every((check) => check.ok);
   const qualityCheck = checks.find((check) => check.name === 'quality');
+  const failedWorkspaceChecks = checks.filter((check) => check.scope === 'workspace' && !check.ok);
   const workspaceAttention = taskReady && !workspaceReady
-    ? (qualityCheck?.workspaceAttention ?? {
-      kind: 'workspace-checks',
-      checks: workspaceChecks.filter((check) => !check.ok).map((check) => check.name),
-      summary: `workspace attention: ${workspaceChecks.filter((check) => !check.ok).map((check) => check.name).join(', ')}`,
-      detail: `Current task verification passed, but workspace-level checks still need attention: ${workspaceChecks.filter((check) => !check.ok).map((check) => check.name).join(', ')}.`,
-    })
+    ? (failedWorkspaceChecks.length === 1 && failedWorkspaceChecks[0].name === 'quality' && qualityCheck?.workspaceAttention
+      ? qualityCheck.workspaceAttention
+      : {
+          kind: 'workspace-checks',
+          checks: failedWorkspaceChecks.map((check) => check.name),
+          summary: `workspace attention: ${failedWorkspaceChecks.map((check) => check.name).join(', ')}`,
+          detail: `Current task verification passed. Workspace-wide checks still need attention: ${failedWorkspaceChecks.map((check) => check.name).join(', ')}. This debt does not make the current task fail or revoke a user-authorized action.`,
+          items: failedWorkspaceChecks.map((check) => ({
+            name: check.name,
+            errors: check.errors,
+          })),
+        })
     : null;
   const ok = taskReady;
+  const claimReady = workspaceReady;
+  const actionReady = taskReady;
   const readiness = {
     taskReady,
     workspaceReady,
-    releaseReady: workspaceReady,
+    claimReady,
+    actionReady,
+    workspaceClaimReady: workspaceReady,
+    releaseReady: null,
+    actionScope: 'current-task-verification',
     doctorReady: null,
     qualityProductionReady: qualityCheck?.productionReady ?? null,
   };
@@ -2651,6 +2700,8 @@ async function verifyRunWorkspace(projectRoot, dependencies, options = {}) {
     ok: workspaceReady,
     taskReady,
     workspaceReady,
+    claimReady,
+    actionReady,
     productionReady: qualityCheck?.productionReady ?? null,
     attentionGates: qualityCheck?.attentionGates ?? [],
     workspaceAttentionKind: workspaceAttention?.kind ?? null,

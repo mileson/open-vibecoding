@@ -138,6 +138,11 @@ test('review HTML defaults to the business projection and exposes working dual-v
   assert.equal(businessHtml.includes('内容指纹'), false);
   assert.ok(html.includes('openprd review . --mark confirmed'));
   assert.ok(html.includes("--digest &#39;snapshot-digest-42&#39;"));
+  assert.ok(html.includes('交互方向参考'));
+  assert.ok(html.includes('Agent 可先采用可逆默认方向继续实现'));
+  assert.ok(html.includes('按当前方向推进'));
+  assert.ok(html.includes('后续反馈可覆盖这份记录，不影响当前工作'));
+  assert.doesNotMatch(html, /确认前还差|最重要的决定|认可并继续/u);
 
   const payload = buildReviewExportPayload(snapshot);
   assert.equal(payload.reviewModel.digest, model.digest);
@@ -162,4 +167,8 @@ test('legacy review snapshots without trace or presentation still render both pr
   assert.ok(html.includes('工程视图'));
   assert.ok(html.includes('旧版评审未记录'));
   assert.ok(html.includes('当前评审稿尚未绑定具体任务'));
+  assert.ok(html.includes('待完善信息'));
+  assert.ok(html.includes('Agent 会优先采用可逆默认方向补齐'));
+  assert.ok(html.includes('当前实现不因此停下'));
+  assert.doesNotMatch(html, /确认前还差|先补齐，再做确认/u);
 });

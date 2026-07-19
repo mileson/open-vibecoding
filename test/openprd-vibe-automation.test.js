@@ -27,52 +27,53 @@ async function writeBigCodeFile(project, relativePath, lines = 1600) {
   return relativePath;
 }
 
-test('dev-check defaults to auto-refactor mode with switch hint', async () => {
+test('dev-check defaults to non-blocking recommendations', async () => {
   const project = await makeDevProject();
   const bigFile = await writeBigCodeFile(project, 'src/big-module.js');
-
-  const result = await checkDevelopmentStandardsWorkspace(project, { files: [bigFile] });
-  assert.equal(result.autoRefactor.enabled, true);
-  assert.equal(result.autoRefactor.mode, 'auto-refactor');
-  assert.equal(result.wrapUp.mode, 'auto-refactor');
-  assert.equal(result.wrapUp.title, 'OpenPRD 自动优化报告');
-  assert.deepEqual(result.wrapUp.columns, ['影响对象', '问题级别', '源文件规模', '优化原因', '本次处理结果', '后续建议']);
-  assert.ok(result.wrapUp.switchHint.includes('--auto-refactor off'));
-  assert.ok(result.wrapUp.markdownBlock.includes('OpenPRD 自动优化报告'));
-  const warningFile = result.files.find((file) => file.status === 'warning');
-  assert.ok(warningFile.nextAction.includes('直接执行拆分'));
-  assert.ok(result.wrapUp.rows[0]['本次处理结果'].includes('拆分'));
-  assert.equal(typeof result.wrapUp.rows[0]['问题级别'], 'string');
-  assert.equal(typeof result.wrapUp.rows[0]['源文件规模'], 'string');
-  assert.equal(typeof result.wrapUp.rows[0]['优化原因'], 'string');
-});
-
-test('dev-check auto-refactor switch persists and flips wrap-up back to recommendations', async () => {
-  const project = await makeDevProject();
-  const bigFile = await writeBigCodeFile(project, 'src/big-module.js');
-
-  const toggle = await setDevCheckAutoRefactor(project, false);
-  assert.equal(toggle.ok, true);
-  assert.equal(toggle.autoRefactor.enabled, false);
-  const config = JSON.parse(await fs.readFile(path.join(project, toggle.configPath), 'utf8'));
-  assert.equal(config.developmentStandards.autoRefactor.enabled, false);
 
   const result = await checkDevelopmentStandardsWorkspace(project, { files: [bigFile] });
   assert.equal(result.autoRefactor.enabled, false);
+  assert.equal(result.autoRefactor.mode, 'recommend');
   assert.equal(result.wrapUp.mode, 'recommend');
   assert.equal(result.wrapUp.title, '后续建议');
+  assert.equal(result.wrapUp.required, false);
+  assert.equal(result.wrapUp.recommended, true);
   assert.deepEqual(result.wrapUp.columns, ['影响对象', '关注程度', '规模信号', '预警原因', '本次处理结果', '后续建议']);
+  assert.ok(result.wrapUp.switchHint.includes('--auto-refactor on'));
+  assert.ok(result.wrapUp.markdownBlock.includes('后续建议'));
+  const warningFile = result.files.find((file) => file.status === 'warning');
+  assert.ok(!warningFile.nextAction.includes('直接执行拆分'));
+  assert.match(result.wrapUp.reason, /不影响当前任务结果/);
   assert.equal(typeof result.wrapUp.rows[0]['关注程度'], 'string');
   assert.equal(typeof result.wrapUp.rows[0]['规模信号'], 'string');
   assert.equal(typeof result.wrapUp.rows[0]['预警原因'], 'string');
-  assert.ok(result.wrapUp.switchHint.includes('--auto-refactor on'));
+});
+
+test('dev-check active refactor advice is opt-in and never expands task scope', async () => {
+  const project = await makeDevProject();
+  const bigFile = await writeBigCodeFile(project, 'src/big-module.js');
+
+  const toggle = await setDevCheckAutoRefactor(project, true);
+  assert.equal(toggle.ok, true);
+  assert.equal(toggle.autoRefactor.enabled, true);
+  const config = JSON.parse(await fs.readFile(path.join(project, toggle.configPath), 'utf8'));
+  assert.equal(config.developmentStandards.autoRefactor.enabled, true);
+
+  const result = await checkDevelopmentStandardsWorkspace(project, { files: [bigFile] });
+  assert.equal(result.autoRefactor.enabled, true);
+  assert.equal(result.wrapUp.mode, 'auto-refactor');
+  assert.equal(result.wrapUp.title, 'OpenPRD 结构优化建议');
+  assert.equal(result.wrapUp.required, false);
+  assert.deepEqual(result.wrapUp.columns, ['影响对象', '问题级别', '源文件规模', '优化原因', '本次处理结果', '后续建议']);
+  assert.ok(result.wrapUp.switchHint.includes('--auto-refactor off'));
   const warningFile = result.files.find((file) => file.status === 'warning');
   assert.ok(!warningFile.nextAction.includes('直接执行拆分'));
+  assert.match(warningFile.nextAction, /不阻断当前任务/);
 
-  const reEnabled = await setDevCheckAutoRefactor(project, true);
-  assert.equal(reEnabled.autoRefactor.enabled, true);
+  const disabled = await setDevCheckAutoRefactor(project, false);
+  assert.equal(disabled.autoRefactor.enabled, false);
   const restored = await checkDevelopmentStandardsWorkspace(project, { files: [bigFile] });
-  assert.equal(restored.wrapUp.mode, 'auto-refactor');
+  assert.equal(restored.wrapUp.mode, 'recommend');
 });
 
 test('dev-check reminds about visual evidence for UI files and clears after board exists', async () => {

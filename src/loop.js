@@ -28,6 +28,7 @@ import { defaultRegressionArtifactPath, renderRegressionArtifact, writeHtmlArtif
 import { OPENPRD_HARNESS_TURN_STATE, recordKnowledgeReviewSignal, reviewKnowledgeWorkspace } from './knowledge.js';
 import { generateLearningReviewWorkspace } from './learning-review.js';
 import { listOpenSpecTaskWorkspace, advanceOpenSpecTaskWorkspace, verifyOpenSpecTaskWorkspace } from './openspec/execute.js';
+import { isOpenSpecTaskBlocking } from './openspec/tasks.js';
 import { validateOpenSpecChangeWorkspace } from './openspec/change-validate.js';
 import { verifyQualityWorkspace } from './quality.js';
 import { appendReleaseEntry, getCurrentReleaseEntry, loadReleaseLedger, saveReleaseLedger, updateReleaseTag } from './release-ledger.js';
@@ -305,6 +306,7 @@ function featureTaskFromOpenSpecTask(task, changeId) {
     sourceLine: task.lineNumber,
     deps,
     type: task.metadata?.type ?? task.metadata?.category ?? task.metadata?.kind ?? null,
+    blocking: isOpenSpecTaskBlocking(task),
     done: task.metadata?.done ?? null,
     verify: task.metadata?.verify ?? null,
     oracle: task.metadata?.oracle ?? null,
@@ -324,8 +326,8 @@ function featureTaskFromOpenSpecTask(task, changeId) {
       executionStrategy.ownerRole === 'worker'
         ? `当前会话角色: ${labelOwnerRole(executionStrategy.ownerRole)}；写入范围限制为 ${executionStrategy.writeScope.join(', ')}，最终集成和总验证由主 Agent 负责。`
         : `当前会话角色: ${labelOwnerRole(executionStrategy.ownerRole)}；由主 Agent 直接推进并负责最终集成。`,
-      '涉及后端、脚本、Agent、工具链、服务或数据处理变更时，把 CLI 与 API 视为同级接入面；检查命令入口、参数、输出契约、`help`/`doctor`/`dry-run`/`status` 与接口协议、返回结构、身份边界是否受影响，并同步更新 `docs/basic/backend-structure.md`；若某一面不适用也要明确写原因。',
-      '新增或修改文件时先做文档影响判定：缺少 docs/basic、文件说明书或文件夹 README 就补齐；已有文档若因本任务职责、流程、结构、依赖或产品行为变化而过期，就同步更新。',
+      '涉及后端、脚本、Agent、工具链、服务或数据处理变更时，检查本次代码是否直接改变 CLI 或 API 的入口、参数、输出契约、接口协议、返回结构或身份边界；仅在当前事实被本任务改旧时后台同步对应基础文档，其他缺口记入 workspaceAttention。',
+      '新增或修改文件时做文档影响判定：只同步本任务直接使其失真的当前 docs/basic、代码说明书或文件夹 README；无关缺失项与历史实现材料不进入本任务阻断条件。',
     ],
     updatedAt: timestamp(),
   };
@@ -382,10 +384,13 @@ async function resolveLoopWorkspace(projectRoot, options = {}) {
 
 function buildLoopSummary(featureList) {
   const tasks = featureList?.tasks ?? [];
+  const pendingTasks = tasks.filter((task) => task.status === 'pending');
   return {
     total: tasks.length,
     done: tasks.filter((task) => task.status === 'done').length,
-    pending: tasks.filter((task) => task.status === 'pending').length,
+    pending: pendingTasks.length,
+    blockingPending: pendingTasks.filter((task) => task.blocking !== false).length,
+    backgroundPending: pendingTasks.filter((task) => task.blocking === false).length,
     running: tasks.filter((task) => task.status === 'running').length,
     verified: tasks.filter((task) => task.status === 'verified').length,
     failed: tasks.filter((task) => task.status === 'failed').length,
@@ -431,11 +436,12 @@ function nextLoopTask(featureList, requestedId = null) {
     const task = resolveLoopTask(featureList, requestedId);
     return { task, dependencyState: dependencyState(task, tasks) };
   }
-  for (const task of tasks) {
-    if (!['pending', 'failed'].includes(task.status)) continue;
-    const state = dependencyState(task, tasks);
-    if (state.ready) return { task, dependencyState: state };
-  }
+  const ready = tasks
+    .filter((task) => ['pending', 'failed'].includes(task.status))
+    .map((task) => ({ task, dependencyState: dependencyState(task, tasks) }))
+    .filter((item) => item.dependencyState.ready);
+  const next = ready.find((item) => item.task.blocking !== false) ?? ready[0];
+  if (next) return next;
   return { task: null, dependencyState: null };
 }
 
@@ -1885,8 +1891,9 @@ export async function finishLoopWorkspace(projectRoot, options = {}) {
   });
   const nextAfterFinish = nextLoopTask(updatedList).task;
   let quality = null;
+  let workspaceAttention = null;
   if (!nextAfterFinish) {
-    quality = await verifyQualityWorkspace(effectiveRoot, { strict: true }).catch((error) => ({
+    quality = await verifyQualityWorkspace(effectiveRoot, { strict: false }).catch((error) => ({
       ok: false,
       action: 'quality-verify',
       errors: [error instanceof Error ? error.message : String(error)],
@@ -1894,48 +1901,16 @@ export async function finishLoopWorkspace(projectRoot, options = {}) {
     const productionReady = quality.report?.readiness?.productionReady ?? null;
     if (!quality.ok || productionReady === false) {
       const attentionGates = quality.report?.readiness?.attentionGates ?? [];
-      const qualityError = [
-        'Final EVO quality gate is not production-ready.',
-        attentionGates.length > 0 ? `Attention gates: ${attentionGates.join(', ')}` : null,
-        quality.htmlPath ? `HTML report: ${path.relative(effectiveRoot, quality.htmlPath)}` : null,
-      ].filter(Boolean).join(' ');
-      const failedList = updateTask(featureList, task.id, {
-        status: 'failed',
-        lastError: qualityError,
-        lastTestReport: testReport.markdownPath,
-      });
-      await writeFeatureList(effectiveRoot, failedList);
-      await appendFailedApproach(effectiveRoot, {
-        task,
-        stage: 'final-quality',
-        reason: qualityError,
-        verification: verification.verification,
-        notes: options.notes ?? null,
-        evidence: options.evidence ?? null,
-      });
-      const operationalCleanup = options.commit
-        ? await cleanupLoopOperationalArtifacts(effectiveRoot).catch((error) => ({
-          ok: false,
-          restoredPaths: [],
-          removedPaths: [],
-          error: error instanceof Error ? error.message : String(error),
-        }))
-        : null;
-      return {
-        ok: false,
-        action: 'loop-finish',
-        projectRoot: effectiveRoot,
-        sourceProjectRoot: workspace.sourceProjectRoot,
-        workspace: workspaceInfo,
-        task,
-        advanced: finishResult,
-        change,
-        commit,
-        testReport: testReport.markdownPath,
-        regressionHtml: testReport.htmlPath,
-        quality,
-        operationalCleanup,
-        errors: [qualityError, ...(quality.errors ?? [])],
+      workspaceAttention = {
+        kind: 'quality-readiness',
+        scope: 'workspace-claim',
+        blocking: false,
+        productionReady,
+        attentionGates,
+        reportPath: quality.reportPath ?? null,
+        htmlPath: quality.htmlPath ?? null,
+        errors: [...(quality.errors ?? [])],
+        summary: '当前任务已验证并完成；工作区级 EVO 证据仍需关注，不能据此宣称整体 production-ready。',
       };
     }
   }
@@ -2002,6 +1977,7 @@ export async function finishLoopWorkspace(projectRoot, options = {}) {
     `HTML 回归报告: ${testReport.htmlPath}。`,
     ...(quality ? [
       `最终 EVO: ${quality.report?.readiness?.productionReady ? 'production-ready' : 'needs-attention'}。`,
+      ...(workspaceAttention ? ['工作区级 EVO 欠账不回写为当前任务失败。'] : []),
       ...(quality.htmlPath ? [`EVO 报告: ${path.relative(effectiveRoot, quality.htmlPath)}。`] : []),
     ] : []),
     ...learningProgress,
@@ -2047,6 +2023,7 @@ export async function finishLoopWorkspace(projectRoot, options = {}) {
         attentionGates: quality.report?.readiness?.attentionGates ?? [],
       }
       : null,
+    workspaceAttention,
     knowledgeReview: knowledgeReview?.skipped
       ? {
           ok: true,
@@ -2112,6 +2089,7 @@ export async function finishLoopWorkspace(projectRoot, options = {}) {
     testReport: testReport.markdownPath,
     regressionHtml: testReport.htmlPath,
     quality,
+    workspaceAttention,
     operationalCleanup,
     knowledgeReview,
     learningReview,

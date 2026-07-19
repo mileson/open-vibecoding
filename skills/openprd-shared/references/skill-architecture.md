@@ -8,7 +8,7 @@ Borrow the `lark-shared` pattern:
 - `openprd-benchmark-router` = best-practice, benchmark, and external design-source routing
 - `openprd-harness` = workflow sequencing
 - `openprd-standards` = docs/basic, file manual, and folder README standards
-- `openprd-diagram-review` = visual artifact generation and confirmation
+- `openprd-diagram-review` = visual artifact generation and Agent-owned review
 - generated adapters = Codex, Claude, and Cursor project-local rules from one OpenPrd source
 
 This avoids one oversized skill and keeps trigger logic precise.
@@ -20,7 +20,7 @@ This avoids one oversized skill and keeps trigger logic precise.
 - language-following output
 - proper noun preservation
 - read-only vs mutating command distinction
-- freeze/handoff gate discipline
+- freeze/handoff readiness evidence
 - workspace-first reasoning
 
 ### Harness
@@ -43,14 +43,14 @@ This avoids one oversized skill and keeps trigger logic precise.
 - diagram type selection
 - contract shaping
 - review checklist
-- artifact opening and user confirmation loop
+- artifact opening, Agent self-review, and user-feedback override loop
 
 ### Standards
 
 - `docs/basic/` baseline docs
 - file manual template and verification
 - folder README template and verification
-- standards gate before implementation readiness
+- standards evidence for implementation readiness
 
 ### Generated Adapters
 

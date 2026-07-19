@@ -70,7 +70,7 @@ export const DEFAULT_DEVELOPMENT_STANDARDS = {
     appliesTo: 'agent-touched-code-files',
   },
   autoRefactor: {
-    enabled: true,
+    enabled: false,
   },
 };
 
@@ -190,7 +190,7 @@ function normalizeLineConfig(config = {}) {
     exemptFilePatterns: [...EXEMPT_FILE_PATTERNS, ...customPatterns],
     growthEnabled: config?.growth?.enabled !== false,
     growthAutoApply: config?.growth?.autoApply,
-    autoRefactorEnabled: (config?.developmentStandards?.autoRefactor ?? config?.autoRefactor)?.enabled !== false,
+    autoRefactorEnabled: (config?.developmentStandards?.autoRefactor ?? config?.autoRefactor)?.enabled === true,
   };
 }
 
@@ -236,19 +236,19 @@ function fileStatus(lineCount, lineConfig) {
 }
 
 function nextActionForStatus(status, lineConfig) {
-  const autoMode = lineConfig?.autoRefactorEnabled !== false;
+  const autoMode = lineConfig?.autoRefactorEnabled === true;
   if (status === 'ok') {
     return `本轮没有显著维护风险；最终回复可简要说明已回顾本次改动文件。`;
   }
   if (status === 'attention') {
     if (autoMode) {
-      return `本轮若为该文件新增了职责，直接按入口、状态、渲染或数据边界完成小步拆分（保持行为不变、测试通过）；若只是小修，说明没有继续扩展职责即可。`;
+      return `若拆分与当前目标同范围且安全可逆，可按入口、状态、渲染或数据边界做小步优化；否则只记录建议，不扩大本轮任务。`;
     }
     return `本轮只做当前目标相关的小范围改动，并说明没有继续扩展该文件职责。`;
   }
   if (status === 'warning') {
     if (autoMode) {
-      return `本轮直接执行拆分：先确认现有测试可保住行为，再按职责边界拆出独立模块（高内聚低耦合、不丢任何功能），拆完重跑测试与 dev-check，并把拆分产出写进最终回复的“OpenPRD 自动优化报告”。`;
+      return `若当前任务本身包含结构优化，可在测试保护下按职责边界拆出独立模块并重跑验证；否则保留为工作区建议，不阻断当前任务。`;
     }
     return `先判断这次是否新增职责；如果新增了，优先拆分或解耦后再收尾；如果只是小修，说明暂不拆的原因和后续拆分建议。`;
   }
@@ -398,8 +398,8 @@ function buildCompactWrapUpRows(files, options = {}) {
 }
 
 function buildDevCheckWrapUp(files, lineConfig = {}) {
-  const autoMode = lineConfig?.autoRefactorEnabled !== false;
-  const title = autoMode ? 'OpenPRD 自动优化报告' : '后续建议';
+  const autoMode = lineConfig?.autoRefactorEnabled === true;
+  const title = autoMode ? 'OpenPRD 结构优化建议' : '后续建议';
   const statusColumn = autoMode ? '问题级别' : '关注程度';
   const columns = autoMode
     ? ['影响对象', '问题级别', '源文件规模', '优化原因', '本次处理结果', '后续建议']
@@ -417,15 +417,16 @@ function buildDevCheckWrapUp(files, lineConfig = {}) {
     }));
   const markdownTable = renderMarkdownTable(columns, rows);
   const switchHint = autoMode
-    ? '自动代码结构优化当前默认开启。如果下次不需要 Agent 自动优化，回复“关闭自动优化”，Agent 会运行 `openprd dev-check . --auto-refactor off` 转为仅推荐。'
-    : '自动代码结构优化当前已关闭（仅推荐模式）。要恢复 Agent 自动优化，运行 `openprd dev-check . --auto-refactor on`。';
+    ? '当前启用主动结构优化建议；它不会强制扩大任务范围。可用 `openprd dev-check . --auto-refactor off` 切回普通建议。'
+    : '当前为普通建议模式。仅当用户希望在同一任务内主动做结构优化时，才使用 `openprd dev-check . --auto-refactor on`。';
   return {
-    required: rows.length > 0,
+    required: false,
+    recommended: rows.length > 0,
     mode: autoMode ? 'auto-refactor' : 'recommend',
     reason: rows.length > 0
       ? (autoMode
-        ? '存在超行影响对象；本轮 Agent 应先按“本次处理结果”完成高内聚低耦合拆分（不丢功能、测试保住行为），再在最终回复用“OpenPRD 自动优化报告”呈现优化完成的结果，并附一句自动优化开关确认。'
-        : '存在需要用户关注的影响对象；最终回复需要用“后续建议”说明本次处理结果和后续建议。')
+        ? '存在结构优化机会；仅在与当前目标同范围时顺手处理，否则作为 workspaceAttention 保留。'
+        : '存在结构维护建议；它不影响当前任务结果，也不要求用户先处理。')
       : '本轮改动文件未触发影响范围提醒；最终回复可简要说明已完成改动对象回顾。',
     title,
     columns,

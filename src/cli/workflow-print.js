@@ -29,19 +29,19 @@ function printSynthesizeResult(result, json) {
   console.log(`标题: ${result.snapshot.title}`);
   console.log(`产品场景: ${formatProductTypeDisplay(result.snapshot.productType, { fallback: '待确认' })}`);
   if (!result.reviewPresentationRequired && (result.reviewPath ?? result.stableReviewArtifact)) {
-    console.log('确认页面: 已生成');
+    console.log('评审页面: 已生成');
   }
-  console.log(`已自动打开确认页面: ${result.opened ? '是' : '否'}`);
+  console.log(`已自动打开评审页面: ${result.opened ? '是' : '否'}`);
   if (result.reviewPresentationRequired) {
-    console.log('确认页面: 还没到可以直接确认的状态');
-    console.log('下一步: 先把展示文案补齐，再重新生成确认页面。');
+    console.log('评审页面: 展示信息待完善');
+    console.log('后台建议: Agent 可随当前工作补齐展示文案并重新生成；这不影响当前实现。');
     const feedback = result.reviewPresentationGate?.violations ?? [];
     for (const item of feedback.slice(0, 6)) {
       const pathHint = item.jsonPath ? `${item.jsonPath}: ` : '';
       console.log(`- ${pathHint}${item.action}`);
     }
   } else if (result.reviewPath ?? result.stableReviewArtifact) {
-    console.log('请先让用户查看确认页面；用户认可后，再用页面提供的确认方式记录结果。');
+    console.log('评审页面可用于记录反馈；没有反馈时 Agent 可按可逆默认方向继续，页面状态不影响当前实现。');
   }
 }
 
@@ -66,8 +66,8 @@ function printReviewResult(result, json) {
     return;
   }
 
-  console.log(`确认结果: ${result.status}`);
-  console.log('确认页面: 已就绪');
+  console.log(`评审记录: ${result.status}`);
+  console.log('评审页面: 已就绪');
   if (result.marked) {
     console.log(`状态已从 ${result.previousStatus} 更新为 ${result.status}`);
   }
@@ -75,7 +75,7 @@ function printReviewResult(result, json) {
     console.log(`选定交互方向: ${result.designDirection.id}（${result.designDirection.title}）`);
   }
   if (result.opened) {
-    console.log('已打开确认页面');
+    console.log('已打开评审页面');
   }
 }
 
@@ -128,11 +128,11 @@ function printNextResult(result, json) {
 
   const { recommendation, analysis, workflow, taskGraph } = result;
   console.log(`下一步动作: ${recommendation.nextAction}`);
-  if (recommendation.currentGate) {
-    console.log(`当前门禁: ${recommendation.currentGate}`);
+  if (recommendation.currentStage ?? recommendation.currentGate) {
+    console.log(`当前建议: ${recommendation.currentStage ?? recommendation.currentGate}`);
   }
-  if (recommendation.upcomingGate) {
-    console.log(`后续门禁: ${recommendation.upcomingGate}`);
+  if (recommendation.upcomingStage ?? recommendation.upcomingGate) {
+    console.log(`后续参考: ${recommendation.upcomingStage ?? recommendation.upcomingGate}`);
   }
   console.log(`原因: ${recommendation.reason}`);
   console.log(`建议命令: ${recommendation.suggestedCommand}`);
@@ -145,7 +145,7 @@ function printNextResult(result, json) {
     console.log(`脑暴命令: ${result.brainstormSuggestion.suggestedCommand}`);
   }
   if (result.diagramState?.needed) {
-    console.log(`图表门禁: ${result.diagramState.shouldGateFreeze ? '激活' : '已满足'}`);
+    console.log(`图表建议: ${result.diagramState.shouldGateFreeze ? '建议优先查看' : '后台参考'}`);
     console.log(`建议图表: ${result.diagramState.preferredType}`);
   }
   console.log('工作流:');

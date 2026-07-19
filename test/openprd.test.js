@@ -906,7 +906,7 @@ test('clarify stays inline and synthesize writes a review artifact', async () =>
   assert.ok(clarify.inlineClarification.lines.some((line) => line.includes('第一版先让用户做到')));
   assert.ok(clarify.inlineClarification.lines.some((line) => line.includes('| 功能模块 |')));
   assert.ok(clarify.inlineClarification.lines.some((line) => line.includes('| 技术部分 |')));
-  assert.ok(clarify.inlineClarification.lines.some((line) => line.includes('先整理需求摘要给你确认')));
+  assert.ok(clarify.inlineClarification.lines.some((line) => line.includes('requirement 摘要、PRD 和评审材料由 Agent 在后台维护')));
   assert.equal(clarify.inlineClarification.lines.some((line) => line.includes('确认执行')), false);
   assert.ok((await fs.readFile(path.join(project, '.openprd', 'engagements', 'active', 'intake-reflection.md'), 'utf8')).includes('首轮项目画像'));
 
@@ -1006,20 +1006,21 @@ test('clarify stays inline and synthesize writes a review artifact', async () =>
   assert.ok(reviewHtml.includes('当前版本'));
   assert.ok(reviewHtml.includes('需求概览'));
   assert.ok(reviewHtml.includes('需求关系图') || reviewHtml.includes('需求流程图'));
-  assert.ok(reviewHtml.includes('评审决定'));
+  assert.ok(reviewHtml.includes('评审反馈'));
   assert.ok(reviewHtml.includes('review-bottom-bar'));
   assert.ok(reviewHtml.includes('review-bottom-action revise'));
   assert.ok(reviewHtml.includes('review-bottom-action confirm'));
   assert.ok(reviewHtml.includes('需要调整'));
-  assert.ok(reviewHtml.includes('认可并继续'));
+  assert.ok(reviewHtml.includes('按当前方向推进'));
   assert.ok(reviewHtml.includes('重点摘要'));
   assert.ok(reviewHtml.includes('主流程小图'));
   assert.ok(reviewHtml.includes('用户旅程'));
   assert.ok(reviewHtml.includes('恢复路径'));
   assert.ok(reviewHtml.includes('review-detail-summary'));
   assert.ok(reviewHtml.includes('review-detail-body'));
-  assert.ok(reviewHtml.includes('OpenPrD Review: 认可并继续下一步'));
-  assert.ok(reviewHtml.includes('请先记录这次确认结果，并继续推进后续落地内容。'));
+  assert.ok(reviewHtml.includes('OpenPrD Review: 按当前方向推进'));
+  assert.ok(reviewHtml.includes('当前评审内容已记录为可逆默认方案。'));
+  assert.ok(reviewHtml.includes('后续反馈可覆盖这份记录，不影响当前工作。'));
   assert.ok(reviewHtml.includes('openprd review . --mark confirmed'));
   assert.ok(reviewHtml.includes(`--version &#39;${synthesized.snapshot.versionId}&#39;`));
   assert.ok(reviewHtml.includes(`--digest &#39;${synthesized.snapshot.digest}&#39;`));
@@ -1058,8 +1059,11 @@ test('clarify stays inline and synthesize writes a review artifact', async () =>
   assert.equal(reviewHtml.includes('text-overflow'), false);
   assert.equal(reviewHtml.includes('先用一张图确认这次 PRD 的主线'), false);
   assert.equal(/freeze/i.test(reviewHtml), false);
-  assert.ok(reviewHtml.includes('进入实现前确认'));
-  assert.ok(reviewHtml.includes('需求定稿前'));
+  assert.ok(reviewHtml.includes('信息不足时由 Agent 采用可逆默认方向并继续推进'));
+  assert.ok(reviewHtml.includes('由 Agent 后台跟进，不影响当前实现'));
+  assert.equal(reviewHtml.includes('确认前还差'), false);
+  assert.equal(reviewHtml.includes('最重要的决定'), false);
+  assert.equal(reviewHtml.includes('认可并继续'), false);
 
   const versionIndexBeforeReviewRefresh = JSON.parse(
     await fs.readFile(path.join(project, '.openprd', 'state', 'version-index.json'), 'utf8')
@@ -1072,7 +1076,7 @@ test('clarify stays inline and synthesize writes a review artifact', async () =>
   assert.ok(refreshedReviewHtml.includes('自动跳转'));
   assert.equal(refreshedReviewHtml.includes('legacy review artifact'), false);
   const refreshedCanonicalReviewHtml = await fs.readFile(synthesized.reviewPath, 'utf8');
-  assert.ok(refreshedCanonicalReviewHtml.includes('认可并继续'));
+  assert.ok(refreshedCanonicalReviewHtml.includes('按当前方向推进'));
   const versionIndexAfterReviewRefresh = JSON.parse(
     await fs.readFile(path.join(project, '.openprd', 'state', 'version-index.json'), 'utf8')
   ).length;
@@ -1327,7 +1331,7 @@ test('agent-normalized capture keeps confirmed review available for freeze', asy
   assert.equal(current.latestVersionId, 'v0001');
 });
 
-test('active requirement gate blocks synthesize from partial overrides without fresh capture', async () => {
+test('active requirement gate records partial overrides without blocking synthesize', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'agent' });
 
@@ -1341,18 +1345,18 @@ test('active requirement gate blocks synthesize from partial overrides without f
     promptPreview: '新需求还在澄清阶段',
   }, null, 2));
 
-  await assert.rejects(
-    synthesizeWorkspace(project, {
-      title: 'Hermes bundled 基线升级与安装阶段细化',
-      problemStatement: '安装阶段需要拆细并去掉 Camoufox 隐式下载。',
-      whyNow: '用户正在复测安装链路。',
-      productType: 'agent',
-    }),
-    /partial override 不能替代 fresh capture/,
-  );
+  const synthesized = await synthesizeWorkspace(project, {
+    title: 'Hermes bundled 基线升级与安装阶段细化',
+    problemStatement: '安装阶段需要拆细并去掉 Camoufox 隐式下载。',
+    whyNow: '用户正在复测安装链路。',
+    productType: 'agent',
+  });
+  assert.equal(synthesized.snapshot.versionId, 'v0001');
+  assert.ok(synthesized.workspaceAttention.some((item) => item.kind === 'requirement-capture'));
+  assert.ok(synthesized.workspaceAttention.every((item) => item.blocking === false));
 
   const versionFiles = await fs.readdir(path.join(project, '.openprd', 'state', 'versions'));
-  assert.equal(versionFiles.length, 0);
+  assert.equal(versionFiles.filter((file) => file.endsWith('.json')).length, 1);
 });
 
 test('review relationship map stays compact with pill tags and left aligned copy', () => {
