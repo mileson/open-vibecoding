@@ -15,7 +15,6 @@ test('adapter SPI exposes one stable contract for all supported clients', () => 
     assert.equal(adapter.contractVersion, 1);
     assert.equal(typeof adapter.describeCapabilities, 'function');
     assert.equal(typeof adapter.normalizeLifecycleEvent, 'function');
-    assert.equal(typeof adapter.renderContext, 'function');
     assert.equal(typeof adapter.renderDecision, 'function');
   }
   assert.match(adapterContractDigest(), /^[a-f0-9]{64}$/);
@@ -46,7 +45,7 @@ test('capability envelopes report gaps instead of pretending lifecycle parity', 
   assert.equal(codex.capabilities.hooks, CAPABILITY_STATUS.NATIVE);
   assert.equal(claude.capabilities.hooks, CAPABILITY_STATUS.UNSUPPORTED);
   assert.equal(cursor.capabilities.hooks, CAPABILITY_STATUS.UNSUPPORTED);
-  assert.equal(claude.capabilities.maxRecommendedContext, 800);
+  assert.equal(Object.hasOwn(claude.capabilities, 'maxRecommendedContext'), false);
 });
 
 test('normalized lifecycle events and rendered decisions keep semantic parity', () => {
@@ -63,40 +62,4 @@ test('normalized lifecycle events and rendered decisions keep semantic parity', 
     assert.equal(decision.allowed, true);
     assert.equal(decision.approvalId, 'approval-1');
   }
-});
-
-test('adapter context rendering carries capsule identity without hidden client state', () => {
-  const capsule = {
-    capsuleId: 'ctx-1',
-    projectRevision: 9,
-    sections: {
-      taskContract: { taskId: 'T001.01', title: '建立项目账本' },
-      pinnedFacts: [{ text: '只处理当前任务' }],
-      applicableGates: [{ summary: '发布前需要项目级验证' }],
-    },
-    digests: { content: 'digest-1' },
-  };
-  const outputs = ['codex', 'claude', 'cursor'].map((client) => createAdapter(client).renderContext(capsule));
-  assert.deepEqual(outputs.map((output) => output.capsuleDigest), ['digest-1', 'digest-1', 'digest-1']);
-  assert.ok(outputs.every((output) => output.content.includes('ctx-1')));
-});
-
-test('adapter renders ContextCapsule v1 with identical compact semantics across clients', () => {
-  const capsule = {
-    schemaVersion: 1,
-    digest: 'sha256:context-v1',
-    revision: 'git:abc123',
-    delivery: 'delta',
-    budget: { estimatedTokens: 42, limitTokens: 250 },
-    delta: { previousCapsuleDigest: 'sha256:previous' },
-    entries: [
-      { id: 'runtime-environment', value: { activeClient: 'codex', surface: 'desktop' } },
-      { id: 'recommended-next-step', value: { title: '继续当前任务', reason: '范围与证据已明确。' } },
-    ],
-  };
-  const outputs = ['codex', 'claude', 'cursor'].map((client) => createAdapter(client).renderContext(capsule));
-  assert.ok(outputs.every((output) => output.capsuleDigest === capsule.digest));
-  assert.ok(outputs.every((output) => output.content.includes('delivery: delta')));
-  assert.ok(outputs.every((output) => output.content.includes('budget: 42/250 tokens')));
-  assert.ok(outputs.every((output) => output.content.includes('next: 继续当前任务')));
 });

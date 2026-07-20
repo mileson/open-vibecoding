@@ -34,7 +34,7 @@
   - 默认输出 JPG 到 `.openprd/harness/visual-reviews/`，可用 `--format jpg|png|webp`、`--quality` 和 `--max-panel-width` 调整。
 - `node ./bin/openprd.js docs-compact .`: 分析 `docs/basic/` 巨行与 `prd.md` 版本落后情况，输出逐行压缩建议，只读不写。
 - `node ./bin/openprd.js guide .`: 按工作区状态输出 PM 7 步流程指引、当前阶段和下一步动作，只读不写。
-- `node ./bin/openprd.js run . --context`: 生成 hook-stable 执行上下文。
+- `node ./bin/openprd.js run . --verify`: 验证当前工作区和激活 change 的分层就绪状态。
 - `node ./bin/openprd.js update . --hook-profile lite|guarded|full`: 刷新 agent guidance 并选择 Codex hook 重量；默认 `lite` 保留非阻断 advisory，不启用完整遥测。
 
 ## 维护规则

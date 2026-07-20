@@ -110,7 +110,7 @@ const RUNTIME_DETECTION_PROTOCOL = {
   outputFields: ['activeClient', 'surface', 'executionMode', 'confidence', 'sessionId', 'turnId', 'agentType', 'model', 'evidence', 'observedCapabilities'],
   confidenceRules: [
     '优先相信当前会话 hook/session payload；env 和配置探针只能作为补充证据。',
-    'executionMode=automation/cron/scheduled/headless/unattended 时默认进入 automation-safe mode：不注入 OpenPrd context，不阻断写入，不要求 dev-check / quality / doctor；只有明确 OpenPrd 维护任务或显式启用 OpenPrd 时才恢复 OpenPrd 工作流。',
+    'executionMode=automation/cron/scheduled/headless/unattended 时默认进入 automation-safe mode：不阻断写入，不要求 dev-check / quality / doctor；只有明确 OpenPrd 维护任务或显式启用 OpenPrd 时才恢复 OpenPrd 工作流。',
     'Codex 的 Image 2、Computer Use、browser window 等属于 surface-dependent 能力，不要仅凭 codex CLI 或项目配置推断已可用。',
     'Claude Code、Cursor 等平台同理：先识别当前对话客户端，再按该客户端的 capability pack 激活工具路径。',
   ],
@@ -502,11 +502,11 @@ function agentContractBody() {
     '',
     '### 默认行为',
     '',
-    '1. 动手前先判断 executionMode。无人值守自动化（Codex automation、Claude Code headless、cron、scheduled、unattended task）默认不要注入 OpenPrd context，不阻断写入，不要求 `openprd dev-check` / `quality` / `doctor`；除非 automation prompt 明确写明“这是 OpenPrd 维护任务”“显式启用 OpenPrd / enable OpenPrd / openprd-maintenance”。',
-    '1a. 互动或显式启用 OpenPrd 的场景，再从 `.openprd/` 重建状态，并先运行 `openprd run . --context`；它是建议上下文，不是自动执行指令。',
+    '1. 动手前先判断 executionMode。无人值守自动化（Codex automation、Claude Code headless、cron、scheduled、unattended task）默认不阻断写入，不要求 `openprd dev-check` / `quality` / `doctor`；除非 automation prompt 明确写明“这是 OpenPrd 维护任务”“显式启用 OpenPrd / enable OpenPrd / openprd-maintenance”。',
+    '1a. Agent 自己管理当前会话上下文；OpenPrd 只记录工作区事实、Hook 证据和验证结果。',
     '1a. 代码搜索默认从当前任务相关源码、测试和 change/task 文件起步；不要把 `.openprd/quality/reports/`、`.openprd/harness/` 或 `.openprd/learning/` 当源码目录做 repo-wide `rg`。质量报告只在需要审阅就绪证据时按最新报告路径显式读取。',
     '2. 规划、分析、架构评审、“怎么改”或“会动哪些文件”类请求保持只读；只有用户明确要求实现、继续任务、深度调研、对标复刻或提交时才进入执行。',
-    '3. 先分流再执行：`openprd-requirement-intake` 按影响面、未知数、决策成本和验证成本判断需求类型，并保留内部路由码对照：直接处理=L0，现有功能优化=L1，新功能/新流程方案=L2。用户审查默认把路由码并进“需求类型：直接处理（L0）”这类标签里；只有内部排障确实受益时，才额外附“内部路由码”。直接处理类需求可直接处理并事后说明，不打开正式 PRD/review/change/tasks；现有功能优化先在对话内给 mini-plan 再执行，默认不生成正式 PRD/change/tasks；新功能/新流程方案的 requirement、PRD、review、change 和 tasks 由 Agent 在后台维护，不阻断用户已经要求的实现。L2 的 requirement 摘要默认按“需求判断 / 需求理解 / 功能范围 / 技术方案”整理，其中“功能范围”和“技术方案”优先用 Markdown 表格；如果仍在 0 到 1 探索，再补验证与创业闭环。`openprd run . --context` 建议 `clarify-user` 时，Agent 优先选择可逆默认方案并显式说明假设；只有真实产品歧义会明显改变结果时才提一个必要问题。“请帮我实现/继续实现”表示有效执行意图；requirement、capture/classify/synthesize、review、change 和 tasks 由 Agent 在后台维护，不追加 OpenPrd 确认门禁。`review.html` 是稳定评审 artifact，不是授权门禁。',
+    '3. 先分流再执行：`openprd-requirement-intake` 按影响面、未知数、决策成本和验证成本判断需求类型，并保留内部路由码对照：直接处理=L0，现有功能优化=L1，新功能/新流程方案=L2。用户审查默认把路由码并进“需求类型：直接处理（L0）”这类标签里；只有内部排障确实受益时，才额外附“内部路由码”。直接处理类需求可直接处理并事后说明，不打开正式 PRD/review/change/tasks；现有功能优化先在对话内给 mini-plan 再执行，默认不生成正式 PRD/change/tasks；新功能/新流程方案的 requirement、PRD、review、change 和 tasks 由 Agent 在后台维护，不阻断用户已经要求的实现。L2 的 requirement 摘要默认按“需求判断 / 需求理解 / 功能范围 / 技术方案”整理，其中“功能范围”和“技术方案”优先用 Markdown 表格；如果仍在 0 到 1 探索，再补验证与创业闭环。只有真实产品歧义会明显改变结果时才提一个必要问题。“请帮我实现/继续实现”表示有效执行意图；requirement、capture/classify/synthesize、review、change 和 tasks 由 Agent 在后台维护，不追加 OpenPrd 确认门禁。`review.html` 是稳定评审 artifact，不是授权门禁。',
     '3a. 已归档或既有的 requirement、PRD、review、change、tasks 与实现记录是冻结历史，不根据当前代码推断、补写或改写。旧功能重新进入需求流程时，为本轮创建新的 current requirement/change，并通过引用关联历史记录；`docs/basic/` 与代码说明书属于随实现维护的活文档，可在当前任务后台同步。',
     '3b. 0 到 1 探索的验证与创业闭环至少覆盖：第一批最容易触达的社区或种子用户、你为什么算这个社区里的自己人、当前替代方案与痛点证据、先怎么手工交付、手工作战卡怎么写、能否先用 spreadsheet / 表单 / no-code 跑起来、必须做产品时是否只自动化最重复的一步、第一版只做哪一件事、能否压成周末级 MVP、从第一个客户开始怎么收费、客户 1 如何打平成本、有没有 10 个样本和更强付费信号、达到什么条件才允许产品化、增长阶段守什么纪律、这条路是否可逆，以及是不是你愿意长期住进去的业务形态。',
     '4. change/tasks 就绪后，用 `openprd-test-strategy` 按风险选择单元、集成、端到端、人工、视觉、小程序、性能或安全验证组合，并在任务或报告中保留 evidence-plan；同时根据任务边界记录 execution strategy：小范围修正保持 `serial`，中等规模 L1/L2 可推荐 `parallel-workers`，高风险或大规模实现再升级到 `parallel-workers-isolated`；70/20/10 只作健康形状参考，不作硬门禁。',
@@ -527,7 +527,7 @@ function agentContractBody() {
     '',
     '### Hook-Enforced Gates',
     '',
-    '- automation-safe：识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task 时，hook 默认不注入 OpenPrd context、不阻断写入、不要求 dev-check / quality / doctor；只有 OpenPrd 维护任务或显式启用 OpenPrd 时才恢复这些检查与上下文提示。',
+    '- automation-safe：识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task 时，hook 默认不阻断写入、不要求 dev-check / quality / doctor；只有 OpenPrd 维护任务或显式启用 OpenPrd 时才恢复这些检查。',
     '- requirement：requirement、PRD、review、change 和 tasks 是 Agent 后台维护材料，不阻断实现、不索取用户确认。',
     '- research：公开 GitHub 架构/对标优先 DeepWiki；第三方技术用法、配置、限制、版本差异或迁移先查本地证据，不足时按 `resolve_library_id -> query_docs` 使用 Context7。证据缺口只产生 `allowed-with-research-attention`，不阻断当前工作。',
     '- design：界面、页面、视觉和前端体验任务由 Agent 在后台维护 `$openprd-frontend-design` 与 `.openprd/design/active/` 合同；缺口只产生 `allowed-with-design-attention`。Patch Mode 同样是 advisory，不限制工具调用。',
@@ -1501,7 +1501,7 @@ export async function doctorOpenPrdAgentIntegration(projectRoot, options = {}) {
   if (tools.includes('codex')) {
     await collectDoctorCheck(projectRoot, checks, '.codex/config.toml', (file) => fileHas(file, '[[hooks.UserPromptSubmit]]') && fileHas(file, '[[hooks.PreToolUse]]'), 'Codex config is missing OpenPrd hook definitions.');
     await collectDoctorCheck(projectRoot, checks, '.codex/hooks.json', (file) => fileHas(file, 'openprd-hook.mjs'), 'Codex hooks.json is missing OpenPrd hooks.');
-    await collectDoctorCheck(projectRoot, checks, '.codex/hooks/openprd-hook.mjs', (file) => fileHas(file, 'OpenPrd harness 上下文'), 'Codex hook runner is missing.');
+    await collectDoctorCheck(projectRoot, checks, '.codex/hooks/openprd-hook.mjs', (file) => fileHas(file, 'recordRunHook'), 'Codex hook runner is missing.');
     const smoke = await smokeTestCodexHook(projectRoot, { hookProfile });
     checks.push({ path: '.codex/hooks/openprd-hook.mjs:smoke', ok: smoke.ok, message: smoke.message });
     await collectGeneratedDoctorCheck(projectRoot, checks, '.codex/skills/openprd-router/SKILL.md', 'Codex OpenPrd router skill');

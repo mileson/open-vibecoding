@@ -70,7 +70,6 @@ import { buildReviewPresentationTemplatePayload, reviewPresentationWorkspace } f
 import { analyzeWorkspaceRegistryHygiene } from './registry-hygiene.js';
 import { ensureProjectManifest, readProjectManifest } from './kernel/index.js';
 import { syncSessionBindingFromChange } from './session-binding.js';
-import { readSessionRegistry } from './session-registry.js';
 import { visualCompareWorkspace } from './visual-compare.js';
 import { visualPrepareWorkspace } from './visual-prepare.js';
 import { captureWorkspace, clarifyWorkspace, classifyWorkspace, computeWorkspaceGuidance, diffWorkspace, historyWorkspace, interviewWorkspace, nextWorkspace, playgroundWorkspace, reviewWorkspace, synthesizeWorkspace } from './workspace-workflow.js';
@@ -294,14 +293,12 @@ async function doctorWorkspace(projectRoot, options = {}) {
       checks: [],
     }));
   const workspaceRegistry = await readWorkspaceRegistry({ openprdHome: options.openprdHome }).catch(() => null);
-  const sessionRegistry = await readSessionRegistry({ openprdHome: options.openprdHome }).catch(() => null);
   const registryHygiene = workspaceRegistry
     ? analyzeWorkspaceRegistryHygiene(workspaceRegistry.entries)
     : { ok: true, issues: [] };
   const registryWarnings = [
     ...(registryHygiene.issues ?? []).map((issue) => `registry: ${issue.message}`),
     ...((workspaceRegistry?.staleEntries ?? []).map((entry) => `registry: stale workspace ${entry.workspaceRoot} (${entry.reason})`)),
-    ...((sessionRegistry?.staleEntries ?? []).map((entry) => `session-registry: stale session ${entry.sessionId} (${entry.reason})`)),
   ];
   const integrationsReady = projectManifest.ok && agentIntegration.ok && (codexRuntime?.ok ?? true);
   const structuralReady = validation.structuralValid ?? validation.valid;
@@ -390,7 +387,6 @@ async function doctorWorkspace(projectRoot, options = {}) {
     },
     registry: {
       workspace: workspaceRegistry,
-      sessions: sessionRegistry,
       hygiene: registryHygiene,
       warnings: registryWarnings,
     },
@@ -1051,16 +1047,13 @@ export async function main(argv = process.argv.slice(2)) {
 
     if (command === 'run') {
       const result = await runWorkspace(projectPath, {
-        context: flags.context,
         verify: flags.verify,
         recordHook: flags.recordHook,
-        hookInject: flags.hookInject,
         event: flags.event,
         risk: flags.risk,
         outcome: flags.outcome,
         preview: flags.preview,
         learn: flags.learn,
-        message: flags.message,
       });
       printRunResult(result, flags.json);
       return result.ok ? 0 : 1;

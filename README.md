@@ -18,15 +18,17 @@ OpenPrd 是一个轻量但结构化的 **PRD harness**。你只需要先把问�
 
 它把需求、决策和验证结果沉淀成稳定的 HTML 产物，而不是把状态散落在聊天记录或终端输出里。OpenPrd 的职责是帮助 Agent 做事：PRD、review、change、tasks、设计合同与测试证据由 Agent 在后台维护，不再要求用户回复指定内容才能继续。
 
-## 0.2.0：OpenPrd 只辅助，不阻断
+## 0.2.1：上下文交还给 Agent
 
+- 删除 `run --context`、`--hook-inject`、ContextCapsule 和全局 session registry；Agent 直接使用自己的会话上下文。
+- `UserPromptSubmit` 只记录提示，不再选择任务或向 Agent 注入下一步建议。
 - 用户已经要求实现、继续或发布时，OpenPrd 不再因为需求、评审、变更、任务、说明书或质量证据尚未补齐而叫停工作。
-- Codex automation、定时任务和其他无人值守任务默认不注入 OpenPrd 流程；只有任务明确启用 OpenPrd 时才进入维护流程。
+- Codex automation、定时任务和其他无人值守任务只有明确启用 OpenPrd 时才进入维护流程。
 - 历史 requirement、PRD、review、change、tasks 和实现记录保持原样，不用今天的代码倒推补写当时的需求；旧功能重新开发时，会创建今天的新需求并关联历史。
 - 工作区维护欠账继续可见，但只作为后台提示；当前任务失败、发布目标、权限、制品、测试和回滚等真实条件仍会严格验证。
 
 ```bash
-npm install -g @openprd/cli@0.2.0
+npm install -g @openprd/cli@0.2.1
 ```
 
 ## 0.1.24：工作区欠账不再冒充当前任务失败
@@ -255,11 +257,9 @@ npx @openprd/cli@latest init /path/to/project --template-pack agent
 
 `init` 会创建 `.openprd/`、`docs/basic/`、`AGENTS.md`，并生成 Codex / Claude / Cursor 三端引导。`.openprd/` 是项目内唯一的 OpenPrd 工作区；change、spec、task 和 archive 产物都会收敛到 `.openprd/changes/`、`.openprd/specs/` 和 `.openprd/archive/changes/`，不再在仓库根目录生成单独的 `openprd/` 目录。Codex 项目会同时写入 `.codex/config.toml`、`.codex/hooks.json`、`.codex/hooks/openprd-hook.mjs`，并开启用户级 Codex `hooks = true`。
 
-Codex hooks 默认使用 `lite` 模式：安装 `UserPromptSubmit`、非阻断式
-`PreToolUse` 建议，以及轻量 `Stop` 收工回顾。明确提到 OpenPrd、PRD、深度调研、深度对标、复刻、
-standards、fleet、文档标准化，或看起来像新产品 / 模块 / 流程需求的提示词都会
-注入上下文；`PreToolUse` 只向 Agent 提供风险与材料维护建议，不因 OpenPrd 流程材料阻断用户任务；`Stop`
-会在本轮结束前回顾是否值得沉淀项目经验。
+Codex hooks 默认使用 `lite` 模式：`UserPromptSubmit` 只记录当前提示，非阻断式
+`PreToolUse` 提供安全与材料维护建议，轻量 `Stop` 做收工回顾。Hook 不选择任务、
+不恢复跨项目会话，也不向 Agent 注入任务上下文。
 需要让 shell 命令也获得更完整的风险提示时使用 `guarded`，只有临时深度诊断才使用
 `full`。
 如果用户给出报错、日志、复现、根因排查等明确故障证据，并要求直接修复，
@@ -476,7 +476,7 @@ openprd standards /path/to/project --verify
 默认命令返回成功，避免文档债截停当前任务；需要在独立治理作业里严格检查时，显式追加 `--fail-on-violation`。
 
 OpenPrd 生成的 change 会包含标准化维护任务。项目基础文档的唯一标准路径是 `docs/basic/`。
-这些全仓缺口在 `run --context`、普通 doctor、change apply、freeze/handoff 和当前任务验证中只作为 `workspaceAttention`，不会让 `taskReady` 或 `actionReady` 变成失败。
+这些全仓缺口在普通 doctor、change apply、freeze/handoff 和当前任务验证中只作为 `workspaceAttention`，不会让 `taskReady` 或 `actionReady` 变成失败。
 
 实现阶段的标准化维护是明确的影响判定。每次新增或修改源码文件时，Agent 检查
 `docs/basic/`、文件说明书、所在文件夹 README 是否因本次变更过期，并在后台同步
@@ -521,7 +521,7 @@ OpenPrd 生成的 change 会包含标准化维护任务。项目基础文档的�
    生成的图片按占位卡比例出图，回填不变形。
 
 唤起方式：在对话里自然地说“打开画布一起看”“我在画布上标注了，按标注改图”
-这类话，hook 会自动注入画布协同指引；也可以直接运行 `openprd canvas . --daemon --open`。
+这类话，Agent 会按当前会话判断画布协同意图；也可以直接运行 `openprd canvas . --daemon --open`。
 
 ## 效果图与截图拼图对比，自动优化
 
@@ -702,7 +702,6 @@ openprd upgrade /path/to/project
 openprd upgrade /path/to/projects --fleet --dry-run
 openprd fleet /path/to/projects --dry-run
 openprd fleet /path/to/projects --sync-registry
-openprd run /path/to/project --context
 openprd run /path/to/project --verify
 openprd loop /path/to/project --plan --change <change-id>
 openprd loop /path/to/project --run --agent codex --dry-run
@@ -737,12 +736,12 @@ openprd loop /path/to/project --run --agent codex --dry-run
 这套 harness 是有状态的，但 hook 重量由 profile 控制。默认 `lite` 保留轻量
 PreToolUse 非阻断式建议，并把匹配范围限制在直接编辑工具上，同时在 `Stop` 做一轮轻量项目经验回顾，避免只读 shell 噪声和完整工具级遥测；`guarded` 会额外覆盖 shell 工具，`full` 只建议用于临时深度诊断。`freeze`、`handoff`、accepted spec apply/archive、commit、push、release、publish 等动作可以读取 `openprd run . --verify` 的分层状态，但只由精确目标、权限、冲突、本次制品/测试和回滚条件决定 `actionReady`；全局文档和 EVO 债只作提醒。
 
-`openprd run . --context` 是类似 Ralph 的循环控制面。它会从激活 change 任务、discovery coverage 或普通 OpenPrd 工作流状态里选择下一项可执行单元，并把 hook turn 记录到 `.openprd/harness/iterations.jsonl`。
+`openprd run . --verify` 只负责验证当前工作区和激活 change；它不读取用户消息，不选择 Agent 的下一项任务，也不返回上下文胶囊。Hook turn 仍可通过内部 `run --record-hook` 记录到 `.openprd/harness/iterations.jsonl`。
 
 ### 长程 Agent Loop
 
-如果进入真正的开发落地阶段，建议使用 `openprd loop`。它比 `run --context`
-更严格：先生成稳定的 feature list，再为每个任务写出单独提示词，启动一个新的
+如果进入真正的开发落地阶段，建议使用 `openprd loop`。它会先生成稳定的 feature list，
+再为每个任务写出单独提示词，启动一个新的
 Codex 或 Claude 会话只处理这一个任务。每个任务完成后必须先自测，失败就修复并
 重新自测；前端界面任务在 Codex 客户端优先用 Computer Use，在 Codex CLI 和
 Claude Code 中优先用 Playwright、MCP 浏览器自动化或项目已有 e2e 工具。验证
@@ -753,15 +752,12 @@ Claude Code 中优先用 Playwright、MCP 浏览器自动化或项目已有 e2e 
 `--board <alignment-board.json>`，单元素内部居中/视觉重心问题走
 `--board <centering-board.json>`，查看证据图后才能完成任务。
 
-`openprd run --context` 可能展示 loop 相关执行命令，但它不是自动执行指令。
 只有当用户当前明确要求开发、实现、继续任务、深度调研、深度对标、复刻落地或
 提交时，Agent 才能运行 `openprd loop --run`、`openprd tasks --advance`、
 `openprd discovery --advance` 或 commit 命令。规划和审查类对话应止步于模块 /
 文件清单和证据说明。
 
-Loop 建议按实质实现任务数触发，而不是按所有 checkbox 触发。当一个 change 的
-`implementation` 任务总数或待处理数达到 10 个时，`run --context` 会建议使用
-独立 worktree 或等价隔离环境，并通过单任务 Loop 会话推进。
+Loop 是否使用独立 worktree 由 Agent 根据实质实现任务数、写入范围和并行冲突判断；OpenPrd 不再通过上下文命令替 Agent 做这个选择。
 
 ```bash
 openprd loop . --init

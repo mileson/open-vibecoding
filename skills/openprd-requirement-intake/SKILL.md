@@ -50,7 +50,7 @@ description: OpenPrd 需求入口与 PRD 分流 skill。用于用户提出产品
 
 ## 工作流
 
-1. 读取 `.openprd/` 状态和 `openprd run . --context`，但把它当作建议。
+1. 读取当前用户消息和必要的 `.openprd/` 状态；上下文由 Agent 自己管理。
 2. 用 `references/routing-rubric.md` 判断 L0/L1/L2。
 3. 如果是 L2，读取 `references/prd-template-lenses.md` 选择 PRD 场景视角。
 4. 输出一个短的需求类型判断：

@@ -15,10 +15,10 @@ description: OpenPrd 入口路由 skill。先判断当前任务该读哪个 repo
 
 ## 入口顺序
 
-1. 先看 `.openprd/harness/runtime-environment.json` 的 `runtimeDetection.executionMode`。如果识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task，进入 automation-safe mode：默认不要运行 `openprd run . --context`，不要注入 OpenPrd context，也不要要求 `openprd dev-check` / `quality` / `doctor`；按该自动化自己的 runbook、日志、测试和通知合同收口。只有 prompt 明确说明这是 OpenPrd 维护任务或显式启用 OpenPrd 时，才恢复下列检查与上下文提示。
-2. 如果用户当前明确在说“帮我梳理下”“先想清楚”“进入脑暴模式”，先读取 `$openprd-requirement-intake`，并优先运行 `openprd run . --context --message <用户原话>`；需要时直接进入 `openprd brainstorm . --open`，不要只跑不带 message 的 `openprd run . --context`
-3. 其他互动情况再从 `.openprd/` 重建当前状态，并运行 `openprd run . --context`
-4. 如果当前是空白工作区的前端/页面冷启动，而且用户已经给了明确的页面主题、模块范围或“直接实现”的意图，优先改用 `openprd run . --context --message <用户原话>`；不要先跑不带 message 的 `openprd run . --context`，再被空白工作区自己的 `clarify-user` 带偏
+1. 先看 `.openprd/harness/runtime-environment.json` 的 `runtimeDetection.executionMode`。如果识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task，进入 automation-safe mode：默认不要要求 `openprd dev-check` / `quality` / `doctor`；按该自动化自己的 runbook、日志、测试和通知合同收口。只有 prompt 明确说明这是 OpenPrd 维护任务或显式启用 OpenPrd 时，才恢复下列检查。
+2. 如果用户当前明确在说“帮我梳理下”“先想清楚”“进入脑暴模式”，先读取 `$openprd-requirement-intake`；需要时直接进入 `openprd brainstorm . --open`
+3. 其他互动情况直接使用当前会话与用户消息；OpenPrd 不选择或注入 Agent 上下文
+4. 如果当前是空白工作区的前端/页面冷启动，而且用户已经给了明确的页面主题、模块范围或“直接实现”的意图，先用 3 到 5 行 mini-plan 收口，再进入 `design-starter -> Patch Mode`
 5. 需要具体命令时，优先读取 `.openprd/harness/command-catalog.md`
 6. 需要共用约束时，读取 `$openprd-shared`
 7. 需要主工作流时，读取 `$openprd-harness`
@@ -45,6 +45,6 @@ description: OpenPrd 入口路由 skill。先判断当前任务该读哪个 repo
 - hooks 对 requirement / research / skill-visualization / design / Patch Mode 提供可继续的后台注意提示；只有原始 vault 等真实敏感信息安全边界可由 OpenPrd 阻断，browser / weapp / copy 继续按宿主安全与证据规则处理
 - 公开 GitHub 仓库架构/对标先 DeepWiki；第三方库、API、SDK、MCP、CLI 用法先查本地证据，本地不足时再按 `resolve_library_id -> query_docs` 使用 Context7
 - 如果用户只是要规划、分析、评审或解释影响范围，保持只读，不要因为命令存在就直接执行写入
-- 用户原话里已经明确要求“先梳理/脑暴”时，用户意图优先于不带 message 的默认 run context；先把原话带进 `openprd run . --context --message ...`，或直接进入脑暴模式
+- 用户原话里已经明确要求“先梳理/脑暴”时，直接以当前消息为准进入需求分流或脑暴模式
 - 不要用固定关键词决定是否写 PRD，也不要用词表决定工具；先让 `openprd-requirement-intake` 按影响面、未知数、决策成本和验证成本做语义分流，再按用户目标、期望产物、交付阶段和证据缺口选择学习器、视觉评审或质量收口工具
 - 当用户需要理解状态跳转、因果链、方案差异、边界分工或风险传播时，先读 `skills/openprd-diagram-review/SKILL.md`，优先用轻量解释型 SVG 辅助说明；不要把它误升级成正式评审图或视觉验收图

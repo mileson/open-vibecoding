@@ -1283,9 +1283,10 @@ test('pending PRD review remains nonblocking background attention after diagram 
   assert.equal(reviewed.ok, true);
   assert.equal(reviewed.status, 'confirmed');
 
-  const runContext = await runWorkspace(project, { context: true });
-  assert.equal(runContext.recommendation.type, 'prd-change');
-  assert.ok(runContext.recommendation.executionCommand.includes('openprd change . --generate'));
+  const runVerification = await runWorkspace(project, { verify: true });
+  assert.equal(runVerification.action, 'run-verify');
+  assert.equal(runVerification.scope.changeId, null);
+  assert.equal(Object.hasOwn(runVerification, 'context'), false);
 
   const result = await nextWorkspace(project);
   assert.equal(result.recommendation.nextAction, 'freeze');

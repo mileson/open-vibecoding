@@ -16,11 +16,11 @@ const CURRENT_COMPATIBILITY = Object.freeze({
   minimumWriterVersion: 1,
 });
 const REQUIRED_FORMATS = Object.freeze(['eventEnvelope', 'ledger', 'projection']);
+const RETIRED_FORMATS = Object.freeze(['contextCapsule']);
 const CURRENT_FORMATS = Object.freeze({
   eventEnvelope: 1,
   ledger: 1,
   projection: 1,
-  contextCapsule: 1,
   taskRuntime: 1,
   scopedGate: 1,
   reviewModel: 1,
@@ -92,6 +92,13 @@ function assertValidProjectManifest(manifest) {
   return manifest;
 }
 
+function withoutRetiredFormats(manifest) {
+  if (!isPlainObject(manifest?.formats)) return manifest;
+  const formats = { ...manifest.formats };
+  for (const format of RETIRED_FORMATS) delete formats[format];
+  return { ...manifest, formats };
+}
+
 function assertProjectManifestCompatible(manifest, options = {}) {
   assertValidProjectManifest(manifest);
   const mode = options.mode ?? 'read';
@@ -122,6 +129,7 @@ function assertProjectManifestCompatible(manifest, options = {}) {
     );
   }
   for (const [format, requiredVersion] of Object.entries(manifest.formats)) {
+    if (RETIRED_FORMATS.includes(format)) continue;
     const supportedVersion = supportedFormats[format];
     if (!positiveVersion(supportedVersion) || requiredVersion > supportedVersion) {
       throw new ManifestCompatibilityError(
@@ -144,7 +152,7 @@ function normalizeCreatedAt(clock) {
 function createProjectManifest(options = {}) {
   const clock = options.clock ?? (() => new Date());
   const idFactory = options.idFactory ?? (() => `project_${randomUUID()}`);
-  const manifest = {
+  const manifest = withoutRetiredFormats({
     schema: PROJECT_MANIFEST_SCHEMA,
     schemaVersion: PROJECT_MANIFEST_VERSION,
     projectId: options.projectId ?? idFactory(),
@@ -157,7 +165,7 @@ function createProjectManifest(options = {}) {
       ...CURRENT_FORMATS,
       ...(options.formats ?? {}),
     },
-  };
+  });
   return assertValidProjectManifest(manifest);
 }
 
@@ -169,7 +177,7 @@ async function readProjectManifest(projectRoot, options = {}) {
     error.code = 'OPENPRD_MANIFEST_NOT_FOUND';
     throw error;
   }
-  return assertProjectManifestCompatible(manifest, options);
+  return withoutRetiredFormats(assertProjectManifestCompatible(manifest, options));
 }
 
 async function ensureProjectManifest(projectRoot, options = {}) {
@@ -177,7 +185,12 @@ async function ensureProjectManifest(projectRoot, options = {}) {
   const lockPath = `${manifestPath}.lock`;
   return withFileLock(lockPath, async () => {
     const existing = await readJsonIfExists(manifestPath, null);
-    if (existing !== null) return assertProjectManifestCompatible(existing, { ...options, mode: 'write' });
+    if (existing !== null) {
+      const compatible = assertProjectManifestCompatible(existing, { ...options, mode: 'write' });
+      const migrated = withoutRetiredFormats(compatible);
+      if (JSON.stringify(migrated) !== JSON.stringify(existing)) await atomicWriteJson(manifestPath, migrated);
+      return migrated;
+    }
     const manifest = createProjectManifest(options);
     assertProjectManifestCompatible(manifest, { ...options, mode: 'write' });
     await atomicWriteJson(manifestPath, manifest);
@@ -191,6 +204,7 @@ export {
   CURRENT_READER_VERSION,
   CURRENT_WRITER_VERSION,
   REQUIRED_FORMATS,
+  RETIRED_FORMATS,
   ManifestCompatibilityError,
   PROJECT_MANIFEST_SCHEMA,
   PROJECT_MANIFEST_VERSION,

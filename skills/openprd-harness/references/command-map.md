@@ -32,7 +32,6 @@
 - `openprd standards --check`
 - `openprd standards --verify`
 - `openprd doctor`
-- `openprd run --context`
 - `openprd run --verify`
 
 ## Routing Heuristics
@@ -56,7 +55,6 @@
 - agent rules, commands, or hooks need installing -> `setup`
 - generated rules or hooks may be stale -> `update`
 - Codex/Claude/Cursor guidance health is uncertain -> `doctor`
-- hook-driven execution unit is needed -> `run --context`
 - hook-driven loop needs gate validation -> `run --verify`
 - long-running implementation needs one fresh agent session per task -> `loop --plan --change <id>`, then `loop --run --agent codex|claude --dry-run`
 - one long-running task was completed and verified -> `loop --finish --item <task-id> --commit`

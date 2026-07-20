@@ -102,3 +102,19 @@ test('manifest keeps N-1 core-only readers compatible while rejecting too-new op
     (error) => error instanceof ManifestCompatibilityError && error.code === 'OPENPRD_FORMAT_TOO_NEW',
   );
 });
+
+test('ensureProjectManifest removes the retired context capsule format from old projects', async () => {
+  const project = await makeProject();
+  const manifest = await ensureProjectManifest(project, {
+    clock: () => new Date('2026-07-10T12:00:00.000Z'),
+    idFactory: () => 'project-fixture',
+  });
+  await fs.writeFile(projectManifestPath(project), `${JSON.stringify({
+    ...manifest,
+    formats: { ...manifest.formats, contextCapsule: 1 },
+  }, null, 2)}\n`);
+
+  const migrated = await ensureProjectManifest(project);
+  assert.equal(Object.hasOwn(migrated.formats, 'contextCapsule'), false);
+  assert.equal(Object.hasOwn(JSON.parse(await fs.readFile(projectManifestPath(project), 'utf8')).formats, 'contextCapsule'), false);
+});

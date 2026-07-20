@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { readJson, writeJson } from './fs-utils.js';
-import { upsertSessionRegistryEntry } from './session-registry.js';
 import { timestamp } from './time.js';
 
 const OPENPRD_HARNESS_DIR = path.join('.openprd', 'harness');
@@ -81,25 +80,6 @@ async function upsertSessionBinding(projectRoot, sessionId, patch = {}) {
     updatedAt: patch.updatedAt ?? timestamp(),
   };
   await writeJson(filePath, next);
-  await upsertSessionRegistryEntry(projectRoot, normalized, {
-    laneKind: patch.laneKind ?? previous?.laneKind ?? 'requirement',
-    tool: patch.tool ?? previous?.tool ?? 'codex',
-    threadId: patch.threadId ?? previous?.threadId ?? null,
-    changeId: patch.changeId ?? next.changeId ?? null,
-    taskHandle: patch.taskHandle ?? next.taskHandle ?? null,
-    workUnitId: patch.workUnitId ?? next.workUnitId ?? null,
-    versionId: patch.versionId ?? next.versionId ?? null,
-    digest: patch.digest ?? next.digest ?? null,
-    title: patch.title ?? next.title ?? null,
-    targetRoot: patch.targetRoot ?? next.targetRoot ?? null,
-    promptPreview: patch.promptPreview ?? next.promptPreview ?? null,
-    reviewStatus: patch.reviewStatus ?? next.reviewStatus ?? null,
-    gateStatus: patch.gateStatus ?? next.gateStatus ?? null,
-    gateActive: patch.gateActive ?? next.gateActive ?? false,
-    bindingPath: filePath,
-    statePath: path.join(projectRoot, '.openprd', 'harness', 'session-states', `${normalized.replace(/[^A-Za-z0-9._-]/g, '_')}.json`),
-    updatedAt: next.updatedAt,
-  });
   return {
     ...next,
     path: filePath,

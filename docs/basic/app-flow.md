@@ -14,7 +14,7 @@ OpenPrd 的核心流程：用户在项目中初始化或接入 `.openprd/` 工�
 
 ### 状态接入与工作区
 
-- Agent 先读取 `openprd run --context`、`status`、`next` 等只读状态，再决定下一步。
+- Agent 直接根据当前会话、用户消息和必要的 `status`、`next` 等 repo-local 状态决定下一步。
 - `.openprd/` 是唯一工作区；新 change/spec/task/archive 都写入 `.openprd/changes/`、`.openprd/specs/` 和 `.openprd/archive/changes/`。
 - 更新旧项目时会把历史根目录 `openprd/` 工作产物迁入 `.openprd/`。
 
@@ -41,7 +41,7 @@ OpenPrd 的核心流程：用户在项目中初始化或接入 `.openprd/` 工�
 - 界面、页面、视觉、样式和前端体验任务在真正进入实现前，先读取 `$openprd-frontend-design` 和 `.openprd/design/`。
 - 先补 `facts-sheet`、`asset-spec`、`image-preflight`、`direction-plan`、`selected-direction` 这组活动合同，避免事实瞎编、素材空心和 3 个方向都收敛成同一种安全极简解。
 - 若用户已经提供效果图、设计稿、参考截图或其他明确参考图，默认把它当成主参考源；现有 starter、样式库和 design tokens 只在足够接近时作为加速器，不得反过来主导最终风格。
-- 空白前端冷启动如果用户原话已经明确页面主题、模块范围或“直接实现”的意图，优先用 `openprd run --context --message <用户原话>` 对齐路径。
+- 空白前端冷启动如果用户原话已经明确页面主题、模块范围或“直接实现”的意图，直接用 mini-plan 对齐路径并进入 `design-starter -> Patch Mode`。
 - `design-starter` 生成入口文件后，默认立即进入 `Patch Mode`，围绕同一路径继续细化页面，而不是 delete-first 后再重建。
 - `Patch Mode` 的完成定义：不只是在对话里说明计划、下载素材或补合同，而是把最终结构、样式、真实图片或参考约束真正落进入口文件，清掉主要占位，再同步 active design artifacts。
 - 界面类 L1/L2 需求在 review 阶段可通过 `reviewPresentation.designDirections` 把 3 个 `imagegen` 交互方向卡片放进 `review.html`；用户用 `openprd review . --mark confirmed --direction <id>` 一次完成 review 确认和方向选定。
@@ -76,10 +76,10 @@ OpenPrd 的核心流程：用户在项目中初始化或接入 `.openprd/` 工�
   - 旧版项目如果存在根目录 `openprd/changes/`、`openprd/specs/` 或 `openprd/archive/changes/`，`setup/update/fleet --update-openprd` 会自动迁移到 `.openprd/`，冲突文件保留在旧目录并报告人工处理。
   - `.openprd/README.md` 与模板层 `README.md` 默认使用简体中文，英文切换入口写到 `README_EN.md`，如需兼容旧外链可保留 `README_CN.md` 作为跳转页。
   - 仓库首页 README、对外概览和带文字的示意图，默认先按用户可见需求类型解释“直接处理 / 现有功能优化 / 新功能/新流程方案”，优先说明用户场景、确认方式、收益和风险；如果提供英文版，文字图片也要成对维护。
-  - Codex hook 默认使用 `lite`：在明确 OpenPrd/深度流程提示词和新产品、模块、流程类需求下注入上下文，用只匹配直接编辑工具的轻量 advisory 提醒 Agent 后台维护材料，并在本轮结束前通过 `Stop` 回顾是否值得沉淀项目经验；除原始凭证读取等真实安全边界外，不阻断工具调用。
+  - Codex hook 默认使用 `lite`：`UserPromptSubmit` 只记录提示，用只匹配直接编辑工具的轻量 advisory 提醒 Agent 后台维护材料，并在本轮结束前通过 `Stop` 回顾是否值得沉淀项目经验；除原始凭证读取等真实安全边界外，不阻断工具调用。
 - 当前环境识别：`setup/update` 会把 `runtimeDetection` 和 `platformCapabilityPacks` 写入 install manifest，并初始化 `runtime-environment.json`。
   - Codex hook 每次收到 SessionStart、UserPromptSubmit、PreToolUse、PostToolUse 或 Stop 时，把 hook/session payload 观察到的 active client、surface、confidence、session、turn、agent type、model、evidence 和 observed capabilities 写入 runtime environment。
-  - `run --context` 与 `doctor` 再读取这份状态，先识别当前对话平台，再选择 Codex、Claude Code 或 Cursor 对应能力包。
+  - `doctor` 会读取这份状态；Agent 也可直接读取 runtime environment，再选择 Codex、Claude Code 或 Cursor 对应能力包。
 - 开启对话画布：用户要求“开启画布协同模式”或需要用界面标注协作时，Agent 运行 `openprd canvas . --daemon --open`。
   - 当前 runtime 没有 thread/session 证据时，改用 `openprd canvas . --thread <id> --thread-title <name> --daemon --open` 或 `--session <id> --session-title <name>` 显式隔离。
   - thread/session ID 决定存储分桶；title/name 只用于浏览器右侧“当前对话”展示和后台 daemon 透传，不参与 session-key 生成；runtime evidence 若提供 `threadTitle` / `conversationTitle` / `sessionTitle` 会自动显示。
@@ -134,9 +134,9 @@ OpenPrd 的核心流程：用户在项目中初始化或接入 `.openprd/` 工�
 - 业务护栏澄清：当 PRD 命中免费用户、额度、AI 生成、模型调用或第三方成本风险时，`next` 会把成本来源、额度限制、滥用防护、监控信号、报警阈值和止损动作列为待确认问题。
 - 大量只读扫描：当用户明确要求深度调研、全面梳理、交叉验证、并行排查或对标复刻时，OpenPrd discovery skill 负责判断是否启动只读 subagent，并要求主 Agent 汇总证据后再写入 claim、requirements、specs 或 tasks。
 - 实现或继续任务：用户明确要求开发、实现、继续、深度调研、深度对标或复刻落地时，Agent 才能运行执行命令。
-  - `openprd run --context` 优先推荐已确认 PRD 的 change 生成；已有 active change 时按任务 `type` 统计实质实现任务并给出执行模式建议。
+  - Agent 根据当前需求与 active change 选择执行对象，并按任务 `type`、写入范围和风险决定执行模式。
   - 执行模式规则：L0 或小范围修正默认 `serial`；`implementation` 任务达到 3 个时建议 `parallel-workers`，由主 Agent 分配写入范围清晰的 worker shard，再统一 review、integrate 和总验证；达到 10 个时升级 `parallel-workers-isolated`，建议独立 worktree 或等价隔离环境并通过单任务 Loop 会话推进。
-  - 显式继续历史会话时，`run --context` 先查 `~/.openprd/registry/sessions.jsonl`，先找回真实 workspace，再从目标工作区的 session binding、requirement gate、事件和 work unit 线索恢复该需求线；只要恢复到别的 workspace、或命中显式 session / task-handle / work-unit，默认升级为隔离执行建议，不与当前 active change 共用一条执行线。
+  - 显式继续历史会话时，由宿主 Agent 或应用恢复对应会话；OpenPrd 只保留当前 workspace 的 repo-local binding，不维护全局 session 归属表。
   - 任务进入 loop 前会带上测试策略和执行策略：小范围逻辑优先单元测试，触达 CLI/API/Agent 契约或跨模块状态时升级集成/契约验证，触达用户主路径、视觉、小程序、性能、安全或成本风险时升级端到端或专项验证；worker 任务显式声明 `write-scope`、`local-verify` 和 `integration-owner`。固定 70/20/10 只作健康形状参考，不作硬门禁。
   - 真实 `openprd loop --run --agent codex` 会在启动子会话前运行 `codex --version`；Codex 平台原生可选依赖缺失时，OpenPrd 停止 `codex exec` 并输出缺失包、诊断和 `npm install -g @openai/codex@latest`，只有用户显式使用 `doctor --tools codex --fix` 或 `loop --run --agent codex --repair-agent` 时才执行全局修复。
   - 新增或修改代码文件前后，Agent 先对 touched files 运行 `openprd dev-check` 或 `scripts/openprd-dev-check.mjs`；出现需要关注的文件时，最终回复必须以 **后续建议** 为标题，按 🔴 → 🟠 → 🟡 排序说明影响位置、关注程度、本次处理和后续建议。
@@ -160,18 +160,18 @@ OpenPrd 的核心流程：用户在项目中初始化或接入 `.openprd/` 工�
 
 ## 状态变化
 
-- `run --context` 只产生建议上下文，不自动授权执行；如果显式继续历史会话，恢复顺序是“全局 session registry -> 目标 workspace 的 repo-local 线索 -> change/task/work unit”，而不是“先用当前 workspace 的 active change 猜一个相近目标”。
-- `run --context` 会附带 runtime environment 摘要；如果 active client 是 Codex，就优先使用 Codex 能力包，但 Image 2、Computer Use、Codex-owned browser window、对话协同画布和当前线程文本桥接等 surface-dependent 能力仍必须以当前工具面或 hook/session evidence 为准。
+- OpenPrd 不选择或注入 Agent 上下文；显式继续历史会话由宿主 Agent 或应用精确恢复，不能用当前 active change 猜一个相近目标。
+- runtime environment 仍作为 repo-local 平台证据；Image 2、Computer Use、Codex-owned browser window、对话协同画布和当前线程文本桥接等 surface-dependent 能力必须以当前工具面或 hook/session evidence 为准。
 - `canvas` 状态按 thread/session 分桶，不写入全局 active 画布。
   - 显式 `--thread/--session` 的优先级高于环境变量和 runtime environment；`--thread-title/--session-title` 只更新展示名，不改变分桶。只有完全缺少对话证据时才使用 workspace fallback，且输出会提醒 Agent 补显式绑定。
   - 后台服务状态写入当前画布 session 的 `server.json/server.log`，同一 binding 可用 `openprd canvas . --thread <id> --stop` 停止。
   - 选区导出操作会在 `ops.json` 中记录 `manual-export`、`download-selected-image` 或 `codex-handoff` 意图、选中元素数量、选中元素 ID 和页面语言；点击“发送给 Codex”会追加 `handoff` 和默认的 `handoff-relay` 操作，保存目标平台、交接 transport、导出图路径、提示文本、当前 binding 标题以及 `relays/` 里的 payload/status/log。
   - `agent-foreground-relay` 只作为自动 relay 不可用时的兜底队列，状态由当前 Agent 用 `--bridge-outbox --claim`、`--bridge-sent` 和 `--bridge-failed` 推进。
-- `run --context` 和 `run --verify` 默认只面向当前项目主验证状态；`mode=reference` 的 discovery run 不会自动混入主上下文或主校验，参考调研需通过 `openprd discovery` 命令单独查看。
+- `run --verify` 默认只面向当前项目主验证状态；`mode=reference` 的 discovery run 不会自动混入主校验，参考调研需通过 `openprd discovery` 命令单独查看。
 - 默认 hook 保留轻量 PreToolUse advisory，并把 matcher 收窄到直接编辑工具；`Stop` 不做完整工具级遥测，只在本轮结束前回顾 touched files 和 verify/finish 信号。
   - 若本轮 touched code files 需要用户关注，Stop 会把带标题的 **后续建议** 表格注入最终回复；否则再判断是否生成项目经验草案。
   - `guarded` 会额外覆盖 shell 工具，只有 `full` profile 才启用更重的全量工具级诊断。
-  - hook 只负责注入或打开 requirement-intake 安全通道，不把 matcher 当作最终 L2 判断；Agent 需要先用 `openprd-requirement-intake` 做语义分流，L0 直接处理，L1 给对话内 mini-plan，L2 才进入 PRD/review/change/tasks。
+  - hook 只记录或打开 requirement-intake 安全通道，不把 matcher 当作最终 L2 判断；Agent 需要先用 `openprd-requirement-intake` 做语义分流。
   - 带报错、日志、复现、根因排查等故障证据且用户明确要求直接修复的小型 bugfix 不进入需求入口，已打开入口也接受“确认修复”等自然确认词。
 - `loop --run`、`tasks --advance`、`discovery --advance`、`finish --commit` 只有在用户明确执行意图下才进入执行状态。
 - 深度 discovery 的只读 subagent 输出只作为候选证据，最终状态更新仍由主 Agent 通过 OpenPrd claim、任务和验证流程落地。

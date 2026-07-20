@@ -289,7 +289,6 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.equal(generatedAgents.includes('spark-code-researcher'), false);
     const generatedRouterSkill = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-router', 'SKILL.md'), 'utf8');
     assert.ok(generatedRouterSkill.includes('automation-safe mode'));
-    assert.ok(generatedRouterSkill.includes('不要运行 `openprd run . --context`'));
     assert.ok(generatedRouterSkill.includes('按该自动化自己的 runbook、日志、测试和通知合同收口'));
     assert.ok(generatedRouterSkill.includes('.openprd/harness/command-catalog.md'));
     assert.ok(generatedRouterSkill.includes('$openprd-shared'));
@@ -297,8 +296,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedRouterSkill.includes('$openprd-frontend-design'));
     assert.ok(generatedRouterSkill.includes('$openprd-harness'));
     assert.ok(generatedRouterSkill.includes('$openprd-benchmark-router'));
-    assert.ok(generatedRouterSkill.includes('openprd run . --context --message <用户原话>'));
-    assert.ok(generatedRouterSkill.includes('不要只跑不带 message 的 `openprd run . --context`'));
+    assert.ok(generatedRouterSkill.includes('OpenPrd 不选择或注入 Agent 上下文'));
     assert.ok(generatedRouterSkill.includes('design-starter -> Patch Mode'));
     assert.ok(generatedRouterSkill.includes('不要用词表决定工具'));
     assert.ok(generatedRouterSkill.includes('用户目标、期望产物、交付阶段和证据缺口'));
@@ -529,7 +527,6 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedCodexHook.includes('是否纳入后续视觉对比'));
     assert.ok(generatedCodexHook.includes('visual-prepare'));
     assert.ok(generatedCodexHook.includes('contact sheet'));
-    assert.ok(generatedCodexHook.includes('至少产出一份 visual-compare / focus-board / parallel-board / verification-board / alignment-board / centering-board 证据图'));
     assert.ok(generatedCodexHook.includes('截图实测证据板'));
     assert.ok(generatedCodexHook.includes('对齐辅助线证据板'));
     assert.ok(generatedCodexHook.includes('内部居中证据板'));
@@ -734,10 +731,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
       assert.equal(eventPayload.continue, true);
       assert.equal(eventPayload.should_stop, undefined);
       assert.equal(eventPayload.additional_contexts, undefined);
-      assert.equal(eventPayload.hookSpecificOutput.hookEventName, eventName);
-      assert.ok(eventPayload.hookSpecificOutput.additionalContext.includes('OpenPrd ContextCapsule v1'));
-      assert.ok(eventPayload.hookSpecificOutput.additionalContext.includes('OpenPrd 上下文只是建议'));
-      assert.equal(eventPayload.hookSpecificOutput.additionalContext.includes('Follow the recommended OpenPrd run command'), false);
+      assert.equal(eventPayload.hookSpecificOutput, undefined);
     }
     const events = await fs.readFile(path.join(project, '.openprd', 'harness', 'events.jsonl'), 'utf8');
     assert.ok(events.includes('allowed-high-risk'));
@@ -751,10 +745,6 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(observedRuntimeEnvironment.active.observedCapabilities.includes('codex-hooks'));
     const hookState = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'hook-state.json'), 'utf8'));
     assert.equal(hookState.runtimeEnvironment.activeClient, 'codex');
-    const runContext = await runWorkspace(project, { context: true });
-    assert.equal(runContext.runtimeEnvironment.active.activeClient, 'codex');
-    assert.equal(runContext.runtimeEnvironment.platformCapabilityPacks.some((pack) => pack.id === 'codex'), true);
-
     await fs.appendFile(path.join(project, '.codex', 'skills', 'openprd-harness', 'SKILL.md'), '\nmanual drift\n');
     const drifted = await doctorWorkspace(project, { tools: 'codex', enableUserCodexConfig: true, codexHome });
     assert.equal(drifted.ok, false);

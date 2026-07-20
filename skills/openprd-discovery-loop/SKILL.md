@@ -91,10 +91,7 @@ description: 把自然语言里的 OpenPrd 或 OpenSpec 深度、持续、全面
    - `$HOME/.claude/skills/openprd-shared/SKILL.md`
    - `$HOME/.codex/skills/openprd-shared/SKILL.md`
 2. 除非用户只是在问原理，否则先运行或检查 `openprd status` 和 `openprd next`
-3. 需要 hook-stable 执行时，运行：
-   - `openprd run <path> --context`
-   - 再执行推荐的 task、discovery 或 workflow 命令
-   - `openprd run <path> --verify`
+3. 需要验证工作区状态时运行 `openprd run <path> --verify`；调研条目由 Agent 结合当前任务和 discovery 状态选择。
 4. 如果 `.openprd/discovery/current.json` 不存在，用选定模式初始化：
    - `openprd discovery <path>`
    - `openprd discovery <path> --mode reference --reference <path>`

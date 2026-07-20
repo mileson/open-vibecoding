@@ -78,71 +78,6 @@ function detectRuntime(evidence = []) {
   };
 }
 
-function renderContextMarkdown(client, capsule) {
-  const normalized = normalizeClient(client);
-  if (capsule?.schemaVersion === 1 && Array.isArray(capsule.entries)) {
-    const lines = [
-      `OpenPrd ContextCapsule v1 (${normalized})`,
-      `digest: ${capsule.digest ?? 'unknown'}`,
-      `revision: ${capsule.revision ?? 'unknown'}`,
-      `delivery: ${capsule.delivery ?? 'full'}`,
-      `budget: ${capsule.budget?.estimatedTokens ?? 0}/${capsule.budget?.limitTokens ?? 'unknown'} tokens`,
-    ];
-    for (const entry of capsule.entries) {
-      const value = entry?.value;
-      if (entry?.id === 'recommended-next-step') {
-        if (value?.title) lines.push(`next: ${value.title}`);
-        if (value?.reason) lines.push(`reason: ${value.reason}`);
-        continue;
-      }
-      if (entry?.id === 'task-progress') {
-        lines.push(`task: ${value?.summary ?? value?.lane ?? 'current'}`);
-        continue;
-      }
-      if (entry?.id === 'runtime-environment') {
-        lines.push(`runtime: ${value?.activeClient ?? 'unknown'} / ${value?.surface ?? 'unknown'}`);
-        continue;
-      }
-      if (entry?.id === 'requirement-gate') {
-        lines.push(`gate: ${value?.status ?? 'active'} (${value?.relevance ?? 'primary'})`);
-        continue;
-      }
-      if (entry?.id === 'project-health') {
-        lines.push(`health: ${value?.valid ? 'valid' : 'attention-required'}`);
-        continue;
-      }
-      if (entry?.id === 'current-focus') {
-        const focus = value?.focus?.changeId ?? value?.activeChange ?? value?.latestPrd?.title;
-        if (focus) lines.push(`focus: ${focus}`);
-        continue;
-      }
-      if (entry?.id === 'project-knowledge') {
-        lines.push(`knowledge: ${Array.isArray(value) ? value.length : 0} scoped item(s)`);
-      }
-    }
-    if (capsule.delivery === 'delta' && capsule.entries.length === 0) {
-      lines.push(`unchanged: reuse ${capsule.delta?.previousCapsuleDigest ?? 'previous capsule'}`);
-    }
-    return `${lines.join('\n')}\n`;
-  }
-  const sections = capsule?.sections ?? {};
-  const lines = [
-    `OpenPrd context (${normalized})`,
-    `capsule: ${capsule?.capsuleId ?? 'unknown'}`,
-    `revision: ${capsule?.projectRevision ?? 'unknown'}`,
-  ];
-  if (sections.taskContract) {
-    lines.push(`task: ${sections.taskContract.title ?? sections.taskContract.taskId ?? 'current'}`);
-  }
-  for (const fact of sections.pinnedFacts ?? []) {
-    lines.push(`fact: ${fact.text ?? fact.value ?? String(fact)}`);
-  }
-  for (const gate of sections.applicableGates ?? []) {
-    lines.push(`gate: ${gate.summary ?? gate.gateType ?? String(gate)}`);
-  }
-  return `${lines.join('\n')}\n`;
-}
-
 function renderDecision(client, decision = {}) {
   const normalized = normalizeClient(client);
   const allowed = decision.decision === 'allow' || decision.allowed === true;
@@ -165,13 +100,6 @@ function createAdapter(client, overrides = {}) {
     detectRuntime: overrides.detectRuntime ?? detectRuntime,
     describeCapabilities: (options = {}) => describeCapabilities(normalized, options),
     normalizeLifecycleEvent: (raw) => normalizeLifecycleEvent(normalized, raw),
-    renderContext: overrides.renderContext ?? ((capsule) => ({
-      schema: 'openprd.adapter-context.v1',
-      client: normalized,
-      format: 'text/markdown',
-      content: renderContextMarkdown(normalized, capsule),
-      capsuleDigest: capsule?.digests?.content ?? capsule?.digest ?? null,
-    })),
     renderDecision: overrides.renderDecision ?? ((decision) => renderDecision(normalized, decision)),
     can: (capability, options = {}) => capabilityAvailable(describeCapabilities(normalized, options), capability),
   });
@@ -188,6 +116,5 @@ export {
   adapterContractDigest,
   createAdapter,
   detectRuntime,
-  renderContextMarkdown,
   renderDecision,
 };

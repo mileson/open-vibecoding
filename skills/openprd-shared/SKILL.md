@@ -57,9 +57,9 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
    - 如果工作区仍有关键不确定性，如实报告 readiness evidence 或 `workspaceAttention`，不要伪称整体就绪。
 8. 优先使用图结构和状态来推导下一步。
    - 使用 `nextReadyNode`、blocker、当前产物和校验状态来解释为什么接下来该这么做。
-9. 执行循环优先依赖 hook-stable 的 run 状态。
-   - 用 `openprd run <path> --context` 选择下一个任务、discovery 条目或工作流动作。
-   - 把 `run --context` 当作建议上下文，而不是直接执行命令。
+9. 执行循环由 Agent 自己管理会话上下文。
+   - 用当前用户消息、任务相关源码/文档和 repo-local 工作区事实选择下一步。
+   - OpenPrd 不生成或注入 Agent 任务上下文。
    - 声称就绪前运行 `openprd run <path> --verify`。
    - 使用 `.openprd/harness/run-state.json`、`iterations.jsonl` 和 `learnings.md` 承接新会话。
    - 用户给出会话 ID 并要求继续时，按工具无关的历史会话精确续接；不要要求工具专属 ID，也不要用当前 active change、相似历史或 requirement gate 替代指定会话。
@@ -119,7 +119,7 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
    - `.openprd/harness/install-manifest.json` 的 `optionalCapabilities` 用来记录非阻断式增强建议，例如 Context7、DeepWiki。当前任务明显受益但状态仍是 `recommended` 时，在后续建议里解释它能帮什么、附官方文档和 GitHub 链接，并可顺手提出“如果你愿意，我可以按当前客户端帮你补配置”；不要因为它未配置就阻断当前任务。
    - `.openprd/harness/install-manifest.json` 的 `runtimeDetection` 和 `platformCapabilityPacks` 用来拆开不同 agent 平台的专属能力；Agent 应先识别当前对话客户端，再启用对应能力包，不要把 Codex、Claude Code、Cursor 的工具路径混在一套固定规则里。
 16. hook 重量要和任务风险匹配。
-   - 默认 Codex hook profile 是 `lite`：`UserPromptSubmit` 注入上下文；`PreToolUse` 对 requirement/research/design/Patch Mode 只给 `allowed-with-*-attention`；`Stop` 只给 task-scoped 证据与后台维护建议。原始 vault 等真实敏感信息边界才可由 OpenPrd 阻断。
+   - 默认 Codex hook profile 是 `lite`：`UserPromptSubmit` 只记录当前提示；`PreToolUse` 对 requirement/research/design/Patch Mode 只给 `allowed-with-*-attention`；`Stop` 只给 task-scoped 证据与后台维护建议。原始 vault 等真实敏感信息边界才可由 OpenPrd 阻断。
    - 只有项目明确需要完整 hook 遥测或临时深度诊断时才使用 `full`。
 17. 需求流程先分流再加门禁。
    - 分流优先使用 `$openprd-requirement-intake`，不要按固定关键词判断。

@@ -15,7 +15,7 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 
 ## Automation-safe mode
 
-识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task 时，默认不要注入 OpenPrd context，不要运行 `openprd run . --context`，也不要要求 `openprd dev-check` / `quality` / `doctor`。按自动化自己的 runbook、日志、测试和通知合同收口；只有 prompt 明确说明这是 OpenPrd 维护任务或显式启用 OpenPrd 时才恢复互动流程。
+识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task 时，默认不要要求 `openprd dev-check` / `quality` / `doctor`。按自动化自己的 runbook、日志、测试和通知合同收口；只有 prompt 明确说明这是 OpenPrd 维护任务或显式启用 OpenPrd 时才恢复互动流程。
 
 ## 动手前
 
@@ -23,13 +23,11 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 2. 从 `.openprd/` 重建当前工作区状态
 3. 如果用户期待自动化 agent 引导，运行 `openprd doctor <path>`，必要时用 `openprd setup <path>` 或 `openprd update <path>` 修复
    - `init/setup/update/doctor` 可能会在 `.openprd/harness/install-manifest.json` 的 `optionalCapabilities` 里记录 Context7、DeepWiki 等非阻断式增强建议。把它当成软提醒：初始化、诊断和当前任务都不因它失败；只有当前任务会明显受益时，才在后续建议里解释能力价值、附官方文档 / GitHub 链接，并视情况提出可代为补配置。
-4. 选择执行单元前，优先运行 `openprd run <path> --context`
-5. 把 `openprd run <path> --context` 当作建议，不要自动执行其中的写入命令
-   - 如果当前轮是空白工作区的前端/页面冷启动，而且用户已经明确给出页面主题、模块范围或“直接实现”的意图，优先改用 `openprd run <path> --context --message <用户原话>`，不要先跑不带 message 的 context
-   - 如果这类前端冷启动在带 message 后仍短暂返回 `clarify-user`，但用户原话已经足够明确，就把它当成 requirement 摘要级提醒；先用 3 到 5 行 mini-plan 收口，再按 `$openprd-frontend-design` 的 `design-starter -> Patch Mode` 路径继续，不要回到 `docs/basic/` 占位文档里打转
-   - 同时查看推荐里的 `executionMode` 和 `parallelPlan`：L0/小范围修正默认 `serial`，中等规模 L1/L2 可推荐 `parallel-workers`，高风险或大规模实现再升级到 `parallel-workers-isolated`
+4. Agent 根据当前会话、用户消息和任务相关代码选择执行单元；OpenPrd 不接管上下文
+5. 空白前端冷启动且用户目标明确时，先用 3 到 5 行 mini-plan 收口，再按 `$openprd-frontend-design` 的 `design-starter -> Patch Mode` 路径继续
+   - 执行策略按任务边界判断：L0/小范围修正默认 `serial`，中等规模 L1/L2 可推荐 `parallel-workers`，高风险或大规模实现再升级到 `parallel-workers-isolated`
    - 如果用户给出会话 ID 并要求继续，按工具无关的历史会话精确续接；不要要求或使用工具专属 ID，也不要用当前 active change、相似历史或当前 requirement gate 替代该会话 ID
-   - 如果用户没有给 ID，但明确描述了某个已有需求、change、task 或 work unit，先把这段描述交给 `openprd run <path> --context --message <用户原话>` 做显式对象解析，不要先默认拿当前 active change
+   - 如果用户没有给 ID，但明确描述了某个已有需求、change、task 或 work unit，按当前会话和 repo-local 材料定位对象，不要先默认拿当前 active change
 6. 需求复杂度先交给 `$openprd-requirement-intake` 分流；不要按固定关键词判断。它会根据影响面、未知数、决策成本和验证成本判断需求类型，并保留内部路由码对照：直接处理=L0、现有功能优化=L1、新功能/新流程方案=L2；默认把路由码并进“需求类型：直接处理（L0）”这类标签里，只有内部排障确实受益时才额外补“内部路由码”
    - 既有 requirement、PRD、review、change、tasks 和实现记录属于冻结历史，不根据当前代码推断、补写或改写。旧功能重新进入需求流程时，为本轮创建新的 current requirement/change 并引用历史；`docs/basic/` 与代码说明书是活文档，可随当前实现后台维护。
    - 如果需求涉及界面、页面、视觉、样式或前端体验，判断是否属于“大界面改动”：会改变信息架构、页面布局、主视觉、关键路径或核心组件密度/层级。大界面改动由 Agent 在后台维护视觉方案评审，并选取可逆默认方向继续；用户明确选择时再覆盖默认方向。
@@ -62,7 +60,7 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 23. hook 默认不因 PRD、review、change、tasks、设计合同、测试报告或视觉证据尚未补齐而阻断用户要求的正常实现。缺失材料由 Agent 在后台自动补齐；来不及补齐时继续完成安全范围内的工作，并在收口如实说明证据状态，不把流程作业转嫁给用户。
 24. 风险识别只向 Agent 提供提醒和更安全的实现建议，不承担授权审批。命中“兜底、写死、补数据、权益、额度、生产、支付、删除、账号”等词时先看真实动作对象，优先改成配置、迁移、标准状态机、幂等脚本或可回滚发布路径并继续。OpenPrd 不因风险词或动作类型阻断工具调用，也不向用户索取确认、指定句子、摘要、digest、work-unit id 或命令；是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断。
 25. 当 `doctor` 报告生成引导漂移时，读取 `.openprd/harness/drift-report.json`
-26. `openprd run . --context` 会返回 `runtimeEnvironment`。先按 `.openprd/harness/runtime-environment.json` 和 install manifest 的 `platformCapabilityPacks` 判断当前对话是在 Codex、Claude Code 还是 Cursor，再启用对应能力；Codex Image 2、Computer Use、Codex-owned browser window、对话协同画布和当前线程文本桥接都必须有当前 surface 或 hook/session 证据，不能只凭 Codex CLI 或配置文件存在来启用。当前线程桥接只在 Codex App 明确提供线程发送工具时使用；画布图片仍以导出路径或 Markdown 图片引用作为证据，不宣称网页能自动直发附件。
+26. 先按 `.openprd/harness/runtime-environment.json` 和 install manifest 的 `platformCapabilityPacks` 判断当前对话是在 Codex、Claude Code 还是 Cursor，再启用对应能力；Codex Image 2、Computer Use、Codex-owned browser window、对话协同画布和当前线程文本桥接都必须有当前 surface 或 hook/session 证据。当前线程桥接只在 Codex App 明确提供线程发送工具时使用。
 
 ## 主工作流
 
@@ -81,14 +79,11 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 - 如果生成引导存在但漂移了：
   - `openprd update <path>`
   - `openprd doctor <path>`
-- hook 驱动执行循环使用：
-  - `openprd run <path> --context`
+- hook 证据与验证使用：
   - `openprd run <path> --verify`
-  - 让 `.openprd/harness/run-state.json`、`iterations.jsonl` 和 `learnings.md` 成为持久循环状态
-  - 不要把 `run --context` 建议当作直接用户命令
-  - 用户给出会话 ID 续接历史任务时，使用 `openprd run <path> --context --message <用户原话或会话ID>` 保留通用会话 ID 语义；先恢复指定会话，不要让当前 active change 抢主线
-  - 用户没有给 ID、但明确描述了已有需求/任务对象时，也使用 `openprd run <path> --context --message <用户原话>`；先解析对应的 change/task/work unit，再决定是否沿用当前工作区状态
-  - 默认 lite Codex hooks 会为明确的 OpenPrd、PRD、深度调研、对标复刻、standards、fleet、文档标准化提示词，以及结构上较复杂的需求注入 `$openprd-requirement-intake` 分流提示；直接处理(L0)不打开 requirement 维护，现有功能优化(L1)用对话内 mini-plan 承接，新功能/新流程方案(L2)在后台维护 PRD/review/change/tasks；`PreToolUse` 不因这些材料缺失阻断实现；`Stop` 只提醒 Agent 评估是否值得生成项目经验草案，不强制用户确认
+  - 让 `.openprd/harness/run-state.json`、`iterations.jsonl` 和 `learnings.md` 成为持久证据状态
+  - 用户给出会话 ID 续接历史任务时，由宿主 Agent 或应用精确恢复指定会话，不要让当前 active change 抢主线
+  - 默认 lite Codex hooks 的 `UserPromptSubmit` 只记录提示；`PreToolUse` 处理安全注意项；`Stop` 提醒 Agent 评估是否值得生成项目经验草案
   - 只有当项目确实需要完整 hook 遥测或临时深度诊断时，才用 `openprd update <path> --hook-profile full`
 - 长程实现循环使用：
   - `openprd loop <path> --init`
@@ -131,7 +126,7 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 - Agent 在对话里先用业务和产品语言复述：这次主要给谁、什么场景、先解决什么、先不碰什么、不能影响什么、会带来哪些业务风险。默认选择可逆方案并明示假设；只有答案会实质改变结果时才追问 1 个最高价值问题。
 - `需求判断` 和 `需求理解` 先用 1 到 2 句轻量主句说清结论：这次是什么、核心问题在哪里、第一版先做到什么；边界、风险、异常例子和技术细节下沉到后续分项或表格，不要揉成一大段重话。
 - L2 的 requirement 摘要和 PRD/review 流程由 Agent 后台完成；用户已要求实现时继续推进，不创建确认停顿。
-- 如果 `openprd run . --context` 仍然建议 `clarify-user`，把它当作后台需求注意项：整理 `需求摘要`，选择可逆默认方案并继续用户已要求的安全范围；只有真实产品歧义会明显改变结果时才提 `1 个最高价值澄清点`。
+- 整理 `需求摘要` 时选择可逆默认方案并继续用户已要求的安全范围；只有真实产品歧义会明显改变结果时才提 `1 个最高价值澄清点`。
 - `面向个人消费者场景 / 面向企业服务场景 / 以 Agent 为主要使用场景` 不是只给后面 PRD 用的模板方向；澄清阶段就要前移场景视角。面向个人消费者场景更看首次场景、用户感受和回访动力；面向企业服务场景更看拍板方、使用方、推进方和上线阻力；Agent 场景更看自主边界、人工兜底和失败恢复。
 - 当用户一开始不想讲太细时，可以先给 2 到 3 个方向和取舍供用户选，不要逼用户先回答完整 schema。
 - 在后台分阶段维护问题、用户、范围、成功标准和开放问题；复杂需求先让 OpenPrd 完成意图归一化、项目上下文映射和产品质量自检，不要把固定问题墙砸给用户
@@ -202,7 +197,7 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 ## 安全默认值
 
 - 当下一步存在歧义时，优先用 `openprd next`
-- 当任务属于一般执行循环时，优先用 `openprd run --context`
+- 当任务属于一般执行循环时，由 Agent 自己维护上下文；阶段或最终验证使用 `openprd run --verify`
 - 当任务是需要拆成“每个任务一个全新 agent 会话”的实现工作时，优先用 `openprd loop --plan` 和 `openprd loop --run --dry-run`
 - 当用户要求“看看、规划、梳理、分析、评估、explain、review”或列出影响文件时，优先保持只读检查
 - 除非当前用户消息明确要求执行，否则不要运行 `openprd loop --run`、`openprd tasks --advance`、`openprd discovery --advance`、`openprd loop --finish --commit`、git commit 或 git push

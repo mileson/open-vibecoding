@@ -189,7 +189,7 @@ function bootstrapScript() {
     'cd "$ROOT"',
     'echo "[openprd-loop] workspace: $PWD"',
     'openprd doctor . --tools all',
-    'openprd run . --context',
+    'openprd run . --verify',
     'git status --short || true',
     '',
   ].join('\n');

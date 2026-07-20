@@ -50,7 +50,7 @@ description: 为 OpenPrd 的界面、页面、视觉、样式和前端体验任�
 8. 如果用户还没有给参考方向，先补 `direction-plan.md`，明确 3 个异源方向；每个方向都要有不同审美主张和记忆点。
 9. 用户选定方向后，再补 `selected-direction.md`，把选中的 lens、theme、layout、组件、审美主张、记忆点和风险锁定。
 10. 如果用户已经给了效果图、设计稿、参考截图或其他明确参考图，先把它视为主参考源：优先锁定它的版式、层级、主视觉和关键路径；`starter / lens / theme / layout` 只作为实现加速器，不作为高于参考图的裁决源。
-11. 如果当前是空白工作区的前端/页面冷启动，而且用户原话已经给了明确的页面主题、模块范围或“直接实现”的意图，优先运行 `openprd run . --context --message <用户原话>`，不要先跑不带 message 的 `run --context`。
+11. 如果当前是空白工作区的前端/页面冷启动，而且用户原话已经给了明确的页面主题、模块范围或“直接实现”的意图，直接用 3 到 5 行 mini-plan 收口并进入 `design-starter -> Patch Mode`。
 12. 跑完 `design-starter` 后，立即进入 `Patch Mode`：把生成的入口文件当成稳定基座，在同一路径里细化结构、内容、样式和交互。
 13. 最后再进入验证，并用 `.openprd/design/checklists/ui-quality-gate.md` 和 `.openprd/design/anti-slop.md` 做自检。
 
@@ -58,8 +58,8 @@ description: 为 OpenPrd 的界面、页面、视觉、样式和前端体验任�
 
 如果当前工作区几乎没有前端入口文件，或只有 `.openprd/` 与说明文档：
 
-1. 先运行一次 `openprd run . --context` 看建议路径；如果当前轮用户已经把页面主题、模块范围或“直接实现”的意图说清，优先带 `--message <用户原话>`，让建议基于当前请求，而不是只看空白工作区状态。
-2. 如果建议已经是轻量原型/轻量实现路径，或这类 blank frontend task 在带 message 后仍短暂返回 `clarify-user` 但用户原话已足够明确，不要继续长时间翻 `docs/basic/` 占位文档。
+1. 直接以当前用户消息和现有界面事实判断路径；OpenPrd 不替 Agent 选择上下文。
+2. 如果用户原话已足够明确，不要继续长时间翻 `docs/basic/` 占位文档。
 3. 立刻把 `.openprd/design/active/facts-sheet.md`、`asset-spec.md`、`image-preflight.md`、`direction-plan.md`、`selected-direction.md` 写成具体内容；如果当前任务是个人博客、通用静态首页、单页介绍或其他不依赖外部产品事实/品牌素材/真实图片的页面，也要明确写成“无外部事实依赖”“当前无品牌素材依赖”“真实图片不是页面成立前提”，不要长期保留 `pending`。
 4. 选 `.openprd/design/templates/` 里最接近的一份模板；如果用户已经给了效果图、设计稿或参考图，先挑最接近它的 starter / lens / theme / layout；只有确实接近时才复用，不接近就允许偏离默认组合，以用户参考图为准。如果当前任务已经有一句明确页面主题和模块范围，优先直接运行 `openprd design-starter . --starter <starter-id> --out index.html --brief "<页面主题>" --sections "<模块1|模块2|模块3>"`。只有像个人博客、工具台、纯结构化产品页这类确认不靠真实图片成立的静态首页，才补 `--no-external-facts --no-brand-assets --no-real-images`，让 starter 同步写实 active design artifacts，并把 `docs/basic/`、入口文件说明书和根目录文件夹 README 一起补到可过 standards 的状态；如果题目更像旅游、导览、展览、博物馆、城市、自然观察、案例展示或品牌内容页，默认不要带 `--no-real-images`，先让 starter 尝试补首批真实图片。
 5. `design-starter` 落地后进入 advisory Patch Mode：入口路径已经固定，优先在入口文件上细化结构、内容和样式；整页重写时先写同目录 sibling draft，再覆盖回入口，避免空窗。必要的事实、图片、模板读取仍可继续；hook 只记录 `allowed-with-patch-mode-attention`，不限制当前工具调用。最终回复按真实状态区分 starter、部分实现和完成实现。
@@ -69,7 +69,7 @@ description: 为 OpenPrd 的界面、页面、视觉、样式和前端体验任�
 - 对 blank static prototype，模板默认组合优先于“把所有 catalog 全读一遍再决定”；只有真的需要偏离模板默认组合时，才回头细读 `lenses / themes / layouts / components`。
 - 对 blank static prototype，优先使用 `openprd design-starter . --starter <starter-id> --out index.html`，把“挑模板”和“创建入口文件”变成确定动作，不要让 Agent 自己发明复制步骤。
 - 对 blank static prototype，如果 prompt 已经给了页面主题和模块范围，优先把它们带进 `design-starter` 的 `--brief` 与 `--sections`，让 starter 直接落真实首版，并顺手把基础文档和说明书从模板态拉成当前事实，而不是先生成整页占位再手工回填。
-- 对 blank static prototype，如果当前轮是用户直接给任务，优先让 `openprd run . --context --message <用户原话>` 参与当前请求解析，而不是只看空白工作区自身状态。
+- 对 blank static prototype，如果当前轮是用户直接给任务，直接以当前请求解析页面主题、模块范围与实现意图。
 - 如果用户已经给了效果图、设计稿、参考截图或其他明确参考图，默认把它当成这轮实现的主约束；只有现有 starter、theme、layout 足够接近时才复用它们，否则以参考图为准，不强行套库。
 - 没有明确参考图时，不要直接落回紫白渐变、白底卡片堆叠、通用 SaaS hero、Inter/Roboto/Arial/system-ui 默认字体栈，或“浅色留白 + 少量点缀色”的安全解；先写出更具体的气质和记忆点。
 - 选择 theme 时优先用有角色分工的字体、色彩、表面、动效和密度体系；如果必须使用中性字体或克制配色，要说明这是为扫描效率、品牌限制或可访问性服务，而不是偷懒。

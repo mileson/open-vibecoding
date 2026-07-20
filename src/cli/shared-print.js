@@ -66,10 +66,9 @@ function printKnowledgeSkillMatches(knowledgeSkills) {
   if (matched.length === 0) {
     return;
   }
-  const summary = knowledgeSkills?.summary ?? {};
   const mandatoryCheck = knowledgeSkills?.mandatoryCheck ?? null;
   if (mandatoryCheck?.required) {
-    console.log(`项目级经验候选: 找到 ${matched.length} 条${summary.hookInjected ? '，已加入当前上下文供判断' : ''}`);
+    console.log(`项目级经验候选: 找到 ${matched.length} 条`);
     console.log(`${mandatoryCheck.title}: ${mandatoryCheck.summary}`);
     for (const instruction of (mandatoryCheck.instructions ?? []).slice(0, 3)) {
       console.log(`- ${instruction}`);
@@ -78,7 +77,7 @@ function printKnowledgeSkillMatches(knowledgeSkills) {
       console.log(`当前判断线索: ${mandatoryCheck.focusSignals.join('；')}`);
     }
   } else {
-    console.log(`项目级 Skill: 命中 ${matched.length} 个${summary.hookInjected ? '，已自动注入当前上下文' : ''}`);
+    console.log(`项目级 Skill: 命中 ${matched.length} 个`);
   }
   for (const skill of matched.slice(0, 3)) {
     console.log(`- ${skill.skillName}: ${skill.matchSummary ?? '命中当前上下文'}`);

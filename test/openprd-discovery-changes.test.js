@@ -519,9 +519,11 @@ test('openprd applies accepted specs and archives changes', async () => {
   const backgroundOnlyState = await listOpenSpecTaskWorkspace(project, { change: 'checkout-flow' });
   assert.equal(backgroundOnlyState.summary.blockingPending, 0);
   assert.ok(backgroundOnlyState.summary.backgroundPending > 0);
-  const backgroundOnlyContext = await runWorkspace(project, { context: true, message: '继续实现当前范围' });
-  assert.equal(backgroundOnlyContext.recommendation.type, 'change-review');
-  assert.equal(backgroundOnlyContext.recommendation.workspaceAttention?.blocking, false);
+  const backgroundOnlyVerification = await runWorkspace(project, { verify: true });
+  assert.equal(backgroundOnlyVerification.action, 'run-verify');
+  assert.equal(backgroundOnlyVerification.scope.changeId, 'checkout-flow');
+  assert.equal(backgroundOnlyVerification.readiness.taskReady, true);
+  assert.equal(Object.hasOwn(backgroundOnlyVerification, 'context'), false);
   const untrackedAcceptedSpec = path.join(project, '.openprd', 'specs', 'consumer-requirements', 'spec.md');
   await fs.mkdir(path.dirname(untrackedAcceptedSpec), { recursive: true });
   await fs.writeFile(untrackedAcceptedSpec, '# Unknown historical accepted spec\n');

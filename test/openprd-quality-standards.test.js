@@ -1039,17 +1039,6 @@ test('workspace standards debt stays visible without failing run context or curr
   assert.equal(report.claimReady, false);
   assert.equal(report.workspaceAttention?.kind, 'workspace-validation');
 
-  const context = await runWorkspace(project, {
-    context: true,
-    message: '请继续实现当前任务并提交',
-  });
-  assert.equal(context.ok, true);
-  assert.equal(context.executionIntent.explicit, true);
-  assert.equal(context.readiness.actionReady, true);
-  assert.equal(context.readiness.claimReady, null);
-  assert.equal(context.readiness.workspaceReady, false);
-  assert.ok(context.workspaceAttention);
-
   const verified = await runWorkspace(project, { verify: true });
   assert.equal(verified.ok, true);
   assert.equal(verified.readiness.taskReady, true);
@@ -1064,7 +1053,7 @@ test('workspace standards debt stays visible without failing run context or curr
   const originalLog = console.log;
   console.log = (...args) => logs.push(args.join(' '));
   try {
-    assert.equal(await main(['run', project, '--context', '--message', '请继续实现当前任务并提交']), 0);
+    assert.equal(await main(['run', project, '--verify']), 0);
     assert.equal(await main(['standards', project, '--verify']), 0);
     assert.equal(await main(['standards', project, '--verify', '--fail-on-violation']), 1);
     assert.equal(await main(['quality', project, '--verify']), 0);
@@ -1072,7 +1061,7 @@ test('workspace standards debt stays visible without failing run context or curr
   } finally {
     console.log = originalLog;
   }
-  assert.ok(logs.some((line) => line.includes('工作区整体状态: 待关注（不阻断当前请求）')));
+  assert.ok(logs.some((line) => line.includes('当前任务通过，工作区待关注')));
   assert.equal(logs.some((line) => line.includes('开始动手前提')), false);
 });
 

@@ -1,11 +1,11 @@
 # EVO Normal Performance Report
 
-- generatedAt: 2026-07-19T17:15:55.651Z
+- generatedAt: 2026-07-20T03:56:45.565Z
 - mode: normal
-- performance: p50 3.78ms, p95 12.56ms, max 162.36ms
+- performance: p50 0.87ms, p95 1.16ms, max 1.45ms
 - latency baseline: p95 <= 500ms
 - memory baseline: peak <= 512MB
-- memory: start 6.11MB, peak 13.70MB, delta 6.14MB
+- memory: start 6.81MB, peak 13.76MB, delta 5.36MB
 - dataset: 6 versions x 18 items
 - performance: baseline ledger summary path remained within project limits
 

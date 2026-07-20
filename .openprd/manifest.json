@@ -11,7 +11,6 @@
     "eventEnvelope": 1,
     "ledger": 1,
     "projection": 1,
-    "contextCapsule": 1,
     "taskRuntime": 1,
     "scopedGate": 1,
     "reviewModel": 1,

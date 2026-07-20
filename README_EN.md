@@ -17,15 +17,17 @@ OpenPrd is a lightweight **PRD harness**. Start by describing the problem in pla
 
 Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps people and agents aligned around stable HTML artifacts such as `review.html`, learning readers, and quality reports. OpenPrd helps the agent do the work: PRDs, reviews, changes, tasks, design contracts, and evidence are maintained in the background without requiring the user to reply with a prescribed confirmation.
 
-## 0.2.0: OpenPrd assists without blocking
+## 0.2.1: Agent-owned context
 
+- Removed `run --context`, `--hook-inject`, ContextCapsule, and the global session registry. The host agent uses its own conversation context.
+- `UserPromptSubmit` records the prompt but no longer selects tasks or injects next-step guidance.
 - Once the user asks to implement, continue, or publish, missing requirements, reviews, changes, tasks, manuals, or quality evidence no longer stop the work.
 - Codex automations, scheduled jobs, and other unattended tasks bypass the OpenPrd workflow by default. They opt in only when the task explicitly enables OpenPrd maintenance.
 - Historical requirements, PRDs, reviews, changes, tasks, and implementation records stay frozen. Reopened work creates a new current requirement linked to that history instead of reconstructing the past from today's code.
 - Workspace maintenance debt remains visible as background guidance. Real task failures and exact release conditions such as target, permissions, artifacts, tests, conflicts, and rollback are still verified.
 
 ```bash
-npm install -g @openprd/cli@0.2.0
+npm install -g @openprd/cli@0.2.1
 ```
 
 ## 0.1.24: workspace debt no longer impersonates task failure
@@ -809,7 +811,6 @@ openprd upgrade /path/to/projects --fleet --dry-run
 openprd fleet /path/to/projects --dry-run
 openprd fleet /path/to/projects --sync-registry
 openprd fleet /path/to/projects --backfill-work-units
-openprd run /path/to/project --context
 openprd run /path/to/project --verify
 openprd loop /path/to/project --plan --change <change-id>
 openprd loop /path/to/project --run --agent codex --dry-run
@@ -846,8 +847,8 @@ or, with `--fleet`, `fleet <root> --update-openprd`. Both commands support
 modifying the CLI, project, registry, or harness state.
 
 The harness is stateful, but hooks are proportional to the chosen profile.
-Default `lite` keeps lightweight, non-blocking `PreToolUse` guidance for requirement
-context and limits it to direct editing tools, while `Stop` performs a lightweight
+Default `lite` records `UserPromptSubmit` without injecting task context, keeps
+lightweight non-blocking `PreToolUse` safety guidance, while `Stop` performs a lightweight
 end-of-turn knowledge review instead of full telemetry. This avoids read-only shell hook
 noise while still nudging the agent to capture reusable project patterns. `guarded` also covers shell tools, while
 `full` restores SessionStart/PreToolUse/PostToolUse/Stop telemetry for temporary
@@ -857,15 +858,14 @@ result, but only their exact target, permissions, conflicts, current artifacts,
 tests, and rollback conditions determine `actionReady`. Global docs and EVO debt
 remain advisory.
 
-`openprd run . --context` is the Ralph-style loop surface for agents. It selects
-the next executable unit from active change tasks, discovery coverage, or normal
-OpenPrd workflow state, and records hook turns in `.openprd/harness/iterations.jsonl`.
+`openprd run . --verify` validates the workspace and active change. It does not
+read the user prompt, select the agent's next task, or return a context capsule.
+Hooks can still record evidence through the internal `run --record-hook` surface.
 
 ### Long-Running Agent Loop
 
-For implementation work that should behave like the harness pattern described by
-Anthropic's long-running agent guidance, use `openprd loop`. The loop is stricter
-than `run --context`: it creates a durable feature list, writes a single-task
+For implementation work that should behave like a long-running agent harness, use
+`openprd loop`. It creates a durable feature list, writes a single-task
 prompt, starts a fresh Codex or Claude session for exactly one task, verifies the
 task, and can commit that task before moving on.
 
@@ -878,17 +878,15 @@ homogeneous lists, cards, grids, or tables; the alignment board must cover both
 outer tracks and internal content slots. Use `--board <centering-board.json>` for
 single-element internal-centering or visual-centroid checks.
 
-`openprd run --context` may surface loop commands as execution commands, but they
-are not automatic instructions. Agents should run `openprd loop --run`,
+Agents should run `openprd loop --run`,
 `openprd tasks --advance`, `openprd discovery --advance`, or commit commands only
 when the current user message explicitly asks for development, implementation,
 task continuation, deep research/benchmarking, replication, or commit. Read-only
 planning and review turns should stop at the module/file plan.
 
-Loop is recommended from the substantive implementation task count, not from every
-checkbox. When a change has 10 or more pending/total `implementation` tasks,
-`run --context` recommends an isolated worktree or equivalent environment plus a
-single-task Loop session.
+The agent chooses whether Loop needs an isolated worktree from the substantive task
+count, write scopes, and conflict risk; OpenPrd no longer makes that choice through
+a context command.
 
 ```bash
 openprd loop . --init

@@ -79,7 +79,6 @@ function buildKnowledgeSkills(overrides = {}) {
     },
     summary: {
       matched: 1,
-      hookInjected: false,
       reviewRequired: true,
       reviewMode: 'prompt-rerank',
     },

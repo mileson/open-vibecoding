@@ -54,7 +54,8 @@ OpenPrd 的需求初始化默认不是重问卷，而是先建立一层轻量的
 - 包含：OpenPrd workspace 初始化、agent guidance 生成、意图识别、run/loop/discovery/task 执行建议、standards 校验、历史项目 fleet 刷新和历史 artifact 元数据回填。
 - 包含：`taskReady / workspaceAttention / claimReady / actionReady` 四层状态模型；全仓说明书、基础文档、历史 change 和 EVO 证据债不会被复用成当前任务或具体动作的通用阻断条件。
 - 包含：历史 artifact 的 `legacy-frozen` 语义；迁移与 backfill 只维护可验证元数据，不反推 requirement、PRD、review、tasks、验收结论或实现理由。
-- 包含：主运行校验边界收敛，默认只展示当前项目主验证状态；参考调研和明显外部参考候选保持可见，但不直接污染主 `run --context` / `run --verify` 结果。
+- 包含：主运行校验边界收敛，默认只验证当前项目主状态；参考调研通过 discovery 独立查看，不污染 `run --verify` 结果。
+- 包含：Agent-owned context。OpenPrd 不读取用户消息选择任务，不生成上下文胶囊，不维护全局 session 归属表。
 - 包含：OpenPrd discovery 的大量只读扫描调度规则，覆盖何时启动只读 subagent、默认调研与审查队形、最大并行数量、角色选择和证据合并要求。
 - 包含：Codex hook profile，默认 `lite` 安装 `UserPromptSubmit` 和只匹配直接编辑工具的轻量 `PreToolUse` advisory，`guarded` 额外覆盖 shell 工具，`full` 作为完整 hook 遥测的显式开启选项；除原始凭证读取等真实安全边界外，OpenPrd 不阻断工具调用。
 - 包含：当前 agent 环境识别协议，`install-manifest.json` 记录 `runtimeDetection` 与 `platformCapabilityPacks`，`runtime-environment.json` 记录最近 hook/session 观察到的 active client、surface、confidence、session、evidence 和 observed capabilities。
@@ -93,13 +94,13 @@ OpenPrd 的需求初始化默认不是重问卷，而是先建立一层轻量的
 
 ## 验收标准
 
-- 规划、分析、审查类请求不会因 `run --context` 推荐而自动执行 loop、task advance、discovery advance 或 commit。
-- `run --context` / `run --verify` 默认不会把 `mode=reference` 的 discovery run 当作主上下文或主校验结果；参考调研需要通过 `openprd discovery` 单独查看。
+- 规划、分析、审查类请求不会自动执行 loop、task advance、discovery advance 或 commit。
+- `run --verify` 默认不会把 `mode=reference` 的 discovery run 当作主校验结果；参考调研需要通过 `openprd discovery` 单独查看。
 - standards 遇到嵌套 Git 参考仓库或 `toolkit-sources` 这类明显外部参考候选时，会先提示候选与 `classify-external` 命令，而不是直接用逐文件说明书缺口淹没主验证结果。
 - 大量只读 discovery 的 subagent 调度规则存在于 OpenPrd skill 生成源和生成后的 skill 文件中，生成的 AGENTS 合同不包含这段长规则。
 - 默认安装后的 Codex 配置包含轻量 OpenPrd `PreToolUse` advisory，且 matcher 收窄到直接编辑工具；research、Patch Mode、requirement 和全局健康提醒都返回 allow，只有真实安全边界可 block。
 - setup/update 后，`install-manifest.json` 包含 `runtimeDetection` 和 `platformCapabilityPacks`；Codex hook 触发后，`runtime-environment.json` 会记录 `activeClient=codex`、`surface=codex-hook`、confidence、session/evidence 与 `codex-hooks` observed capability。
-- `run --context` 和 `doctor --json` 会暴露 runtime environment 与平台能力包；人类可读 doctor 会显示当前 Agent 环境和已安装能力包。
+- `doctor --json` 会暴露 runtime environment 与平台能力包；人类可读 doctor 会显示当前 Agent 环境和已安装能力包。
 - 明确实现类请求会检查基础文档、文件说明书、文件夹说明书是否缺失或过期；当前改动直接影响的内容随任务维护，其他缺口进入 `workspaceAttention`，不得令 `taskReady=false`。
 - 用户要求生成图片、封面图、配图、海报、插画、图标、贴纸、头像、banner、主视觉/KV、运营图、效果图、视觉稿、mockup、先看样子或确认设计方向时，Codex hook 不把该输入升级为实现写入需求，Agent guidance 明确要求优先调用 `imagegen`（Codex 原生 Image 2）；除非用户指定 HTML/SVG/CSS/Canvas/代码稿，否则不得默认写临时 HTML 再截图。
 - 大界面改动进入实现前，Agent guidance 会要求先用 Codex Computer Use 获取产品内当前功能截图，再用 Image 2 做 3 方向效果图，并把结果拼成横向评审大图；未收到选择时采用可逆默认方向继续，用户选择后更新记录。

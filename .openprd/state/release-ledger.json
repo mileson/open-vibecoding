@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.2.0",
+  "currentVersion": "0.2.1",
   "versions": [
     {
       "version": "0.1.2",
@@ -876,9 +876,9 @@
     },
     {
       "version": "0.2.0",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-07-20 00:49:27",
-      "updatedAt": "2026-07-20 00:49:31",
+      "updatedAt": "2026-07-20 11:49:43",
       "notes": null,
       "items": [
         {
@@ -938,8 +938,62 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.2.1",
+      "status": "released",
+      "createdAt": "2026-07-20 11:49:43",
+      "updatedAt": "2026-07-20 12:05:15",
+      "notes": null,
+      "items": [
+        {
+          "type": "移除",
+          "summary": "移除",
+          "detail": "OpenPrd 不再提供 run --context、--hook-inject、ContextCapsule、上下文缓存与全局 session registry",
+          "sentence": "移除：OpenPrd 不再提供 run --context、--hook-inject、ContextCapsule、上下文缓存与全局 session registry",
+          "recordedAt": "2026-07-20 11:49:43",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784519383452"
+          }
+        },
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "Agent 直接使用宿主会话上下文，UserPromptSubmit hook 只记录提示事件，不再选择、拼接或注入 OpenPrd 上下文",
+          "sentence": "调整：Agent 直接使用宿主会话上下文，UserPromptSubmit hook 只记录提示事件，不再选择、拼接或注入 OpenPrd 上下文",
+          "recordedAt": "2026-07-20 11:49:43",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784519383558"
+          }
+        },
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "run --verify、质量与标准验证、PreToolUse 安全检查、Stop 证据提醒、PRD/change/tasks 和 repo-local 画布绑定继续可用",
+          "sentence": "调整：run --verify、质量与标准验证、PreToolUse 安全检查、Stop 证据提醒、PRD/change/tasks 和 repo-local 画布绑定继续可用",
+          "recordedAt": "2026-07-20 11:49:43",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784519383664"
+          }
+        },
+        {
+          "type": "修复",
+          "summary": "修复",
+          "detail": "旧项目升级时自动清理退役格式声明，并刷新 Codex、Claude Code、Cursor 生成文件",
+          "sentence": "修复：旧项目升级时自动清理退役格式声明，并刷新 Codex、Claude Code、Cursor 生成文件",
+          "recordedAt": "2026-07-20 11:49:43",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784519383807"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-07-20 00:49:31"
+  "updatedAt": "2026-07-20 12:05:15"
 }

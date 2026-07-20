@@ -17,7 +17,6 @@ const BASE_CAPABILITIES = Object.freeze({
     imageGeneration: CAPABILITY_STATUS.SURFACE_DEPENDENT,
     currentThreadMessaging: CAPABILITY_STATUS.SURFACE_DEPENDENT,
     backgroundAgents: CAPABILITY_STATUS.SURFACE_DEPENDENT,
-    maxRecommendedContext: 800,
   }),
   claude: Object.freeze({
     hooks: CAPABILITY_STATUS.UNSUPPORTED,
@@ -29,7 +28,6 @@ const BASE_CAPABILITIES = Object.freeze({
     imageGeneration: CAPABILITY_STATUS.UNSUPPORTED,
     currentThreadMessaging: CAPABILITY_STATUS.UNSUPPORTED,
     backgroundAgents: CAPABILITY_STATUS.SURFACE_DEPENDENT,
-    maxRecommendedContext: 800,
   }),
   cursor: Object.freeze({
     hooks: CAPABILITY_STATUS.UNSUPPORTED,
@@ -41,7 +39,6 @@ const BASE_CAPABILITIES = Object.freeze({
     imageGeneration: CAPABILITY_STATUS.SURFACE_DEPENDENT,
     currentThreadMessaging: CAPABILITY_STATUS.UNSUPPORTED,
     backgroundAgents: CAPABILITY_STATUS.SURFACE_DEPENDENT,
-    maxRecommendedContext: 800,
   }),
 });
 
@@ -64,12 +61,6 @@ function describeCapabilities(client, options = {}) {
   const baseline = BASE_CAPABILITIES[normalized];
   const capabilities = {};
   for (const [name, status] of Object.entries(baseline)) {
-    if (name === 'maxRecommendedContext') {
-      capabilities[name] = Number.isFinite(options.maxRecommendedContext)
-        ? Math.max(1, Math.trunc(options.maxRecommendedContext))
-        : status;
-      continue;
-    }
     capabilities[name] = status === CAPABILITY_STATUS.SURFACE_DEPENDENT && observed.has(name)
       ? CAPABILITY_STATUS.NATIVE
       : status;
@@ -95,4 +86,3 @@ export {
   describeCapabilities,
   normalizeClient,
 };
-

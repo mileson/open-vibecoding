@@ -978,7 +978,7 @@ test('internet-product authored learning content rejects technical-manual narrat
         summary: '先列路径，再列脚本和命令。',
         paragraphs: [
           'docs/basic/prd.md、docs/basic/tech-stack.md、.openprd/state/current.json、reader.html、script.js 和 package.json 都要逐个介绍。',
-          '最后再补 openprd learn . --content-json 与 openprd run . --context 这些命令的执行顺序。',
+          '最后再补 openprd learn . --content-json 与 openprd run . --verify 这些命令的执行顺序。',
         ],
         evidenceIds: ['current-state', 'docs-basic-file-structure'],
       },

@@ -12,7 +12,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
 
 - `src/kernel/` 提供 `.openprd/manifest.json`、不可变 Project Ledger、哈希链校验、CAS 追加、损坏修复和 projection replay。`state/events.jsonl` 等旧文件保留为一个兼容周期的投影，不作为并发写入仲裁源。
 - `src/runtime/` 提供 TaskRuntime：`claim / heartbeat / release / finish / recover`、lease 过期恢复、lane binding 和 write-set 冲突检测。并行线程先声明写集，再通过原子存储竞争任务所有权，避免“多个 Agent 同时勾同一 Markdown checkbox”。
-- `src/context/` 提供 ContextRequest / ContextCapsule v1。完整胶囊默认最多 800 tokens，增量胶囊最多 250 tokens；按 authority、freshness、relevance 排序，文件默认只传 digest + path，统一脱敏，并把缓存与 telemetry 放在独立副作用通道。
+- Agent 上下文由当前宿主自行管理；OpenPrd 不再生成 ContextCapsule、维护上下文缓存或向用户提示轮次注入额外上下文。
 - `src/gates/` 提供 project/change/work-unit/task/lane/operation 六级作用域条件。evidence、expiry、revoke 和 subject digest 必须精确绑定；它只保护对应动作或状态写回，不能把 OpenPrd artifact 审批扩张成用户执行授权。
 - `src/review-model.js` 将同一份 ReviewModel 投影为默认业务视角和可切换工程视角。两种视图共享 digest、时间线、证据和批准合同，业务评审不再被内部字段淹没，工程人员仍可追溯到依据。
 - `src/knowledge-v3/` 把经验生命周期收敛为 validate、promote、deprecate、supersede、query，并用 scope、TTL、token budget、evidence 与 reviewer 控制长期知识进入 Agent 上下文的条件。
@@ -56,12 +56,12 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - 展示文案未通过脚本校验时返回 `presentationFeedback` 并保持该 artifact 未就绪，但不会阻断当前实现；Agent 可以后台修正。
   - “请帮我实现”“继续实现”等执行意图不会被伪装成用户对某份 artifact 的确认，但足以让 Agent 继续用户要求的工作。
   - 如果用户刚确认的是现有功能优化（L1）的 mini-plan、范围边界或正式产品边界，后续承接文案必须写成“已确认，我按这个继续”，而不是像再次索取确认的句子。
-  - 用户原始意图已明确要求实现时直接进入实现；没有执行意图时保持只读。`run --context` 和 hooks 不创建 required execution checklist。
+  - 用户原始意图已明确要求实现时直接进入实现；没有执行意图时保持只读。hooks 只记录事件和执行安全检查，不创建 required execution checklist。
 - 工作流隔离: active requirement gate 存在时，`synthesize` 必须看到晚于本轮入口的 `capture`，或在命令参数中显式提供标题、问题、原因等 PRD 字段，否则拒绝合成，避免复用历史 `current.json`。
   - 已有版本评审后再次 `capture` 用户确认或推导得到的 PRD 内容时，旧 `latestVersionId`、摘要和 work unit active 指针会移动到 previous 字段，当前 `reviewStatus` 标记为 `needs-revision` 且 `stale: true`，避免“新需求草稿 + 旧评审 artifact”的混合状态。
   - 仅用于 `agent-normalized` 的内部措辞规范化，或 `reviewPresentation` 这类展示层写回，不会触发二次 review。
   - session binding 保留在 repo-local `.openprd/harness/session-bindings/`，只负责镜像本工作区 lane 信息；binding 回写优先使用显式 `sessionId`，其次读取 `state/current.json` 的 `laneSessionId`，最后才回退 legacy requirement gate，避免旧 gate 把 review / change 串到别的会话。
-  - 真正的跨项目恢复事实源是 `~/.openprd/registry/sessions.jsonl`，每次 binding 更新都会同步写入该全局 registry。
+  - 跨项目对话恢复由宿主 Agent / App 负责；OpenPrd 不维护全局会话 registry。
 - 图表工作区: `src/diagram-workspace.js` 负责 diagram artifact 生成、评审状态读写和可选浏览器打开。
 - 变化摘要表达层: `src/change-summary.js` 统一生成面向用户的动作词摘要，供 loop commit 默认文案、handoff / 版本说明和 review 摘要复用。默认动作词为 `新增 / 修复 / 优化 / 调整 / 移除`，优先描述用户可感知变化，不直接暴露实现细节。
 - 项目版本轨道层: `src/release-ledger.js` 维护可选的 `.openprd/state/release-ledger.json`，把项目级版本号（例如 `0.1.23`）、版本状态、版本内变化条目和本地 tag 元数据集中到一个事实源里，明确与内部 PRD `v000x` 版本分层。
@@ -103,7 +103,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - `--open-target codex-browser` 会阻止 shell 走系统 `open`，把打开动作交给当前 Codex Agent 的 Browser 工具。
   - 已验证路径是 Browser plugin + `node_repl` 执行 `setupBrowserRuntime -> agent.browsers.get("iab") -> visibility.set(true) -> browser.tabs.new() -> tab.goto(url)`。
   - `auto` 只有在 runtime evidence 明确包含 Codex Browser 能力时才走该目标，否则回退系统浏览器。
-- 执行策略层: `src/execution-strategy.js` 负责 OpenPrd worker lane 的任务级执行元数据，统一推导和校验 `execution-mode`、`parallel-group`、`write-scope`、`owner-role`、`local-verify` 和 `integration-owner`，供 `change --generate`、`run --context`、`loop` prompt 和后续主 Agent 审查复用。
+- 执行策略层: `src/execution-strategy.js` 负责 OpenPrd worker lane 的任务级执行元数据，统一推导和校验 `execution-mode`、`parallel-group`、`write-scope`、`owner-role`、`local-verify` 和 `integration-owner`，供 `change --generate`、`loop` prompt 和后续主 Agent 审查复用。
 - CLI 表层: `src/cli/args.js` 解析参数，`src/cli/print.js` 作为稳定导出壳，汇总 `basic-print`、`workflow-print`、`doctor-print`、`run-print`、`quality-print`、`growth-print`、`change-print`、`benchmark-print` 和 `canvas-print` 等分域输出模块。
 - 工具自更新: `src/self-update.js` 负责 `self-update` 与 `upgrade` 的安装命令规划、`--check` 版本体检、dry-run、子进程执行、更新后 `openprd` 可执行文件解析，以及单项目 / fleet 项目刷新阶段报告。`--check` 先读取 npm 已发布版本，再结合 workspace registry 列出仍落后于目标版本的旧项目刷新候选。测试通过依赖注入替换 runner，避免真实联网或全局安装。
 - Codex 运行时检查: `src/codex-runtime.js` 负责 `codex --version` 健康检查、Codex 平台原生可选依赖缺失诊断、修复命令规划和显式修复后复查。
@@ -113,12 +113,12 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
 - Agent 环境识别层: `src/agent-integration.js` 在 install manifest 中写入 `runtimeDetection` 与 `platformCapabilityPacks`，并维护 `.openprd/harness/runtime-environment.json` 的基础结构。
   - `src/codex-hook-runner-template.mjs` 在 Codex hook 事件中写入 active client、surface、confidence、session、turn、agent type、model、evidence 和 observed capabilities。生产写入、支付、删除、业务兜底和写死等信号只形成风险 advisory，授权判断交给宿主 Agent；原始凭证读取等真实安全边界仍可 block。
   - 业务兜底/写死判定只匹配真实业务权益与计费词汇（业务、权益、会员、额度、价格、计费、订阅、套餐、entitlement、membership、billing、quota、price、paywall、subscription、localStorage）；配置、服务端、客户端、缓存、feature 这类基础设施通用词不再叠加 fallback/兜底触发误拦，固定业务值直写（fixedBusinessValue）判定保持不变。
-  - `src/run-harness.js` 在 `run --context` 与 `run --record-hook` 中读取并传播这份 runtime environment，同时把高风险动作作为 Agent 判断所需的上下文，不生成 required 执行确认清单。
+  - `src/run-harness.js` 只承接 `run --verify` 与 `run --record-hook`；runtime environment 由各适配器和宿主 Agent 在需要时读取。
   - 识别优先级固定为 hook/session payload、显式 launcher、SDK/headless session、子进程 env、config/CLI probe、agent 自述。
   - 生图路由: install manifest 与 runtime-environment 携带 `imageGenerationRouting`（`IMAGE_GENERATION_ROUTING` 常量）。
     - 第一层按当前工具面选内置免费生图工具（Codex=`imagegen`/Image 2，Cursor=`GenerateImage`；Claude Code 无内置生图）；内置工具不可用时读 `.openprd/harness/image-generation-preference.json` 的用户已确认偏好。
     - 没有偏好时必须先询问用户并把答复以 `user-confirmed` 来源写回该文件作为下次默认；任何情况下都不允许在用户未明确指定时调用用户本地或自有付费生图 API。
-    - Codex hook 的图片请求上下文（`visualMockupMessage` / `imageGenerationRoutingLines`）会注入这三层路由、成本护栏和已保存偏好。
+    - 图片请求由 canonical skills 提供这三层路由、成本护栏和已保存偏好；Codex hook 不再向用户提示轮次注入这些内容。
 - 研发期标准层: `src/dev-standards.js` 负责 touched code files 行数统计、问题级别分级和非阻断结构建议；默认输出 **后续建议**，不要求扩大当前任务。
   - 它读取 `.openprd/standards/config.json` 的 `developmentStandards`，但只检查本次传入的文件，不做全仓库阻断。
   - 需要关注的文件会进入 `wrapUp.rows`、`wrapUp.markdownTable` 和带标题的 `wrapUp.markdownBlock`，用于 CLI 文本输出和 Stop hook 最终回复提醒。
@@ -128,12 +128,11 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - 高置信可成长配置默认进入 growth 设计，不确定时由 Agent 主动询问用户。
   - 生成层还会把 `openprd-frontend-design` skill、`.openprd/design/` 读取规则，以及 `facts-sheet / asset-spec / image-preflight / direction-plan / selected-direction` 这组前置门，一并写进 AGENTS、Codex/Claude skill 和 command catalog。
 - 文件基础设施: `src/fs-utils.js` 统一封装文本、JSON、YAML、JSONL 读写。
-- 运行编排: `src/run-harness.js` 负责 `openprd run` 上下文、hook 记录和分层 verify 状态。
+- 运行编排: `src/run-harness.js` 负责 `openprd run` 的 hook 记录和分层 verify 状态。
   - 当前 requirement 已有可用快照但还没有 active change 时，优先建议 Agent 后台执行 `change --generate`；review 状态不作为前置授权。已有 active change 时按 `implementation` 任务数量判断执行模式。
-  - `run --context` 恢复历史会话时先查全局 `sessions.jsonl` 定位真实 workspace，再回到目标工作区的 session binding、requirement gate、events 和 work unit 线索恢复具体 change/task；恢复目标落在别的 workspace 时，推荐命令会直接切到目标 workspace，并强制返回 `parallel-workers-isolated` / worktree 建议，避免继续复用当前工作区的 active 状态。
-  - `run --context` 还会把 runtime environment、platform capability packs、`parallelPlan`、可选执行摘要和主 Agent / worker 分工一起返回；执行摘要不带 `required` 授权语义。
+  - 历史会话和跨项目恢复由宿主 Agent / App 负责；repo-local session binding 只服务于当前工作区的 lane、画布和 artifact 关联。
   - 项目级 knowledge 命中链路分两层：先用本地 lexical / file-hint / metadata 做 top-N 候选召回，再生成 `mandatory knowledge check` 与 `prompt-rerank` 判断提示，让 Agent 按当前目标、阶段和验证方式决定是否真的复用，而不是把词面命中直接当成最终结论。
-  - `run --context` 和 `run --verify` 默认只展示当前项目主验证状态，不把 `mode=reference` 的 discovery run 自动混入主上下文或主校验；参考调研通过 `openprd discovery --resume|--verify` 单独查看。
+  - `run --verify` 默认只展示当前项目主验证状态，不把 `mode=reference` 的 discovery run 自动混入主校验；参考调研通过 `openprd discovery --resume|--verify` 单独查看。
   - `run --verify` 的 JSON/文本输出显式拆分 `taskReady`、`workspaceAttention/workspaceReady`、`claimReady` 与 `actionReady`；全局 standards、validate、feature coverage 和 EVO 债不把本次实现判成失败。
   - 若本轮 `knowledgeReview` 已带 `userFacingExperience.message`，文本输出优先直接展示“本次情况 / 计划保留的经验 / 以后怎么复用 / 只保留在当前项目里”的项目经验回顾，再回退到技术候选摘要。
 - 工作单元绑定: `src/work-unit.js` 负责工具无关的 work unit id 生成、校验、目标根目录解析和 `.openprd/engagements/work-units/` 状态读写；工作流模块只调用它，不在主流程文件里堆叠绑定细节。
@@ -150,14 +149,14 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - `optionalCapabilities` 在 `init/setup/update/doctor` 时检查当前工具常见 MCP 配置位置：Codex 的 `.codex/config.toml` 与 `~/.codex/config.toml`、Cursor 的 `.cursor/mcp.json` 与 `~/.cursor/mcp.json`、Claude Code 的项目级 `.mcp.json`。
   - 它把 Context7 / DeepWiki 这类“配上会更好”的增强能力写入 `.openprd/harness/install-manifest.json`，供 CLI 输出和后续 agent 建议复用，但不影响命令成功与否。
   - 生成给项目的 Codex hook runner 源码由 `src/codex-hook-runner-template.mjs` 单独承接，避免把运行态模板堆在 adapter 编排文件里；runner 在 `UserPromptSubmit` 重置本轮 turn-state、在 `PreToolUse` 记录 touched files，并在 `Stop` 基于本轮信号调用 `quality --learn --review` 判断是否生成 knowledge candidate。
-  - 命中项目经验时，hook 不把词面命中直接表达成“自动应复用的 skill”，而是注入候选经验、`mandatory knowledge check` 提示，以及每条经验的适用时机 / 先看线索 / 不要直接套用边界，让模型在真正执行前先做一次审题。
-  - 需求入口分流由 `openprd-requirement-intake` skill 承接，hook 只负责注入或打开安全通道，最终 L0/L1/L2 判断按影响面、未知数、决策成本和验证成本完成。
-  - “用户反馈 / 功能 / 体验”这类咨询或复盘语气只保留上下文注入，不因弱信号自动打开 requirement gate；只有和明确的改动动作、实现意图或正式需求信号组合时，才升级到 intake。
+  - 项目经验由 Agent 按需检索和判断是否复用；hook 不做词面命中或经验注入。
+  - 需求入口分流由 `openprd-requirement-intake` skill 承接，最终 L0/L1/L2 判断按影响面、未知数、决策成本和验证成本完成。
+  - “用户反馈 / 功能 / 体验”这类咨询或复盘语气不因弱信号自动打开 requirement gate；只有和明确的改动动作、实现意图或正式需求信号组合时，才升级到 intake。
   - intake skill 还负责在 L2 时选择 `base`、面向个人消费者场景（`consumer`）、面向企业服务场景（`b2b`）或以 Agent 为主要使用场景（`agent`）的 PRD 场景视角，并要求类型专项内容融入用户、流程、需求矩阵、验收和风险，而不是堆到 PRD 末尾。
   - 新需求入口把当前需求与历史 active change 分开；历史 requirement/PRD/review/change/tasks 标为 `legacy-frozen` 并只作 context。“那你去修复吧”“继续实现”等执行指令直接进入当前工作，不依赖旧 session binding 或材料放行。
-  - 用户要求生成图片、封面图、配图、海报、插画、图标、贴纸、头像、banner、主视觉/KV、运营图、效果图、视觉稿、mockup 或先看样子时，hook 只注入 Image 2 优先提醒，不把该输入升级为实现写入门禁。
-  - 大界面改动额外注入视觉方案评审提示：用 Codex Computer Use 截取产品内真实功能截图，再用 Image 2 生成至少 3 个方向并横向拼接给用户确认。
-  - 对 logo、icon、avatar、badge 等开发素材，若用户未明确要求 mockup、场景图、设备框、卡片承载、名片/包装展示或参考界面复刻，hook 额外注入 `standalone asset` 默认规则，要求输出全画布单主体、非容器化素材。
+  - 图片、封面、插画、图标和 mockup 请求由 Agent 按 canonical skills 选择原生 Image 2 等能力；hook 不注入生图提示。
+  - 大界面改动的视觉方案评审由 Agent 主动执行：用 Codex Computer Use 截取产品内真实功能截图，再用 Image 2 生成至少 3 个方向并横向拼接给用户确认。
+  - logo、icon、avatar、badge 等开发素材默认遵循 canonical skills 的 `standalone asset` 规则，输出全画布单主体、非容器化素材。
   - 界面与前端体验任务额外读取 `openprd-frontend-design` 与 `.openprd/design/active/`，优先锁定 `facts-sheet / asset-spec / image-preflight / direction-plan / selected-direction`，再决定是否进入真实实现。
   - benchmark router 生成源同时承接 OpenAI/Anthropic 等最佳实践来源和图标资源站/图标实现库路由。
   - 多对象、多维属性的对话输出规则进入 shared skill、harness skill 和 AGENTS 合同，引导 Agent 在方案对比、状态盘点、排查、风险审查、QA、清单、场景覆盖和内容规划时主动使用 Markdown 表格。
@@ -176,7 +175,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - `--sync-registry` 把当前 root 下已初始化的 `.openprd/` 工作区写回全局 registry。
   - `--update-openprd` 刷新已有 OpenPrd 工作区、识别只有旧根目录 `openprd/changes|specs|archive/changes` 工作产物的项目并触发迁移；历史回填只补版本身份、digest、work-unit 绑定等可验证元数据，不生成缺失的 PRD/review/tasks 正文。
   - 项目自身 standards 或 validate 缺口只作为项目健康问题报告，不阻断生成引导更新；`--backfill-work-units` 只刷新可验证身份与索引，历史 artifact 保持 `legacy-frozen`。
-  - `doctor` 额外读取 `workspaces.jsonl` 与 `sessions.jsonl`，并对“过宽 root”与“父子嵌套 workspace”发出 hygiene 警告，降低多项目并行时的恢复歧义。
+  - `doctor` 读取 `workspaces.jsonl`，并对“过宽 root”与“父子嵌套 workspace”发出 hygiene 警告，降低 fleet 扫描歧义。
   - fleet 写入使用 `src/upgrade/fleet-transaction.js` 分阶段执行。每个目标先记录版本、checksum 和备份，再原子替换；目标在写入前发生变化时 CAS 失败并回滚，不继续覆盖用户的新改动。
 - 持续调研: `src/discovery.js` 负责 discovery run、source inventory、coverage matrix、claims 和 discovery 验证。
 - OpenPrd change 文件域: `src/openspec/` 负责 OpenPrd change/spec/task 的读写、验证、应用、归档和旧目录迁移。
@@ -188,7 +187,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
 ## CLI 接入面
 
 - `openprd` 是当前项目面向用户和 agent 的主接入面；`bin/openprd.js` 提供进程入口，`src/cli/args.js` 负责参数与 flag 解析，`src/cli/print.js` 负责稳定终端输出契约，各分域 `*-print.js` 承接具体呈现逻辑。
-- `src/openprd.js` 把 `doctor`、`self-update`、`upgrade`、`run --context`、`brainstorm`、`brainstorm-presentation`、`review --mark`、`standards --verify`、`quality --verify`、`docs-compact`、`guide`、`dev-check`、`change`、`loop`、`discovery` 等命令暴露为一级 CLI 能力，而不是内部模块上的薄包装。
+- `src/openprd.js` 把 `doctor`、`self-update`、`upgrade`、`run --verify`、`brainstorm`、`brainstorm-presentation`、`review --mark`、`standards --verify`、`quality --verify`、`docs-compact`、`guide`、`dev-check`、`change`、`loop`、`discovery` 等命令暴露为一级 CLI 能力，而不是内部模块上的薄包装。
   - `change --generate` 在写文件前检查 PRD review 状态，避免绕过用户确认直接进入任务拆解。
 - `openprd review <path> --mark <status> [--direction <id>]` 中的 `--direction` 用于界面类需求评审：在确认 review 的同时记录用户选中的交互方向，方向 id 必须存在于当前 `reviewPresentation.designDirections` 中，且只能与 `--mark` 一起使用。
 - `openprd docs-compact <path>` 是 `docs/basic/` 压缩分析入口：逐文档列出巨行位置、字符数、内容预览和拆分建议，并汇报 `prd.md` 是否落后当前 requirement 版本；它只输出建议，不修改文件。
@@ -224,7 +223,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
 - `openprd design-starter <path> [--starter <content-home|product-launch|ops-dashboard>] [--out <index.html>] [--title <name>] [--brief <text>] [--sections <a|b|c>] [--no-external-facts] [--no-brand-assets] [--no-real-images] [--force]` 是空白工作区的前端骨架起步入口。
   - 它把 `.openprd/design/templates/` 中的模板直接落成真实入口文件，并把模板默认的 `lens/theme/layout` 一起回显给 Agent，减少从合同文件跳到首个页面文件时的随意发挥。
   - 传入 `--brief/--sections` 时，还会顺手写实 active design contracts、给生成入口文件补文件说明书，并把 `docs/basic/` 与根目录文件夹 README 从模板态补成当前页面事实。
-  - 空白前端冷启动如果用户原话已明确页面主题、模块范围或“直接实现”的意图，推荐先配合 `openprd run --context --message <用户原话>` 对齐路径，再进入 starter。
+  - 空白前端冷启动如果用户原话已明确页面主题、模块范围或“直接实现”的意图，Agent 先给一句 mini-plan，再直接进入 starter。
 - `openprd canvas <path> [--thread <id> [--thread-title <name>]|--session <id> [--session-title <name>]] [--host <host>] [--port <number>] [--daemon|--stop] [--open] [--open-target <auto|system|codex-browser>] [--dry-run] [--json]` 是本地对话协同画布入口。
   - 使用 Excalidraw embed 作为可编辑画布，服务端由 OpenPrd 按 session-key 管理文件事实源。
   - Agent 可向 `/api/images` 推送 Image 2 结果或本地图片，浏览器会把图片放入指定 `placeholderId`、选中卡片或最近的空白卡片；用户导出的标注图落到该对话的 `exports/`。
@@ -236,7 +235,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - 画布结构化协同接口：`GET /api/selection` 返回当前选中元素的 ID、类型、坐标、尺寸、文本、`openprdRole` 和整体 bounds，让 Agent 不必靠截图猜选区；`POST /api/insert-image` 支持 `anchorElementId` + `placement`（right/left/below/above）+ 可选 `gap/width/height/aspectRatio`，把新图放到指定元素旁边并在 `ops.json` 记录 `box` 与 `sizeContract`；anchor 不存在时返回 404。
   - 标注改图闭环：前端识别“选区同时包含图片元素和非图片标注元素”后，把 handoff 的 `selection` 标为 `annotation-edit`，携带 `sourceImageElementIds` / `annotationElementIds`，提示词自动附上“把标注当修改指令、生成新图后用 `POST /api/insert-image` 以原图为 anchor 放到旁边”的插入契约，支持原图与新版对比和多轮标注迭代。
   - 生图尺寸契约：AI 生图模板 handoff 与提示词 JSON 都携带 `sizeContract`（width/height/aspectRatio），要求 Agent 按占位卡宽高比出图，避免回填变形；服务端 `normalizeCanvasSizeContract` 负责清洗该字段。
-  - 唤起机制：Codex hook 的 `analyzePromptIntent` 识别画布协同类请求（画布/canvas + 标注/协同/改图/回填等），通过 `canvasCollaborationMessage` 注入画布绑定、结构化读写接口、标注改图闭环和尺寸契约指引；canonical 指南同步下发相同契约。
+  - 画布协同由 Agent 读取 canonical 指南和 repo-local binding 后主动执行；Codex hook 不再识别提示词或注入画布说明。
   - 选区包含图片时，底部条可把当前选区导出为 PNG 并复制到系统下载文件夹。
   - 日常协同默认使用 `--daemon`，让服务在 Agent 当前工具会话结束后继续可访问；`--stop` 按同一 binding 停止后台进程。
 - 大界面改动视觉方案评审不新增 CLI 命令，由 agent guidance 编排 Codex Computer Use、`imagegen`（Codex 原生 Image 2）和 `.openprd/harness/visual-reviews/` 归档。该流程发生在实现前，用于用户选择设计方向；`visual-compare` 不能替代实现前方向评审，只负责实现后的参考图/实现图对比或修改前/修改后自检。
@@ -260,7 +259,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
 
 - 用户命令进入 `main(argv)`，由 `src/cli/args.js` 解析 flags 和 positionals。
 - `main` 根据命令分发到 workspace workflow、review、diagram、standards、quality、visual compare、dev standards、growth、loop、openspec、discovery、fleet、self-update / upgrade 或 run 模块。
-- `run --context` 是业务状态的纯读取入口，不更新 adoption、run-state、task graph 或 progress；只有 hook 注入模式会在 `.openprd/harness/context-cache/` 与 `context-telemetry.jsonl` 写缓存和观测数据。相同 revision 的后续轮次优先返回 delta capsule。
+- `run --verify` 是业务状态的只读验证入口；`run --record-hook` 只记录 hook 事件。OpenPrd 不再生成 Agent 上下文、维护上下文缓存或写上下文 telemetry。
 - 工作区状态主要读写 `.openprd/` 下的 config、templates、state、engagements、exports、harness、changes、specs 和 archive 文件。
   - JSON/Markdown 作为事实源和归档层；澄清阶段只输出对话内提纲，评审与质量阶段以 HTML artifact 作为主要确认与评审界面。
   - `setup/update/fleet --update-openprd` 会把旧根目录 `openprd/` 中的 OpenPrd 工作产物迁入 `.openprd/`，有冲突时保留旧文件并报告人工处理。
@@ -297,7 +296,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - 以及：历史 active change 的需求级健康提醒、benchmark/icon resource 路由、多对象多维信息的 Markdown 表格输出判断和文档影响判定规则；大量只读扫描调度保留在 discovery skill 中。
   - 生成层还会把手工作战卡、one-thing MVP、weekend test、first-customer path、初始收费假设、customer-1 profitability，以及可逆性 / 客户真问题 / 价值观一致性 / 长期业务形态这组创业验证提示同步写进 skills、AGENTS 和 Codex hook 文案，确保 blind worker 也会自然沿用同一套判断框架。
   - 界面与前端体验任务额外路由到 `openprd-frontend-design`，要求先读取 `.openprd/design/`，再用 `facts-sheet / asset-spec / image-preflight / direction-plan / selected-direction` 锁定事实、素材、真图前提和选定方向；若用户已经给了效果图、设计稿或参考图，生成物还要明确提醒“参考图优先、样式库只做贴近实现”。
-  - 空白前端冷启动若用户原话已明确页面主题、模块范围或“直接实现”的意图，优先引导 `run --context --message <用户原话>`，并在 starter 落地后默认进入 `Patch Mode`。
+  - 空白前端冷启动若用户原话已明确页面主题、模块范围或“直接实现”的意图，Agent 先给一句 mini-plan，再进入 starter，并在 starter 落地后默认进入 `Patch Mode`。
   - 生成合同必须声明：OpenPrd artifact 不承担执行授权；用户明确要求实现/继续/提交/发布时，Agent 不因 requirement、review、change、tasks、设计合同或文档债结束本轮索取确认。
 - `openspec/generate` 生成的 `spec.md` 使用中文结构字段，并在 change tasks 中加入业务护栏验证，以及 `blocking: false` 的当前基础文档/说明书后台维护任务；历史实现材料不生成维护任务。
   - 生成任务用 `type` 区分实现、验证、文档和治理工作，避免文档/校验 checkbox 误触发长程实现阈值。

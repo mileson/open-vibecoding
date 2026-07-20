@@ -600,13 +600,6 @@ function sessionBindingPath(root, sessionId = null) {
   return path.join(sessionBindingDir(root), `${String(sessionId).replace(/[^A-Za-z0-9._-]/g, '_')}.json`);
 }
 
-function openprdHome() {
-  return path.resolve(process.env.OPENPRD_HOME || path.join(os.homedir(), '.openprd'));
-}
-
-function sessionRegistryPath() {
-  return path.join(openprdHome(), 'registry', 'sessions.jsonl');
-}
 
 function truthyFlag(value) {
   return /^(1|true|yes|on)$/i.test(String(value ?? '').trim());
@@ -857,70 +850,6 @@ function readSessionBinding(root, sessionId = null) {
   return readJsonSync(sessionBindingPath(root, sessionId), null);
 }
 
-function appendJsonLineAtomic(filePath, value) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  const fd = fs.openSync(filePath, 'a', 0o600);
-  try {
-    fs.writeSync(fd, `${JSON.stringify(value)}\n`);
-    fs.fsyncSync(fd);
-  } finally {
-    fs.closeSync(fd);
-  }
-}
-
-function sessionRegistryProjection(entry = {}) {
-  return {
-    sessionId: entry.sessionId ?? null,
-    workspaceRoot: entry.workspaceRoot ?? null,
-    laneKind: entry.laneKind ?? 'requirement',
-    tool: entry.tool ?? 'codex',
-    threadId: entry.threadId ?? null,
-    changeId: entry.changeId ?? null,
-    taskHandle: entry.taskHandle ?? null,
-    workUnitId: entry.workUnitId ?? null,
-    versionId: entry.versionId ?? null,
-    digest: entry.digest ?? null,
-    title: entry.title ?? null,
-    targetRoot: entry.targetRoot ?? null,
-    promptPreview: entry.promptPreview ?? null,
-    reviewStatus: entry.reviewStatus ?? null,
-    gateStatus: entry.gateStatus ?? null,
-    gateActive: entry.gateActive === true,
-  };
-}
-
-function writeSessionRegistryEntry(root, sessionId, binding, previous = null) {
-  if (!sessionId) {
-    return null;
-  }
-  const workspaceRoot = path.resolve(root);
-  const projection = sessionRegistryProjection({
-    ...binding,
-    sessionId,
-    workspaceRoot,
-  });
-  const previousProjection = previous
-    ? sessionRegistryProjection({ ...previous, sessionId, workspaceRoot })
-    : null;
-  if (previousProjection && JSON.stringify(previousProjection) === JSON.stringify(projection)) {
-    return null;
-  }
-  const recordedAt = binding.updatedAt || now();
-  const entry = {
-    version: 1,
-    ...projection,
-    realpath: workspaceRoot,
-    targetRoot: projection.targetRoot ? path.resolve(projection.targetRoot) : null,
-    statePath: sessionStatePath(root, sessionId),
-    bindingPath: sessionBindingPath(root, sessionId),
-    firstRegisteredAt: previous?.createdAt || binding.createdAt || recordedAt,
-    lastRegisteredAt: recordedAt,
-    lastUpdatedAt: recordedAt,
-    recordedAt,
-  };
-  appendJsonLineAtomic(sessionRegistryPath(), entry);
-  return entry;
-}
 
 function writeSessionBinding(root, sessionId, patch = {}) {
   if (!sessionId) {
@@ -937,7 +866,6 @@ function writeSessionBinding(root, sessionId, patch = {}) {
     updatedAt: patch.updatedAt ?? now(),
   };
   writeJsonSync(filePath, next);
-  writeSessionRegistryEntry(root, sessionId, next, previous);
   return next;
 }
 
@@ -1435,164 +1363,6 @@ function changeRequirementSummary(root, changeId) {
     summary,
     pendingTasks: pendingTaskTitles(root, changeId),
   };
-}
-
-function runOpenPrdContext(cwd, prompt = null) {
-  const args = ['run', '.', '--context', '--json', '--hook-inject'];
-  if (String(prompt || '').trim()) {
-    args.push('--message', String(prompt).trim());
-  }
-  const json = runOpenPrd(args, cwd);
-  if (json.stdout) {
-    try {
-      const parsed = JSON.parse(json.stdout);
-      return {
-        ok: true,
-        commandOk: json.ok,
-        status: json.status,
-        parsed,
-        stdout: renderRunContextText(parsed),
-      };
-    } catch {}
-  }
-  const fallbackArgs = ['run', '.', '--context'];
-  if (String(prompt || '').trim()) {
-    fallbackArgs.push('--message', String(prompt).trim());
-  }
-  const text = runOpenPrd(fallbackArgs, cwd);
-  return {
-    ok: text.ok,
-    parsed: null,
-    stdout: text.stdout,
-  };
-}
-
-function knowledgeSkillContextLines(knowledgeSkills) {
-  const matched = Array.isArray(knowledgeSkills?.matched) ? knowledgeSkills.matched : [];
-  if (matched.length === 0) {
-    return [];
-  }
-  const mandatoryCheck = knowledgeSkills?.mandatoryCheck ?? null;
-  const lines = [
-    mandatoryCheck?.required
-      ? `项目级经验候选: 找到 ${matched.length} 条，并已加入当前上下文供判断`
-      : `项目级 Skill: 自动命中 ${matched.length} 个，并已加入当前上下文`,
-  ];
-  if (mandatoryCheck?.required) {
-    lines.push(`${mandatoryCheck.title}: ${mandatoryCheck.summary}`);
-    for (const instruction of (mandatoryCheck.instructions ?? []).slice(0, 4)) {
-      lines.push(`- ${instruction}`);
-    }
-    if (Array.isArray(mandatoryCheck.focusSignals) && mandatoryCheck.focusSignals.length > 0) {
-      lines.push(`当前判断线索: ${mandatoryCheck.focusSignals.join('；')}`);
-    }
-  }
-  for (const skill of matched.slice(0, 3)) {
-    lines.push(`- ${skill.skillName}: ${skill.matchSummary || '命中当前上下文'}`);
-    const useWhen = String(skill.useWhen || skill.description || '').trim().replace(/^use when\b[:：]?\s*/i, '').trim();
-    if (useWhen) {
-      lines.push(`  适用时机: ${useWhen}`);
-    } else if (skill.description) {
-      lines.push(`  说明: ${skill.description}`);
-    }
-    if (Array.isArray(skill.reviewFirst) && skill.reviewFirst.length > 0) {
-      lines.push(`  先看: ${skill.reviewFirst.slice(0, 3).join('；')}`);
-    }
-    if (Array.isArray(skill.antiPatterns) && skill.antiPatterns.length > 0) {
-      lines.push(`  不要直接套用: ${skill.antiPatterns.slice(0, 2).join('；')}`);
-    }
-    if (Array.isArray(skill.touchedFiles) && skill.touchedFiles.length > 0) {
-      lines.push(`  相关文件: ${skill.touchedFiles.slice(0, 4).join('；')}`);
-    }
-    if (skill.adoption) {
-      lines.push(`  复用指标: 命中 ${skill.adoption.hitCount || 0} / 引用 ${skill.adoption.referencedCount || 0} / 注入 ${skill.adoption.injectedCount || 0}`);
-    }
-  }
-  return lines;
-}
-
-function renderRunContextText(result) {
-  if (String(result?.contextText || '').trim()) {
-    return String(result.contextText).trim();
-  }
-  const lines = [
-    '当前进展参考',
-    '当前项目: ' + result.projectRoot,
-    '基础检查: ' + (result.validation?.valid ? '通过' : '失败'),
-  ];
-  if (result.activeRequirementGate) {
-    const gateStatus = result.activeRequirementGate.status ?? 'active';
-    const gateSuffix = result.activeRequirementGate.relevance === 'background' ? '（仅背景提醒）' : '';
-    lines.push('当前处理阶段: ' + gateStatus + gateSuffix);
-  }
-  if (result.activeChange) {
-    const label = result.recommendation?.type === 'requirement-intake' ? '历史聚焦事项' : '当前聚焦事项';
-    lines.push(label + ': ' + result.activeChange);
-  }
-  if (result.lane?.summary) {
-    lines.push('当前处理路径: ' + result.lane.summary);
-  }
-  if (result.taskSummary) {
-    lines.push('后续任务进度: ' + result.taskSummary.completed + '/' + result.taskSummary.total + ' 完成，' + result.taskSummary.pending + ' 待处理，' + result.taskSummary.blocked + ' 阻塞');
-    if (result.taskSummary.implementation) {
-      lines.push('待落地任务: ' + result.taskSummary.implementation.completed + '/' + result.taskSummary.implementation.total + ' 完成，' + result.taskSummary.implementation.pending + ' 待处理');
-    }
-  }
-  if (result.discovery) {
-    lines.push('调研进度: ' + result.discovery.runId + ' 已覆盖 ' + result.discovery.summary.covered + '/' + result.discovery.summary.total + '，待处理 ' + result.discovery.summary.pending);
-  }
-  lines.push(...knowledgeSkillContextLines(result.knowledgeSkills));
-  lines.push('对外表达: 面向用户时，请优先说“本次调整”“后续任务”“继续落地”“完成后检查”这类人话，不要直接复述内部编号、命令、路径、版本号或流程术语。');
-  const recommendation = result.recommendation || {};
-  const clarifyReplyRequired = (recommendation.nextAction ?? '') === 'clarify-user'
-    || recommendation.title === 'clarify-user'
-    || recommendation.title === '继续本轮需求入口澄清';
-  lines.push('建议下一步: ' + recommendation.title);
-  lines.push('这样安排的原因: ' + recommendation.reason);
-  if (clarifyReplyRequired) {
-    lines.push('后台维护建议: 整理 requirement 摘要；只有真实歧义会明显改变结果时才追问 1 个最高价值问题。用户已明确要求实现或继续时，采用可逆默认方案推进，不因 OpenPrd 材料未完成而停顿。');
-  }
-  if (recommendation.preparationCommand || recommendation.executionCommand || recommendation.commitCommand) {
-    lines.push('执行边界: 用户明确要求继续落地、实现、修复、深挖或提交时即可推进；若用户只要求规划、分析或评审，则保持只读。');
-  }
-  const checklist = recommendation.executionConfirmationChecklist;
-  if (checklist?.required) {
-    lines.push('后台范围记录（不要求用户批准）:');
-    if (checklist.objective) {
-      lines.push('- 这次要做什么: ' + checklist.objective);
-    }
-    if (checklist.scope?.length > 0) {
-      lines.push('- 这次范围: ' + checklist.scope.join('；'));
-    }
-    if (checklist.implementationItems?.length > 0) {
-      lines.push('- 我会这样推进: ' + checklist.implementationItems.join('；'));
-    }
-    if (checklist.outOfScope?.length > 0) {
-      lines.push('- 这次先不做: ' + checklist.outOfScope.join('；'));
-    }
-    if (checklist.verification?.length > 0) {
-      lines.push('- 完成后会检查: ' + checklist.verification.join('；'));
-    }
-    if (checklist.risks?.length > 0) {
-      lines.push('- 需要提前知道: ' + checklist.risks.join('；'));
-    }
-    lines.push('- 处理方式: Agent 依据当前用户意图维护这份清单；它不是实现授权门禁。');
-  }
-  if (recommendation.preparationCommand) {
-    lines.push('内部准备参考: ' + recommendation.preparationCommand);
-  }
-  if (recommendation.executionCommand) {
-    lines.push('内部执行参考: ' + recommendation.executionCommand);
-  }
-  if (recommendation.commitCommand) {
-    lines.push('内部提交参考: ' + recommendation.commitCommand);
-  }
-  if (recommendation.loop?.worktreeRecommended || recommendation.isolation?.worktreeRecommended) {
-    lines.push('环境建议: 最好放到单独环境里继续，避免和别的事项串线。');
-  }
-  lines.push('内部检查参考: ' + recommendation.verifyCommand);
-  lines.push('内部状态参考: ' + (result.files?.runState || '.openprd/harness/run-state.json'));
-  return lines.filter(Boolean).join('\n');
 }
 
 function inferLearningGenre(text) {
@@ -2312,94 +2082,27 @@ function syncPatchModeGate(root, payload, sessionId = null, intent = null) {
 function evaluateRequirementGateProgress(root, sessionId = null) {
   const gate = readRequirementGate(root, sessionId);
   const binding = readSessionBinding(root, sessionId);
-  const promptPreview = gate?.promptPreview ?? binding?.promptPreview ?? null;
-  const run = runOpenPrdContext(root, promptPreview);
-  const parsed = run.parsed ?? {};
   const review = readRequirementLaneReview(root, sessionId);
-  const targetedFocusChangeId = parsed?.lane?.kind === 'targeted'
-    ? (parsed.focus?.changeId ?? null)
-    : null;
-  const activeChange = binding?.changeId
-    ?? (sessionId
-      ? (targetedFocusChangeId ?? null)
-      : (targetedFocusChangeId ?? parsed.focus?.changeId ?? parsed.activeChange ?? null));
+  const activeChange = binding?.changeId ?? null;
   const taskSummary = activeChange ? readLocalTaskSummary(root, activeChange) : null;
   const hasTaskBreakdown = Boolean(activeChange && Number(taskSummary?.total ?? 0) > 0);
-  const approvalPolicy = requirementApprovalPolicy(gate);
-  const clarificationConfirmed = requirementWritePathExplicitlyAuthorized(gate);
-  const recommendationNextAction = run.parsed?.recommendation?.nextAction
-    ?? run.parsed?.recommendation?.title
-    ?? '';
-  const missingRequiredFields = Number(run.parsed?.analysis?.missingRequiredFields ?? 0);
-  const lacksProductType = !run.parsed?.analysis?.productType;
-  const clarificationStillNeedsWriteback = clarificationConfirmed
-    && recommendationNextAction === 'clarify-user'
-    && (lacksProductType || missingRequiredFields > 0);
-  const classificationStillNeeded = clarificationConfirmed && recommendationNextAction === 'classify';
-  const interviewStillNeeded = clarificationConfirmed && recommendationNextAction === 'interview';
   let nextStep = 'implementation-ready';
-  let reason = '这版需求和后续任务都已经准备好了；用户已表达实现或继续意图时直接推进，OpenPrd 不追加确认口令。';
-  if (!review.versionId) {
-    nextStep = clarificationConfirmed
-      ? (
-          clarificationStillNeedsWriteback
-            ? 'clarification-writeback-background'
-            : classificationStillNeeded
-              ? 'product-type-classification-background'
-              : interviewStillNeeded
-                ? 'requirement-interview-background'
-                : 'prd-synthesis-background'
-        )
-      : 'requirement-summary-background';
-    reason = clarificationConfirmed
-      ? (
-          clarificationStillNeedsWriteback
-            ? '用户已经确认当前需求摘要或默认方案，但 current.json 里还没有把这轮确认内容按 canonical 字段稳定写回。不要重新回到泛化 clarify，也不要继续写 agent-inferred / project-derived 事实；请直接用 openprd capture 按 canonical 字段路径并以 user-confirmed 写回这轮已确认内容。'
-            : classificationStillNeeded
-              ? '用户已经确认当前需求摘要，但当前 lane 还没有锁定产品场景。先完成 openprd classify .，让产品场景和后续写回事实一致，再继续 synthesize。'
-              : interviewStillNeeded
-                ? '用户已经确认当前需求摘要，但当前 lane 仍缺少必填 requirement 事实。先继续用 openprd capture 按 canonical 字段补齐当前范围、目标、约束和交接信息；如还缺问题，再用 openprd interview . 收敛剩余缺口，然后继续 synthesize。'
-            : (
-                reviewPolicyAllowsSilentRecord(approvalPolicy)
-                  ? '用户已明确表示不需要再停下来确认，本轮可以直接整理需求事实、生成这版确认稿，并继续后面的整理步骤。'
-                  : '当前需求摘要已有来源记录，下一步在后台把内容整理成稳定的后台需求稿。'
-              )
-        )
-      : '在后台按“需求判断 / 需求理解 / 功能范围 / 技术方案”整理结构化摘要，并为事实保留 user-confirmed、agent-inferred 或 project-derived 来源。信息不完整时采用可逆默认值并显式记录假设，不把推断伪装成用户确认，也不延迟用户已要求的实现。若当前还在判断值不值得做，同时补上验证与创业闭环。';
-  } else if (review.status === 'needs-revision') {
-    nextStep = 'review-revision-background';
-    reason = '当前需求稿被标记为需要调整；Agent 在后台生成新的当前版本并保持历史版本冻结，不把旧稿改写成新事实。';
-  } else if (review.status !== 'confirmed') {
-    nextStep = reviewPolicyAllowsSilentRecord(approvalPolicy)
-      ? 'review-recording-background'
-      : 'review-background';
-    reason = reviewPolicyAllowsSilentRecord(approvalPolicy)
-      ? '这版需求稿已经生成；Agent 在后台记录稳定版本并继续整理本次调整和后续任务。'
-      : '这版需求稿仍是 Agent 后台材料；继续用户已要求的工作，同时保留来源标签，不把“请帮我实现/继续实现”误记为对稿件逐字确认。';
-  } else if (!activeChange) {
-    nextStep = 'change-generation-background';
-    reason = 'Agent 在后台生成本次 current change 并整理调整范围。';
-  } else if (!hasTaskBreakdown) {
-    nextStep = 'task-breakdown-background';
-    reason = 'Agent 在后台把本次调整拆成可验证的后续任务。';
-  }
-  if (review.staleReview?.versionId) {
-    reason += ` 另外检测到工作区里残留了一份属于其他会话的历史确认稿（${review.staleReview.versionId}），本轮已自动忽略它；不要尝试确认或复用那份旧稿，直接按当前需求生成新的确认稿。`;
-  }
+  if (!review.versionId) nextStep = 'requirement-summary-background';
+  else if (review.status === 'needs-revision') nextStep = 'review-revision-background';
+  else if (review.status !== 'confirmed') nextStep = 'review-recording-background';
+  else if (!activeChange) nextStep = 'change-generation-background';
+  else if (!hasTaskBreakdown) nextStep = 'task-breakdown-background';
   return {
-    runContext: parsed,
     binding,
     review,
     activeChange,
     taskSummary,
-    recommendation: parsed.recommendation ?? null,
     hasTaskBreakdown,
-    approvalPolicy,
+    approvalPolicy: requirementApprovalPolicy(gate),
     nextStep,
-    reason,
+    reason: 'OpenPrd 只记录当前工作区事实；任务上下文与下一步由 Agent 自己管理。',
   };
 }
-
 function reviewArtifactRecordFor(intent, progress, prompt) {
   const review = progress?.review ?? null;
   const requested = intent?.reviewCommand ?? null;
@@ -2690,7 +2393,6 @@ function isAllowedDuringRequirementGate(root, payload, gate, sessionId = null) {
   const alwaysAllowed = [
     /openprd\s+status\b/i,
     /openprd\s+next\b/i,
-    /openprd\s+run\s+\.\s+--context\b/i,
     /openprd\s+run\s+\.\s+--verify\b/i,
     /openprd\s+clarify\b/i,
     /openprd\s+interview\b/i,
@@ -2709,7 +2411,7 @@ function toolProbe(payload) {
 function looksLikeLocalEvidenceRead(payload) {
   const probe = toolProbe(payload);
   return /\b(rg|grep|cat|sed|head|tail|less|more|wc|ls|find|git show|read_file|open_file|view_file)\b/.test(probe)
-    || /openprd\s+(status|next|doctor|run\s+\.\s+--context|run\s+\.\s+--verify)/.test(probe);
+    || /openprd\s+(status|next|doctor|run\s+\.\s+--verify)/.test(probe);
 }
 
 function applyResearchToolSignal(root, payload, sessionId = null) {
@@ -2876,18 +2578,6 @@ function productCopyMessage(intent) {
     '除非这是面向开发者或专业技术人员的技术型产品，否则默认用普通人能看懂的语言写结果、状态、限制和行动，不要把 API、SDK、模型、数据库、缓存、错误码或其他实现细节直接暴露给用户。',
     '快速正反例：不要写“适合想保留全部工具入口的用户”，改成“首页会显示所有工具入口，你可以直接选择需要的功能”；不要写“API 请求失败，错误码 500”，改成“暂时保存失败，请稍后再试”。技术型产品可以保留必要术语，但仍要写清用户动作、影响和修复路径。',
   ].join('\n');
-}
-
-function composeHookContext(root, intent = null, gate = null, progress = null, sessionId = null) {
-  return [
-    contextMessage(root, intent, gate, progress),
-    researchGateMessage(readNamedGate(root, 'research', sessionId)),
-    skillVisualizationGateMessage(readNamedGate(root, 'skill-visualization', sessionId)),
-    credentialMessage(intent),
-    weappGateMessage(readNamedGate(root, 'weapp', sessionId)),
-    browserSafetyMessage(intent),
-    productCopyMessage(intent),
-  ].filter(Boolean).join('\n');
 }
 
 function runOpenPrd(args, cwd) {
@@ -3341,175 +3031,6 @@ function requirementRoutingSummary() {
   return '需求类型由 $openprd-requirement-intake 按影响面、未知数、决策成本和验证成本判断：直接处理(L0)直接完成；现有功能优化(L1)用轻量 mini-plan；新功能/新流程方案(L2)由 Agent 在后台维护 requirement、PRD、review、change 和 tasks。用户说“实现、继续、修复、部署、发布”就是当前目标范围内的有效执行意图，不再要求补确认口令或流程材料。';
 }
 
-function historicalRequirementReminder(root, runContext, intent, gate) {
-  const activeChange = runContext?.activeChange;
-  if (!activeChange || (!intent?.requiresIntake && !(intent?.confirmation && gate?.promptPreview))) {
-    return null;
-  }
-  const summary = changeRequirementSummary(root, activeChange);
-  return [
-    'OpenPrd 历史上下文提醒',
-    '检测到较早工作留下的 active change 标记。它只作为只读上下文，不是本轮待办、完成度要求或阻碍。',
-    '不要补写、推断还原或改写历史 requirement、PRD、review、change、tasks 和 implementation 文档；旧 change 不再作为本轮执行入口。',
-    '如果本轮重新处理相关旧功能，为本轮创建一份关联该历史记录的新 current requirement/change；如果无关，直接忽略这份历史上下文。',
-    '`docs/basic/` 与代码、文件、目录说明书是活文档，可基于当前源码和可验证运行事实在本轮后台维护；不要借此重建当年的实现理由。',
-    '历史上下文标题: ' + summary.title,
-    summary.summary ? '历史上下文摘要: ' + summary.summary : '',
-    '历史引用: ' + activeChange,
-  ].filter(Boolean).join('\n');
-}
-
-function knowledgeSkillReminder(runContext) {
-  const lines = knowledgeSkillContextLines(runContext?.knowledgeSkills);
-  return lines.length > 0 ? lines.join('\n') : null;
-}
-
-function contextMessage(cwd, intent = null, gate = null, progress = null) {
-  const run = progress?.runContext
-    ? { ok: true, parsed: progress.runContext, stdout: renderRunContextText(progress.runContext) }
-    : runOpenPrdContext(cwd, intent?.promptText ?? null);
-  const effectiveProgress = progress ?? evaluateRequirementGateProgress(cwd);
-  const gateMessage = requirementGateMessage(intent, gate) || confirmationGateMessage(gate);
-  const runText = String(run.stdout || '');
-  const largeUiContext = runText.includes('OpenPrd 大界面改动视觉方案评审:') ? null : largeUiVisualDirectionMessage(intent);
-  const visualAdjustmentContext = runText.includes('如果这轮验收重点在局部变化') ? null : visualLocalAdjustmentMessage();
-  if (run.ok) {
-    const separateCurrentRequirement = Boolean(intent?.requiresIntake || ((intent?.confirmation || intent?.reviewDecision) && gate?.promptPreview));
-    if (separateCurrentRequirement) {
-      return [
-        currentRequirementMessage(intent, gate, effectiveProgress),
-        historicalRequirementReminder(cwd, run.parsed, intent, gate),
-        knowledgeSkillReminder(run.parsed),
-        'OpenPrd 上下文只是建议，不是自动执行指令。请先判断用户当前意图。',
-        lightweightRequirementMessage(intent),
-        visualMockupMessage(intent, cwd),
-        canvasCollaborationMessage(intent),
-        learningReviewMessage(intent),
-        largeUiContext,
-        visualAdjustmentContext,
-        requirementRoutingSummary(),
-        '如果用户只是要求看看、规划、分析、审查、解释影响或列出文件，请保持只读并基于证据回答；不要运行 OpenPrd loop、任务推进、discovery 推进、commit 或其他写入命令。',
-        '只有当用户当前明确要求开发、实现、修复、继续任务、深度调研、对标复刻或提交时，才运行 openprd loop --run、openprd tasks --advance、openprd discovery --advance、commit/push 等执行命令。',
-        devCheckTaskScopedAdvisory(),
-        '大界面改动的效果图先当候选效果图；Agent 可选择最符合目标且可逆的默认方向继续，并说明假设。用户明确选择时再更新 `.openprd/harness/visual-reviews/`，OpenPrd 不强制确认停顿。',
-        '涉及界面、页面、视觉、样式或前端体验时，已有用户参考图或 Agent 采用的可逆默认参考方向时运行 openprd visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en>；如果一张参考图里有多个子图/对象/网格，先运行 openprd visual-prepare . --reference <效果图> --grid <列>x<行> 或 --boxes <plan.json>，确认 contact sheet 后再逐项对比。没有明确参考图时先判断新建还是修改：新建界面由 Agent 在后台完成 3 方向方案评审并采用可逆默认方向；修改既有界面则动手前先截修改前截图，完成后运行 openprd visual-compare . --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>；如果并行试了多个优化方向，再补一份 openprd visual-compare . --board <parallel-board.json> --locale <zh-CN|en>。普通截图、Computer/Browser/Playwright 实测截图只能作为原始素材，收口前要补 openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en> 的截图实测证据板。新开发或修改同构列表、卡片、网格、表格时，或用户反馈没对齐/排版漂移时，还要补 openprd visual-compare . --board <alignment-board.json> --locale <zh-CN|en> 的对齐辅助线证据板，同时量测容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位的 x/y/宽高/baseline spread。单个素材/图标/头像/徽标/按钮图形/图片内部居中、偏心或视觉重心判断时，还要补 openprd visual-compare . --board <centering-board.json> --locale <zh-CN|en> 的内部居中证据板，同时量测画布中心、主体外接框中心和视觉重心偏移。用户后续如果说“跟效果图”“不一致”“好丑”“复刻”，不能只口头说对比过了，至少产出一份 visual-compare / focus-board / parallel-board / verification-board / alignment-board / centering-board 证据图。',
-        '发现可沉淀项时不要中途打断任务：代码扩展识别这类白名单工具补全会自动应用并记录；用户偏好、项目协作规矩和 OpenPrd 默认行为先记录为候选，收工时运行 openprd grow . --review 后台复盘，不创建用户确认停顿。',
-        '维护 OpenPrd 本身且涉及配置类能力时，先判断是否应纳入 openprd grow；高置信可成长默认纳入，不确定则主动询问用户。',
-        '涉及后端、脚本、Agent、工具链、服务或数据处理变更时，把 CLI 与 API 视为同级接入面：同步检查命令入口、参数、输出契约、help/doctor/dry-run/status 与接口协议、返回结构、身份边界是否受影响，并更新 docs/basic/backend-structure.md 或明确写不适用原因。',
-        '声明实现就绪前，先运行 openprd standards . --verify、openprd quality . --verify 和 openprd run . --verify；L2 或跨页面实现的最终回复要列出最新 HTML 质量报告和 task-scoped Markdown/HTML 测试报告路径。',
-      ].filter(Boolean).join('\n');
-    }
-    return [
-      run.stdout,
-      gateMessage,
-      knowledgeSkillReminder(run.parsed),
-      'OpenPrd 上下文只是建议，不是自动执行指令。请先判断用户当前意图。',
-      lightweightRequirementMessage(intent),
-      visualMockupMessage(intent, cwd),
-      canvasCollaborationMessage(intent),
-      learningReviewMessage(intent),
-      largeUiContext,
-      visualAdjustmentContext,
-      requirementRoutingSummary(),
-      '如果用户只是要求看看、规划、分析、审查、解释影响或列出文件，请保持只读并基于证据回答；不要运行 OpenPrd loop、任务推进、discovery 推进、commit 或其他写入命令。',
-      '只有当用户当前明确要求开发、实现、修复、继续任务、深度调研、对标复刻或提交时，才运行 openprd loop --run、openprd tasks --advance、openprd discovery --advance、commit/push 等执行命令。',
-      devCheckTaskScopedAdvisory(),
-      '大界面改动的效果图先当候选效果图；Agent 可选择最符合目标且可逆的默认方向继续，并说明假设。用户明确选择时再更新 `.openprd/harness/visual-reviews/`，OpenPrd 不强制确认停顿。',
-      '涉及界面、页面、视觉、样式或前端体验时，已有用户参考图或 Agent 采用的可逆默认参考方向时运行 openprd visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en>；如果一张参考图里有多个子图/对象/网格，先运行 openprd visual-prepare . --reference <效果图> --grid <列>x<行> 或 --boxes <plan.json>，确认 contact sheet 后再逐项对比。没有明确参考图时先判断新建还是修改：新建界面由 Agent 在后台完成 3 方向方案评审并采用可逆默认方向；修改既有界面则动手前先截修改前截图，完成后运行 openprd visual-compare . --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>；如果并行试了多个优化方向，再补一份 openprd visual-compare . --board <parallel-board.json> --locale <zh-CN|en>。普通截图、Computer/Browser/Playwright 实测截图只能作为原始素材，收口前要补 openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en> 的截图实测证据板。新开发或修改同构列表、卡片、网格、表格时，或用户反馈没对齐/排版漂移时，还要补 openprd visual-compare . --board <alignment-board.json> --locale <zh-CN|en> 的对齐辅助线证据板，同时量测容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位的 x/y/宽高/baseline spread。单个素材/图标/头像/徽标/按钮图形/图片内部居中、偏心或视觉重心判断时，还要补 openprd visual-compare . --board <centering-board.json> --locale <zh-CN|en> 的内部居中证据板，同时量测画布中心、主体外接框中心和视觉重心偏移。用户后续如果说“跟效果图”“不一致”“好丑”“复刻”，不能只口头说对比过了，至少产出一份 visual-compare / focus-board / parallel-board / verification-board / alignment-board / centering-board 证据图。',
-      '发现可沉淀项时不要中途打断任务：代码扩展识别这类白名单工具补全会自动应用并记录；用户偏好、项目协作规矩和 OpenPrd 默认行为先记录为候选，收工时运行 openprd grow . --review 后台复盘，不创建用户确认停顿。',
-      '维护 OpenPrd 本身且涉及配置类能力时，先判断是否应纳入 openprd grow；高置信可成长默认纳入，不确定则主动询问用户。',
-      '涉及后端、脚本、Agent、工具链、服务或数据处理变更时，把 CLI 与 API 视为同级接入面：同步检查命令入口、参数、输出契约、help/doctor/dry-run/status 与接口协议、返回结构、身份边界是否受影响，并更新 docs/basic/backend-structure.md 或明确写不适用原因。',
-      '声明实现就绪前，先运行 openprd standards . --verify、openprd quality . --verify 和 openprd run . --verify；L2 或跨页面实现的最终回复要列出最新 HTML 质量报告和 task-scoped Markdown/HTML 测试报告路径。',
-    ].filter(Boolean).join('\n');
-  }
-  const status = runOpenPrd(['status', '.'], cwd);
-  const next = runOpenPrd(['next', '.'], cwd);
-  if (!status.ok && !next.ok) {
-    return '已安装 OpenPrd harness，但本轮无法读取工作区状态。声明就绪前请先运行 openprd doctor .。';
-  }
-  return [
-    'OpenPrd harness 上下文:',
-    status.ok ? status.stdout : '',
-    next.ok ? next.stdout : '',
-    gateMessage,
-    lightweightRequirementMessage(intent),
-    visualMockupMessage(intent, cwd),
-    canvasCollaborationMessage(intent),
-    learningReviewMessage(intent),
-    largeUiVisualDirectionMessage(intent),
-    requirementRoutingSummary(),
-    'OpenPrd 下一步只是建议。规划、分析、审查类请求保持只读；只有用户当前明确要求开发、深度调研、对标复刻或继续任务时才执行。',
-    devCheckTaskScopedAdvisory(),
-    '发现可沉淀项时不要中途打断任务：代码扩展识别这类白名单工具补全会自动应用并记录；用户偏好、项目协作规矩和 OpenPrd 默认行为先记录为候选，收工时运行 openprd grow . --review 后台复盘，不创建用户确认停顿。',
-    '维护 OpenPrd 本身且涉及配置类能力时，先判断是否应纳入 openprd grow；高置信可成长默认纳入，不确定则主动询问用户。',
-    '涉及后端、脚本、Agent、工具链、服务或数据处理变更时，把 CLI 与 API 视为同级接入面，并同步更新 docs/basic/backend-structure.md 或明确写不适用原因。',
-    '声明就绪前请验证 docs/basic 标准。',
-  ].filter(Boolean).join('\n');
-}
-
-function shouldInjectOpenPrdContext(payload) {
-  const prompt = promptText(payload);
-  if (!prompt.trim()) {
-    return false;
-  }
-  const intent = analyzePromptIntent(prompt);
-  const hasProjectPathReference = /(?:^|[\s`"'(])(?:src|app|lib|server|scripts|test|tests|docs|skills|openprd|openspec)\/[^\s`"'()]+/i.test(prompt);
-  if (
-    intent.simpleConcrete
-    && !intent.visualMockupRequest
-    && !intent.continuationRequest
-    && !hasProjectPathReference
-    && !intent.productCopyRequest
-    && !intent.secretsRequest
-    && !intent.weappValidationRequest
-    && !intent.browserSafetyRequest
-    && !intent.publicRepoResearchRequest
-    && !intent.externalTechResearchRequest
-    && !intent.skillWorkflowEditRequest
-    && !intent.learningMaterialRequest
-  ) {
-    return false;
-  }
-  if (intent.shouldInject) {
-    return true;
-  }
-  const normalized = prompt.toLowerCase();
-  const triggers = [
-    /openprd/i,
-    /opens*prd/i,
-    /\bprd\b/i,
-    /openprd\s+(run|loop|fleet|doctor|standards|change|discovery|handoff|freeze)/i,
-    /\b(fleet|standards)\b/i,
-    /深度调研/,
-    /深度对标/,
-    /持续调研/,
-    /复刻/,
-    /对标/,
-    /文件说明书/,
-    /文件夹说明书/,
-    /基础文档/,
-    /docs\/basic/i,
-    /standards/i,
-    /handoff/i,
-    /freeze/i,
-    /新增/,
-    /增加/,
-    /新建/,
-    /我希望/,
-    /用户反馈/,
-    /需求/,
-    /功能/,
-    /模块/,
-    /页面/,
-    /入口/,
-    /流程/,
-    /编排/,
-    /一站式/,
-    /体验/,
-  ];
-  return triggers.some((pattern) => pattern.test(normalized));
-}
-
 function classifyRisk(payload) {
   const text = payloadText(payload);
   const normalized = text.toLowerCase();
@@ -3848,99 +3369,40 @@ function handle(eventName, cwd, payload) {
   }
 
   if (eventName === 'UserPromptSubmit') {
-    if (duplicate) {
-      return allowHook();
-    }
+    if (duplicate) return allowHook();
     const prompt = promptText(payload);
     beginTurnReview(root, baseEvent, prompt);
-    let intent = analyzePromptIntent(prompt);
-    let gate = readRequirementGate(root, sessionId);
-    let skillGate = readNamedGate(root, 'skill-visualization', sessionId);
-    let researchGate = readNamedGate(root, 'research', sessionId);
-    let weappGate = readNamedGate(root, 'weapp', sessionId);
-    const shortAffirmative = isShortAffirmativeConfirmation(prompt);
-    let progress = isRequirementAttentionActive(gate) ? evaluateRequirementGateProgress(root, sessionId) : null;
-    const clarificationFollowup = isRequirementAttentionActive(gate)
-      ? looksLikeClarificationFollowupReply(prompt, intent)
-      : false;
-    if (isRequirementAttentionActive(gate) && shortAffirmative) {
-      intent = {
-        ...intent,
-        shouldInject: true,
-      };
-    }
-    if (!intent.confirmation && isRequirementAttentionActive(gate) && shortAffirmative && progress?.nextStep === 'implementation-ready') {
-      intent = {
-        ...intent,
-        confirmation: true,
-        implementationConfirmation: true,
-        shouldInject: true,
-      };
-    }
-    if (skillGate?.active && (shortAffirmative || intent.confirmation)) {
-      skillGate = confirmSkillVisualizationGate(root, prompt, sessionId);
+    const intent = analyzePromptIntent(prompt);
+    const gate = readRequirementGate(root, sessionId);
+    const skillGate = readNamedGate(root, 'skill-visualization', sessionId);
+    const researchGate = readNamedGate(root, 'research', sessionId);
+    const weappGate = readNamedGate(root, 'weapp', sessionId);
+
+    if (skillGate?.active && (isShortAffirmativeConfirmation(prompt) || intent.confirmation)) {
+      confirmSkillVisualizationGate(root, prompt, sessionId);
     } else if (intent.skillWorkflowEditRequest) {
-      skillGate = openSkillVisualizationGate(root, prompt, sessionId);
+      openSkillVisualizationGate(root, prompt, sessionId);
     } else if (skillGate?.active) {
-      skillGate = closeSkillVisualizationGate(root, sessionId, { status: 'superseded-by-new-prompt' });
+      closeSkillVisualizationGate(root, sessionId, { status: 'superseded-by-new-prompt' });
     }
     if (intent.publicRepoResearchRequest || intent.externalTechResearchRequest) {
-      researchGate = openResearchGate(root, prompt, intent, sessionId);
+      openResearchGate(root, prompt, intent, sessionId);
     } else if (researchGate?.active) {
-      researchGate = closeResearchGate(root, sessionId, { status: 'superseded-by-new-prompt' });
+      closeResearchGate(root, sessionId, { status: 'superseded-by-new-prompt' });
     }
     if (intent.weappValidationRequest) {
-      weappGate = openWeappGate(root, prompt, sessionId);
+      openWeappGate(root, prompt, sessionId);
     } else if (weappGate?.active) {
-      weappGate = closeWeappGate(root, sessionId, { status: 'superseded-by-new-prompt' });
+      closeWeappGate(root, sessionId, { status: 'superseded-by-new-prompt' });
     }
-    if (isRequirementAttentionActive(gate)) {
-      if (intent.reviewDecision) {
-        const reviewArtifactRecord = reviewArtifactRecordFor(intent, progress, prompt);
-        gate = holdRequirementGate(root, prompt, progress, sessionId, {
-          status: reviewArtifactRecord ? 'review-recorded-background' : progress.nextStep,
-          reviewArtifactRecord,
-        });
-        const outcome = 'allowed-with-requirement-attention';
-        appendEvent(root, {
-          ...baseEvent,
-          outcome,
-          reviewDecision: intent.reviewDecision,
-          reviewVersionId: progress?.review?.versionId ?? null,
-        });
-        recordRunHook(root, baseEvent, outcome);
-        updateHookState(root, baseEvent);
-        return allowHook(composeHookContext(root, intent, gate, progress, sessionId));
-      }
-      if (intent.confirmation || shortAffirmative || clarificationFollowup || isImplementationAdvanceIntent(intent)) {
-        gate = updateRequirementGate(root, {
-          status: 'requirement-background-maintenance',
-          lastUserScopePreview: preview(prompt, 500),
-          lastUserScopeAt: now(),
-        }, sessionId);
-        progress = evaluateRequirementGateProgress(root, sessionId);
-        appendEvent(root, { ...baseEvent, outcome: 'allowed-with-requirement-attention', progress });
-        recordRunHook(root, baseEvent, 'allowed-with-requirement-attention');
-        updateHookState(root, baseEvent);
-        return allowHook(composeHookContext(root, intent, gate, progress, sessionId));
-      }
+    if (intent.requiresIntake && !isRequirementAttentionActive(gate)) {
+      openRequirementGate(root, prompt, intent, sessionId);
     }
-    if (intent.requiresIntake) {
-      gate = openRequirementGate(root, prompt, intent, sessionId);
-      const result = allowHook(composeHookContext(root, intent, gate, evaluateRequirementGateProgress(root, sessionId), sessionId));
-      appendEvent(root, { ...baseEvent, outcome: 'requirement-background-opened' });
-      recordRunHook(root, baseEvent, 'requirement-background-opened');
-      updateHookState(root, baseEvent);
-      return result;
-    }
-    if (!shouldInjectOpenPrdContext(payload)) {
-      return allowHook();
-    }
-    const result = allowHook(composeHookContext(root, intent, gate, progress, sessionId));
-    appendEvent(root, { ...baseEvent, outcome: 'context-injected' });
-    recordRunHook(root, baseEvent, 'context-injected');
+    const outcome = 'prompt-observed';
+    appendEvent(root, { ...baseEvent, outcome });
+    recordRunHook(root, baseEvent, outcome);
     updateHookState(root, baseEvent);
-    return result;
+    return allowHook();
   }
 
   if (eventName === 'PreToolUse') {
@@ -4211,16 +3673,6 @@ function handle(eventName, cwd, payload) {
           }
         } catch {}
       }
-    }
-    const run = runOpenPrd(['run', '.', '--context', '--json'], root);
-    if (run.ok) {
-      try {
-        const parsed = JSON.parse(run.stdout);
-        const command = parsed?.recommendation?.command || '';
-        if (command && !/openprd\s+next\s+\./.test(command)) {
-          return allowHook(`OpenPrd background maintenance suggestion:\n${parsed.recommendation.title}\nSuggested command: ${command}\nThis suggestion does not delay the current response or require user confirmation.`);
-        }
-      } catch {}
     }
   }
 
