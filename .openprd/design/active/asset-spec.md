@@ -1,5 +1,7 @@
 # Asset Spec
 
+- task-scope: openprd-0.2.2-avatar-pixel-contract
+
 | 类型 | 资产 | 来源 | 状态 | 备注 |
 | --- | --- | --- | --- | --- |
 | logo | 复用 OpenPrd 现有文字标识 | 当前 Review topbar | reuse | 不重新设计品牌 |
@@ -11,6 +13,15 @@
 | 动效节奏 | 仅视图切换、证据展开、确认反馈 | 产品交互需求 | planned | 120–180ms，尊重 reduced-motion |
 | 背景 / 表面 | 中性灰画布 + 白色内容面 + 轻边框 | 当前 Review CSS | reuse | 避免玻璃拟态与渐变 |
 | 构图记忆点 | 顶部共享决策时间线 + 业务/工程双视图 | 方向 B | selected | 两种视图共享同一 model digest |
+
+## 位图像素合同
+
+| 资产 | rendering-mode | 原始素材 / 消费组件证据 | 源像素约束 | 验证 |
+| --- | --- | --- | --- | --- |
+| 头像或单物件 UI 位图 | 必须按当前入口显式选择 `transparent-cutout` 或 `opaque-full-bleed-tile` | 原始素材 + 消费组件/CSS；参考截图仅作视觉参考 | UI 容器圆角、边框、阴影默认不烘焙进源位图 | cutout 查透明四角与安全裁切；full-bleed 查四角不透明、无白边、无图片内圆角卡片 |
+
+- `opaque-full-bleed-tile` 提示词必须包含 full-bleed edge-to-edge、NO rounded rectangle、NO white outer margin、NO transparent corners。
+- 两种 rendering mode 的四角与边缘验证不可混用。
 
 ## 冻结变量
 

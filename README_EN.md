@@ -17,7 +17,12 @@ OpenPrd is a lightweight **PRD harness**. Start by describing the problem in pla
 
 Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps people and agents aligned around stable HTML artifacts such as `review.html`, learning readers, and quality reports. OpenPrd helps the agent do the work: PRDs, reviews, changes, tasks, design contracts, and evidence are maintained in the background without requiring the user to reply with a prescribed confirmation.
 
-## 0.2.1: Agent-owned context
+## 0.2.2: Bitmap rendering contracts and task-scoped design state
+
+- Avatar and standalone UI bitmaps now distinguish `transparent-cutout` from `opaque-full-bleed-tile`.
+- Reference screenshots remain primary, but original assets or consuming CSS/components decide the pixel contract.
+- `.openprd/design/active/` now carries a task scope so older directions cannot silently contaminate new work.
+- Skills, generated AGENTS, hooks, adapters, and regressions share the same contract.
 
 - Removed `run --context`, `--hook-inject`, ContextCapsule, and the global session registry. The host agent uses its own conversation context.
 - `UserPromptSubmit` records the prompt but no longer selects tasks or injects next-step guidance.
@@ -27,7 +32,7 @@ Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps peopl
 - Workspace maintenance debt remains visible as background guidance. Real task failures and exact release conditions such as target, permissions, artifacts, tests, conflicts, and rollback are still verified.
 
 ```bash
-npm install -g @openprd/cli@0.2.1
+npm install -g @openprd/cli@0.2.2
 ```
 
 ## 0.1.24: workspace debt no longer impersonates task failure

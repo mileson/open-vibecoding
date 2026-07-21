@@ -994,6 +994,7 @@ function latestDesignStarterRecord(root) {
 }
 
 const PATCH_MODE_ACTIVE_CONTRACT_FILES = [
+  '.openprd/design/active/task-scope.md',
   '.openprd/design/active/facts-sheet.md',
   '.openprd/design/active/asset-spec.md',
   '.openprd/design/active/image-preflight.md',
@@ -2832,7 +2833,7 @@ function requirementGateMessage(intent, gate) {
       'OpenPrd requirement intake is background attention and never restricts implementation writes.',
       'The user is asking for an image asset such as a cover image, poster, illustration, icon, sticker, visual mockup, or effect image, not code implementation.',
       'For logo, icon, avatar, badge, and similar development assets, default to a standalone asset: full-frame single subject with no extra UI frame, card shell, device mockup, or presentation container unless the user explicitly asked for one.',
-      'If the final development asset should be transparent for UI use, use an icon-asset pipeline: generate three visibly different standalone candidates first, each on a solid #00ff00 chroma-key background with no text, no UI container, centered subject, and enough padding. The Agent may choose a reversible default candidate and continue the authorized implementation; an explicit user choice overrides it. Keep the green-screen source, run remove_chroma_key.py to produce a transparent PNG/WebP, crop and center it, export 384px or required sizes, tune the display ratio per real UI placement, and record the source, transparent output, integration point, and verification in asset-spec.md / selected-direction.md before claiming completion.',
+      'For an avatar or standalone UI bitmap, inspect the original asset and consuming component/CSS first, then lock rendering-mode in the current task-scoped asset-spec. Use transparent-cutout only when the UI needs alpha: generate standalone #00ff00 candidates, remove the chroma key, keep transparent corners, and verify safe cropping. Use opaque-full-bleed-tile when the background must fill the tile: prompt for full-bleed edge-to-edge coverage with NO rounded rectangle, NO white outer margin, and NO transparent corners; verify all four corners are opaque. Never mix the two validations. UI container radius, border, and shadow do not belong in source pixels unless original-asset evidence proves they are baked in. A screenshot alone cannot decide this contract.',
       'Do not create temporary HTML/SVG/CSS files for this image unless the user explicitly requested that format.',
       'Image tool routing: on a Codex surface use native `imagegen` (Image 2); on a Cursor surface use the built-in `GenerateImage` tool; both are free inside the conversation tool. If neither surface applies, read the confirmed preference in `.openprd/harness/image-generation-preference.json`; when no preference exists, ask the user which image-generation path to use and persist the answer to that file as the future default. NEVER silently call the user\'s own paid image API. The image tool is the tool path, not an aesthetic exemption, so first state the purpose, audience, intended tone, constraints, and memory point, then put them into the image prompt.',
       'Before generation, do a quick anti-slop check: without brand or reference support, avoid default purple/blue-purple gradients, generic font taste, white card piles, and context-free decoration.',
@@ -2899,7 +2900,7 @@ function visualMockupMessage(intent, root = null) {
     '按生图路由选定的内置生图工具生成图片（Codex=`imagegen`/Image 2，Cursor=`GenerateImage`）；生图工具是工具路径，不是审美豁免；生图前先写清用途、受众、气质、约束和记忆点，并把这些写进 prompt。',
     '生图前用 `.openprd/design/anti-slop.md` 做快速自检：没有品牌或参考图依据时，不要默认紫白/蓝紫渐变、通用字体、白底卡片堆叠或无语境装饰。',
     '除非用户明确指定 HTML、SVG、CSS、Canvas、代码稿或可编辑矢量/source artifact，不要改用临时 HTML/SVG/CSS 再截图。',
-    '对 logo、icon、avatar、badge 等开发素材，如果用户没有明确要求 mockup、场景图、设备框、卡片承载、名片/包装展示或参考界面复刻，默认按独立素材输出（standalone asset）处理：使用全画布单主体，不额外添加 UI frame、卡片、设备壳、名片、桌面陈列、手持实拍或其他展示容器；如果最终要接入 UI 并需要透明背景，先生成 3 个差异足够大的纯 `#00ff00` 绿幕候选方向，Agent 可采用可逆默认方向继续已授权实现，用户明确选择时再覆盖；随后保留源图、抠透明、裁切居中、导出 384px 或多尺寸资产，按真实 UI 场景调显示比例，并把源图、透明产物、接入位置和验证结果写回 `asset-spec.md` / `selected-direction.md`。',
+    '对 avatar、logo、icon、badge 等独立素材，先检查原始素材与消费组件/CSS，在当前 task-scope 的 asset-spec 锁定 rendering-mode。transparent-cutout 才生成纯 `#00ff00` 绿幕候选、抠透明、保留透明四角并做安全裁切；opaque-full-bleed-tile 的提示词必须写 full-bleed edge-to-edge、NO rounded rectangle、NO white outer margin、NO transparent corners，并验证四角不透明。UI 容器圆角、边框、阴影默认不画进源位图；截图不能单独判断像素合同，两种模式验证不可混用。',
     '只有当用户明确要求 mockup、场景化效果图、容器化呈现，或参考图本身就包含这些承载结构时，才生成对应的容器或场景。',
     '只有在实际发生生图工具调用后，才能汇报生图结果、失败或限流；未调用前，不要声称“生图限流”或“生图失败”。',
     '把生图结果先当成候选效果图，不要默认登记到 `.openprd/harness/visual-reviews/`，也不要自动当成后续验收参考；看图时不仅判断是否生成成功，还要判断气质、层级、字体/色彩/表面角色和记忆点是否成立。',

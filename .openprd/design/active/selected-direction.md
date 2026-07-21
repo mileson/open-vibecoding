@@ -1,5 +1,7 @@
 # Selected Direction
 
+- task-scope: openprd-0.2.2-avatar-pixel-contract
+
 - selected: B 双轨证据工作台
 - reason: 在小白可理解、工程可追溯、现有实现兼容和控制平面定位之间得分最高；同一 ReviewModel 可直接支撑两种投影，避免形成两套真相。
 - lens: evidence-first progressive disclosure

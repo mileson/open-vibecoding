@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.2.1",
+  "currentVersion": "0.2.2",
   "versions": [
     {
       "version": "0.1.2",
@@ -992,8 +992,62 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.2.2",
+      "status": "current",
+      "createdAt": "2026-07-21 10:27:04",
+      "updatedAt": "2026-07-21 10:27:20",
+      "notes": null,
+      "items": [
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "同步 Skill、AGENTS、hooks、adapters 与回归验证",
+          "sentence": "调整：同步 Skill、AGENTS、hooks、adapters 与回归验证",
+          "recordedAt": "2026-07-21 10:27:13",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784600833546"
+          }
+        },
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "头像与单物件 UI 位图区分 transparent-cutout 与 opaque-full-bleed-tile",
+          "sentence": "新增：头像与单物件 UI 位图区分 transparent-cutout 与 opaque-full-bleed-tile",
+          "recordedAt": "2026-07-21 10:27:19",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784600839465"
+          }
+        },
+        {
+          "type": "修复",
+          "summary": "修复",
+          "detail": "UI 容器圆角默认不再烘焙进源位图，并要求原始素材或消费组件 CSS 证据",
+          "sentence": "修复：UI 容器圆角默认不再烘焙进源位图，并要求原始素材或消费组件 CSS 证据",
+          "recordedAt": "2026-07-21 10:27:19",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784600839879"
+          }
+        },
+        {
+          "type": "修复",
+          "summary": "修复",
+          "detail": "active design 增加 task scope，旧任务风格不再静默污染当前方向",
+          "sentence": "修复：active design 增加 task scope，旧任务风格不再静默污染当前方向",
+          "recordedAt": "2026-07-21 10:27:20",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1784600840287"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-07-20 12:05:15"
+  "updatedAt": "2026-07-21 10:27:20"
 }

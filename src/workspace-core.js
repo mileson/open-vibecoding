@@ -39,6 +39,7 @@ const CORE_TEMPLATE_FILES = [
   'design/templates/content-home.html',
   'design/templates/product-launch.html',
   'design/templates/ops-dashboard.html',
+  'design/active/task-scope.md',
   'design/active/facts-sheet.md',
   'design/active/asset-spec.md',
   'design/active/image-preflight.md',
@@ -160,6 +161,19 @@ const WORKSPACE_SEED_COPY_IGNORE = new Set([
   'engagements/active/verification.md',
 ]);
 const ACTIVE_DESIGN_TEMPLATE_FILES = {
+  'task-scope.md': `# Active Design Task Scope
+
+- task-scope: 待填写
+- source: current-user-task
+- status: pending
+
+## Read Boundary
+
+- 本目录顶层五份设计合同只是当前任务投影，不是跨任务风格记忆库。
+- 开始新任务时先填写本文件；只读取与 task-scope 一致的顶层合同。
+- 历史子目录、旧任务截图和旧 selected-direction 仅在当前任务显式引用时可采用，不得静默继承。
+- 旧的未命名合同视为 legacy-context-only；先核对当前需求、原始素材和消费组件，再决定是否迁移。
+`,
   'facts-sheet.md': `# Facts Sheet
 
 | 字段 | 当前值 | 来源 | verifiedAt | 状态 |
@@ -176,6 +190,8 @@ const ACTIVE_DESIGN_TEMPLATE_FILES = {
 `,
   'asset-spec.md': `# Asset Spec
 
+- task-scope: 待填写
+
 | 类型 | 资产 | 来源 | 状态 | 备注 |
 | --- | --- | --- | --- | --- |
 | logo | 待填写 | 待确认 | pending |  |
@@ -187,6 +203,17 @@ const ACTIVE_DESIGN_TEMPLATE_FILES = {
 | 动效节奏 | 待填写 | 待确认 | pending |  |
 | 背景 / 表面 | 待填写 | 待确认 | pending |  |
 | 构图记忆点 | 待填写 | 待确认 | pending |  |
+
+## 位图像素合同
+
+| 资产 | rendering-mode | 原始素材 / 消费组件证据 | 源像素约束 | 验证 |
+| --- | --- | --- | --- | --- |
+| 头像或单物件 UI 位图 | 待填写：transparent-cutout 或 opaque-full-bleed-tile | 待检查 | 待填写 | 待填写 |
+
+- \`transparent-cutout\`: 背景透明、四角 alpha=0，并保留安全裁切；不得混用 full-bleed 的四角检查。
+- \`opaque-full-bleed-tile\`: 背景覆盖四边四角，四角必须不透明；禁止图片内圆角卡片、白色外边、透明角。
+- UI 的圆角、边框、阴影默认属于消费容器，不得写进源位图；只有原始素材检查明确证明已烘焙时才可继承。
+- 参考截图不能单独证明像素合同；必须检查原始素材、消费组件/CSS，或在本表显式锁定 rendering-mode。
 
 ## 冻结变量
 
@@ -216,6 +243,7 @@ const ACTIVE_DESIGN_TEMPLATE_FILES = {
 `,
   'selected-direction.md': `# Selected Direction
 
+- task-scope: 待填写
 - selected: 待填写
 - reason: 待填写
 - lens: 待填写
@@ -1323,6 +1351,7 @@ async function loadWorkspace(projectRoot, options = {}) {
     designContentHomeTemplate: cjoin(workspaceRoot, 'design', 'templates', 'content-home.html'),
     designProductLaunchTemplate: cjoin(workspaceRoot, 'design', 'templates', 'product-launch.html'),
     designOpsDashboardTemplate: cjoin(workspaceRoot, 'design', 'templates', 'ops-dashboard.html'),
+    designTaskScope: cjoin(workspaceRoot, 'design', 'active', 'task-scope.md'),
     designFactsSheet: cjoin(workspaceRoot, 'design', 'active', 'facts-sheet.md'),
     designAssetSpec: cjoin(workspaceRoot, 'design', 'active', 'asset-spec.md'),
     designImagePreflight: cjoin(workspaceRoot, 'design', 'active', 'image-preflight.md'),

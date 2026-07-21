@@ -403,6 +403,8 @@ function buildGenericAssetSpec(context) {
     : [];
   return `# Asset Spec
 
+- task-scope: ${normalizePathForMarkdown(context.taskScope)}
+
 | 类型 | 资产 | 来源 | 状态 | 备注 |
 | --- | --- | --- | --- | --- |
 | logo | ${normalizePathForMarkdown(context.noBrandAssets ? '无外部 logo，优先用文字字标' : '待补品牌字标或官方 logo')} | ${context.noBrandAssets ? 'n/a' : '待确认'} | ${context.noBrandAssets ? 'not-needed' : 'defined'} | ${normalizePathForMarkdown(assetLine)} |
@@ -422,6 +424,16 @@ ${fetchedImageRows.length > 0 ? `
 | --- | --- | --- | --- | --- |
 ${fetchedImageRows.join('\n')}
 ` : ''}
+
+## 位图像素合同
+
+| 资产 | rendering-mode | 原始素材 / 消费组件证据 | 源像素约束 | 验证 |
+| --- | --- | --- | --- | --- |
+| 头像或单物件 UI 位图 | 待按真实入口锁定：transparent-cutout 或 opaque-full-bleed-tile | 检查原始素材与消费组件/CSS；截图本身不足以裁决 | UI 圆角/边框/阴影默认不烘焙进源位图 | 按所选模式做四角 alpha、白边和边缘覆盖检查 |
+
+- transparent-cutout：透明背景、四角 alpha=0，并保留安全裁切。
+- opaque-full-bleed-tile：背景覆盖四边四角，四角不透明；禁止图片内圆角卡片、白色外边和透明角。
+- 两种模式不可混用验证；只有原始素材检查证明圆角已烘焙时，才允许把它视为源像素事实。
 
 ## 冻结变量
 
@@ -500,6 +512,7 @@ function buildGenericSelectedDirection(starter) {
   const selected = starter.selectedDirection;
   return `# Selected Direction
 
+- task-scope: ${normalizePathForMarkdown(starter.taskScope ?? 'current-design-task')}
 - selected: ${selected.label}
 - reason: 优先沿 starter 默认组合落地，减少空白工作区从设计合同跳到真实页面时的摇摆。
 - lens: ${selected.lens}
@@ -786,11 +799,23 @@ async function hydrateWorkspaceBasics(projectRoot, starter, context, relativeOut
 }
 
 async function writeActiveDesignArtifacts(ws, starter, context) {
+  await writeText(ws.paths.designTaskScope, `# Active Design Task Scope
+
+- task-scope: ${normalizePathForMarkdown(context.taskScope)}
+- source: design-starter
+- status: active
+
+## Read Boundary
+
+- 顶层设计合同只服务当前 task-scope，不聚合旧任务风格。
+- 历史子目录、旧截图和旧 selected-direction 仅在当前任务显式引用时采用。
+- 参考截图不能单独裁决源像素；头像/单物件位图必须检查原始素材或消费组件/CSS，并在 asset-spec 锁定 rendering-mode。
+`);
   await writeText(ws.paths.designFactsSheet, buildGenericFactsSheet(context));
   await writeText(ws.paths.designAssetSpec, buildGenericAssetSpec(context));
   await writeText(ws.paths.designImagePreflight, buildGenericImagePreflight(context));
   await writeText(ws.paths.designDirectionPlan, buildGenericDirectionPlan(starter, context));
-  await writeText(ws.paths.designSelectedDirection, buildGenericSelectedDirection(starter));
+  await writeText(ws.paths.designSelectedDirection, buildGenericSelectedDirection({ ...starter, taskScope: context.taskScope }));
 }
 
 function replaceLiteralPlaceholders(templateText, replacements) {
@@ -1162,6 +1187,7 @@ export async function designStarterWorkspace(projectRoot, options = {}) {
     };
   }
   if (context) {
+    context.taskScope = `design-starter:${relativeOutputPath}`;
     context.themeConfig = await loadThemeConfig(ws.paths.designThemes, context.defaults.theme);
     context.imageBundle = await sourceStarterImages({
       projectRoot,

@@ -18,7 +18,12 @@ OpenPrd 是一个轻量但结构化的 **PRD harness**。你只需要先把问�
 
 它把需求、决策和验证结果沉淀成稳定的 HTML 产物，而不是把状态散落在聊天记录或终端输出里。OpenPrd 的职责是帮助 Agent 做事：PRD、review、change、tasks、设计合同与测试证据由 Agent 在后台维护，不再要求用户回复指定内容才能继续。
 
-## 0.2.1：上下文交还给 Agent
+## 0.2.2：头像像素合同与任务级设计隔离
+
+- 头像和单物件 UI 位图显式区分 `transparent-cutout` 与 `opaque-full-bleed-tile`，不再把 UI 容器圆角误画进源图。
+- 参考截图继续优先，但必须结合原始素材或消费组件/CSS 判断像素合同。
+- `.openprd/design/active/` 新增 task scope，旧任务风格不能静默污染当前方向。
+- Skill、AGENTS、hooks、adapter 生成物与回归测试同步覆盖同一合同。
 
 - 删除 `run --context`、`--hook-inject`、ContextCapsule 和全局 session registry；Agent 直接使用自己的会话上下文。
 - `UserPromptSubmit` 只记录提示，不再选择任务或向 Agent 注入下一步建议。
@@ -28,7 +33,7 @@ OpenPrd 是一个轻量但结构化的 **PRD harness**。你只需要先把问�
 - 工作区维护欠账继续可见，但只作为后台提示；当前任务失败、发布目标、权限、制品、测试和回滚等真实条件仍会严格验证。
 
 ```bash
-npm install -g @openprd/cli@0.2.1
+npm install -g @openprd/cli@0.2.2
 ```
 
 ## 0.1.24：工作区欠账不再冒充当前任务失败

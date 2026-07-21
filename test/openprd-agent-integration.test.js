@@ -542,6 +542,9 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.equal(generatedFrontendSkill.startsWith('---\n'), true);
     assert.ok(generatedFrontendSkill.includes('Facts Before Assumptions'));
     assert.ok(generatedFrontendSkill.includes('.openprd/design/active/facts-sheet.md'));
+    assert.ok(generatedFrontendSkill.includes('.openprd/design/active/task-scope.md'));
+    assert.ok(generatedFrontendSkill.includes('opaque-full-bleed-tile'));
+    assert.ok(generatedFrontendSkill.includes('参考截图不能单独证明'));
     assert.ok(generatedFrontendSkill.includes('.openprd/design/templates/README.md'));
     assert.ok(generatedFrontendSkill.includes('openprd design-starter . --starter <starter-id> --out index.html'));
     assert.ok(generatedFrontendSkill.includes('--brief "<页面主题>"'));
@@ -564,6 +567,8 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedFrontendDirections.includes('先不要强行再出 3 个方向'));
     const generatedFrontendAssets = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-frontend-design', 'references', 'design-asset-contract.md'), 'utf8');
     assert.ok(generatedFrontendAssets.includes('asset-spec'));
+    assert.ok(generatedFrontendAssets.includes('transparent-cutout'));
+    assert.ok(generatedFrontendAssets.includes('旧任务的材质/风格静默成为新任务默认方向'));
     assert.ok(generatedFrontendAssets.includes('参考资产'));
     const generatedVisualCommand = await fs.readFile(path.join(project, '.codex', 'prompts', 'openprd-visual-compare.md'), 'utf8');
     assert.ok(generatedVisualCommand.includes('side-by-side JPG'));

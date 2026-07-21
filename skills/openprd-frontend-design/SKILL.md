@@ -33,6 +33,7 @@ description: 为 OpenPrd 的界面、页面、视觉、样式和前端体验任�
 如果本轮已经进入实现准备，再读：
 
 - `.openprd/design/active/facts-sheet.md`
+- `.openprd/design/active/task-scope.md`
 - `.openprd/design/active/asset-spec.md`
 - `.openprd/design/active/image-preflight.md`
 - `.openprd/design/active/direction-plan.md`
@@ -46,6 +47,7 @@ description: 为 OpenPrd 的界面、页面、视觉、样式和前端体验任�
 4. 选一个 `theme`、一个 `layout skeleton` 和一个 `recipe`，并说明它们如何服务上面的审美立意。
 5. 如果页面会写具体产品事实，先补 `facts-sheet.md`。
 6. 如果页面依赖品牌素材、产品图、界面图、图库或插图，先补 `asset-spec.md`，并记录字体、色彩、动效、背景/表面这些审美资产。
+   - 头像和单物件 UI 位图必须先锁定 `rendering-mode`：`transparent-cutout` 或 `opaque-full-bleed-tile`。前者要求透明背景与透明四角；后者要求背景覆盖四边四角且四角不透明，禁止图片内圆角卡片、白边和透明角。两种模式的验证不得混用。
 7. 如果这类页面没有真实图片就会空心，先补 `image-preflight.md`。
 8. 如果用户还没有给参考方向，先补 `direction-plan.md`，明确 3 个异源方向；每个方向都要有不同审美主张和记忆点。
 9. 用户选定方向后，再补 `selected-direction.md`，把选中的 lens、theme、layout、组件、审美主张、记忆点和风险锁定。
@@ -146,6 +148,7 @@ description: 为 OpenPrd 的界面、页面、视觉、样式和前端体验任�
 ### 5b. 既有界面的视觉 DNA 继承
 
 - 只要已有产品截图、设计稿或可运行界面，默认进入 `preserve-existing`，而不是自由改风格。除非用户明确要求换风格，否则锁定现有字体角色、色彩系统、明暗模式、表面语言、圆角/边框/阴影体系、图标语言、平台框架和信息密度。
+- 上述圆角、边框和阴影默认只锁定 UI 消费容器，不代表要把它们画进头像或单物件源位图。参考截图不能单独证明圆角来自 CSS 还是烘焙像素；先检查原始素材、消费组件/CSS，或在当前 task-scope 的 `asset-spec.md` 显式锁定像素合同。
 - 既有界面的 3 个方向用同一张当前界面截图做 image-to-image 参考，每次生图都必须携带该参考图；探索范围主要放在布局、信息层级、导航、关键路径和空间构图，不得把品牌视觉重做成三个陌生产品。
 - 用户明确要求参考另一种风格、品牌升级或整体重设计时，才把对应锁定项解开，并记录在 `direction-plan.md` 与 `selected-direction.md`。
 - 冷启动新功能没有现有界面时，不伪造“修改前截图”；改用已确认 PRD、用户、首版范围、业务约束和视觉目标形成设计 brief，再生成异质方向。
@@ -172,6 +175,7 @@ description: 为 OpenPrd 的界面、页面、视觉、样式和前端体验任�
 
 ## Active artifacts 后台维护
 
+- 每个新任务先填写 `.openprd/design/active/task-scope.md`。顶层 active 文件是当前任务投影，不是跨任务聚合记忆；只读取与 task-scope 一致的合同。历史子目录、旧任务截图和旧 `selected-direction` 只有被当前任务显式引用时才能采用，legacy 未命名内容只作待核对上下文，不能静默成为风格默认值。
 - 写产品事实、版本事实或具体数据时：由 Agent 后台补 `facts-sheet.md`
 - 依赖品牌素材、产品图、界面图或图库时：由 Agent 后台补 `asset-spec.md`
 - 内容图是不是页面成立前提不明确时：由 Agent 后台补 `image-preflight.md`
@@ -184,7 +188,7 @@ description: 为 OpenPrd 的界面、页面、视觉、样式和前端体验任�
 
 - 这份 skill 发生在实现前，用来约束“先决定怎么做”。
 - `imagegen` 仍然负责出候选效果图。
-- logo、icon、avatar、badge、贴纸、空态插画、单物件 UI 位图等开发素材若要透明接入，先出 3 个纯 `#00ff00` 绿幕候选。Agent 可保留候选源图并采用可逆默认方向继续工程化；用户明确选择时再覆盖。随后抠透明 PNG/WebP、裁切居中、导出多尺寸资产并按真实入口调比例，最后同步写回 `asset-spec.md` 和 `selected-direction.md`。
+- logo、icon、avatar、badge、贴纸、空态插画、单物件 UI 位图先按真实消费入口选择像素合同。`transparent-cutout` 才走 3 个纯 `#00ff00` 绿幕候选、抠透明、安全裁切和透明四角验证；`opaque-full-bleed-tile` 直接生成 edge-to-edge 背景到四边四角，提示词必须写明 `NO rounded rectangle / NO white outer margin / NO transparent corners`，再检查四角不透明与无烘焙圆角。最后把 rendering-mode、源素材/组件证据、提示词和验证写回当前 task-scope 的 `asset-spec.md` / `selected-direction.md`。
 - `openprd visual-prepare` 负责把整板、多对象或网格参考图整理成可实现的 reference-set。
 - `openprd visual-compare` 负责实现后的视觉证据，而不是替代这份设计前置判断。
 - `visual-compare` 每次都会返回 `chatEmbed` markdown；生成证据板后必须把 `![视觉证据: ...](路径)` 直接嵌入最终回复，让证据在对话流里可见，不要只报告文件路径。`openprd dev-check` 触达界面文件且最近 24 小时没有证据板时会输出视觉证据提醒，收口前按提醒补齐。
