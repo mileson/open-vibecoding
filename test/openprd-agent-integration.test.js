@@ -296,7 +296,8 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedRouterSkill.includes('$openprd-frontend-design'));
     assert.ok(generatedRouterSkill.includes('$openprd-harness'));
     assert.ok(generatedRouterSkill.includes('$openprd-benchmark-router'));
-    assert.ok(generatedRouterSkill.includes('OpenPrd 不选择或注入 Agent 上下文'));
+    assert.ok(generatedRouterSkill.includes('OpenPrd 不接管 Agent 上下文'));
+    assert.ok(generatedRouterSkill.includes('只通过生成的提示词注入审查界面判断原则和质量合同'));
     assert.ok(generatedRouterSkill.includes('design-starter -> Patch Mode'));
     assert.ok(generatedRouterSkill.includes('不要用词表决定工具'));
     assert.ok(generatedRouterSkill.includes('用户目标、期望产物、交付阶段和证据缺口'));
@@ -1247,4 +1248,59 @@ test('generated OpenPrd skills never turn workflow artifacts into user confirmat
   const catalog = await fs.readFile(path.join(project, '.openprd', 'harness', 'command-catalog.md'), 'utf8');
   assert.ok(catalog.includes('readiness evidence'));
   assert.ok(catalog.includes('不是 OpenPrd 授权门禁'));
+});
+
+test('generated guidance delegates task-specific HTML review surfaces to the Agent', async () => {
+  const project = await makeTempProject();
+  await setupAgentIntegrationWorkspace(project, { tools: 'all' });
+
+  const agents = await fs.readFile(path.join(project, 'AGENTS.md'), 'utf8');
+  const claude = await fs.readFile(path.join(project, 'CLAUDE.md'), 'utf8');
+  const cursor = await fs.readFile(path.join(project, '.cursor', 'rules', 'openprd.mdc'), 'utf8');
+  const router = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-router', 'SKILL.md'), 'utf8');
+  const harness = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-harness', 'SKILL.md'), 'utf8');
+  const intake = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-requirement-intake', 'SKILL.md'), 'utf8');
+  const testStrategy = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-test-strategy', 'SKILL.md'), 'utf8');
+  const claudeTestStrategy = await fs.readFile(path.join(project, '.claude', 'skills', 'openprd-test-strategy', 'SKILL.md'), 'utf8');
+  const codexReference = await fs.readFile(path.join(project, '.codex', 'skills', 'openprd-harness', 'references', 'agent-authored-html-review.md'), 'utf8');
+  const claudeReference = await fs.readFile(path.join(project, '.claude', 'skills', 'openprd-harness', 'references', 'agent-authored-html-review.md'), 'utf8');
+
+  assert.ok(agents.includes('OpenPrd 只通过提示词注入审查界面判断原则和质量合同'));
+  assert.ok(agents.includes('不生成任务专属 HTML'));
+  assert.ok(agents.includes('Agent 必须自行设计、制作并验证任务专属 HTML'));
+  assert.ok(agents.includes('Markdown/CSV 不能替代'));
+  assert.ok(agents.includes('最终交付本身就是人类审查节点'));
+  assert.ok(agents.includes('仍有 starter/无来源占位内容，不得标记该审查节点完成'));
+  assert.ok(claude.includes('Agent 必须自行设计、制作并验证任务专属 HTML'));
+  assert.ok(cursor.includes('Agent 必须自行设计、制作并验证任务专属 HTML'));
+  assert.ok(router.includes('不要等待用户主动索要 HTML'));
+  assert.ok(router.includes('OpenPrd 只注入判断原则和质量合同'));
+  assert.ok(router.includes('8 个及以上可比较对象'));
+  assert.ok(router.includes('Markdown/CSV 可以继续作为底层证据或导出格式，但不能替代任务专属 HTML'));
+  assert.ok(router.includes('仅生成 starter、保留无来源占位内容'));
+  assert.ok(harness.includes('HTML 的生成时机由审查边界决定'));
+  assert.ok(harness.includes('不提供通用审查 HTML 生成器'));
+  assert.ok(harness.includes('不要把“已经有 Markdown/CSV”当成豁免理由'));
+  assert.ok(harness.includes('最终回复必须给出可点击的任务专属 `.html` 绝对路径与验证说明'));
+  assert.ok(intake.includes('需求类型与审查界面不是一回事'));
+  assert.ok(intake.includes('OpenPrd 不生成任务专属 HTML'));
+  assert.ok(intake.includes('本轮必须由 Agent 制作并验证任务专属 HTML'));
+  assert.ok(testStrategy.includes('Agent 必须自行制作并验证任务专属 HTML'));
+  assert.ok(testStrategy.includes('不能替代真机、模拟器、浏览器、生产环境'));
+  assert.ok(codexReference.includes('HTML 不是任务完成仪式'));
+  assert.ok(codexReference.includes('页面质量合同'));
+  assert.ok(codexReference.includes('不要新增一个由 OpenPrd'));
+  assert.ok(codexReference.includes('## 强制触发条件'));
+  assert.ok(codexReference.includes('用户明确要求不要 HTML'));
+  assert.ok(codexReference.includes('Markdown/CSV 可以作为数据源、明细附件或导出格式，但不能替代主要 HTML 审查界面'));
+  assert.ok(codexReference.includes('页面仍是 starter/占位内容时，不得把该审查节点标记完成'));
+
+  const stripGeneratedMarker = (value) => value
+    .replace(/<!-- OPENPRD:GENERATED\n[^]*?-->\n?/g, '')
+    .trim();
+  assert.equal(stripGeneratedMarker(codexReference), stripGeneratedMarker(claudeReference));
+  assert.equal(stripGeneratedMarker(testStrategy), stripGeneratedMarker(claudeTestStrategy));
+
+  await assert.rejects(fs.access(path.join(project, '.codex', 'prompts', 'openprd-html-review.md')));
+  await assert.rejects(fs.access(path.join(project, '.claude', 'commands', 'openprd', 'html-review.md')));
 });

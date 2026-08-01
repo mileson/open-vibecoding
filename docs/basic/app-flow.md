@@ -4,6 +4,8 @@
 
 OpenPrd 的核心流程：用户在项目中初始化或接入 `.openprd/` 工作区，Agent 先读只读状态，再分流需求类型，并在执行用户已经要求的工作时后台维护 review/change/tasks 与验证材料。OpenPrd 提供上下文和证据，不重复向用户索取执行授权。
 
+OpenPrd 还会通过生成的 AGENTS 与 skills 注入“Agent 自主审查界面”合同：在任务进入、关键证据形成、实现验证完成和高影响后续动作前，由 Agent 判断审查边界；存在人类审查节点且命中多对象逐项证据、可逆审批、多媒体上下文、高影响测试/发布矩阵或长期结构化材料等强制条件时，由 Agent 自行设计、制作并验证任务专属 HTML，Markdown/CSV 不构成替代。OpenPrd 不提供通用审查 HTML 生成器。
+
 ### 非阻断状态模型
 
 - `taskReady` 只描述当前任务的实现与最小足够验证；全仓文档、旧 change 或历史证据债不得把它改成失败。
@@ -49,6 +51,7 @@ OpenPrd 的核心流程：用户在项目中初始化或接入 `.openprd/` 工�
 ### 执行与质量
 
 - 执行段通过 tasks、loop、回归报告和必要的视觉评审证据把实现与验证沉淀成结构化证据。
+- 审查界面由审查边界触发，不由“任务是否结束”触发：分析中需要共同判断、实现后需要验收、外部动作前需要确认时，都由 Agent 重新判断。命中强制条件时必须制作任务专属 HTML；未命中时继续按审查成本判断，简单结果保持对话交付。
 - 用 `openprd-test-strategy` 为任务选择单元、集成、端到端、人工、视觉、小程序、性能或安全验证组合。
 - 用 execution strategy 为任务标注 `serial / parallel-workers / parallel-workers-isolated`、`write-scope`、`owner-role`、`local-verify` 和 `integration-owner`。
 - 质量段通过 `openprd quality --verify` 生成 HTML 回归测试报告，优先展示整体回归结果、逐需求模块结果、测试块通过情况、分层测试策略矩阵和待补证据；它限制整体就绪声明，不否定已验证的当前任务。

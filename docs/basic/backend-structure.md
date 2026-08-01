@@ -287,6 +287,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - 不能把该工具当作生成图片内容、实现前效果图或方向评审的默认路径。
 - `run-harness`、`fleet`、`discovery` 通过工厂依赖注入调用核心工作区能力，避免从子模块反向导入 `src/openprd.js`；历史 work unit 回填通过 `src/work-unit-migration.js` 独立承接，避免把版本迁移细节堆进 fleet 扫描器。
 - `agent-integration` 将 canonical skills 和 AGENTS 合同渲染到各端 adapter，并从 `codex-hook-runner-template` 读取自包含 Codex hook runner 源码。
+- Agent 自主审查界面属于提示词注入能力：`agent-integration` 把轻量责任边界和最低强制触发条件写入 AGENTS，router/harness/intake/test-strategy 注入阶段判断、豁免边界与质量合同，`openprd-harness/references/agent-authored-html-review.md` 承载详细规则。OpenPrd 不新增通用 HTML renderer；是否命中、页面内容、结构、实现和验证仍由 Agent 按任务上下文完成。
 - canonical skills 与 command catalog 的长文案内容单独放在 `src/agent-canonical-content.js`，`agent-integration.js` 只保留 install/update/doctor 编排逻辑。
 - `src/codex-hook-runner-template.mjs` 是结构性单文件模板（整体 readFileSync 后安装到用户项目，运行时不能依赖包内模块），已在 `.openprd/standards/config.json` 的 `additionalExemptFilePatterns` 登记行数豁免与理由。
 - `visual-compare` 拆成四层：`src/visual-compare-core.js` 承载文案表、locale、board 归一化、SVG 原语与图像管道；`src/visual-compare-focus.js` 承载 local-first 同尺度裁剪、差异图和上下文 footer；`src/visual-compare-centering.js` 承载内部居中证据板分析与渲染；`src/visual-compare.js` 保留标准对比、传统 focus/并行/实测/对齐板渲染与 workspace 入口。

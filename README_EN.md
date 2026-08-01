@@ -17,6 +17,17 @@ OpenPrd is a lightweight **PRD harness**. Start by describing the problem in pla
 
 Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps people and agents aligned around stable HTML artifacts such as `review.html`, learning readers, and quality reports. OpenPrd helps the agent do the work: PRDs, reviews, changes, tasks, design contracts, and evidence are maintained in the background without requiring the user to reply with a prescribed confirmation.
 
+## 0.2.3: Agent-authored, task-specific HTML review surfaces
+
+- When a complex task reaches a human-review boundary, the agent now decides proactively whether an HTML review surface is useful instead of waiting for the user to request one.
+- OpenPrd injects only the trigger, evidence structure, and verification contract; the agent owns the page architecture, visual language, and implementation.
+- No fixed template or renderer is required. Markdown, CSV, placeholders, or merely creating an HTML file do not count as a completed review surface.
+- The HTML must use real task evidence, expose an openable path, and pass structural and syntax checks.
+
+```bash
+npm install -g @openprd/cli@0.2.3
+```
+
 ## 0.2.2: Bitmap rendering contracts and task-scoped design state
 
 - Avatar and standalone UI bitmaps now distinguish `transparent-cutout` from `opaque-full-bleed-tile`.
@@ -30,10 +41,6 @@ Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps peopl
 - Codex automations, scheduled jobs, and other unattended tasks bypass the OpenPrd workflow by default. They opt in only when the task explicitly enables OpenPrd maintenance.
 - Historical requirements, PRDs, reviews, changes, tasks, and implementation records stay frozen. Reopened work creates a new current requirement linked to that history instead of reconstructing the past from today's code.
 - Workspace maintenance debt remains visible as background guidance. Real task failures and exact release conditions such as target, permissions, artifacts, tests, conflicts, and rollback are still verified.
-
-```bash
-npm install -g @openprd/cli@0.2.2
-```
 
 ## 0.1.24: workspace debt no longer impersonates task failure
 
@@ -144,6 +151,8 @@ incident closure, and reusable learning handoff.
 
 OpenPrd produces stable, shareable HTML surfaces so product owners, engineers,
 and agents can look at the same artifact before work moves forward.
+
+In addition to the fixed workflow artifacts below, OpenPrd injects an Agent behavior contract through generated AGENTS and skills. When a human review point exists and the work contains at least eight evidence-bearing items, reversible item-by-item approval, contextual multimedia, a complex test or release matrix driving a high-impact action, or long-lived material that requires navigation and filtering, the Agent must design, implement, and validate a task-specific HTML review surface unless the user explicitly declines HTML or an equivalent task-specific surface already exists. Markdown and CSV remain evidence or export formats, not substitutes. OpenPrd supplies the decision principles and quality contract; it does not replace Agent reasoning with a generic renderer, and the Agent still uses judgment outside the mandatory boundary rather than forcing simple results into HTML.
 
 ### `review.html`
 

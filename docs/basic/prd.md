@@ -43,6 +43,7 @@ OpenPrd 的需求初始化默认不是重问卷，而是先建立一层轻量的
 - 作为界面需求负责人，我希望已有参考效果图时 Agent 必须把效果图和实现截图拼成左右对比图并据此返工，从而减少“看起来差不多”但实际不一致的交付。
 - 作为界面需求负责人，我希望没有参考效果图的界面改动也能留下修改前和修改后的左右对比图，从而让 Agent 自己检查预期变化和意外漂移。
 - 作为工程协作者，我希望每次阶段性开发结束后获得 HTML 回归测试报告，从而能先看回归结论概览、回归流程图、测试覆盖图、必测结果和需处理项，再按需要展开证据链、执行环境和结构化细节。
+- 作为项目负责人，我希望 Agent 在人类审查节点遇到大批逐项证据、可逆审批、多媒体上下文、高影响测试/发布矩阵或长期结构化材料时，必须主动制作适合当前任务的 HTML，而不必等我明确索要；同时 OpenPrd 只负责注入判断与质量合同，不用固定生成器代替 Agent 思考。
 - 作为项目负责人，我希望涉及免费用户、额度、AI 调用或第三方成本的需求会自动追问成本来源、限制、报警和止损动作，从而减少免费额度被滥用造成真实损失的风险。
 - 作为项目维护者，我希望排查并验证修复的问题能抽象成项目级经验 skill，从而让同类问题下次被提前识别。
 - 作为项目维护者，我希望 Agent 在任务中多次使用且被我采纳的高质量外部信源能先进入候选库，并在达到阈值后提醒我确认纳入 benchmark，从而让参考来源也能随项目使用逐步沉淀。
@@ -56,6 +57,7 @@ OpenPrd 的需求初始化默认不是重问卷，而是先建立一层轻量的
 - 包含：历史 artifact 的 `legacy-frozen` 语义；迁移与 backfill 只维护可验证元数据，不反推 requirement、PRD、review、tasks、验收结论或实现理由。
 - 包含：主运行校验边界收敛，默认只验证当前项目主状态；参考调研通过 discovery 独立查看，不污染 `run --verify` 结果。
 - 包含：Agent-owned context。OpenPrd 不读取用户消息选择任务，不生成上下文胶囊，不维护全局 session 归属表。
+- 包含：Agent 自主审查界面提示词合同。OpenPrd 在生成的 AGENTS、router、harness、requirement-intake 和 test-strategy 中注入阶段判断、最低强制触发条件、豁免边界与证据质量要求；Agent 负责命中判断、页面设计、实现与验证，OpenPrd 不提供通用 renderer。
 - 包含：OpenPrd discovery 的大量只读扫描调度规则，覆盖何时启动只读 subagent、默认调研与审查队形、最大并行数量、角色选择和证据合并要求。
 - 包含：Codex hook profile，默认 `lite` 安装 `UserPromptSubmit` 和只匹配直接编辑工具的轻量 `PreToolUse` advisory，`guarded` 额外覆盖 shell 工具，`full` 作为完整 hook 遥测的显式开启选项；除原始凭证读取等真实安全边界外，OpenPrd 不阻断工具调用。
 - 包含：当前 agent 环境识别协议，`install-manifest.json` 记录 `runtimeDetection` 与 `platformCapabilityPacks`，`runtime-environment.json` 记录最近 hook/session 观察到的 active client、surface、confidence、session、evidence 和 observed capabilities。
@@ -98,6 +100,8 @@ OpenPrd 的需求初始化默认不是重问卷，而是先建立一层轻量的
 - `run --verify` 默认不会把 `mode=reference` 的 discovery run 当作主校验结果；参考调研需要通过 `openprd discovery` 单独查看。
 - standards 遇到嵌套 Git 参考仓库或 `toolkit-sources` 这类明显外部参考候选时，会先提示候选与 `classify-external` 命令，而不是直接用逐文件说明书缺口淹没主验证结果。
 - 大量只读 discovery 的 subagent 调度规则存在于 OpenPrd skill 生成源和生成后的 skill 文件中，生成的 AGENTS 合同不包含这段长规则。
+- `init/setup/update` 后，生成的 AGENTS 与 skills 会明确要求 Agent 在任务进入、证据形成、实现验证和高影响后续动作前评估审查界面；存在人类审查节点并命中最低强制条件时必须制作任务专属 HTML，Markdown/CSV 不构成替代，未命中时继续按审查成本判断，且 HTML 不替代真实运行态证据。
+- 命中强制条件的 Agent 交付必须包含可点击的任务专属 HTML 绝对路径和验证说明；starter、模板或无来源占位内容未清除时，不得标记审查节点完成。
 - 默认安装后的 Codex 配置包含轻量 OpenPrd `PreToolUse` advisory，且 matcher 收窄到直接编辑工具；research、Patch Mode、requirement 和全局健康提醒都返回 allow，只有真实安全边界可 block。
 - setup/update 后，`install-manifest.json` 包含 `runtimeDetection` 和 `platformCapabilityPacks`；Codex hook 触发后，`runtime-environment.json` 会记录 `activeClient=codex`、`surface=codex-hook`、confidence、session/evidence 与 `codex-hooks` observed capability。
 - `doctor --json` 会暴露 runtime environment 与平台能力包；人类可读 doctor 会显示当前 Agent 环境和已安装能力包。

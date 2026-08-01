@@ -17,6 +17,19 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 
 识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task 时，默认不要要求 `openprd dev-check` / `quality` / `doctor`。按自动化自己的 runbook、日志、测试和通知合同收口；只有 prompt 明确说明这是 OpenPrd 维护任务或显式启用 OpenPrd 时才恢复互动流程。
 
+## Agent 自主审查界面
+
+OpenPrd 只通过生成的 AGENTS 与 skills 注入判断原则和质量合同，不提供通用审查 HTML 生成器。Agent 保留当前任务的语义判断、内容组织、页面设计、实现和验证责任。
+
+1. 在任务进入、形成关键证据、完成实现验证，以及准备执行高影响后续动作前，判断聊天是否足以让用户核查依据、比较对象并反馈。
+2. 如果存在人类审查节点并命中 `references/agent-authored-html-review.md` 的任一强制触发条件，除非用户明确不要 HTML，或已有能够完成同等核查、比较与反馈的任务专属审查界面，否则必须在请求用户审查或执行高影响动作前制作并验证任务专属 HTML；不要把“已经有 Markdown/CSV”当成豁免理由。
+3. 如果本轮交付包含只有用户或负责人才能完成的选择、批准或纠错，最终交付本身就是人类审查节点。Agent 自己将任务归为“直接分析”、L0/L1/L2 或只读分析不能规避合同；只有用户或宿主明确禁止新增文件时才按无写入豁免处理，并在交付中说明。
+4. 未命中强制触发条件，但聊天不足且存在多对象比较、多媒体证据、复杂测试结果、批量审核、方向选择、长期阅读或高影响后续动作时，不要等待用户主动索要 HTML；由 Agent 继续按审查成本决定是否制作。
+5. HTML 的生成时机由审查边界决定，不由 L0/L1/L2、固定关键词或“任务是否结束”机械决定。强制触发条件只提供最低可预测边界，不是穷举式关键词分类；一次长任务可以没有 HTML，也可以在分析中、实现后或外部动作前出现不同审查界面。
+6. 制作 HTML 前先读取 `references/agent-authored-html-review.md`，让真实证据、来源、事实/推断/未知边界和本次需要用户判断的内容成为页面主结构；只加入当前审查真正需要的播放、对比、筛选、标注、状态记录或导出能力。
+7. 命中强制条件后，最终回复必须给出可点击的任务专属 `.html` 绝对路径与验证说明；没有这两项、仅生成 starter、仍有无来源占位内容或只验证文件存在时，不得把审查节点标记完成。
+8. 不要为了形式生成空洞页面；不要把固定 `review.html`、质量报告或学习阅读器误当成所有任务的通用替代品；不要用 HTML 代替真机、模拟器、浏览器、生产环境或第三方系统读回。
+
 ## 动手前
 
 1. 读取第一个可用的共用规则文件：`skills/openprd-shared/SKILL.md`、`$HOME/.claude/skills/openprd-shared/SKILL.md` 或 `$HOME/.codex/skills/openprd-shared/SKILL.md`
@@ -38,6 +51,7 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
    - `design-starter` 落地后进入 advisory Patch Mode：优先做一轮就地对焦并尽快在入口文件或 sibling draft 形成真实实现；必要的事实、图片或模板读取仍可继续，hook 只记录 `allowed-with-patch-mode-attention`，不限制当前工具调用。
    - 一旦已经说“开始覆盖入口文件”或“开始整页重写”，把真实页面写入作为近期优先动作；如果尚未写入，最终回复按真实状态标记为 starter 或部分实现，不把提示词当阻断。
    - 如果用户目标是把工作转成可学习、可复用、可回看、可教学或可沉淀的材料，先按期望产物形态判断是否需要 `$openprd-learning-review`：需要章节结构、证据锚点、图文讲解、检索练习、工作示例或长期阅读体验时，优先用 `openprd learn <path> --topic <主题>` 生成学习包骨架、阅读器和证据清单；不要用关键词表触发，普通 Markdown 只能作为辅助讲义。
+   - 同时记录本阶段是否即将形成用户审查边界；如果聊天不足以承载核查与反馈，按上面的 Agent 自主审查界面合同推进，不要把页面生成推迟到整个任务结束。
 7. 如果用户是在规划、分析、架构评审，或问“怎么改”“会动哪些文件”，保持只读并基于证据回答
 8. 实现任务完成代码修改后、最终回复前，针对本轮实际 touched code files 运行 `openprd dev-check <path> <file...>` 或 `node scripts/openprd-dev-check.mjs <path> <file...>`。它是 task-scoped advisory：只有拆分与当前目标同范围、风险不扩张且能保持行为不变时才可顺手处理；否则保留建议并把工作区规模债归入 `workspaceAttention`，不得强迫当前任务重构，也不要求用户回复开关确认
 9. 执行过程中发现新代码后缀、豁免路径、命令别名、项目约定或用户偏好时，不要中途打断当前任务。工具识别补全和减少重复打扰这类高置信低风险项可自动补齐并记录；用户偏好、项目协作规矩和 OpenPrd 默认行为先沉淀为带来源候选，收工时运行 `openprd grow <path> --review` 后台复盘，不创建用户确认停顿
@@ -223,3 +237,4 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 - `references/workflow-gates.md`：门禁判断和就绪规则
 - `references/examples.md`：具体使用模式
 - `references/usage-guide.md`：面向团队和 agent 的使用指南，覆盖 clarify、diagram、freeze、status/next 和批量 capture
+- `references/agent-authored-html-review.md`：Agent 何时主动制作任务专属 HTML、页面质量合同和非触发边界

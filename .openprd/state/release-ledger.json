@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.2.2",
+  "currentVersion": "0.2.3",
   "versions": [
     {
       "version": "0.1.2",
@@ -995,9 +995,9 @@
     },
     {
       "version": "0.2.2",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-07-21 10:27:04",
-      "updatedAt": "2026-07-21 10:27:20",
+      "updatedAt": "2026-08-01 14:15:30",
       "notes": null,
       "items": [
         {
@@ -1046,8 +1046,51 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.2.3",
+      "status": "current",
+      "createdAt": "2026-08-01 14:15:30",
+      "updatedAt": "2026-08-01 14:15:31",
+      "notes": null,
+      "items": [
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "Agent 在复杂任务进入人工审查节点时，会主动制作任务专属 HTML 审查页并给出可打开路径",
+          "sentence": "新增：Agent 在复杂任务进入人工审查节点时，会主动制作任务专属 HTML 审查页并给出可打开路径",
+          "recordedAt": "2026-08-01 14:15:30",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1785564930774"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "OpenPrd 只注入触发条件、证据结构和验证标准，不生成通用页面，也不强制固定模板或渲染器",
+          "sentence": "优化：OpenPrd 只注入触发条件、证据结构和验证标准，不生成通用页面，也不强制固定模板或渲染器",
+          "recordedAt": "2026-08-01 14:15:30",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1785564930882"
+          }
+        },
+        {
+          "type": "修复",
+          "summary": "修复",
+          "detail": "Markdown、CSV、占位页或仅创建 HTML 文件不再被视为已完成审查，必须包含真实证据并完成结构与语法验证",
+          "sentence": "修复：Markdown、CSV、占位页或仅创建 HTML 文件不再被视为已完成审查，必须包含真实证据并完成结构与语法验证",
+          "recordedAt": "2026-08-01 14:15:30",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1785564930988"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-07-21 10:27:20"
+  "updatedAt": "2026-08-01 14:15:31"
 }
