@@ -1709,7 +1709,7 @@ function analyzePromptIntent(prompt) {
     || (weappMention && weappValidationAction);
   const browserSafetyRequest = /(computer use|browser use|浏览器|browser|网页|页面|窗口|标签页|tab|profile)/i.test(text)
     && /(点击|输入|提交|登录|注销|退出|支付|关闭|send|submit|type|click|switch account|切换账号)/i.test(text);
-  const productCopyRequest = /(文案|copy|错误文案|空状态|成功提示|按钮文案|提示语|toast|placeholder|设置项文案|国际化|i18n|locales|translations|localizable)/i.test(text);
+  const productCopyRequest = /(文案|copy|错误文案|空状态|成功提示|按钮文案|提示语|toast|placeholder|设置项文案|国际化|本地化|翻译|英文|英语|i18n|locales|translations|localizable|localization|translation)/i.test(text);
   const l2RequirementCandidate = (bugfixOrDiagnostic && crossSystemRiskMatched)
     || l2FeatureExpansionMatched
     || l2PlanningRequestMatched;
@@ -2576,6 +2576,8 @@ function productCopyMessage(intent) {
     'OpenPrd 产品内文案提醒:',
     '先检查项目是否已有 i18n、locales、translations、Localizable 或其他语言资源；若已有，多语言要同步维护。',
     '产品界面上用户能看到的文案必须站在当前用户视角写：说明用户现在能做什么、会发生什么、为什么值得点、下一步怎么走。',
+    '多语言文案不得逐字翻译。先识别控件类型、用户动作、上下文和可用空间，再按目标语言的软件产品习惯重写；英文按钮、Tab、菜单和短标签优先使用短而自然的惯用表达，例如“开始自动剪辑”写成 Auto Edit，不要写 Start Automatic Editing。',
+    '只使用目标用户普遍理解且在当前语境中无歧义的常见缩写，不为了省空间发明行话或牺牲语义；必要的完整含义放到正文、Tooltip 或 Accessibility Label，并在真实控件中检查所有支持语言的语义、截断、异常换行、布局挤压和辅助功能名称。',
     '除非这是面向开发者或专业技术人员的技术型产品，否则默认用普通人能看懂的语言写结果、状态、限制和行动，不要把 API、SDK、模型、数据库、缓存、错误码或其他实现细节直接暴露给用户。',
     '快速正反例：不要写“适合想保留全部工具入口的用户”，改成“首页会显示所有工具入口，你可以直接选择需要的功能”；不要写“API 请求失败，错误码 500”，改成“暂时保存失败，请稍后再试”。技术型产品可以保留必要术语，但仍要写清用户动作、影响和修复路径。',
   ].join('\n');
@@ -3408,6 +3410,7 @@ function handle(eventName, cwd, payload) {
 
   if (eventName === 'PreToolUse') {
     const turnIntent = analyzePromptIntent(readTurnState(root).prompt || '');
+    const productCopyReminder = turnIntent.productCopyRequest ? productCopyMessage(turnIntent) : null;
     let gate = readRequirementGate(root, sessionId);
     const skillGate = readNamedGate(root, 'skill-visualization', sessionId);
     const researchGate = applyResearchToolSignal(root, payload, sessionId);
@@ -3504,6 +3507,13 @@ function handle(eventName, cwd, payload) {
           'This attention does not restrict the current authorized tool call.',
         ].join('\n'));
       }
+    }
+    if (productCopyReminder && isMutationPayload(payload, risk)) {
+      appendEvent(root, { ...baseEvent, outcome: 'allowed-with-product-copy-attention' });
+      recordRunHook(root, baseEvent, 'allowed-with-product-copy-attention');
+      updateHookState(root, baseEvent);
+      recordTouchedFiles(root, payload);
+      return allowHook(productCopyReminder);
     }
     const frontendTargets = frontendImplementationTargets(root, payload);
     const designIssues = frontendDesignPreflightIssues(root, turnIntent, frontendTargets);

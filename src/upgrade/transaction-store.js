@@ -15,7 +15,7 @@
  * 使用 kernel atomic-store 写事务 manifest 和重定位后的文本文件。
  *
  * 维护规则
- * 新增 updater 可写路径时同步维护 FLEET_MANAGED_SCOPES；禁止跟随符号链接读取或写入。
+ * 新增 updater 可写路径时同步维护 managed/preserved scope 策略；禁止跟随符号链接读取或写入。
  */
 import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -51,6 +51,14 @@ const FLEET_MANAGED_SCOPES = Object.freeze([
   path.join('.cursor', 'rules', 'openprd.mdc'),
   ...OPENPRD_AGENT_ARTIFACT_SCOPES,
 ]);
+const FLEET_PRESERVED_SCOPES = Object.freeze([
+  path.join('.openprd', '.derived-data'),
+  path.join('.openprd', 'artifacts'),
+  path.join('.openprd', 'tmp'),
+]);
+const FLEET_PRESERVED_SCOPE_PATTERNS = Object.freeze([
+  '.openprd/harness/DerivedData-*',
+]);
 
 async function managedScopesForRoot(projectRoot) {
   const scopes = [...FLEET_MANAGED_SCOPES];
@@ -68,6 +76,40 @@ function normalizeRelativePath(value) {
   return value.split(path.sep).join('/');
 }
 
+function isPreservedScopePath(relativePath) {
+  const normalizedPath = normalizeRelativePath(relativePath).replace(/^\.\//, '').replace(/\/$/, '');
+  if (FLEET_PRESERVED_SCOPES.some((scope) => {
+    const normalizedScope = normalizeRelativePath(scope);
+    return normalizedPath === normalizedScope || normalizedPath.startsWith(`${normalizedScope}/`);
+  })) return true;
+  const parts = normalizedPath.split('/');
+  return parts[0] === '.openprd'
+    && parts[1] === 'harness'
+    && /^derived[-_]?data(?:[-_].*)?$/i.test(parts[2] ?? '');
+}
+
+async function preservedScopesForRoot(projectRoot) {
+  const scopes = [...FLEET_PRESERVED_SCOPES];
+  const harnessRoot = path.join(projectRoot, '.openprd', 'harness');
+  const entries = await fs.readdir(harnessRoot, { withFileTypes: true }).catch((error) => {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  });
+  for (const entry of entries) {
+    const scope = path.join('.openprd', 'harness', entry.name);
+    if (isPreservedScopePath(scope)) scopes.push(scope);
+  }
+  return [...new Set(scopes)];
+}
+
+async function scopePolicyForRoot(projectRoot) {
+  return {
+    managedRoots: (await managedScopesForRoot(projectRoot)).map(normalizeRelativePath),
+    preservedRoots: (await preservedScopesForRoot(projectRoot)).map(normalizeRelativePath),
+    preservedPatterns: [...FLEET_PRESERVED_SCOPE_PATTERNS],
+  };
+}
+
 async function collectSymlinkHazards(projectRoot) {
   const hazards = [];
   const hazardPaths = new Set();
@@ -82,6 +124,7 @@ async function collectSymlinkHazards(projectRoot) {
     });
   }
   async function findSymlinkAncestor(relativePath) {
+    if (isPreservedScopePath(relativePath)) return false;
     const parts = relativePath.split(path.sep).filter(Boolean);
     let cursor = path.resolve(projectRoot);
     let cursorRelative = '';
@@ -101,6 +144,7 @@ async function collectSymlinkHazards(projectRoot) {
     return false;
   }
   async function walk(absolutePath, relativePath) {
+    if (isPreservedScopePath(relativePath)) return;
     const stat = await fs.lstat(absolutePath).catch((error) => {
       if (error.code === 'ENOENT') return null;
       throw error;
@@ -126,6 +170,7 @@ async function collectSymlinkHazards(projectRoot) {
 async function snapshotManagedState(projectRoot) {
   const entries = [];
   async function visit(absolutePath, relativePath) {
+    if (isPreservedScopePath(relativePath)) return;
     const stat = await fs.lstat(absolutePath).catch((error) => {
       if (error.code === 'ENOENT') return null;
       throw error;
@@ -172,6 +217,7 @@ async function snapshotManagedState(projectRoot) {
 }
 
 async function copyScope(sourceRoot, targetRoot, scope) {
+  if (isPreservedScopePath(scope)) return;
   const sourcePath = path.join(sourceRoot, scope);
   const sourceStat = await fs.lstat(sourcePath).catch((error) => {
     if (error.code === 'ENOENT') return null;
@@ -179,13 +225,31 @@ async function copyScope(sourceRoot, targetRoot, scope) {
   });
   if (!sourceStat) return;
   const targetPath = path.join(targetRoot, scope);
+  if (sourceStat.isSymbolicLink()) {
+    const error = new Error(`Symbolic link cannot be copied into a fleet transaction: ${normalizeRelativePath(scope)}`);
+    error.code = 'OPENPRD_FLEET_SYMLINK_HAZARD';
+    throw error;
+  }
+  if (sourceStat.isDirectory()) {
+    await fs.mkdir(targetPath, { recursive: true, mode: sourceStat.mode & 0o777 });
+    const children = await fs.readdir(sourcePath, { withFileTypes: true });
+    for (const child of children.sort((left, right) => left.name.localeCompare(right.name))) {
+      const childScope = path.join(scope, child.name);
+      if (isPreservedScopePath(childScope)) continue;
+      await copyScope(sourceRoot, targetRoot, childScope);
+    }
+    return;
+  }
+  if (!sourceStat.isFile()) {
+    const error = new Error(`Unsupported filesystem entry in fleet transaction: ${normalizeRelativePath(scope)}`);
+    error.code = 'OPENPRD_FLEET_UNSUPPORTED_ENTRY';
+    throw error;
+  }
   await fs.mkdir(path.dirname(targetPath), { recursive: true });
   await fs.cp(sourcePath, targetPath, {
-    recursive: sourceStat.isDirectory(),
     force: true,
     errorOnExist: false,
     preserveTimestamps: true,
-    verbatimSymlinks: true,
   });
 }
 
@@ -213,6 +277,7 @@ async function createPreimageBackup(plan) {
     action: plan.action,
     versions: plan.versions,
     checksum: plan.checksum,
+    scopePolicy: plan.scopePolicy,
     preimage: plan.preimage,
     createdAt: new Date().toISOString(),
   };
@@ -222,21 +287,14 @@ async function createPreimageBackup(plan) {
   return manifest;
 }
 
-async function removeManagedScopes(projectRoot) {
-  const scopes = await managedScopesForRoot(projectRoot);
-  for (const scope of scopes.sort((left, right) => right.length - left.length)) {
-    await fs.rm(path.join(projectRoot, scope), { recursive: true, force: true });
-  }
-}
-
 async function restorePreimageBackup(plan, reason) {
   const payloadRoot = path.join(plan.backup.path, 'preimage');
   plan.rollback.attempted = true;
   plan.rollback.reason = reason;
   try {
-    await removeManagedScopes(plan.projectRoot);
-    await copyManagedScopes(payloadRoot, plan.projectRoot);
-    const restored = await snapshotManagedState(plan.projectRoot);
+    const current = await snapshotManagedState(plan.projectRoot);
+    const restorePlan = { ...plan, preimage: current };
+    const restored = await applyStagedState(restorePlan, payloadRoot, plan.preimage);
     plan.rollback.checksum = restored.checksum;
     plan.rollback.ok = restored.checksum === plan.preimage.checksum;
     if (!plan.rollback.ok) {
@@ -247,6 +305,29 @@ async function restorePreimageBackup(plan, reason) {
     plan.rollback.ok = false;
     plan.rollback.error = error.message;
     throw error;
+  }
+}
+
+async function assertPreservedScopesEmpty(projectRoot) {
+  async function visit(absolutePath, relativePath, allowDirectory) {
+    const stat = await fs.lstat(absolutePath).catch((error) => {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    });
+    if (!stat) return;
+    if (!allowDirectory || !stat.isDirectory() || stat.isSymbolicLink()) {
+      const normalizedPath = normalizeRelativePath(relativePath);
+      const error = new Error(`Staged fleet mutation wrote into preserved scope: ${normalizedPath}`);
+      error.code = 'OPENPRD_FLEET_PRESERVED_SCOPE_MUTATION';
+      throw error;
+    }
+    const children = await fs.readdir(absolutePath, { withFileTypes: true });
+    for (const child of children.sort((left, right) => left.name.localeCompare(right.name))) {
+      await visit(path.join(absolutePath, child.name), path.join(relativePath, child.name), child.isDirectory() && !child.isSymbolicLink());
+    }
+  }
+  for (const scope of await preservedScopesForRoot(projectRoot)) {
+    await visit(path.join(projectRoot, scope), scope, true);
   }
 }
 
@@ -403,14 +484,18 @@ async function relocateStagingPaths(stagingRoot, stagingHome, projectRoot, openp
 export {
   CHECKSUM_ALGORITHM,
   FLEET_MANAGED_SCOPES,
+  FLEET_PRESERVED_SCOPE_PATTERNS,
+  FLEET_PRESERVED_SCOPES,
   FLEET_TRANSACTION_SCHEMA,
   FLEET_TRANSACTION_VERSION,
   applyStagedState,
+  assertPreservedScopesEmpty,
   collectSymlinkHazards,
   copyManagedScopes,
   createPreimageBackup,
   relocateStagingPaths,
   restorePreimageBackup,
+  scopePolicyForRoot,
   sha256,
   snapshotManagedState,
 };

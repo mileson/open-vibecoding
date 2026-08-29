@@ -6,7 +6,10 @@ import test from 'node:test';
 
 import { createFleetWorkspace } from '../src/fleet.js';
 import {
+  createFleetTransactionContext,
+  executeFleetProjectTransaction,
   inspectFleetUpgradeSafety,
+  planFleetProjectTransaction,
 } from '../src/upgrade/fleet-transaction.js';
 
 async function pathExists(filePath) {
@@ -121,6 +124,10 @@ test('fleet update stages changes, verifies backup checksum, and atomically appl
   const report = JSON.parse(await fs.readFile(reportPath, 'utf8'));
   assert.equal(report.projects[0].backup.path, item.backup.path);
   assert.equal(report.projects[0].migration.workUnits.changedVersions, 1);
+  const backupManifest = JSON.parse(await fs.readFile(item.backup.manifestPath, 'utf8'));
+  assert.ok(backupManifest.scopePolicy.managedRoots.includes('.openprd'));
+  assert.deepEqual(backupManifest.scopePolicy.preservedRoots, ['.openprd/.derived-data', '.openprd/artifacts', '.openprd/tmp']);
+  assert.deepEqual(backupManifest.scopePolicy.preservedPatterns, ['.openprd/harness/DerivedData-*']);
 
   const secondDryRun = await fleetWorkspace(root, {
     updateOpenprd: true,
@@ -169,8 +176,12 @@ test('fleet update rolls back when checksum CAS detects a project change before 
   const originalPath = path.join(project, '.openprd', 'state', 'original.txt');
   await fs.mkdir(path.dirname(originalPath), { recursive: true });
   await fs.writeFile(originalPath, 'before\n');
+  const preservedPath = path.join(project, '.openprd', '.derived-data', 'cache.txt');
+  await fs.mkdir(path.dirname(preservedPath), { recursive: true });
+  await fs.writeFile(preservedPath, 'cache before\n');
   const dependencies = successfulDependencies({
     beforeFleetApply: async () => {
+      await fs.writeFile(preservedPath, 'cache concurrent change\n');
       await fs.writeFile(originalPath, 'concurrent change\n');
     },
   });
@@ -187,6 +198,137 @@ test('fleet update rolls back when checksum CAS detects a project change before 
   assert.equal(item.rollback.ok, true);
   assert.ok(item.errors.some((error) => error.includes('Project changed before atomic apply')));
   assert.equal(await fs.readFile(originalPath, 'utf8'), 'before\n');
+  assert.equal(await fs.readFile(preservedPath, 'utf8'), 'cache concurrent change\n');
+});
+
+test('fleet preserves cache and artifact symlinks across planning and update without backing them up', async () => {
+  const { root, openprdHome } = await makeFleetRoot('openprd-fleet-preserved-scopes-');
+  const project = path.join(root, 'project');
+  await writeInstallManifest(project, '0.1.0');
+  const externalFile = path.join(root, 'external-cache.txt');
+  const externalDirectory = path.join(root, 'external-artifacts');
+  await fs.writeFile(externalFile, 'external cache\n');
+  await fs.mkdir(externalDirectory, { recursive: true });
+  await fs.writeFile(path.join(externalDirectory, 'render.txt'), 'external artifact\n');
+  const cacheLink = path.join(project, '.openprd', '.derived-data', 'cache-link');
+  const artifactLink = path.join(project, '.openprd', 'artifacts', 'artifact-link');
+  const harnessDerivedLink = path.join(project, '.openprd', 'harness', 'DerivedData-Legacy', 'cache-link');
+  const tmpDerivedLink = path.join(project, '.openprd', 'tmp', 'derived-data', 'cache-link');
+  await fs.mkdir(path.dirname(cacheLink), { recursive: true });
+  await fs.mkdir(path.dirname(artifactLink), { recursive: true });
+  await fs.mkdir(path.dirname(harnessDerivedLink), { recursive: true });
+  await fs.mkdir(path.dirname(tmpDerivedLink), { recursive: true });
+  await fs.symlink(externalFile, cacheLink, 'file');
+  await fs.symlink(externalDirectory, artifactLink, 'dir');
+  await fs.symlink(externalFile, harnessDerivedLink, 'file');
+  await fs.symlink(externalFile, tmpDerivedLink, 'file');
+
+  const context = await createFleetTransactionContext({
+    backupRoot: path.join(root, 'backups'),
+    openprdHome,
+  });
+  const projectInput = {
+    path: project,
+    relativePath: 'project',
+    category: 'openprd-workspace',
+    plannedAction: 'update',
+  };
+  const dryRunPlan = await planFleetProjectTransaction(projectInput, context, { dryRun: true });
+  assert.equal(dryRunPlan.eligible, true);
+  assert.ok(dryRunPlan.scopePolicy.managedRoots.includes('.openprd'));
+  assert.deepEqual(dryRunPlan.scopePolicy.preservedRoots, [
+    '.openprd/.derived-data',
+    '.openprd/artifacts',
+    '.openprd/tmp',
+    '.openprd/harness/DerivedData-Legacy',
+  ]);
+  assert.deepEqual(dryRunPlan.scopePolicy.preservedPatterns, ['.openprd/harness/DerivedData-*']);
+  assert.equal(dryRunPlan.preimage.entries.some((entry) => entry.path.startsWith('.openprd/.derived-data')), false);
+  assert.equal(dryRunPlan.preimage.entries.some((entry) => entry.path.startsWith('.openprd/artifacts')), false);
+  assert.equal(dryRunPlan.preimage.entries.some((entry) => entry.path.startsWith('.openprd/tmp')), false);
+  assert.equal(dryRunPlan.preimage.entries.some((entry) => entry.path.startsWith('.openprd/harness/DerivedData-Legacy')), false);
+
+  const plan = await planFleetProjectTransaction(projectInput, context);
+  const result = await executeFleetProjectTransaction(plan, {
+    openprdHome,
+    mutate: async (stagingRoot) => {
+      await fs.writeFile(path.join(stagingRoot, '.openprd', 'harness', 'transaction-generated.txt'), 'generated\n');
+      await fs.mkdir(path.join(stagingRoot, '.openprd', 'artifacts', 'empty', 'skeleton'), { recursive: true });
+      return { ok: true };
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(await fs.readlink(cacheLink), externalFile);
+  assert.equal(await fs.readlink(artifactLink), externalDirectory);
+  assert.equal(await fs.readlink(harnessDerivedLink), externalFile);
+  assert.equal(await fs.readlink(tmpDerivedLink), externalFile);
+  assert.equal(await pathExists(path.join(plan.backup.path, 'preimage', '.openprd', '.derived-data')), false);
+  assert.equal(await pathExists(path.join(plan.backup.path, 'preimage', '.openprd', 'artifacts')), false);
+  assert.equal(await pathExists(path.join(plan.backup.path, 'preimage', '.openprd', 'tmp')), false);
+  assert.equal(await pathExists(path.join(plan.backup.path, 'preimage', '.openprd', 'harness', 'DerivedData-Legacy')), false);
+  const manifest = JSON.parse(await fs.readFile(plan.backup.manifestPath, 'utf8'));
+  assert.deepEqual(manifest.scopePolicy, plan.scopePolicy);
+  assert.equal(manifest.preimage.entries.some((entry) => entry.path.startsWith('.openprd/.derived-data')), false);
+  assert.equal(manifest.preimage.entries.some((entry) => entry.path.startsWith('.openprd/artifacts')), false);
+});
+
+test('fleet CAS ignores concurrent preserved cache changes', async () => {
+  const { root, openprdHome } = await makeFleetRoot('openprd-fleet-preserved-cas-');
+  const project = path.join(root, 'project');
+  await writeInstallManifest(project, '0.1.0');
+  const preservedPath = path.join(project, '.openprd', '.derived-data', 'cache.txt');
+  await fs.mkdir(path.dirname(preservedPath), { recursive: true });
+  await fs.writeFile(preservedPath, 'before\n');
+  const dependencies = successfulDependencies({
+    beforeFleetApply: async () => {
+      await fs.writeFile(preservedPath, 'concurrent cache change\n');
+    },
+  });
+
+  const result = await createFleetWorkspace(dependencies)(root, {
+    updateOpenprd: true,
+    maxDepth: 2,
+    openprdHome,
+  });
+  const item = result.projects.find((entry) => entry.relativePath === 'project');
+
+  assert.equal(result.ok, true);
+  assert.equal(item.status, 'updated');
+  assert.equal(item.rollback.attempted, false);
+  assert.equal(await fs.readFile(preservedPath, 'utf8'), 'concurrent cache change\n');
+});
+
+test('fleet rejects staged files in preserved scopes with a dedicated error code', async () => {
+  const { root, openprdHome } = await makeFleetRoot('openprd-fleet-preserved-mutation-');
+  const project = path.join(root, 'project');
+  await writeInstallManifest(project, '0.1.0');
+  const context = await createFleetTransactionContext({
+    backupRoot: path.join(root, 'backups'),
+    openprdHome,
+  });
+  const plan = await planFleetProjectTransaction({
+    path: project,
+    relativePath: 'project',
+    category: 'openprd-workspace',
+    plannedAction: 'update',
+  }, context);
+
+  const result = await executeFleetProjectTransaction(plan, {
+    openprdHome,
+    mutate: async (stagingRoot) => {
+      const forbiddenPath = path.join(stagingRoot, '.openprd', 'harness', 'DerivedData-Generated', 'unexpected.txt');
+      await fs.mkdir(path.dirname(forbiddenPath), { recursive: true });
+      await fs.writeFile(forbiddenPath, 'must not apply\n');
+      return { ok: true };
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'OPENPRD_FLEET_PRESERVED_SCOPE_MUTATION');
+  assert.equal(result.plan.rollback.attempted, true);
+  assert.equal(result.plan.rollback.ok, true);
+  assert.equal(await pathExists(path.join(project, '.openprd', 'harness', 'DerivedData-Generated', 'unexpected.txt')), false);
 });
 
 test('fleet ignores symlinks outside OpenPrd-managed artifacts and nested repositories named openprd', async () => {
@@ -229,6 +371,13 @@ test('fleet refuses archives, unknown classifications, symlinked managed paths, 
   await fs.mkdir(externalSkills, { recursive: true });
   await fs.mkdir(path.join(symlinkProject, '.codex'), { recursive: true });
   await fs.symlink(externalSkills, path.join(symlinkProject, '.codex', 'skills'), 'dir');
+  const harnessSymlinkProject = path.join(root, 'harness-symlink-project');
+  await writeInstallManifest(harnessSymlinkProject, '0.1.0');
+  await fs.symlink(externalSkills, path.join(harnessSymlinkProject, '.openprd', 'harness', 'linked-tools'), 'dir');
+  const stateSymlinkProject = path.join(root, 'state-symlink-project');
+  await writeInstallManifest(stateSymlinkProject, '0.1.0');
+  await fs.mkdir(path.join(stateSymlinkProject, '.openprd', 'state'), { recursive: true });
+  await fs.symlink(externalSkills, path.join(stateSymlinkProject, '.openprd', 'state', 'linked-state'), 'dir');
   const tooNewProject = path.join(root, 'too-new-project');
   await writeInstallManifest(tooNewProject, '0.1.0');
   await fs.writeFile(path.join(tooNewProject, '.openprd', 'manifest.json'), `${JSON.stringify({
@@ -252,6 +401,8 @@ test('fleet refuses archives, unknown classifications, symlinked managed paths, 
   assert.equal(updateCalls, 0);
   assert.ok(result.projects.find((item) => item.relativePath === 'codex-archive-2026-06-28/project').refusal.some((item) => item.code === 'archive-project'));
   assert.ok(result.projects.find((item) => item.relativePath === 'symlink-project').refusal.some((item) => item.code === 'symlink-managed-path'));
+  assert.ok(result.projects.find((item) => item.relativePath === 'harness-symlink-project').refusal.some((item) => item.code === 'symlink-managed-path'));
+  assert.ok(result.projects.find((item) => item.relativePath === 'state-symlink-project').refusal.some((item) => item.code === 'symlink-managed-path'));
   assert.ok(result.projects.find((item) => item.relativePath === 'too-new-project').refusal.some((item) => item.code === 'OPENPRD_MANIFEST_TOO_NEW'));
 
   const unknown = await inspectFleetUpgradeSafety({

@@ -490,6 +490,7 @@ async function buildI18nReminder(projectRoot, files) {
   const defaultLang = config?.defaultLanguage ?? 'zh-Hans';
   const supported = Array.isArray(config?.supportedLanguages) ? config.supportedLanguages : ['zh-Hans', 'en'];
   const platforms = Array.isArray(config?.platforms) ? config.platforms : [];
+  const copyGuideline = '目标语言文案不要逐字翻译；按钮、Tab、菜单和短标签按母语软件产品习惯紧凑改写，只使用无歧义的常见缩写，并在真实控件中检查语义、截断、异常换行、布局挤压与 Accessibility Label。';
   return {
     required: true,
     textFiles,
@@ -498,8 +499,9 @@ async function buildI18nReminder(projectRoot, files) {
     platforms,
     configExists: config !== null,
     reason: config
-      ? `本轮触达 ${textFiles.length} 个可能包含用户文案的文件；请检查新增/修改的文案是否已使用 i18n 框架，基准语言 ${defaultLang}，需支持 ${supported.join(', ')}。`
-      : `本轮触达 ${textFiles.length} 个可能包含用户文案的文件，但项目尚未配置 .openprd/i18n-config.json。如需启用多语言检查，可运行 openprd i18n-init . 或手动创建配置文件。`,
+      ? `本轮触达 ${textFiles.length} 个可能包含用户文案的文件；请检查新增/修改的文案是否已使用 i18n 框架，基准语言 ${defaultLang}，需支持 ${supported.join(', ')}。${copyGuideline}`
+      : `本轮触达 ${textFiles.length} 个可能包含用户文案的文件，但项目尚未配置 .openprd/i18n-config.json。如需启用多语言检查，可运行 openprd i18n-init . 或手动创建配置文件。${copyGuideline}`,
+    copyGuideline,
     guideline: 'docs/basic/i18n-guidelines.md',
   };
 }

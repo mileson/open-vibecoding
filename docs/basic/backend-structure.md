@@ -17,6 +17,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
 - `src/review-model.js` 将同一份 ReviewModel 投影为默认业务视角和可切换工程视角。两种视图共享 digest、时间线、证据和批准合同，业务评审不再被内部字段淹没，工程人员仍可追溯到依据。
 - `src/knowledge-v3/` 把经验生命周期收敛为 validate、promote、deprecate、supersede、query，并用 scope、TTL、token budget、evidence 与 reviewer 控制长期知识进入 Agent 上下文的条件。
 - `src/adapters/` 为 Codex、Claude Code、Cursor 提供统一 detect/capabilities/install/normalize/render/handoff SPI。能力缺口显式暴露，不伪装三端生命周期完全一致；共享 skill 保持字节一致，命令与 hook 允许平台专属实现。
+- `src/agent-canonical-content.js` 注册 `openprd-audio-evidence`，`src/agent-integration.js` 把 Skill 与 references 物化到 Codex/Claude，并把同一语义路由写入 Cursor rule。JSON reference 使用合法 JSON `$comment` 保存生成来源与 checksum，不在 schema 前插入 HTML 注释。
 - `src/upgrade/` 与 `src/fleet.js` 提供 plan、dry-run、preimage backup、checksum/CAS、atomic apply、restore 和批量事务报告。归档、未知目录、过新版本和未显式处理的软链接默认拒绝写入。
 
 控制平面写入遵循一条顺序：先在 manifest 中协商协议版本，再在 TaskRuntime claim 工作单元并声明 write-set，之后追加 ledger event，最后重建或刷新人类可读投影。任何一步失败都不能让“任务状态”和“文件事实”各自成功一半。
@@ -142,6 +143,9 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - `reviewWorkspace` 校验方向存在后把选择写入 `reviewStatus.designDirection`、workflow 事件和进度记录。
 - 评审产物归档: `review-presentation --write` 成功重渲染后会触发 `archiveStaleActiveArtifacts`，把 `.openprd/artifacts/active/` 下超过保留数（默认 12 个版本）的 `vNNNN-*` bundle 移到 `.openprd/artifacts/archive/`，归档失败不阻断评审生成。
 - 质量评估: `src/quality.js` 负责 `.openprd/quality/config.json` 初始化、当前质量场景识别、本期必测块与本次证据检测、日志/链路追踪检测、业务成本与滥用护栏检测、评估执行环境检测、HTML 回归测试报告写入，以及 `.openprd/knowledge/` 经验 Skill 沉淀入口。
+  - `src/test-strategy.js` 以 `test-scope: media-flow` 和可选 `evidence-profile: audio-asr` 表示真实音频、声学、ASR/转写或语音派生字幕链路，默认要求 `integration, manual`；语义分流显式排除纯字幕文案、翻译和 UI 样式。
+  - `src/quality.js` 在现有 `test-strategy` gate 下解析 `openprd.media-evidence.v1` JSON，只校验核心合同、active task id、最终媒体复测状态和无 gold transcript 时的 unknown 声明；不读取媒体二进制、不执行音频算法，也不新增 `QUALITY_GATE_IDS`。报告在 `evalHarness.testStrategy.mediaEvidence` 增加兼容字段，`media` scenario 只要求现有 `test-strategy` gate。
+  - 这项能力不新增 CLI 命令或远程 API；现有 `quality --verify`、task metadata 和 eval-report v1 以 additive 字段承载，旧配置通过默认值合并继续运行。
   - `src/knowledge.js` 负责 turn-state 回顾信号、knowledge candidate、draft skill 和 promote 标记。
   - `quality --verify` 与 `quality --learn --review` 的文本输出在存在 `userFacingExperience.message` 时，优先复用该人话结构化回顾，而不是默认先暴露 candidate id、草案路径或 promote 命令。
 - 质量报告保留策略: `.openprd/quality/config.json` 的 `reports.retentionMaxReports`（默认 60）控制 `.openprd/quality/reports/` 保留的报告数；`writeReport` 每次写入后调用 `pruneQualityReports` 按时间序修剪旧 HTML/JSON 报告，`retentionEnabled: false` 可关闭。
@@ -177,6 +181,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - 项目自身 standards 或 validate 缺口只作为项目健康问题报告，不阻断生成引导更新；`--backfill-work-units` 只刷新可验证身份与索引，历史 artifact 保持 `legacy-frozen`。
   - `doctor` 读取 `workspaces.jsonl`，并对“过宽 root”与“父子嵌套 workspace”发出 hygiene 警告，降低 fleet 扫描歧义。
   - fleet 写入使用 `src/upgrade/fleet-transaction.js` 分阶段执行。每个目标先记录版本、checksum 和备份，再原子替换；目标在写入前发生变化时 CAS 失败并回滚，不继续覆盖用户的新改动。
+    - 事务保留 `.openprd` 宽 managed root，但将 `.openprd/.derived-data`、`.openprd/artifacts`、`.openprd/tmp` 和历史项目中的 `.openprd/harness/DerivedData-*` 声明为 preserved roots/patterns：它们不进入软链接扫描、preimage、CAS 或备份，应用和回滚也不会删除其中的实时缓存与产物。staging 只允许保留空目录骨架，任何文件或软链接都以 `OPENPRD_FLEET_PRESERVED_SCOPE_MUTATION` 拒绝；`.openprd/harness` 其他安装清单、命令目录与运行态合同继续受事务管理。plan 与 backup manifest 同步记录 managed/preserved scope policy。
 - 持续调研: `src/discovery.js` 负责 discovery run、source inventory、coverage matrix、claims 和 discovery 验证。
 - OpenPrd change 文件域: `src/openspec/` 负责 OpenPrd change/spec/task 的读写、验证、应用、归档和旧目录迁移。
   - 新写入统一落在 `.openprd/changes/`、`.openprd/specs/` 与 `.openprd/archive/changes/`；旧版根目录 `openprd/changes|specs|archive/changes` 只由 update / setup / fleet 迁移器读取，运行期不再作为普通 change 查找来源。

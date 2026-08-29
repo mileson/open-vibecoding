@@ -256,6 +256,12 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedAgents.includes('autonomy-risk'));
     assert.ok(generatedAgents.includes('不索取用户确认'));
     assert.ok(generatedAgents.includes('是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断'));
+    assert.ok(generatedAgents.includes('多语言文案不得逐字翻译'));
+    assert.ok(generatedAgents.includes('Auto Edit'));
+    assert.ok(generatedAgents.includes('Start Automatic Editing'));
+    assert.ok(generatedAgents.includes('目标用户普遍理解'));
+    assert.ok(generatedAgents.includes('Accessibility Label'));
+    assert.ok(generatedAgents.includes('异常换行'));
     assert.equal(generatedAgents.includes('## Skill Routing'), false);
     assert.equal(generatedAgents.includes('## Tool Reality'), false);
     assert.equal(generatedAgents.includes('## Working Principles'), false);
@@ -269,6 +275,10 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedHook.includes('生图工具是工具路径，不是审美豁免'));
     assert.ok(generatedHook.includes('image-generation-preference.json'));
     assert.ok(generatedHook.includes('审美意图和记忆点'));
+    assert.ok(generatedHook.includes('多语言文案不得逐字翻译'));
+    assert.ok(generatedHook.includes('Auto Edit'));
+    assert.ok(generatedHook.includes('Accessibility Label'));
+    assert.ok(generatedHook.includes('异常换行'));
     assert.ok(generatedHook.includes('build、package 和 dev-check'));
     assert.ok(generatedHook.includes('allowed-with-autonomy-attention'));
     assert.ok(generatedHook.includes('OpenPrd 不阻断工具调用'));
@@ -440,6 +450,12 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedSharedSkill.includes('当前环境已配置的小程序本地验证能力'));
     assert.equal(generatedSharedSkill.includes('weapp-dev-mcp'), false);
     assert.ok(generatedSharedSkill.includes('Localizable'));
+    assert.ok(generatedSharedSkill.includes('开始自动剪辑'));
+    assert.ok(generatedSharedSkill.includes('Auto Edit'));
+    assert.ok(generatedSharedSkill.includes('Start Automatic Editing'));
+    assert.ok(generatedSharedSkill.includes('目标用户普遍理解'));
+    assert.ok(generatedSharedSkill.includes('Accessibility Label'));
+    assert.ok(generatedSharedSkill.includes('异常换行'));
     assert.ok(generatedSharedSkill.includes('彩色 Mermaid'));
     assert.ok(generatedSharedSkill.includes('Image 2 是工具路径，不是审美豁免'));
     assert.ok(generatedSharedSkill.includes('visual evidence 同时检查气质'));
@@ -739,8 +755,45 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
       assert.equal(eventPayload.additional_contexts, undefined);
       assert.equal(eventPayload.hookSpecificOutput, undefined);
     }
+    const productCopyPrompt = spawnSync(process.execPath, [path.join(project, '.codex', 'hooks', 'openprd-hook.mjs'), 'UserPromptSubmit'], {
+      cwd: project,
+      input: JSON.stringify({
+        cwd: project,
+        hook_event_name: 'UserPromptSubmit',
+        prompt: '把这个英文按钮按英语母语软件产品习惯缩短，不要直译',
+      }),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        OPENPRD_CLI: path.resolve('openprd/bin/openprd.js'),
+      },
+    });
+    assert.equal(productCopyPrompt.status, 0);
+    const productCopyWrite = spawnSync(process.execPath, [path.join(project, '.codex', 'hooks', 'openprd-hook.mjs'), 'PreToolUse'], {
+      cwd: project,
+      input: JSON.stringify({
+        cwd: project,
+        hook_event_name: 'PreToolUse',
+        tool_name: 'apply_patch',
+        tool_input: {
+          patch: '*** Begin Patch\n*** Update File: src/app.js\n*** End Patch',
+        },
+      }),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        OPENPRD_CLI: path.resolve('openprd/bin/openprd.js'),
+      },
+    });
+    assert.equal(productCopyWrite.status, 0);
+    const productCopyPayload = JSON.parse(productCopyWrite.stdout);
+    assert.equal(productCopyPayload.continue, true);
+    assert.ok(productCopyPayload.hookSpecificOutput.additionalContext.includes('多语言文案不得逐字翻译'));
+    assert.ok(productCopyPayload.hookSpecificOutput.additionalContext.includes('Auto Edit'));
+    assert.ok(productCopyPayload.hookSpecificOutput.additionalContext.includes('Accessibility Label'));
     const events = await fs.readFile(path.join(project, '.openprd', 'harness', 'events.jsonl'), 'utf8');
     assert.ok(events.includes('allowed-high-risk'));
+    assert.ok(events.includes('allowed-with-product-copy-attention'));
     assert.equal(events.includes('allowed-low-risk'), false);
     assert.equal(events.includes('tool-complete'), false);
     const observedRuntimeEnvironment = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'runtime-environment.json'), 'utf8'));

@@ -52,9 +52,10 @@ OpenPrd 还会通过生成的 AGENTS 与 skills 注入“Agent 自主审查界�
 
 - 执行段通过 tasks、loop、回归报告和必要的视觉评审证据把实现与验证沉淀成结构化证据。
 - 审查界面由审查边界触发，不由“任务是否结束”触发：分析中需要共同判断、实现后需要验收、外部动作前需要确认时，都由 Agent 重新判断。命中强制条件时必须制作任务专属 HTML；未命中时继续按审查成本判断，简单结果保持对话交付。
-- 用 `openprd-test-strategy` 为任务选择单元、集成、端到端、人工、视觉、小程序、性能或安全验证组合。
+- 用 `openprd-test-strategy` 为任务选择单元、集成、端到端、人工、视觉、媒体、小程序、性能或安全验证组合。
+- 真实音频、音轨、声学质量、ASR/转写和语音派生字幕时间轴额外进入 `openprd-audio-evidence`：先锁定来源并独立采集修改前基线，再从最终交付媒体重新提取、同口径复测并写入 `openprd.media-evidence.v1`。纯字幕文案、翻译、错别字和只改字体颜色布局的 UI 不自动触发。
 - 用 execution strategy 为任务标注 `serial / parallel-workers / parallel-workers-isolated`、`write-scope`、`owner-role`、`local-verify` 和 `integration-owner`。
-- 质量段通过 `openprd quality --verify` 生成 HTML 回归测试报告，优先展示整体回归结果、逐需求模块结果、测试块通过情况、分层测试策略矩阵和待补证据；它限制整体就绪声明，不否定已验证的当前任务。
+- 质量段通过 `openprd quality --verify` 生成 HTML 回归测试报告，优先展示整体回归结果、逐需求模块结果、测试块通过情况、分层测试策略矩阵和待补证据；`media-flow` 复用现有 `test-strategy` 门聚合结构化媒体证据，不另建平行音频门。它限制整体就绪声明，不否定已验证的当前任务。
 - 执行阶段的单个任务只保留最小足够 task evidence；基础文档、代码说明书、文件夹 README、日志和其他全局维护项进入 `workspaceAttention`，由 Agent 在不打断当前工作的前提下更新。
 - EVO 只作为内部质量评估/验证层代号，不作为用户读报告的前置概念。
 
@@ -195,7 +196,7 @@ OpenPrd 还会通过生成的 AGENTS 与 skills 注入“Agent 自主审查界�
   - `review --mark confirmed` 只记录当前精确匹配的 PRD 版本；传入的 `--version`、`--digest` 或 `--work-unit` 与快照不一致时拒绝错误写回，但不阻断用户已经要求的实现。
   - 实现意图和 review 记录彼此独立：用户说“可以开做”“请帮我实现”或“继续实现”时，Agent 继续执行并后台维护当前 artifact，不能要求用户替内部材料补确认。
 - `review-presentation --write` 成功后会触发 active artifacts 归档清扫：`.openprd/artifacts/active/` 只保留最新 12 个版本 bundle，更早的移入 `.openprd/artifacts/archive/`。
-- `change --generate` 以当前 requirement 快照生成实现材料，不依赖用户批准 review；生成任务写入 `type`、`test-layer`、`test-size`、`test-scope`、`evidence-plan` 以及 `execution-mode`、`parallel-group`、`write-scope`、`owner-role`、`local-verify`、`integration-owner` 元数据。
+- `change --generate` 以当前 requirement 快照生成实现材料，不依赖用户批准 review；生成任务写入 `type`、`test-layer`、`test-size`、`test-scope`、可选 `evidence-profile`、`evidence-plan` 以及 `execution-mode`、`parallel-group`、`write-scope`、`owner-role`、`local-verify`、`integration-owner` 元数据。真实媒体任务使用 `test-scope: media-flow` 与 `evidence-profile: audio-asr`，通常配套 `integration, manual`。
   - `implementation` 和 `verification` 任务默认使用 `tasks --evidence-required` 作为局部证据门，要求 Agent 传入本任务 evidence 或 waiver，而不是每个任务都运行全局 `run --verify`。
   - 旧版任务若仍写着 `verify: openprd run . --verify`，在 `tasks --verify` 上下文中也会转为局部 evidence 门，不触发 workspace quality churn。
   - `documentation` 和 `governance` 任务以 `blocking: false` 作为后台维护项，不会排到实现/验证任务之前，也不阻断 change apply；测试策略元数据用于 evidence routing，不用于机械比例考核；执行策略元数据用于主 Agent 做 worker 分片和最终审查，不直接触发自动并行。
@@ -211,7 +212,7 @@ OpenPrd 还会通过生成的 AGENTS 与 skills 注入“Agent 自主审查界�
 - `dev-check` 若遇到未配置扩展名但内容明显像代码，会先按代码候选参与本次分级。置信度达到自动补全阈值时直接把扩展名追加到 `.openprd/standards/config.json` 并在 `.openprd/growth/accepted.json` 留证据；置信度不足或不属于工具识别补全时，只写入 `.openprd/growth/candidates.jsonl` 等收工复盘。
 - 新增配置能力时，状态变化不止是“写入代码”：Agent 还要给出该能力是否纳入 growth 的判断。代码扩展识别这类白名单工具补全可直接自动固化；用户偏好、项目协作规矩和 OpenPrd 默认行为等需要用户决定的内容停在收工确认状态。
 - `benchmark observe` 更新 `.openprd/benchmarks/inbox/` candidate 的累计采纳次数、最近 7 天滚动采纳统计、最近使用时间和证据；`benchmark approve` 是唯一把来源移入 approved registry 的动作。`benchmark verify` 会独立校验推荐阈值、approve command 和“只推荐、不自动晋级”的控制状态是否漂移。
-- `quality --verify` 会产出 `.openprd/quality/reports/<id>.json` 和 `.openprd/quality/reports/<id>.html`，HTML 回归测试报告是阶段性质量查看的主要产物，包含整体结果、需求模块结果、测试块状态、分层测试策略矩阵、本次执行证据和业务成本与滥用护栏。
+- `quality --verify` 会产出 `.openprd/quality/reports/<id>.json` 和 `.openprd/quality/reports/<id>.html`，HTML 回归测试报告是阶段性质量查看的主要产物，包含整体结果、需求模块结果、测试块状态、分层测试策略矩阵、本次执行证据和业务成本与滥用护栏。媒体场景只校验 schema、task 关联、`integration/manual` 策略、最终复测状态和声明边界，不读取音频，也不自行计算 WER、响度或波形。
 - `quality --verify` 写入报告后按 `reports.retentionMaxReports`（默认 60）自动修剪 `.openprd/quality/reports/` 中的旧报告，避免报告目录无限增长；`retentionEnabled: false` 可关闭。
 - `quality --learn --review` 会先生成 knowledge candidate 和 draft skill；`quality --learn` 再把已确认的模式抽象为 incident、pattern 和项目经验 Skill，形成“问题修复 -> 验证 -> 草案 -> 沉淀 -> 下次触发”的项目级认知循环。
 - `learn` 默认进入 `awaiting-agent-content` 状态，只提供 HTML 阅读器骨架和 Agent 写作工具包；传入 `--content-json` 后才进入 `agent-authored` 状态并展示正文。

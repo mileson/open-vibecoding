@@ -28,6 +28,7 @@ const TEST_SCOPE_LABELS = {
   'api-contract': '接口契约',
   'user-flow': '用户主路径',
   'visual-flow': '视觉路径',
+  'media-flow': '音频与转写链路',
   'weapp-runtime': '小程序运行态',
   performance: '性能基线',
   security: '安全边界',
@@ -40,6 +41,7 @@ export const TEST_STRATEGY_METADATA_KEYS = [
   'test-layer',
   'test-size',
   'test-scope',
+  'evidence-profile',
   'evidence',
   'evidence-plan',
   'upgrade-reason',
@@ -50,6 +52,7 @@ export const TEST_STRATEGY_METADATA_KEYS = [
 export const TEST_LAYER_VALUES = Object.keys(TEST_LAYER_LABELS);
 export const TEST_SIZE_VALUES = Object.keys(TEST_SIZE_LABELS);
 export const TEST_SCOPE_VALUES = Object.keys(TEST_SCOPE_LABELS);
+export const EVIDENCE_PROFILE_VALUES = ['audio-asr'];
 
 function normalizeToken(value) {
   return String(value ?? '').trim().toLowerCase();
@@ -70,6 +73,50 @@ const WEAPP_MENTION_PATTERNS = [/weapp|微信小程序|小程序|微信开发者
 const WEAPP_VALIDATION_ACTION_PATTERNS = [
   /测试|验证|实测|复现|截图|日志|抓日志|抓包|网络请求|network|运行态|开发者工具自动化|从\s*0\s*到\s*1|冷启动|全流程/,
 ];
+
+const AUDIO_MEDIA_MENTION_PATTERNS = [
+  /audio|音频|音轨|录音|声音|音量|响度|声道|波形|削波|clipping|混音|降噪|噪声|底噪|静音|无声|消音|哔声|bleep|视频音轨|媒体导出/,
+];
+const AUDIO_ASR_MENTION_PATTERNS = [
+  /\basr\b|speech[- ]?to[- ]?text|语音识别|语音转写|音频转字幕|音频转文字|语音转字幕|transcription|transcript/,
+];
+const AUDIO_RESULT_ACTION_PATTERNS = [
+  /分析|优化|改善|调整|修复|实现|开发|接入|替换|升级|迁移|切换|验证|测试|测量|对比|复测|导出|渲染|烧录|剪辑|切分|同步|识别|转写|转字幕|转文字|生成|异常|失真|错误|质量|准确|漂移|漏字|幻觉|断点|覆盖|时间轴|时间戳|分段|说话人|语言检测|wer|cer/,
+];
+const AUDIO_RESULT_BOUNDARY_PATTERNS = [
+  /最终(?:音频|视频|媒体)|真实(?:音频|音轨|媒体)|视频音轨|音画同步|字幕时间轴|字幕时间戳|烧录|外挂字幕|\bsrt\b|\bvtt\b|响度|声道|波形|削波|clipping|混音|降噪|噪声|底噪|静音|无声|消音|哔声|bleep|转码|媒体导出|导出音频/,
+];
+const SUBTITLE_TEXT_OR_UI_PATTERNS = [
+  /字幕.*(?:文案|翻译|错别字|标点|字体|字号|颜色|排版|布局|样式|卡片|按钮|界面|ui)/,
+  /(?:文案|翻译|错别字|标点|字体|字号|颜色|排版|布局|样式|卡片|按钮|界面|ui).*字幕/,
+  /transcript.*(?:copy|translation|typo|font|color|layout|style|ui)/,
+];
+const AUDIO_CONTROL_UI_PATTERNS = [
+  /(?:音量|播放|暂停)(?:按钮|滑块|图标|控件).*(?:ui|界面|样式|颜色|布局|交互)/,
+  /(?:ui|界面|样式|颜色|布局|交互).*(?:音量|播放|暂停)(?:按钮|滑块|图标|控件)/,
+];
+const AUDIO_METHODOLOGY_ONLY_PATTERNS = [
+  /方法论|skill|schema|证据合同|证据规范|工作流规范|路由规则|评估指南|分析指南|documentation|docs/,
+];
+
+function needsMediaEvidence(text) {
+  const hasResultBoundary = includesAny(text, AUDIO_RESULT_BOUNDARY_PATTERNS);
+  if (includesAny(text, AUDIO_METHODOLOGY_ONLY_PATTERNS) && !hasResultBoundary) {
+    return false;
+  }
+  const textOrUiOnly = (
+    includesAny(text, SUBTITLE_TEXT_OR_UI_PATTERNS)
+    || includesAny(text, AUDIO_CONTROL_UI_PATTERNS)
+  ) && !hasResultBoundary;
+  if (textOrUiOnly) {
+    return false;
+  }
+  const hasResultAction = includesAny(text, AUDIO_RESULT_ACTION_PATTERNS);
+  if (includesAny(text, AUDIO_ASR_MENTION_PATTERNS)) {
+    return hasResultAction || hasResultBoundary;
+  }
+  return includesAny(text, AUDIO_MEDIA_MENTION_PATTERNS) && hasResultAction;
+}
 
 function firstKnown(values, allowed, fallback) {
   return values.find((value) => allowed.includes(value)) ?? fallback;
@@ -110,6 +157,9 @@ export function inferTestStrategyForTask(task = {}) {
     task.verify,
     task.metadata?.done,
     task.metadata?.verify,
+    task.metadata?.['test-scope'],
+    task.metadata?.['evidence-profile'],
+    task.metadata?.['evidence-plan'],
   ].map((value) => String(value ?? '')).join('\n').toLowerCase();
 
   if (type === 'governance' || phase.includes('governance')) {
@@ -130,6 +180,31 @@ export function inferTestStrategyForTask(task = {}) {
       scope: 'docs',
       evidencePlan: task.verify ?? task.metadata?.verify ?? 'openprd standards . --verify',
       upgradeReason: '文档任务以标准校验和人工审查证据为主',
+      inferred: true,
+    };
+  }
+
+  if (
+    normalizeToken(task.metadata?.['evidence-profile']) === 'audio-asr'
+    || normalizeToken(task.metadata?.['test-scope']) === 'media-flow'
+    || needsMediaEvidence(text)
+  ) {
+    const layers = ['integration', 'manual'];
+    if (includesAny(text, WEAPP_MENTION_PATTERNS) && includesAny(text, WEAPP_VALIDATION_ACTION_PATTERNS)) {
+      layers.push('weapp');
+    }
+    if (includesAny(text, [/perf|performance|性能|耗时|延迟|压力|stress|load|baseline|基线/])) {
+      layers.push('performance');
+    }
+    if (includesAny(text, [/security|权限|敏感|隐私|个人信息|pii|secret|脱敏|安全/])) {
+      layers.push('security');
+    }
+    return {
+      layers,
+      size: layers.length > 2 ? 'large' : 'medium',
+      scope: 'media-flow',
+      evidencePlan: '锁定真实来源、目标音轨与摘要，独立采集修改前基线；用同一口径从最终交付媒体重新提取并复测，记录 openprd.media-evidence.v1 与任务专属 baseline/comparison HTML；没有人工 gold transcript 时，ASR 准确率保持 unknown',
+      upgradeReason: '触达真实音频、声学结果、ASR/转写或语音派生字幕，源码和中间文件不能替代最终媒体证据',
       inferred: true,
     };
   }
@@ -223,6 +298,9 @@ export function taskTestStrategy(task = {}) {
     layers: explicitLayers.length > 0 ? explicitLayers : inferred.layers,
     size: TEST_SIZE_VALUES.includes(rawSize) ? rawSize : inferred.size,
     scope: TEST_SCOPE_VALUES.includes(rawScope) ? rawScope : inferred.scope,
+    evidenceProfile: EVIDENCE_PROFILE_VALUES.includes(normalizeToken(metadata['evidence-profile']))
+      ? normalizeToken(metadata['evidence-profile'])
+      : (inferred.scope === 'media-flow' ? 'audio-asr' : null),
     evidence: metadata.evidence ?? null,
     evidencePlan: metadata['evidence-plan'] ?? inferred.evidencePlan,
     upgradeReason: metadata['upgrade-reason'] ?? inferred.upgradeReason,
@@ -237,6 +315,7 @@ export function formatTaskTestStrategyMetadata(task = {}) {
     `test-layer: ${strategy.layers.join(', ')}`,
     `test-size: ${strategy.size}`,
     `test-scope: ${strategy.scope}`,
+    ...(strategy.scope === 'media-flow' ? ['evidence-profile: audio-asr'] : []),
     `evidence-plan: ${strategy.evidencePlan}`,
     `upgrade-reason: ${strategy.upgradeReason}`,
   ];
@@ -264,10 +343,29 @@ export function validateTaskTestStrategy(task = {}) {
       errors.push(`test-scope 无效: ${metadata['test-scope']}；允许值: ${TEST_SCOPE_VALUES.join(', ')}`);
     }
   }
+  if (metadata['evidence-profile']) {
+    const evidenceProfile = normalizeToken(metadata['evidence-profile']);
+    if (!EVIDENCE_PROFILE_VALUES.includes(evidenceProfile)) {
+      errors.push(`evidence-profile 无效: ${metadata['evidence-profile']}；允许值: ${EVIDENCE_PROFILE_VALUES.join(', ')}`);
+    } else if (evidenceProfile === 'audio-asr') {
+      if (metadata['test-scope'] && normalizeToken(metadata['test-scope']) !== 'media-flow') {
+        errors.push('evidence-profile: audio-asr 必须使用 test-scope: media-flow。');
+      }
+      const explicitLayers = normalizeTestLayers(metadata['test-layer']);
+      if (explicitLayers.length > 0 && (!explicitLayers.includes('integration') || !explicitLayers.includes('manual'))) {
+        errors.push('evidence-profile: audio-asr 的显式 test-layer 必须同时包含 integration 与 manual。');
+      }
+    }
+  }
   const layers = normalizeTestLayers(metadata['test-layer']);
   const hasWaiver = Boolean(metadata.waiver || metadata['waiver-reason']);
   const hasEvidencePlan = Boolean(metadata['evidence-plan'] || metadata.evidence);
-  if ((layers.length > 0 || metadata['test-size'] || metadata['test-scope']) && !hasEvidencePlan && !hasWaiver) {
+  const mediaProfile = normalizeToken(metadata['evidence-profile']) === 'audio-asr'
+    || normalizeToken(metadata['test-scope']) === 'media-flow';
+  if (mediaProfile && hasWaiver) {
+    errors.push('media-flow 不接受通用 waiver/waiver-reason；全部媒体声明不适用时用 openprd.media-evidence.v1 的 waived 状态，缺少样本或运行条件时用 blocked。');
+  }
+  if ((layers.length > 0 || metadata['test-size'] || metadata['test-scope'] || metadata['evidence-profile']) && !hasEvidencePlan && !hasWaiver) {
     errors.push('已声明测试策略，但缺少 evidence-plan/evidence 或 waiver/waiver-reason。');
   }
   return errors;
@@ -277,6 +375,7 @@ export function summarizeTaskTestStrategies(tasks = []) {
   const layerCounts = Object.fromEntries(TEST_LAYER_VALUES.map((layer) => [layer, 0]));
   const sizeCounts = Object.fromEntries(TEST_SIZE_VALUES.map((size) => [size, 0]));
   const scopeCounts = Object.fromEntries(TEST_SCOPE_VALUES.map((scope) => [scope, 0]));
+  const profileCounts = Object.fromEntries(EVIDENCE_PROFILE_VALUES.map((profile) => [profile, 0]));
   const taskStrategies = [];
   let explicit = 0;
   let inferred = 0;
@@ -305,6 +404,9 @@ export function summarizeTaskTestStrategies(tasks = []) {
     }
     sizeCounts[strategy.size] = (sizeCounts[strategy.size] ?? 0) + 1;
     scopeCounts[strategy.scope] = (scopeCounts[strategy.scope] ?? 0) + 1;
+    if (strategy.evidenceProfile) {
+      profileCounts[strategy.evidenceProfile] = (profileCounts[strategy.evidenceProfile] ?? 0) + 1;
+    }
     taskStrategies.push({
       id: task.id ?? null,
       title: task.title ?? null,
@@ -314,6 +416,7 @@ export function summarizeTaskTestStrategies(tasks = []) {
       layers: strategy.layers,
       size: strategy.size,
       scope: strategy.scope,
+      evidenceProfile: strategy.evidenceProfile,
       evidence: strategy.evidence,
       evidencePlan: strategy.evidencePlan,
       waiver: strategy.waiver,
@@ -348,11 +451,13 @@ export function summarizeTaskTestStrategies(tasks = []) {
     layerCounts,
     sizeCounts,
     scopeCounts,
+    profileCounts,
     tasks: taskStrategies,
     warnings,
     recommendations: [
       '小范围逻辑优先使用单元测试，触达 CLI/API/Agent 契约时升级到集成或契约验证。',
       '触达用户主路径、页面、小程序、发布或跨系统链路时，保留端到端、截图或运行态证据。',
+      '触达真实音频、ASR/转写或语音派生字幕时，保留修改前基线、最终媒体复测和 openprd.media-evidence.v1；纯字幕文案或 UI 可记录豁免。',
       '70/20/10 只作为健康形状参考，不作为硬性比例门禁；实际以风险和本次证据为准。',
     ],
   };

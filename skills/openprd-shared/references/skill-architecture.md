@@ -7,6 +7,7 @@ Borrow the `lark-shared` pattern:
 - `openprd-shared` = common rules
 - `openprd-benchmark-router` = best-practice, benchmark, and external design-source routing
 - `openprd-harness` = workflow sequencing
+- `openprd-audio-evidence` = real audio, acoustic, ASR, transcription, and speech-derived subtitle evidence workflow
 - `openprd-standards` = docs/basic, file manual, and folder README standards
 - `openprd-diagram-review` = visual artifact generation and Agent-owned review
 - generated adapters = Codex, Claude, and Cursor project-local rules from one OpenPrd source
@@ -44,6 +45,13 @@ This avoids one oversized skill and keeps trigger logic precise.
 - contract shaping
 - review checklist
 - artifact opening, Agent self-review, and user-feedback override loop
+
+### Audio Evidence
+
+- semantic routing for real media claims without hijacking subtitle copy or UI tasks
+- source locking, independent baseline, evidence-linked hypotheses, and final-media remeasurement
+- tool-agnostic acoustic, transcription, subtitle-timing, and human-review evidence contracts
+- task evidence first; project knowledge only after repeated, verified reuse
 
 ### Standards
 

@@ -154,6 +154,10 @@ and agents can look at the same artifact before work moves forward.
 
 In addition to the fixed workflow artifacts below, OpenPrd injects an Agent behavior contract through generated AGENTS and skills. When a human review point exists and the work contains at least eight evidence-bearing items, reversible item-by-item approval, contextual multimedia, a complex test or release matrix driving a high-impact action, or long-lived material that requires navigation and filtering, the Agent must design, implement, and validate a task-specific HTML review surface unless the user explicitly declines HTML or an equivalent task-specific surface already exists. Markdown and CSV remain evidence or export formats, not substitutes. OpenPrd supplies the decision principles and quality contract; it does not replace Agent reasoning with a generic renderer, and the Agent still uses judgment outside the mandatory boundary rather than forcing simple results into HTML.
 
+### Native, compact product localization
+
+OpenPrd tells the Agent to identify the control, user action, context, and available space before rewriting copy in the conventions of the target-language product UI instead of translating word for word. English buttons, tabs, menus, and short labels prefer concise idiomatic terms—for example, `Auto Edit` instead of `Start Automatic Editing`—and use abbreviations only when target users understand them unambiguously. Generated guidance and `dev-check` also require real-control checks for meaning, truncation, awkward wrapping, layout compression, and accessibility labels.
+
 ### `review.html`
 
 Use a review-ready PRD surface instead of asking teammates to reconstruct the
@@ -517,11 +521,18 @@ of truth; `openprd loop --finish` then requires `--notes` or `--evidence` so the
 comparison result is recorded.
 
 Tasks may also include test strategy metadata. `test-layer`, `test-size`,
-`test-scope`, and `evidence-plan` help OpenPrd choose the smallest useful
+`test-scope`, optional `evidence-profile`, and `evidence-plan` help OpenPrd choose the smallest useful
 verification evidence: unit tests for isolated logic, integration or contract
 tests for CLI/API/agent boundaries, and e2e/visual/weapp/performance/security
 checks when a task touches user flows or higher-risk runtime behavior. These
 fields route evidence by risk; they are not a fixed 70/20/10 quota.
+
+Real audio, acoustic-quality, ASR/transcription, and speech-derived subtitle
+tasks use `test-scope: media-flow`, `evidence-profile: audio-asr`, and usually
+`test-layer: integration, manual`. `openprd-audio-evidence` locks the source,
+captures an independent pre-change baseline, and re-extracts and remeasures the
+final delivered media. Subtitle copy, translation, typo, and UI-only changes do
+not trigger this path automatically.
 
 `tasks` lists the next dependency-ready task by default. `--advance` marks
 one task complete, and `--verify` runs that task's `verify` command before marking
@@ -1013,6 +1024,7 @@ This repository ships a repo-local `skills/` directory modeled after the `lark-s
 
 - `skills/openprd-shared/` — shared guardrails and language/review rules
 - `skills/openprd-harness/` — main OpenPrd workflow sequencing
+- `skills/openprd-audio-evidence/` — real audio, ASR/transcription, subtitle-timing, and final-media evidence
 - `skills/openprd-standards/` — project docs, file manual, and folder README standards
 - `skills/openprd-diagram-review/` — diagram generation and review loop guidance
 - `skills/openprd-discovery-loop/` — sustained OpenPrd coverage discovery

@@ -1,0 +1,709 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openprd.dev/schemas/media-evidence.v1.json",
+  "title": "OpenPrd media evidence bundle v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "task",
+    "claimScopes",
+    "claimResults",
+    "evidenceArtifacts",
+    "source",
+    "measurementPolicy",
+    "baseline",
+    "hypotheses",
+    "artifacts",
+    "unknownClaims"
+  ],
+  "properties": {
+    "schema": { "const": "openprd.media-evidence.v1" },
+    "status": {
+      "enum": ["baseline-only", "comparison-complete", "waived", "blocked"]
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 }
+      }
+    },
+    "claimScopes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/claimScope" }
+    },
+    "claimResults": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/claimResult" }
+    },
+    "evidenceArtifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidenceArtifact" }
+    },
+    "source": { "$ref": "#/$defs/mediaSource" },
+    "measurementPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tools", "timebase", "windowPolicy", "finalRemeasured", "sameSettings"],
+      "properties": {
+        "tools": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/tool" }
+        },
+        "timebase": { "type": ["string", "null"] },
+        "windowPolicy": { "type": ["string", "null"] },
+        "finalRemeasured": { "type": "boolean" },
+        "sameSettings": { "type": "boolean" },
+        "settingsChangeReason": { "type": ["string", "null"] }
+      }
+    },
+    "baseline": { "$ref": "#/$defs/measurementSet" },
+    "hypotheses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "claim", "evidenceRefs", "alternatives", "predictedEffect", "rollbackPlan"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "claim": { "type": "string", "minLength": 1 },
+          "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "alternatives": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "predictedEffect": { "type": "string", "minLength": 1 },
+          "rollbackPlan": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "finalOutput": { "$ref": "#/$defs/finalMediaOutput" },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metricDeltas", "regressions"],
+      "properties": {
+        "metricDeltas": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/metricDelta" }
+        },
+        "regressions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "transcription": { "$ref": "#/$defs/transcription" },
+    "manualReview": { "$ref": "#/$defs/manualReview" },
+    "renderedSubtitles": { "$ref": "#/$defs/renderedSubtitles" },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baselineHtml", "comparisonHtml"],
+      "properties": {
+        "baselineHtml": { "type": ["string", "null"] },
+        "comparisonHtml": { "type": ["string", "null"] }
+      }
+    },
+    "unknownClaims": { "type": "array", "items": { "type": "string" } },
+    "blockers": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "waiver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "remainingRisk"],
+      "properties": {
+        "reason": { "type": "string", "minLength": 1 },
+        "remainingRisk": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "claimScope": {
+      "enum": [
+        "acoustic-quality",
+        "audio-edit",
+        "mix-export",
+        "transcription-accuracy",
+        "transcription-timing",
+        "rendered-subtitles"
+      ]
+    },
+    "claimResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "status", "evidenceRefs", "remainingRisk"],
+      "properties": {
+        "scope": { "$ref": "#/$defs/claimScope" },
+        "status": { "enum": ["pass", "baseline-only", "blocked", "waived", "unknown"] },
+        "evidenceRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "remainingRisk": { "type": ["string", "null"] }
+      }
+    },
+    "evidenceArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "sha256", "role"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "role": {
+          "enum": [
+            "baseline-measurement",
+            "final-measurement",
+            "annotation",
+            "gold-transcript",
+            "manual-review",
+            "subtitle",
+            "review-html",
+            "log",
+            "report"
+          ]
+        }
+      }
+    },
+    "sha256OrNull": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "completeTool": {
+      "allOf": [
+        { "$ref": "#/$defs/tool" },
+        {
+          "properties": {
+            "version": { "$ref": "#/$defs/nonEmptyString" },
+            "configDigest": { "$ref": "#/$defs/sha256" }
+          }
+        }
+      ]
+    },
+    "completeMeasurement": {
+      "allOf": [
+        { "$ref": "#/$defs/measurement" },
+        {
+          "properties": {
+            "value": { "type": ["number", "string", "boolean"] },
+            "unit": { "$ref": "#/$defs/nonEmptyString" },
+            "method": { "$ref": "#/$defs/nonEmptyString" }
+          },
+          "required": ["method"]
+        }
+      ]
+    },
+    "completeMetricDelta": {
+      "allOf": [
+        { "$ref": "#/$defs/metricDelta" },
+        {
+          "properties": {
+            "baseline": { "type": ["number", "string", "boolean"] },
+            "final": { "type": ["number", "string", "boolean"] },
+            "unit": { "$ref": "#/$defs/nonEmptyString" },
+            "assessment": { "enum": ["expected-improvement", "unchanged"] }
+          }
+        }
+      ]
+    },
+    "completeErrorDistribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p50", "p95", "max"],
+      "properties": {
+        "p50": { "type": "number", "minimum": 0 },
+        "p95": { "type": "number", "minimum": 0 },
+        "max": { "type": "number", "minimum": 0 }
+      }
+    },
+    "mediaSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "provenance", "durationSeconds", "trackIndex", "privacy"],
+      "properties": {
+        "path": { "type": ["string", "null"] },
+        "sha256": { "$ref": "#/$defs/sha256OrNull" },
+        "provenance": { "type": ["string", "null"] },
+        "durationSeconds": { "type": ["number", "null"], "minimum": 0 },
+        "trackIndex": { "type": ["integer", "null"], "minimum": 0 },
+        "codec": { "type": ["string", "null"] },
+        "sampleRateHz": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "channels": { "type": ["integer", "null"], "minimum": 1 },
+        "privacy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["containsPersonalData", "reportRedacted"],
+          "properties": {
+            "containsPersonalData": { "type": ["boolean", "null"] },
+            "reportRedacted": { "type": ["boolean", "null"] }
+          }
+        }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "configDigest"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": ["string", "null"] },
+        "configDigest": { "$ref": "#/$defs/sha256OrNull" }
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "value", "unit"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "value": { "type": ["number", "string", "boolean", "null"] },
+        "unit": { "type": ["string", "null"] },
+        "startSeconds": { "type": ["number", "null"], "minimum": 0 },
+        "endSeconds": { "type": ["number", "null"], "minimum": 0 },
+        "method": { "type": ["string", "null"] },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "measurementSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["measurements", "rawEvidence"],
+      "properties": {
+        "path": { "type": ["string", "null"] },
+        "sha256": { "$ref": "#/$defs/sha256OrNull" },
+        "measurements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/measurement" }
+        },
+        "rawEvidence": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "mediaStructure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["container", "durationSeconds", "trackIndex", "codec", "sampleRateHz", "channels", "timebase"],
+      "properties": {
+        "container": { "type": ["string", "null"] },
+        "durationSeconds": { "type": ["number", "null"], "minimum": 0 },
+        "trackIndex": { "type": ["integer", "null"], "minimum": 0 },
+        "codec": { "type": ["string", "null"] },
+        "sampleRateHz": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "channels": { "type": ["integer", "null"], "minimum": 1 },
+        "timebase": { "type": ["string", "null"] }
+      }
+    },
+    "finalMediaOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "mediaStructure", "extraction", "measurements", "rawEvidence"],
+      "properties": {
+        "path": { "type": ["string", "null"] },
+        "sha256": { "$ref": "#/$defs/sha256OrNull" },
+        "mediaStructure": { "$ref": "#/$defs/mediaStructure" },
+        "extraction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "cacheReused"],
+          "properties": {
+            "method": { "type": ["string", "null"] },
+            "cacheReused": { "type": "boolean" }
+          }
+        },
+        "measurements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/measurement" }
+        },
+        "rawEvidence": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "metricDelta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "baseline", "final", "unit", "assessment"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "baseline": { "type": ["number", "string", "boolean", "null"] },
+        "final": { "type": ["number", "string", "boolean", "null"] },
+        "unit": { "type": ["string", "null"] },
+        "assessment": { "enum": ["expected-improvement", "unchanged", "regression", "unknown"] }
+      }
+    },
+    "transcription": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "engine": { "type": ["string", "null"] },
+        "model": { "type": ["string", "null"] },
+        "version": { "type": ["string", "null"] },
+        "language": { "type": ["string", "null"] },
+        "diarization": { "type": ["string", "boolean", "null"] },
+        "vocabularyDigest": { "$ref": "#/$defs/sha256OrNull" },
+        "promptDigest": { "$ref": "#/$defs/sha256OrNull" },
+        "segmentationStrategy": { "type": ["string", "null"] },
+        "postprocessingVersion": { "type": ["string", "null"] },
+        "normalizationPolicy": { "type": ["string", "null"] },
+        "goldTranscriptPath": { "type": ["string", "null"] },
+        "goldTranscriptSha256": { "$ref": "#/$defs/sha256OrNull" },
+        "wer": { "type": ["number", "null"], "minimum": 0 },
+        "cer": { "type": ["number", "null"], "minimum": 0 },
+        "insertions": { "type": ["integer", "null"], "minimum": 0 },
+        "deletions": { "type": ["integer", "null"], "minimum": 0 },
+        "substitutions": { "type": ["integer", "null"], "minimum": 0 },
+        "silenceHallucinations": { "type": ["integer", "null"], "minimum": 0 },
+        "coveragePercent": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "timingEvaluation": { "$ref": "#/$defs/timingEvaluation" }
+      }
+    },
+    "errorDistribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p50", "p95", "max"],
+      "properties": {
+        "p50": { "type": ["number", "null"], "minimum": 0 },
+        "p95": { "type": ["number", "null"], "minimum": 0 },
+        "max": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "timingEvaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["referenceType", "annotationSourcePath", "annotationSourceSha256", "toleranceMs", "absoluteStartErrorMs", "absoluteEndErrorMs"],
+      "properties": {
+        "referenceType": { "enum": ["human-gold", "human-reference", "engine-reference", "unknown"] },
+        "annotationSourcePath": { "type": ["string", "null"] },
+        "annotationSourceSha256": { "$ref": "#/$defs/sha256OrNull" },
+        "toleranceMs": { "type": ["number", "null"], "minimum": 0 },
+        "absoluteStartErrorMs": { "$ref": "#/$defs/errorDistribution" },
+        "absoluteEndErrorMs": { "$ref": "#/$defs/errorDistribution" }
+      }
+    },
+    "manualReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gainPolicy", "playbackEnvironment", "rubric", "acceptanceRule", "reviews"],
+      "properties": {
+        "gainPolicy": { "type": "string", "minLength": 1 },
+        "playbackEnvironment": { "type": "string", "minLength": 1 },
+        "rubric": { "type": "string", "minLength": 1 },
+        "acceptanceRule": { "type": "string", "minLength": 1 },
+        "reviews": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["clipId", "clipRole", "baselineRef", "finalRef", "result", "notes"],
+            "properties": {
+              "clipId": { "type": "string", "minLength": 1 },
+              "clipRole": { "enum": ["target", "boundary", "control"] },
+              "baselineRef": { "type": "string", "minLength": 1 },
+              "finalRef": { "type": "string", "minLength": 1 },
+              "result": { "enum": ["pass", "fail", "unknown"] },
+              "notes": { "type": "string" },
+              "reviewer": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "renderedSubtitles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "extractionMethod", "artifactPath", "artifactSha256", "bindingEvidence", "frameEvidence"],
+      "properties": {
+        "mode": { "enum": ["burned-in", "embedded-stream", "sidecar", "unknown"] },
+        "extractionMethod": { "type": "string", "minLength": 1 },
+        "artifactPath": { "type": ["string", "null"] },
+        "artifactSha256": { "$ref": "#/$defs/sha256OrNull" },
+        "bindingEvidence": { "type": ["string", "null"] },
+        "language": { "type": ["string", "null"] },
+        "subtitleStreamIndex": { "type": ["integer", "null"], "minimum": 0 },
+        "frameEvidence": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "comparison-complete" } } },
+      "then": {
+        "required": ["finalOutput", "comparison"],
+        "properties": {
+          "claimResults": {
+            "items": {
+              "allOf": [
+                { "$ref": "#/$defs/claimResult" },
+                {
+                  "properties": {
+                    "status": { "const": "pass" },
+                    "evidenceRefs": { "minItems": 1 }
+                  }
+                }
+              ]
+            }
+          },
+          "evidenceArtifacts": { "minItems": 1 },
+          "source": {
+            "required": ["codec", "sampleRateHz", "channels"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "sha256": { "$ref": "#/$defs/sha256" },
+              "provenance": { "$ref": "#/$defs/nonEmptyString" },
+              "durationSeconds": { "type": "number", "exclusiveMinimum": 0 },
+              "trackIndex": { "type": "integer", "minimum": 0 },
+              "codec": { "$ref": "#/$defs/nonEmptyString" },
+              "sampleRateHz": { "type": "number", "exclusiveMinimum": 0 },
+              "channels": { "type": "integer", "minimum": 1 },
+              "privacy": {
+                "properties": {
+                  "containsPersonalData": { "type": "boolean" },
+                  "reportRedacted": { "type": "boolean" }
+                }
+              }
+            }
+          },
+          "measurementPolicy": {
+            "properties": {
+              "tools": { "minItems": 1, "items": { "$ref": "#/$defs/completeTool" } },
+              "timebase": { "$ref": "#/$defs/nonEmptyString" },
+              "windowPolicy": { "$ref": "#/$defs/nonEmptyString" },
+              "finalRemeasured": { "const": true },
+              "sameSettings": { "const": true }
+            }
+          },
+          "baseline": {
+            "properties": {
+              "measurements": { "minItems": 1, "items": { "$ref": "#/$defs/completeMeasurement" } },
+              "rawEvidence": { "minItems": 1 }
+            }
+          },
+          "hypotheses": { "minItems": 1 },
+          "finalOutput": {
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "sha256": { "$ref": "#/$defs/sha256" },
+              "mediaStructure": {
+                "properties": {
+                  "container": { "$ref": "#/$defs/nonEmptyString" },
+                  "durationSeconds": { "type": "number", "exclusiveMinimum": 0 },
+                  "trackIndex": { "type": "integer", "minimum": 0 },
+                  "codec": { "$ref": "#/$defs/nonEmptyString" },
+                  "sampleRateHz": { "type": "number", "exclusiveMinimum": 0 },
+                  "channels": { "type": "integer", "minimum": 1 },
+                  "timebase": { "$ref": "#/$defs/nonEmptyString" }
+                }
+              },
+              "extraction": {
+                "properties": {
+                  "method": { "$ref": "#/$defs/nonEmptyString" },
+                  "cacheReused": { "const": false }
+                }
+              },
+              "measurements": { "minItems": 1, "items": { "$ref": "#/$defs/completeMeasurement" } },
+              "rawEvidence": { "minItems": 1 }
+            }
+          },
+          "comparison": {
+            "properties": {
+              "metricDeltas": { "minItems": 1, "items": { "$ref": "#/$defs/completeMetricDelta" } },
+              "regressions": { "maxItems": 0 }
+            }
+          },
+          "artifacts": {
+            "properties": {
+              "baselineHtml": { "$ref": "#/$defs/nonEmptyString" },
+              "comparisonHtml": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "waived" } } },
+      "then": {
+        "required": ["waiver"],
+        "properties": {
+          "claimResults": {
+            "items": {
+              "allOf": [
+                { "$ref": "#/$defs/claimResult" },
+                {
+                  "properties": {
+                    "status": { "const": "waived" },
+                    "remainingRisk": { "$ref": "#/$defs/nonEmptyString" }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "blocked" } } },
+      "then": {
+        "required": ["blockers"],
+        "properties": {
+          "blockers": { "minItems": 1 },
+          "claimResults": { "contains": { "properties": { "status": { "const": "blocked" } }, "required": ["status"] } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "baseline-only" } } },
+      "then": {
+        "properties": {
+          "claimResults": { "contains": { "properties": { "status": { "const": "baseline-only" } }, "required": ["status"] } }
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          { "properties": { "status": { "const": "comparison-complete" } } },
+          { "properties": { "claimScopes": { "contains": { "const": "acoustic-quality" } } } }
+        ]
+      },
+      "then": {
+        "required": ["manualReview"],
+        "properties": {
+          "manualReview": {
+            "properties": {
+              "reviews": {
+                "items": { "properties": { "result": { "const": "pass" } } },
+                "allOf": [
+                  { "contains": { "properties": { "clipRole": { "const": "target" } }, "required": ["clipRole"] } },
+                  { "contains": { "properties": { "clipRole": { "const": "boundary" } }, "required": ["clipRole"] } },
+                  { "contains": { "properties": { "clipRole": { "const": "control" } }, "required": ["clipRole"] } }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          { "properties": { "status": { "const": "comparison-complete" } } },
+          { "properties": { "claimScopes": { "contains": { "const": "transcription-accuracy" } } } }
+        ]
+      },
+      "then": {
+        "required": ["transcription"],
+        "properties": {
+          "transcription": {
+            "required": ["engine", "model", "version", "language", "normalizationPolicy", "goldTranscriptPath", "goldTranscriptSha256", "insertions", "deletions", "substitutions"],
+            "properties": {
+              "engine": { "$ref": "#/$defs/nonEmptyString" },
+              "model": { "$ref": "#/$defs/nonEmptyString" },
+              "version": { "$ref": "#/$defs/nonEmptyString" },
+              "language": { "$ref": "#/$defs/nonEmptyString" },
+              "normalizationPolicy": { "$ref": "#/$defs/nonEmptyString" },
+              "goldTranscriptPath": { "$ref": "#/$defs/nonEmptyString" },
+              "goldTranscriptSha256": { "$ref": "#/$defs/sha256" },
+              "insertions": { "type": "integer", "minimum": 0 },
+              "deletions": { "type": "integer", "minimum": 0 },
+              "substitutions": { "type": "integer", "minimum": 0 }
+            },
+            "anyOf": [
+              { "required": ["wer"], "properties": { "wer": { "type": "number", "minimum": 0 } } },
+              { "required": ["cer"], "properties": { "cer": { "type": "number", "minimum": 0 } } }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          { "properties": { "status": { "const": "comparison-complete" } } },
+          { "properties": { "claimScopes": { "contains": { "const": "transcription-timing" } } } }
+        ]
+      },
+      "then": {
+        "required": ["transcription"],
+        "properties": {
+          "transcription": {
+            "required": ["timingEvaluation"],
+            "properties": {
+              "timingEvaluation": {
+                "properties": {
+                  "referenceType": { "enum": ["human-gold", "human-reference", "engine-reference"] },
+                  "annotationSourcePath": { "$ref": "#/$defs/nonEmptyString" },
+                  "annotationSourceSha256": { "$ref": "#/$defs/sha256" },
+                  "toleranceMs": { "type": "number", "minimum": 0 },
+                  "absoluteStartErrorMs": { "$ref": "#/$defs/completeErrorDistribution" },
+                  "absoluteEndErrorMs": { "$ref": "#/$defs/completeErrorDistribution" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          { "properties": { "status": { "const": "comparison-complete" } } },
+          { "properties": { "claimScopes": { "contains": { "const": "rendered-subtitles" } } } }
+        ]
+      },
+      "then": {
+        "required": ["renderedSubtitles"],
+        "properties": {
+          "renderedSubtitles": {
+            "properties": {
+              "mode": { "enum": ["burned-in", "embedded-stream", "sidecar"] },
+              "extractionMethod": { "$ref": "#/$defs/nonEmptyString" },
+              "artifactPath": { "$ref": "#/$defs/nonEmptyString" },
+              "artifactSha256": { "$ref": "#/$defs/sha256" },
+              "bindingEvidence": { "$ref": "#/$defs/nonEmptyString" }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "mode": { "const": "burned-in" } } },
+                "then": { "properties": { "frameEvidence": { "minItems": 2 } } }
+              },
+              {
+                "if": { "properties": { "mode": { "const": "embedded-stream" } } },
+                "then": {
+                  "required": ["subtitleStreamIndex"],
+                  "properties": { "subtitleStreamIndex": { "type": "integer", "minimum": 0 } }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "claimScopes": { "contains": { "const": "acoustic-quality" } } } },
+      "then": { "properties": { "claimResults": { "contains": { "properties": { "scope": { "const": "acoustic-quality" } }, "required": ["scope"] } } } }
+    },
+    {
+      "if": { "properties": { "claimScopes": { "contains": { "const": "audio-edit" } } } },
+      "then": { "properties": { "claimResults": { "contains": { "properties": { "scope": { "const": "audio-edit" } }, "required": ["scope"] } } } }
+    },
+    {
+      "if": { "properties": { "claimScopes": { "contains": { "const": "mix-export" } } } },
+      "then": { "properties": { "claimResults": { "contains": { "properties": { "scope": { "const": "mix-export" } }, "required": ["scope"] } } } }
+    },
+    {
+      "if": { "properties": { "claimScopes": { "contains": { "const": "transcription-accuracy" } } } },
+      "then": { "properties": { "claimResults": { "contains": { "properties": { "scope": { "const": "transcription-accuracy" } }, "required": ["scope"] } } } }
+    },
+    {
+      "if": { "properties": { "claimScopes": { "contains": { "const": "transcription-timing" } } } },
+      "then": { "properties": { "claimResults": { "contains": { "properties": { "scope": { "const": "transcription-timing" } }, "required": ["scope"] } } } }
+    },
+    {
+      "if": { "properties": { "claimScopes": { "contains": { "const": "rendered-subtitles" } } } },
+      "then": { "properties": { "claimResults": { "contains": { "properties": { "scope": { "const": "rendered-subtitles" } }, "required": ["scope"] } } } }
+    }
+  ]
+}

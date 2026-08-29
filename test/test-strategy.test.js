@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { inferTestStrategyForTask } from '../src/test-strategy.js';
+import {
+  inferTestStrategyForTask,
+  taskTestStrategy,
+  validateTaskTestStrategy,
+} from '../src/test-strategy.js';
 
 test('inferTestStrategyForTask only upgrades to weapp runtime for explicit runtime validation intent', () => {
   const runtimeStrategy = inferTestStrategyForTask({
@@ -38,4 +42,78 @@ test('inferTestStrategyForTask routes single element internal centering to cente
   assert.equal(strategy.scope, 'visual-flow');
   assert.match(strategy.evidencePlan, /centering-board/);
   assert.match(strategy.evidencePlan, /视觉重心/);
+});
+
+test('inferTestStrategyForTask routes real audio and ASR claims to media evidence', () => {
+  const asr = inferTestStrategyForTask({
+    title: '验证 ASR 词级时间戳与最终视频音轨同步，并复测字幕漂移',
+  });
+  assert.deepEqual(asr.layers, ['integration', 'manual']);
+  assert.equal(asr.scope, 'media-flow');
+  assert.match(asr.evidencePlan, /openprd\.media-evidence\.v1/);
+  assert.match(asr.evidencePlan, /最终交付媒体重新提取/);
+  assert.match(asr.evidencePlan, /gold transcript.*unknown/);
+
+  const acoustic = inferTestStrategyForTask({
+    title: '优化导出音轨的响度和底噪，检查削波与静音断点',
+  });
+  assert.deepEqual(acoustic.layers, ['integration', 'manual']);
+  assert.equal(acoustic.scope, 'media-flow');
+});
+
+test('audio evidence profile provides an explicit semantic route and validates its contract', () => {
+  const strategy = taskTestStrategy({
+    title: '验证处理结果',
+    metadata: {
+      'evidence-profile': 'audio-asr',
+      'test-layer': 'integration, manual',
+      'test-size': 'medium',
+      'test-scope': 'media-flow',
+      'evidence-plan': 'write openprd.media-evidence.v1',
+    },
+  });
+  assert.equal(strategy.scope, 'media-flow');
+  assert.equal(strategy.evidenceProfile, 'audio-asr');
+  assert.deepEqual(strategy.layers, ['integration', 'manual']);
+  assert.deepEqual(validateTaskTestStrategy({
+    metadata: {
+      'evidence-profile': 'audio-asr',
+      'test-layer': 'integration, manual',
+      'test-size': 'medium',
+      'test-scope': 'media-flow',
+      'evidence-plan': 'write openprd.media-evidence.v1',
+    },
+  }), []);
+  assert.match(validateTaskTestStrategy({
+    metadata: {
+      'evidence-profile': 'unknown-media-profile',
+      'evidence-plan': 'unknown',
+    },
+  }).join('\n'), /evidence-profile 无效/);
+  assert.match(validateTaskTestStrategy({
+    metadata: {
+      'evidence-profile': 'audio-asr',
+      'test-layer': 'integration, manual',
+      'test-scope': 'media-flow',
+      'waiver-reason': '没有样本',
+    },
+  }).join('\n'), /不接受通用 waiver.*blocked/);
+});
+
+test('subtitle copy and UI changes do not trigger media evidence without a real media claim', () => {
+  for (const title of [
+    '把这句字幕翻译成英文并修正错别字',
+    '只调整 ASR 字幕的字体、字号、颜色和卡片布局',
+    '修改音量按钮颜色和播放控件布局',
+    '写一段 AI 口播稿，不处理录音',
+    '沉淀音频转字幕分析与优化方法论和证据 schema',
+  ]) {
+    const strategy = inferTestStrategyForTask({ title });
+    assert.notEqual(strategy.scope, 'media-flow', title);
+  }
+
+  const subtitleUi = inferTestStrategyForTask({
+    title: '只调整 ASR 字幕的字体、字号、颜色和卡片布局',
+  });
+  assert.equal(subtitleUi.scope, 'visual-flow');
 });

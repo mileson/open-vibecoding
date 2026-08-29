@@ -26,6 +26,22 @@ Do not translate by default:
 - protocol names
 - cloud product names
 
+## Product Copy Localization
+
+Product UI copy is rewritten for the target language, not translated word for word. Preserve the user action and outcome while adapting the phrase to the conventions and space of the destination surface.
+
+| Surface | Default target-language treatment |
+|---|---|
+| Button, tab, menu item, short label | Use a concise, idiomatic product term or verb phrase. English example: `Auto Edit`, not `Start Automatic Editing`. |
+| Dialog title, toast, status | State the result or next action directly; remove source-language filler that the interface already makes obvious. |
+| Dialog body, help text, onboarding | Use a complete natural sentence when the user needs consequences, limits, or recovery guidance. |
+| Tooltip or accessibility label | Restore the full meaning when the visible label is intentionally compact. |
+
+- Use an abbreviation only when target users commonly understand it and the current product context makes it unambiguous.
+- Do not invent shorthand, clip words mechanically, or expose internal jargon just to fit the control.
+- Check every supported locale in the real control for semantic consistency, truncation, awkward wrapping, layout compression, and an accurate accessible name.
+- A string-table update or character-count check alone does not prove that localized UI copy fits.
+
 ## Review Before Freeze
 
 If the user still needs to confirm:

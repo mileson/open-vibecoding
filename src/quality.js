@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { cjoin, exists, readJson, readText, writeJson, writeText } from './fs-utils.js';
@@ -101,13 +102,32 @@ const QUALITY_GATE_IDS = [
   'growth',
 ];
 
-const EVIDENCE_EXTENSIONS = new Set(['.json', '.md', '.txt', '.log', '.xml', '.html', '.csv']);
+const EVIDENCE_EXTENSIONS = new Set(['.json', '.md', '.txt', '.log', '.xml', '.html', '.csv', '.srt', '.vtt']);
+const MEDIA_CLAIM_SCOPES = new Set([
+  'acoustic-quality',
+  'audio-edit',
+  'mix-export',
+  'transcription-accuracy',
+  'transcription-timing',
+  'rendered-subtitles',
+]);
+const MEDIA_EVIDENCE_ARTIFACT_ROLES = new Set([
+  'baseline-measurement',
+  'final-measurement',
+  'annotation',
+  'gold-transcript',
+  'manual-review',
+  'subtitle',
+  'review-html',
+  'log',
+  'report',
+]);
 
 const EVIDENCE_TOKENS = {
   traceability: ['trace_id', 'span_id', 'request_id', 'task_id', 'error_id', 'trace verified', '链路', '追踪'],
   redaction: ['redaction', 'redact', 'mask', 'masked', 'pii', 'secret', 'token redacted', '脱敏', '敏感字段'],
   'business-guardrails': ['quota', 'rate limit', 'abuse', 'budget', 'kill switch', 'cost_usd', '额度', '限流', '滥用', '止损'],
-  'test-strategy': ['test-layer', 'test-size', 'test-scope', 'evidence-plan', 'testing pyramid', '测试策略', '测试分流', '单元测试', '集成测试', '端到端'],
+  'test-strategy': ['test-layer', 'test-size', 'test-scope', 'evidence-plan', 'media-flow', 'testing pyramid', '测试策略', '测试分流', '单元测试', '集成测试', '端到端'],
   smoke: ['smoke', 'e2e', 'playwright', 'cypress', 'main flow', 'happy path', '冒烟', '主流程'],
   'feature-coverage': ['feature coverage', 'acceptance', 'tasks done', 'openprd tasks', '验收', '功能覆盖', '任务完成'],
   'visual-review': ['visual-compare', 'visual-before-after', 'visual-focus-board', 'visual-parallel-board', 'visual-verification-board', 'visual-alignment-board', 'visual-centering-board', 'reference-actual', 'before-after', 'focus-board', 'parallel-board', 'verification-board', 'alignment-board', 'centering-board', 'center-board', '效果图', '实现截图', '修改前', '修改后', '视觉对比', '局部焦点证据板', '并行实验证据板', '截图实测证据板', '对齐辅助线证据板', '内部居中证据板', '内容槽位', '内部槽位', '视觉重心', '主体外接框', '画布中心', '偏心'],
@@ -167,6 +187,7 @@ function defaultQualityConfig() {
         frontend: ['smoke', 'visual-review'],
         desktop: ['smoke', 'visual-review'],
         backend: ['smoke', 'traceability'],
+        media: ['test-strategy'],
         businessCost: ['business-guardrails'],
         security: ['redaction'],
         performance: ['normal-performance'],
@@ -393,6 +414,7 @@ async function collectEvidenceFile(projectRoot, source, fullPath, collected) {
     path: path.relative(projectRoot, fullPath),
     source,
     size: stat.size,
+    contentSha256: createHash('sha256').update(text).digest('hex'),
     text: text.slice(0, 120000),
   });
 }
@@ -557,8 +579,11 @@ function detectCompletionState({ files, activeTasks, evidenceFiles }) {
   };
 }
 
-function buildQualityPolicy({ config, activeChangeContext, activeTasks, businessGuardrails, completionState }) {
+function buildQualityPolicy({ config, activeChangeContext, activeTasks, businessGuardrails, completionState, evalHarness }) {
   const scenarioTags = detectScenarioTags({ activeChangeContext, activeTasks, businessGuardrails });
+  if (evalHarness?.testStrategy?.mediaEvidence?.required && !scenarioTags.includes('media')) {
+    scenarioTags.push('media');
+  }
   const profiles = config.evalHarness.scenarioProfiles ?? defaultQualityConfig().evalHarness.scenarioProfiles;
   const required = new Set();
   for (const tag of scenarioTags) {
@@ -600,7 +625,7 @@ function buildQualityPolicy({ config, activeChangeContext, activeTasks, business
   };
 }
 
-function buildEvidenceLedger({ evidenceFiles, activeTasks, observability, businessGuardrails, knowledge, growth, visualReview }) {
+function buildEvidenceLedger({ evidenceFiles, activeTasks, observability, businessGuardrails, knowledge, growth, visualReview, mediaEvidence }) {
   const ledger = Object.fromEntries(QUALITY_GATE_IDS.map((gate) => {
     const tokens = EVIDENCE_TOKENS[gate] ?? [];
     const matches = evidenceFiles
@@ -613,6 +638,18 @@ function buildEvidenceLedger({ evidenceFiles, activeTasks, observability, busine
       summary: matches.length > 0 ? `${matches.length} 个证据文件` : '未找到本次执行证据',
     }];
   }));
+
+  if ((mediaEvidence?.bundles ?? []).length > 0) {
+    const mediaSources = mediaEvidence.bundles
+      .map((bundle) => ({ path: bundle.path, source: 'openprd-media-evidence' }));
+    const existingSources = ledger['test-strategy'].sources ?? [];
+    const byPath = new Map([...mediaSources, ...existingSources].map((source) => [source.path, source]));
+    ledger['test-strategy'] = {
+      present: true,
+      sources: [...byPath.values()].slice(0, 12),
+      summary: `${mediaEvidence.bundles.length} 个结构化媒体证据包`,
+    };
+  }
 
   if (activeTasks.total === 0 || activeTasks.pending === 0) {
     ledger['feature-coverage'] = {
@@ -784,7 +821,490 @@ function detectObservability({ config, files, texts, packageJson }) {
   };
 }
 
-function detectEvalHarness({ config, files, texts, packageJson, activeTasks }) {
+function isSha256(value) {
+  return /^[a-f0-9]{64}$/i.test(String(value ?? ''));
+}
+
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isNonNegativeNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+function isCompleteMeasurement(value) {
+  return hasObjectKeys(value, ['id', 'value', 'unit', 'method'])
+    && isNonEmptyString(value.id)
+    && value.value !== null
+    && ['number', 'string', 'boolean'].includes(typeof value.value)
+    && isNonEmptyString(value.unit)
+    && isNonEmptyString(value.method);
+}
+
+function isCompleteTool(value) {
+  return hasObjectKeys(value, ['name', 'version', 'configDigest'])
+    && isNonEmptyString(value.name)
+    && isNonEmptyString(value.version)
+    && isSha256(value.configDigest);
+}
+
+function hasCompleteErrorDistribution(value) {
+  return hasObjectKeys(value, ['p50', 'p95', 'max'])
+    && isNonNegativeNumber(value.p50)
+    && isNonNegativeNumber(value.p95)
+    && isNonNegativeNumber(value.max);
+}
+
+function hasCompleteClaimResults(value) {
+  if (!Array.isArray(value?.claimScopes) || !Array.isArray(value?.claimResults)) return false;
+  const scopes = new Set(value.claimScopes);
+  const resultScopes = new Set(value.claimResults.map((result) => result?.scope));
+  return scopes.size === value.claimScopes.length
+    && [...scopes].every((scope) => MEDIA_CLAIM_SCOPES.has(scope))
+    && value.claimResults.length === value.claimScopes.length
+    && resultScopes.size === value.claimResults.length
+    && [...scopes].every((scope) => resultScopes.has(scope))
+    && [...resultScopes].every((scope) => MEDIA_CLAIM_SCOPES.has(scope))
+    && value.claimResults.every((result) => (
+      ['pass', 'baseline-only', 'blocked', 'waived', 'unknown'].includes(result?.status)
+      && Array.isArray(result?.evidenceRefs)
+      && result.evidenceRefs.every(isNonEmptyString)
+      && Object.hasOwn(result, 'remainingRisk')
+    ));
+}
+
+function normalizeEvidencePath(value) {
+  if (!isNonEmptyString(value) || path.isAbsolute(value)) return null;
+  const normalized = path.posix.normalize(String(value).replaceAll('\\', '/'));
+  if (normalized === '..' || normalized.startsWith('../')) return null;
+  return normalized.replace(/^\.\//, '');
+}
+
+function evidenceFileSha256(file) {
+  if (isSha256(file?.contentSha256)) return String(file.contentSha256).toLowerCase();
+  return createHash('sha256').update(String(file?.text ?? '')).digest('hex');
+}
+
+function mediaEvidenceArtifactIntegrity(value, evidenceFiles) {
+  if (!Array.isArray(value?.evidenceArtifacts)) {
+    return { valid: false, structureValid: false, referencesValid: false, digestsValid: false };
+  }
+  const filesByPath = new Map(evidenceFiles.map((file) => [normalizeEvidencePath(file.path), file]));
+  const ids = new Set();
+  const artifactsById = new Map();
+  let structureValid = true;
+  let digestsValid = true;
+  for (const artifact of value.evidenceArtifacts) {
+    const normalizedPath = normalizeEvidencePath(artifact?.path);
+    if (
+      !isNonEmptyString(artifact?.id)
+      || ids.has(artifact.id)
+      || !normalizedPath
+      || !isSha256(artifact?.sha256)
+      || !MEDIA_EVIDENCE_ARTIFACT_ROLES.has(artifact?.role)
+    ) {
+      structureValid = false;
+      continue;
+    }
+    ids.add(artifact.id);
+    artifactsById.set(artifact.id, { ...artifact, path: normalizedPath });
+    const file = filesByPath.get(normalizedPath);
+    if (!file || evidenceFileSha256(file) !== String(artifact.sha256).toLowerCase()) {
+      digestsValid = false;
+    }
+  }
+
+  const refs = [
+    ...(value.claimResults ?? []).flatMap((result) => result?.evidenceRefs ?? []),
+    ...(value.hypotheses ?? []).flatMap((hypothesis) => hypothesis?.evidenceRefs ?? []),
+    ...(value.baseline?.rawEvidence ?? []),
+    ...(value.finalOutput?.rawEvidence ?? []),
+    ...(value.manualReview?.reviews ?? []).flatMap((review) => [review?.baselineRef, review?.finalRef]),
+    ...(value.renderedSubtitles?.frameEvidence ?? []),
+    value.renderedSubtitles?.bindingEvidence,
+    value.artifacts?.baselineHtml,
+    value.artifacts?.comparisonHtml,
+  ].filter(isNonEmptyString);
+  const referencesValid = refs.every((ref) => artifactsById.has(ref));
+
+  const refsHaveRoles = (artifactRefs, allowedRoles) => artifactRefs.every((ref) => (
+    !isNonEmptyString(ref) || allowedRoles.has(artifactsById.get(ref)?.role)
+  ));
+  const semanticRolesValid = refsHaveRoles(
+    value.baseline?.rawEvidence ?? [],
+    new Set(['baseline-measurement']),
+  ) && refsHaveRoles(
+    value.finalOutput?.rawEvidence ?? [],
+    new Set(['final-measurement']),
+  ) && refsHaveRoles(
+    (value.hypotheses ?? []).flatMap((hypothesis) => hypothesis?.evidenceRefs ?? []),
+    new Set(['baseline-measurement', 'annotation', 'gold-transcript', 'log', 'report']),
+  ) && refsHaveRoles(
+    (value.claimResults ?? [])
+      .filter((result) => result?.status === 'pass')
+      .flatMap((result) => result?.evidenceRefs ?? []),
+    new Set(['final-measurement', 'annotation', 'gold-transcript', 'manual-review', 'subtitle', 'review-html', 'report']),
+  ) && refsHaveRoles(
+    (value.manualReview?.reviews ?? []).flatMap((review) => [review?.baselineRef, review?.finalRef]),
+    new Set(['manual-review', 'review-html', 'report']),
+  ) && refsHaveRoles(
+    [value.artifacts?.baselineHtml, value.artifacts?.comparisonHtml],
+    new Set(['review-html']),
+  ) && refsHaveRoles(
+    value.renderedSubtitles?.frameEvidence ?? [],
+    new Set(['manual-review', 'review-html', 'report']),
+  ) && refsHaveRoles(
+    [value.renderedSubtitles?.bindingEvidence],
+    new Set(['subtitle', 'review-html', 'report']),
+  );
+
+  const hasMatchingArtifact = (artifactPath, sha256, allowedRoles) => {
+    const normalizedPath = normalizeEvidencePath(artifactPath);
+    return Boolean(normalizedPath && isSha256(sha256) && [...artifactsById.values()].some((artifact) => (
+      artifact.path === normalizedPath
+      && artifact.sha256.toLowerCase() === String(sha256).toLowerCase()
+      && allowedRoles.has(artifact.role)
+    )));
+  };
+  const timingDigestValid = !value.claimScopes?.includes('transcription-timing') || hasMatchingArtifact(
+    value.transcription?.timingEvaluation?.annotationSourcePath,
+    value.transcription?.timingEvaluation?.annotationSourceSha256,
+    new Set(['annotation']),
+  );
+  const accuracyDigestValid = !value.claimScopes?.includes('transcription-accuracy') || hasMatchingArtifact(
+    value.transcription?.goldTranscriptPath,
+    value.transcription?.goldTranscriptSha256,
+    new Set(['gold-transcript']),
+  );
+  const renderedDigestValid = !value.claimScopes?.includes('rendered-subtitles') || hasMatchingArtifact(
+    value.renderedSubtitles?.artifactPath,
+    value.renderedSubtitles?.artifactSha256,
+    new Set(['subtitle']),
+  );
+  const directDigestsValid = timingDigestValid && accuracyDigestValid && renderedDigestValid;
+  return {
+    valid: structureValid && referencesValid && semanticRolesValid && digestsValid && directDigestsValid,
+    structureValid,
+    referencesValid: referencesValid && semanticRolesValid,
+    digestsValid: digestsValid && directDigestsValid,
+  };
+}
+
+function hasObjectKeys(value, keys) {
+  return Boolean(value)
+    && typeof value === 'object'
+    && !Array.isArray(value)
+    && keys.every((key) => Object.hasOwn(value, key));
+}
+
+function mediaEvidenceCoreValid(value, evidenceFiles) {
+  const statusValid = ['baseline-only', 'comparison-complete', 'waived', 'blocked'].includes(value?.status);
+  const sourceValid = hasObjectKeys(value?.source, ['path', 'sha256', 'provenance', 'durationSeconds', 'trackIndex', 'privacy'])
+    && hasObjectKeys(value.source.privacy, ['containsPersonalData', 'reportRedacted']);
+  const measurementPolicyValid = hasObjectKeys(value?.measurementPolicy, ['tools', 'timebase', 'windowPolicy', 'finalRemeasured', 'sameSettings'])
+    && Array.isArray(value.measurementPolicy.tools);
+  const baselineValid = hasObjectKeys(value?.baseline, ['measurements', 'rawEvidence'])
+    && Array.isArray(value.baseline.measurements)
+    && Array.isArray(value.baseline.rawEvidence);
+  const hypothesesValid = Array.isArray(value?.hypotheses)
+    && value.hypotheses.every((hypothesis) => (
+      hasObjectKeys(hypothesis, [
+        'id',
+        'claim',
+        'evidenceRefs',
+        'alternatives',
+        'predictedEffect',
+        'rollbackPlan',
+      ])
+      && isNonEmptyString(hypothesis.id)
+      && isNonEmptyString(hypothesis.claim)
+      && Array.isArray(hypothesis.evidenceRefs)
+      && hypothesis.evidenceRefs.every(isNonEmptyString)
+      && Array.isArray(hypothesis.alternatives)
+      && hypothesis.alternatives.every(isNonEmptyString)
+      && isNonEmptyString(hypothesis.predictedEffect)
+      && isNonEmptyString(hypothesis.rollbackPlan)
+    ));
+  const lifecycleValid = (
+    value?.status === 'comparison-complete'
+    || (value?.status === 'baseline-only' && value.claimResults?.some((result) => result.status === 'baseline-only'))
+    || (
+      value?.status === 'blocked'
+      && value.claimResults?.some((result) => result.status === 'blocked')
+      && Array.isArray(value.blockers)
+      && value.blockers.length > 0
+      && value.blockers.every(isNonEmptyString)
+    )
+    || (
+      value?.status === 'waived'
+      && value.claimResults?.every((result) => result.status === 'waived')
+      && isNonEmptyString(value.waiver?.reason)
+      && isNonEmptyString(value.waiver?.remainingRisk)
+    )
+  );
+  return value?.schema === 'openprd.media-evidence.v1'
+    && statusValid
+    && Boolean(value?.task?.id)
+    && Boolean(value?.task?.title)
+    && Array.isArray(value?.claimScopes)
+    && value.claimScopes.length > 0
+    && hasCompleteClaimResults(value)
+    && mediaEvidenceArtifactIntegrity(value, evidenceFiles).structureValid
+    && sourceValid
+    && measurementPolicyValid
+    && baselineValid
+    && hypothesesValid
+    && lifecycleValid
+    && hasObjectKeys(value?.artifacts, ['baselineHtml', 'comparisonHtml'])
+    && Array.isArray(value?.unknownClaims);
+}
+
+function mediaEvidenceComparisonComplete(value, contractValid, artifactIntegrity) {
+  if (!contractValid || value.status !== 'comparison-complete') {
+    return false;
+  }
+  const sourceValid = isNonEmptyString(value.source?.path)
+    && isSha256(value.source?.sha256)
+    && isNonEmptyString(value.source?.provenance)
+    && typeof value.source?.durationSeconds === 'number'
+    && value.source.durationSeconds > 0
+    && Number.isInteger(value.source?.trackIndex)
+    && value.source.trackIndex >= 0
+    && isNonEmptyString(value.source?.codec)
+    && typeof value.source?.sampleRateHz === 'number'
+    && value.source.sampleRateHz > 0
+    && Number.isInteger(value.source?.channels)
+    && value.source.channels > 0
+    && typeof value.source?.privacy?.containsPersonalData === 'boolean'
+    && typeof value.source?.privacy?.reportRedacted === 'boolean';
+  const mediaStructure = value.finalOutput?.mediaStructure;
+  const finalOutputValid = isNonEmptyString(value.finalOutput?.path)
+    && isSha256(value.finalOutput?.sha256)
+    && hasObjectKeys(mediaStructure, [
+      'container',
+      'durationSeconds',
+      'trackIndex',
+      'codec',
+      'sampleRateHz',
+      'channels',
+      'timebase',
+    ])
+    && isNonEmptyString(mediaStructure.container)
+    && typeof mediaStructure.durationSeconds === 'number'
+    && mediaStructure.durationSeconds > 0
+    && Number.isInteger(mediaStructure.trackIndex)
+    && mediaStructure.trackIndex >= 0
+    && isNonEmptyString(mediaStructure.codec)
+    && typeof mediaStructure.sampleRateHz === 'number'
+    && mediaStructure.sampleRateHz > 0
+    && Number.isInteger(mediaStructure.channels)
+    && mediaStructure.channels > 0
+    && isNonEmptyString(mediaStructure.timebase)
+    && isNonEmptyString(value.finalOutput?.extraction?.method)
+    && value.finalOutput?.extraction?.cacheReused === false
+    && Array.isArray(value.finalOutput?.measurements)
+    && value.finalOutput.measurements.length > 0
+    && value.finalOutput.measurements.every(isCompleteMeasurement)
+    && Array.isArray(value.finalOutput?.rawEvidence)
+    && value.finalOutput.rawEvidence.length > 0
+    && value.finalOutput.rawEvidence.every(isNonEmptyString);
+  const comparisonValid = Array.isArray(value.comparison?.metricDeltas)
+    && value.comparison.metricDeltas.length > 0
+    && value.comparison.metricDeltas.every((delta) => (
+      hasObjectKeys(delta, ['id', 'baseline', 'final', 'unit', 'assessment'])
+      && isNonEmptyString(delta.id)
+      && delta.baseline !== null
+      && delta.final !== null
+      && isNonEmptyString(delta.unit)
+      && ['expected-improvement', 'unchanged'].includes(delta.assessment)
+    ))
+    && Array.isArray(value.comparison?.regressions)
+    && value.comparison.regressions.length === 0;
+  const acousticReviewValid = !value.claimScopes.includes('acoustic-quality')
+    || (
+      isNonEmptyString(value.manualReview?.gainPolicy)
+      && isNonEmptyString(value.manualReview?.playbackEnvironment)
+      && isNonEmptyString(value.manualReview?.rubric)
+      && isNonEmptyString(value.manualReview?.acceptanceRule)
+      && Array.isArray(value.manualReview?.reviews)
+      && ['target', 'boundary', 'control'].every((role) => value.manualReview.reviews.some((review) => review.clipRole === role))
+      && value.manualReview.reviews.every((review) => (
+        isNonEmptyString(review?.clipId)
+        && isNonEmptyString(review?.baselineRef)
+        && isNonEmptyString(review?.finalRef)
+        && review?.result === 'pass'
+      ))
+    );
+  const timingValid = !value.claimScopes.includes('transcription-timing')
+    || (
+      ['human-gold', 'human-reference', 'engine-reference'].includes(value.transcription?.timingEvaluation?.referenceType)
+      && hasObjectKeys(value.transcription?.timingEvaluation, [
+        'annotationSourcePath',
+        'annotationSourceSha256',
+        'toleranceMs',
+        'absoluteStartErrorMs',
+        'absoluteEndErrorMs',
+      ])
+      && isNonEmptyString(value.transcription.timingEvaluation.annotationSourcePath)
+      && isSha256(value.transcription.timingEvaluation.annotationSourceSha256)
+      && isNonNegativeNumber(value.transcription.timingEvaluation.toleranceMs)
+      && hasCompleteErrorDistribution(value.transcription.timingEvaluation.absoluteStartErrorMs)
+      && hasCompleteErrorDistribution(value.transcription.timingEvaluation.absoluteEndErrorMs)
+    );
+  const accuracyValid = !value.claimScopes.includes('transcription-accuracy')
+    || (
+      isNonEmptyString(value.transcription?.engine)
+      && isNonEmptyString(value.transcription?.model)
+      && isNonEmptyString(value.transcription?.version)
+      && isNonEmptyString(value.transcription?.language)
+      && isNonEmptyString(value.transcription?.normalizationPolicy)
+      && isNonEmptyString(value.transcription?.goldTranscriptPath)
+      && isSha256(value.transcription?.goldTranscriptSha256)
+      && (isNonNegativeNumber(value.transcription?.wer) || isNonNegativeNumber(value.transcription?.cer))
+      && Number.isInteger(value.transcription?.insertions)
+      && value.transcription.insertions >= 0
+      && Number.isInteger(value.transcription?.deletions)
+      && value.transcription.deletions >= 0
+      && Number.isInteger(value.transcription?.substitutions)
+      && value.transcription.substitutions >= 0
+    );
+  const renderedSubtitlesValid = !value.claimScopes.includes('rendered-subtitles')
+    || (
+      ['burned-in', 'embedded-stream', 'sidecar'].includes(value.renderedSubtitles?.mode)
+      && isNonEmptyString(value.renderedSubtitles?.extractionMethod)
+      && isNonEmptyString(value.renderedSubtitles?.artifactPath)
+      && isSha256(value.renderedSubtitles?.artifactSha256)
+      && isNonEmptyString(value.renderedSubtitles?.bindingEvidence)
+      && Array.isArray(value.renderedSubtitles?.frameEvidence)
+      && (
+        value.renderedSubtitles.mode !== 'burned-in'
+        || value.renderedSubtitles.frameEvidence.length >= 2
+      )
+      && (
+        value.renderedSubtitles.mode !== 'embedded-stream'
+        || (Number.isInteger(value.renderedSubtitles.subtitleStreamIndex) && value.renderedSubtitles.subtitleStreamIndex >= 0)
+      )
+    );
+  return value.measurementPolicy.finalRemeasured === true
+    && value.measurementPolicy.sameSettings === true
+    && Array.isArray(value.measurementPolicy.tools)
+    && value.measurementPolicy.tools.length > 0
+    && value.measurementPolicy.tools.every(isCompleteTool)
+    && isNonEmptyString(value.measurementPolicy.timebase)
+    && isNonEmptyString(value.measurementPolicy.windowPolicy)
+    && sourceValid
+    && value.claimResults.every((result) => result.status === 'pass' && result.evidenceRefs.length > 0)
+    && value.baseline.measurements.length > 0
+    && value.baseline.measurements.every(isCompleteMeasurement)
+    && value.baseline.rawEvidence.length > 0
+    && value.baseline.rawEvidence.every(isNonEmptyString)
+    && value.hypotheses.length > 0
+    && value.evidenceArtifacts.length > 0
+    && artifactIntegrity.valid
+    && isNonEmptyString(value.artifacts?.baselineHtml)
+    && isNonEmptyString(value.artifacts?.comparisonHtml)
+    && finalOutputValid
+    && comparisonValid
+    && acousticReviewValid
+    && accuracyValid
+    && timingValid
+    && renderedSubtitlesValid;
+}
+
+export function detectMediaEvidence({ testStrategy = {}, evidenceFiles = [] } = {}) {
+  const mediaTasks = (testStrategy.tasks ?? []).filter((task) => task.scope === 'media-flow');
+  const parsedBundles = evidenceFiles.flatMap((file) => {
+    if (path.extname(file.path).toLowerCase() !== '.json' || !String(file.text ?? '').includes('openprd.media-evidence.v1')) {
+      return [];
+    }
+    try {
+      const value = JSON.parse(file.text);
+      if (value?.schema !== 'openprd.media-evidence.v1') {
+        return [];
+      }
+      const artifactIntegrity = mediaEvidenceArtifactIntegrity(value, evidenceFiles);
+      const contractValid = mediaEvidenceCoreValid(value, evidenceFiles);
+      const comparisonComplete = mediaEvidenceComparisonComplete(value, contractValid, artifactIntegrity);
+      const accuracyClaimed = Array.isArray(value.claimScopes) && value.claimScopes.includes('transcription-accuracy');
+      const hasGoldTranscript = Boolean(value.transcription?.goldTranscriptPath && value.transcription?.goldTranscriptSha256);
+      const accuracyMarkedUnknown = (value.unknownClaims ?? []).some((claim) => /accuracy|准确/i.test(String(claim)));
+      return [{
+        path: file.path,
+        taskId: value.task?.id ?? null,
+        status: value.status ?? null,
+        contractValid,
+        comparisonComplete,
+        evidenceArtifactsValid: artifactIntegrity.valid,
+        accuracyClaimed,
+        hasGoldTranscript,
+        accuracyMarkedUnknown,
+      }];
+    } catch {
+      return [];
+    }
+  });
+
+  const taskIds = new Set(mediaTasks.map((task) => task.id).filter(Boolean));
+  const bundles = taskIds.size > 0
+    ? parsedBundles.filter((bundle) => taskIds.has(bundle.taskId))
+    : parsedBundles;
+
+  if (mediaTasks.length === 0) {
+    return {
+      required: false,
+      status: bundles.length > 0 ? 'available' : 'not-required',
+      taskCount: 0,
+      bundles,
+      warnings: [],
+    };
+  }
+
+  const warnings = [];
+  const genericWaivers = mediaTasks.filter((task) => task.waiver);
+  if (genericWaivers.length > 0) {
+    warnings.push(`有 ${genericWaivers.length} 个 media-flow 任务使用了通用 waiver；媒体声明必须用结构化证据包表达 waived，没有样本或运行条件时应标为 blocked。`);
+  }
+  const invalidLayers = mediaTasks.filter((task) => !task.layers?.includes('integration') || !task.layers?.includes('manual'));
+  if (invalidLayers.length > 0) {
+    warnings.push(`有 ${invalidLayers.length} 个 media-flow 任务没有同时声明 integration 与 manual 验证层。`);
+  }
+  if (bundles.length === 0) {
+    warnings.push('检测到 media-flow 任务，但当前 evidence sources 中没有 openprd.media-evidence.v1 结构化证据包。');
+  }
+  const invalidContracts = bundles.filter((bundle) => !bundle.contractValid);
+  if (invalidContracts.length > 0) {
+    warnings.push(`有 ${invalidContracts.length} 个媒体证据包不满足 openprd.media-evidence.v1 核心合同。`);
+  }
+  const invalidArtifacts = bundles.filter((bundle) => !bundle.evidenceArtifactsValid);
+  if (invalidArtifacts.length > 0) {
+    warnings.push(`有 ${invalidArtifacts.length} 个媒体证据包包含未解析的证据引用、缺失文件或摘要不匹配。`);
+  }
+  const incomplete = bundles.filter((bundle) => !bundle.comparisonComplete && !(bundle.contractValid && bundle.status === 'waived'));
+  if (incomplete.length > 0) {
+    warnings.push(`有 ${incomplete.length} 个媒体证据包尚未完成最终媒体重新提取、同口径复测或来源/输出摘要锁定。`);
+  }
+  const unsupportedAccuracy = bundles.filter((bundle) => bundle.accuracyClaimed && !bundle.hasGoldTranscript && !bundle.accuracyMarkedUnknown);
+  if (unsupportedAccuracy.length > 0) {
+    warnings.push(`有 ${unsupportedAccuracy.length} 个转写准确率声明既没有人工 gold transcript，也没有标记为 unknown。`);
+  }
+  const bundleTaskIds = new Set(bundles.map((bundle) => bundle.taskId).filter(Boolean));
+  const unmatchedTaskIds = [...taskIds].filter((taskId) => !bundleTaskIds.has(taskId));
+  if (unmatchedTaskIds.length > 0) {
+    warnings.push(`有 ${unmatchedTaskIds.length} 个 media-flow 任务没有按 task.id 对应到媒体证据包。`);
+  }
+
+  return {
+    required: true,
+    status: warnings.length === 0 ? 'pass' : (bundles.length === 0 ? 'needs-evidence' : 'needs-attention'),
+    taskCount: mediaTasks.length,
+    bundles,
+    unmatchedTaskIds,
+    warnings,
+  };
+}
+
+function detectEvalHarness({ config, files, texts, packageJson, activeTasks, evidenceFiles = [] }) {
   const { scripts, dependencyNames } = packageSignals(packageJson);
   const scriptEntries = Object.entries(scripts);
   const commandText = scriptEntries.map(([name, command]) => `${name}: ${command}`).join('\n');
@@ -819,13 +1339,17 @@ function detectEvalHarness({ config, files, texts, packageJson, activeTasks }) {
   if (activeTasks.total > 0 && activeTasks.pending > 0) {
     warnings.push(describeFeatureCoverageLedger(activeTasks) ?? `当前任务清单仍有 ${activeTasks.pending} 个未完成条目，功能覆盖不能判定为完整。`);
   }
-  warnings.push(...testStrategy.warnings);
+  const mediaEvidence = detectMediaEvidence({ testStrategy, evidenceFiles });
+  const testStrategyWarnings = [...testStrategy.warnings, ...mediaEvidence.warnings];
+  warnings.push(...testStrategyWarnings);
   return {
     status: hasSmoke && hasPerf && hasExtremeFixtures && activeTasks.pending === 0 ? 'pass' : 'needs-attention',
     hasUnitOrCommandTests: hasTest,
     testStrategy: {
-      status: testStrategy.total === 0 || testStrategy.warnings.length > 0 ? 'needs-attention' : 'pass',
       ...testStrategy,
+      status: testStrategy.total === 0 || testStrategyWarnings.length > 0 ? 'needs-attention' : 'pass',
+      warnings: testStrategyWarnings,
+      mediaEvidence,
       capabilities: testCapabilities,
     },
     smoke: {
@@ -1287,14 +1811,14 @@ async function buildQualityReport(projectRoot, config, options = {}) {
   const growthLedger = await readJson(qualityPath(projectRoot, normalizedConfig.growth?.ledgerPath ?? OPENPRD_GROWTH_LEDGER)).catch(() => null);
   const completionState = detectCompletionState({ files, activeTasks, evidenceFiles });
   const observability = detectObservability({ config: normalizedConfig, files, texts, packageJson });
-  const evalHarness = detectEvalHarness({ config: normalizedConfig, files, texts, packageJson, activeTasks });
+  const evalHarness = detectEvalHarness({ config: normalizedConfig, files, texts, packageJson, activeTasks, evidenceFiles });
   const businessGuardrails = detectBusinessGuardrails({ config: normalizedConfig, files, texts, packageJson });
   const candidateState = await listKnowledgeCandidates(projectRoot, { status: 'all' }).catch(() => null);
   const knowledge = detectKnowledge({ config: normalizedConfig, knowledgeFiles, candidateState, knowledgeIndex, completionState });
   const growth = detectGrowth({ config: normalizedConfig, growthLedger, completionState });
-  const policy = buildQualityPolicy({ config: normalizedConfig, activeChangeContext, activeTasks, businessGuardrails, completionState });
+  const policy = buildQualityPolicy({ config: normalizedConfig, activeChangeContext, activeTasks, businessGuardrails, completionState, evalHarness });
   const visualReview = detectVisualReview({ policy, activeChangeContext, activeTasks, visualArtifacts, includesAny });
-  const evidenceLedger = buildEvidenceLedger({ evidenceFiles, activeTasks, observability, businessGuardrails, knowledge, growth, visualReview });
+  const evidenceLedger = buildEvidenceLedger({ evidenceFiles, activeTasks, observability, businessGuardrails, knowledge, growth, visualReview, mediaEvidence: evalHarness.testStrategy.mediaEvidence });
   const gates = buildGates({ observability, evalHarness, businessGuardrails, knowledge, growth, visualReview, policy, evidenceLedger });
   const blockingStatuses = new Set(['fail']);
   const attentionStatuses = new Set(['needs-attention', 'needs-evidence']);

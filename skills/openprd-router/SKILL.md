@@ -47,6 +47,9 @@ description: OpenPrd 入口路由 skill。先判断当前任务该读哪个 repo
 - 需求入口分流、用户可见需求类型与内部 L0/L1/L2 路由码对照、PRD 场景视角选择：`$openprd-requirement-intake`
 - 主工作流、review/change/tasks、`run/loop`：`$openprd-harness`
 - 前端设计框架、审美资产库、主题/骨架/组件/配方、事实与素材前置门：`$openprd-frontend-design`
+- 测试策略分流、分层验证和任务级 evidence-plan：`$openprd-test-strategy`
+- 真实音频、视频音轨、录音、播放/波形/时间点、响度/噪声/静音/削波/混音/导出，以及 ASR/语音识别/转写结果与语音派生字幕时间轴：`$openprd-audio-evidence`
+- 纯字幕 UI、文案、翻译、错别字、字体、颜色或排版继续按 `$openprd-frontend-design` 或语言/文档任务处理，不触发 `$openprd-audio-evidence`；标题同时出现“字幕”时，按真实媒体声明判断而不是按关键词触发
 - 最佳实践、benchmark、公开 GitHub 仓库、第三方技术事实、prompt/context engineering：`$openprd-benchmark-router`
 - `docs/basic/`、文件说明书、文件夹 README、文档标准：`skills/openprd-standards/SKILL.md`
 - 就绪验证、EVO 门禁、HTML 质量评估报告、项目经验沉淀：`skills/openprd-quality/SKILL.md`

@@ -57,6 +57,9 @@
         "smoke",
         "traceability"
       ],
+      "media": [
+        "test-strategy"
+      ],
       "businessCost": [
         "business-guardrails"
       ],

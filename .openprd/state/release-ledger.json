@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.2.3",
+  "currentVersion": "0.3.0",
   "versions": [
     {
       "version": "0.1.2",
@@ -1049,9 +1049,9 @@
     },
     {
       "version": "0.2.3",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-08-01 14:15:30",
-      "updatedAt": "2026-08-01 14:15:31",
+      "updatedAt": "2026-08-29 22:46:26",
       "notes": null,
       "items": [
         {
@@ -1089,8 +1089,62 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.3.0",
+      "status": "current",
+      "createdAt": "2026-08-29 22:46:26",
+      "updatedAt": "2026-08-29 22:46:26",
+      "notes": null,
+      "items": [
+        {
+          "type": "新增",
+          "summary": "新增",
+          "detail": "真实音频、ASR 与语音派生字幕的最终媒体证据闭环",
+          "sentence": "新增：真实音频、ASR 与语音派生字幕的最终媒体证据闭环",
+          "recordedAt": "2026-08-29 22:46:26",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1788014786141"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "历史项目批量更新，保留缓存、构建产物和受保护软链接",
+          "sentence": "优化：历史项目批量更新，保留缓存、构建产物和受保护软链接",
+          "recordedAt": "2026-08-29 22:46:26",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1788014786286"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "多语言产品文案，英文界面按母语软件习惯紧凑改写",
+          "sentence": "优化：多语言产品文案，英文界面按母语软件习惯紧凑改写",
+          "recordedAt": "2026-08-29 22:46:26",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1788014786434"
+          }
+        },
+        {
+          "type": "修复",
+          "summary": "修复",
+          "detail": "产品文案 Hook 提醒未实际注入的问题",
+          "sentence": "修复：产品文案 Hook 提醒未实际注入的问题",
+          "recordedAt": "2026-08-29 22:46:26",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1788014786588"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-08-01 14:15:31"
+  "updatedAt": "2026-08-29 22:46:26"
 }

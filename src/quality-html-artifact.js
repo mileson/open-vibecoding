@@ -74,6 +74,7 @@ function scenarioLabel(tag) {
     frontend: '界面体验',
     desktop: '桌面端体验',
     backend: '服务与数据处理',
+    media: '音频与转写证据',
     businessCost: '成本与滥用风险',
     security: '隐私与安全',
     performance: '性能风险',
@@ -524,6 +525,7 @@ const EVIDENCE_SOURCE_LABELS = {
   'openprd-knowledge-candidate': '待确认经验草案',
   'openprd-growth-ledger': '成长记录',
   'openprd-test-report': '测试报告',
+  'openprd-media-evidence': '音频与转写证据包',
   'openprd-visual-review': '视觉对比记录',
   evidence: '证据文件',
 };
@@ -555,6 +557,7 @@ function evidenceItems(report) {
 function environmentItems(report) {
   const evalHarness = report.evalHarness;
   const strategy = evalHarness.testStrategy ?? {};
+  const mediaEvidence = strategy.mediaEvidence ?? { required: false, status: 'not-required', taskCount: 0, bundles: [] };
   const obs = report.observability;
   const knowledge = report.knowledge;
   const growth = report.growth ?? { summary: { eventCount: 0, completionCheckpoints: 0 } };
@@ -567,6 +570,12 @@ function environmentItems(report) {
         ? `显式 ${strategy.explicit ?? 0} 项，推导 ${strategy.inferred ?? 0} 项，已规划证据 ${strategy.evidencePlanned ?? 0} 项`
         : '当前没有可分析的任务级测试策略',
     },
+    ...(mediaEvidence.required || mediaEvidence.bundles.length > 0
+      ? [{
+        summary: mediaEvidence.status === 'pass' ? '媒体证据已闭环' : '媒体证据待补',
+        detail: `media-flow ${mediaEvidence.taskCount ?? 0} 项，结构化证据包 ${mediaEvidence.bundles.length} 个；HTML 只承载审查，最终媒体仍需重新提取复测`,
+      }]
+      : []),
     {
       summary: evalHarness.smoke.present ? '主流程验证可用' : '主流程验证缺失',
       detail: evalHarness.smoke.commands.join(' / ') || '还没有发现可直接复跑的验证入口',
@@ -622,6 +631,7 @@ function layerLabel(layer) {
 
 function strategyItems(report) {
   const strategy = report.evalHarness?.testStrategy ?? {};
+  const mediaEvidence = strategy.mediaEvidence ?? { required: false, status: 'not-required', taskCount: 0, bundles: [] };
   const layerCounts = strategy.layerCounts ?? {};
   const layerSummary = Object.entries(layerCounts)
     .filter(([, count]) => Number(count) > 0)
@@ -637,6 +647,12 @@ function strategyItems(report) {
       summary: `证据计划 ${strategy.evidencePlanned ?? 0}/${strategy.total ?? 0}`,
       detail: strategy.evidencePresent > 0 ? `已有 ${strategy.evidencePresent} 项证据记录` : '当前重点是确认该测哪一层，再留下本次执行证据',
     },
+    ...(mediaEvidence.required || mediaEvidence.bundles.length > 0
+      ? [{
+        summary: mediaEvidence.status === 'pass' ? '媒体复测通过' : '媒体复测需关注',
+        detail: `media-flow ${mediaEvidence.taskCount ?? 0} 项，openprd.media-evidence.v1 ${mediaEvidence.bundles.length} 个`,
+      }]
+      : []),
     ...(warnings.length > 0
       ? warnings.slice(0, 3).map((warning) => ({ summary: '需关注', detail: humanText(warning) }))
       : [{ summary: '比例规则', detail: '70/20/10 只作健康形状参考，不作为硬阻断' }]),
@@ -1417,6 +1433,12 @@ export function renderQualityEvalArtifact({ report }) {
         chip(`显式 ${report.evalHarness.testStrategy?.explicit ?? 0}`, 'note'),
         chip(`推导 ${report.evalHarness.testStrategy?.inferred ?? 0}`, 'note'),
         chip(`证据计划 ${report.evalHarness.testStrategy?.evidencePlanned ?? 0}`, (report.evalHarness.testStrategy?.evidencePlanned ?? 0) > 0 ? 'pass' : 'warn'),
+        ...(report.evalHarness.testStrategy?.mediaEvidence?.required
+          ? [chip(
+            `媒体证据 ${report.evalHarness.testStrategy.mediaEvidence.bundles.length}`,
+            report.evalHarness.testStrategy.mediaEvidence.status === 'pass' ? 'pass' : 'warn',
+          )]
+          : []),
       ],
       items: strategyItems(report),
       emptyText: '还没有任务级测试策略。',

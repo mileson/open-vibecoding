@@ -30,14 +30,18 @@ import {
 import {
   CHECKSUM_ALGORITHM,
   FLEET_MANAGED_SCOPES,
+  FLEET_PRESERVED_SCOPE_PATTERNS,
+  FLEET_PRESERVED_SCOPES,
   FLEET_TRANSACTION_SCHEMA,
   FLEET_TRANSACTION_VERSION,
   applyStagedState,
+  assertPreservedScopesEmpty,
   collectSymlinkHazards,
   copyManagedScopes,
   createPreimageBackup,
   relocateStagingPaths,
   restorePreimageBackup,
+  scopePolicyForRoot,
   sha256,
   snapshotManagedState,
 } from './transaction-store.js';
@@ -246,6 +250,7 @@ async function createFleetTransactionContext(options = {}) {
 async function planFleetProjectTransaction(project, context, options = {}) {
   const safety = await inspectFleetUpgradeSafety(project, { targetVersion: context.targetVersion });
   const preimage = safety.ok ? await snapshotManagedState(project.path) : null;
+  const scopePolicy = await scopePolicyForRoot(project.path);
   const projectToken = sanitizePathToken(project.relativePath === '.' ? path.basename(project.path) : project.relativePath);
   const projectDigest = sha256(path.resolve(project.path)).slice(0, 12);
   const backupPath = path.join(context.backupRoot, `${projectToken}-${projectDigest}`);
@@ -266,6 +271,7 @@ async function planFleetProjectTransaction(project, context, options = {}) {
       staged: null,
       after: null,
     },
+    scopePolicy,
     preimage,
     backup: {
       status: !safety.ok ? 'refused' : (options.dryRun ? 'planned' : 'pending'),
@@ -320,6 +326,7 @@ async function executeFleetProjectTransaction(plan, options = {}) {
         openprdHome: stagingHome,
         projectRoot: plan.projectRoot,
       });
+      await assertPreservedScopesEmpty(stagingRoot);
       plan.migration = mutationResult?.migration ?? null;
       if (!mutationResult?.ok) {
         throw new FleetUpgradeMutationError(
@@ -386,6 +393,8 @@ async function executeFleetProjectTransaction(plan, options = {}) {
 export {
   CHECKSUM_ALGORITHM,
   FLEET_MANAGED_SCOPES,
+  FLEET_PRESERVED_SCOPE_PATTERNS,
+  FLEET_PRESERVED_SCOPES,
   FLEET_TRANSACTION_SCHEMA,
   FLEET_TRANSACTION_VERSION,
   FleetUpgradeMutationError,

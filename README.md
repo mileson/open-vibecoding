@@ -130,6 +130,10 @@ OpenPrd 会生成可以直接分享的 HTML 面板，让产品、研发和 Agent
 
 除了下面这些固定流程产物，OpenPrd 还会通过 AGENTS 与 skills 注入一条 Agent 行为规范：当存在人类审查节点，且出现 8 个及以上逐项证据对象、可逆逐项审批、多媒体上下文、用于高影响动作的复杂测试/发布矩阵，或必须导航筛选的长期材料时，除非用户明确不要或已有同等任务专属界面，否则 Agent 必须自行设计、制作并验证当前任务的 HTML 审查页；Markdown/CSV 只作为证据或导出，不能替代。OpenPrd 只提供判断原则和质量合同，不用通用 renderer 代替 Agent 思考；未命中强制边界时仍由 Agent 按审查成本判断，简单结果不会为了形式被强行 HTML 化。
 
+### 原生化多语言产品文案
+
+OpenPrd 会提醒 Agent 先理解控件类型、用户动作、上下文和可用空间，再按目标语言的软件产品习惯重写文案，而不是逐字翻译。英文按钮、Tab、菜单和短标签优先使用自然紧凑的惯用表达，例如把“开始自动剪辑”写成 `Auto Edit`，而不是 `Start Automatic Editing`；只使用目标用户熟悉且无歧义的常见缩写。生成合同和 `dev-check` 还会要求在真实控件中检查语义、截断、异常换行、布局挤压和 Accessibility Label。
+
 ### `review.html`
 
 把当前需求版本整理成可评审页面，适合先给产品、研发或负责人确认“这次到底在做什么”。
@@ -452,11 +456,16 @@ openprd changes /path/to/project
 `verify: openprd run . --verify`，通过 `openprd tasks --verify` 执行时也会
 按本任务 evidence 门处理，不会继续反复生成 workspace quality 报告。
 
-任务也可以包含测试策略元数据。`test-layer`、`test-size`、`test-scope`
-和 `evidence-plan` 用来帮助 OpenPrd 按风险选择最小足够证据：局部逻辑优先单元测试，
+任务也可以包含测试策略元数据。`test-layer`、`test-size`、`test-scope`、可选的
+`evidence-profile` 和 `evidence-plan` 用来帮助 OpenPrd 按风险选择最小足够证据：局部逻辑优先单元测试，
 触达 CLI/API/Agent 契约或跨模块状态时使用集成/契约验证，触达用户主路径、视觉、小程序、
 性能、安全或成本风险时升级到端到端或专项验证。这些字段是证据分流，不是固定 70/20/10
 比例门禁。
+
+真实音频、声学质量、ASR/转写和语音派生字幕任务使用 `test-scope: media-flow`、
+`evidence-profile: audio-asr`，通常配套 `test-layer: integration, manual`。它们通过
+`openprd-audio-evidence` 锁定来源、保存修改前基线，并从最终交付媒体重新提取和同口径复测；
+纯字幕文案、翻译、错别字和 UI 样式不自动触发。
 
 `tasks` 默认列出下一个依赖已满足的任务。`--advance` 会勾选完成任务；
 同时传 `--verify` 时，会先运行该任务的 `verify` 命令，通过后再勾选。执行记录
@@ -862,6 +871,7 @@ openprd diagram /path/to/project \
 
 - `skills/openprd-shared/`
 - `skills/openprd-harness/`
+- `skills/openprd-audio-evidence/`
 - `skills/openprd-standards/`
 - `skills/openprd-diagram-review/`
 - `skills/openprd-discovery-loop/`

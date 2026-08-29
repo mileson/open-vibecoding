@@ -110,11 +110,12 @@ test('dev-check reports code file line status and next actions', async () => {
   await fs.writeFile(path.join(project, 'src', 'small.js'), `${Array.from({ length: 700 }, (_, index) => `export const small${index} = ${index};`).join('\n')}\n`);
   await fs.writeFile(path.join(project, 'src', 'medium.js'), `${Array.from({ length: 701 }, (_, index) => `export const medium${index} = ${index};`).join('\n')}\n`);
   await fs.writeFile(path.join(project, 'src', 'large.js'), `${Array.from({ length: 1501 }, (_, index) => `export const large${index} = ${index};`).join('\n')}\n`);
+  await fs.writeFile(path.join(project, 'src', 'CopyView.swift'), 'Text("Start Automatic Editing")\n');
   await fs.writeFile(path.join(project, 'generated', 'bundle.js'), `${Array.from({ length: 2000 }, () => 'console.log("generated");').join('\n')}\n`);
   await fs.writeFile(path.join(project, 'README.md'), '# Readme\n');
 
   const result = await checkDevelopmentStandardsWorkspace(project, {
-    files: ['src/small.js', 'src/medium.js', 'src/large.js', 'generated/bundle.js', 'README.md'],
+    files: ['src/small.js', 'src/medium.js', 'src/large.js', 'src/CopyView.swift', 'generated/bundle.js', 'README.md'],
   });
   assert.equal(result.ok, true);
   assert.equal(result.thresholds.okMax, 700);
@@ -155,6 +156,11 @@ test('dev-check reports code file line status and next actions', async () => {
   }
   assert.equal(result.files.find((file) => file.path === 'generated/bundle.js').status, 'exempt');
   assert.equal(result.files.find((file) => file.path === 'README.md').status, 'ok');
+  assert.equal(result.i18nReminder.required, true);
+  assert.match(result.i18nReminder.copyGuideline, /目标语言文案不要逐字翻译/);
+  assert.match(result.i18nReminder.copyGuideline, /只使用无歧义的常见缩写/);
+  assert.match(result.i18nReminder.copyGuideline, /真实控件.*Accessibility Label/);
+  assert.match(result.i18nReminder.reason, /异常换行/);
 
   const logs = [];
   const originalLog = console.log;
