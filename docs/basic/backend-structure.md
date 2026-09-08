@@ -67,7 +67,7 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
 - 变化摘要表达层: `src/change-summary.js` 统一生成面向用户的动作词摘要，供 loop commit 默认文案、handoff / 版本说明和 review 摘要复用。默认动作词为 `新增 / 修复 / 优化 / 调整 / 移除`，优先描述用户可感知变化，不直接暴露实现细节。
 - 项目版本轨道层: `src/release-ledger.js` 维护可选的 `.openprd/state/release-ledger.json`，把项目级版本号（例如 `0.1.23`）、版本状态、版本内变化条目和本地 tag 元数据集中到一个事实源里，明确与内部 PRD `v000x` 版本分层。
 - GitHub Release 发布层: `src/github-release.js` 和 `scripts/openprd-github-release-notes.mjs` 负责从 `package.json` 与 `.openprd/state/release-ledger.json` 渲染 GitHub Release 标题和正文；`.github/workflows/github-release.yml` 在版本 tag push 或手动触发时创建或更新对应 Release，缺少匹配版本条目时直接失败。
-- HTML artifact: `src/html-artifacts.js` 负责 `review.html`、复盘学习 reader 和质量报告渲染出口；`src/quality-html-artifact.js` 负责 `openprd quality --verify` 的用户可见回归测试报告框架。
+- HTML artifact: `src/html-artifacts.js` 负责 `review.html`、task-scoped 回归报告和复盘学习 reader；quality eval HTML renderer 已移除。
   - `clarify` 模式由 CLI 输出对话内澄清提纲，不进入 HTML 渲染。
   - `review.html` 使用自包含原生 HTML/CSS 与内联 SVG，按需求概览、需求关系图或需求流程图、四个固定评审卡片和底部固定双按钮工具栏组织信息。
   - 项目启用 `release` 版本轨道且当前版本已设置时，评审页顶部额外显示强可视的 `项目版本` 卡片，展示当前版本号、版本状态和累计变化条目数。
@@ -78,11 +78,6 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - 底部工具栏固定跟随窗口滚动，只保留“需要调整”和“按当前方向推进”两个反馈动作；复制内容携带 OpenPrD review 结构化上下文、版本、摘要指纹和 work unit，让多 Agent 或多对话返回反馈时可以校验是否仍是同一需求，同时明确反馈记录不影响实现。
   - 面向用户的 HTML 文案使用“后台参考”“待完善信息”“用户反馈可覆盖”等业务表达，避免暴露 `freeze` 等内部流程词，也避免“需求定稿前”“进入实现前确认”这类隐性停顿。
   - benchmark 侧由 `src/benchmark.js` 作为稳定入口，`src/benchmark/` 下的 constants/source/storage/operations/verify/render/registry 模块共同维护 candidate/approved registry、最近 7 天滚动采纳统计、累计 evidence，以及 `benchmark verify` 的独立控制校验，确保候选来源只进入“推荐 approve”状态，不会因自动统计直接晋级 approved registry。
-- 质量报告 HTML: `src/quality-html-artifact.js` 不复用 PRD 评审的信息结构，但复用同一套用户体验心智。
-  - 首屏先给回归结论概览，再给回归流程与测试覆盖图，下面固定展示“本期必测结果”“需要处理 / 需确认”“验证材料”“执行环境与覆盖”四个模块。
-  - 回归流程图由 OpenPrD 工具生成固定步骤：成本护栏、冒烟测试、任务覆盖、风险复核、验证材料和最终结论；未通过或待确认步骤自动挂旁路原因卡，原因短句控制在 15 字以内，不让 Agent 手动画线或写长句。
-  - 测试覆盖图由 OpenPrD 工具生成固定槽位：卡片只表达检查范围、必测结果、待处理、验证材料和最终判断；卡片正文由渲染逻辑先总结为 30 字以内短句，标题控制在 15 字以内胶囊，不依赖 CSS 省略，也不让 Agent 直接手写 SVG。
-  - 四个模块明细按“加粗摘要 + 一句话说明”展示；底部固定双按钮只保留“需要补测”和“认可回归”，复制内容携带报告 ID、当前结论、需处理项、需确认项和复跑要求。
   - 旧表格、证据链、结构化 JSON 和给 Agent 的质量报告框架保留在折叠详情里。
 - 参考图预处理工具: `src/visual-prepare.js` 负责 `openprd visual-prepare` 的确定性几何处理，使用 `sharp` 读取确认后的参考图，按 grid 或 boxes 方案切片，生成 reference-set、crops、contact sheet、compare-plan 和 board 模板，供多子图、多对象和网格参考图进入后续逐项视觉验收。
 - 视觉对比工具: `src/visual-compare.js` 负责 `openprd visual-compare` 的位图处理。
@@ -142,17 +137,16 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - `review.html` 渲染带图片和“选这个方向”按钮的方向卡片；用户选择通过 `openprd review <path> --mark confirmed --direction <id>` 回传。
   - `reviewWorkspace` 校验方向存在后把选择写入 `reviewStatus.designDirection`、workflow 事件和进度记录。
 - 评审产物归档: `review-presentation --write` 成功重渲染后会触发 `archiveStaleActiveArtifacts`，把 `.openprd/artifacts/active/` 下超过保留数（默认 12 个版本）的 `vNNNN-*` bundle 移到 `.openprd/artifacts/archive/`，归档失败不阻断评审生成。
-- 质量评估: `src/quality.js` 负责 `.openprd/quality/config.json` 初始化、当前质量场景识别、本期必测块与本次证据检测、日志/链路追踪检测、业务成本与滥用护栏检测、评估执行环境检测、HTML 回归测试报告写入，以及 `.openprd/knowledge/` 经验 Skill 沉淀入口。
+- 显式质量诊断: `src/quality.js` 负责 `.openprd/quality/config.json`、专项场景识别、证据检测、日志/链路追踪与业务成本护栏；`quality --verify` 只返回内存结果，不写 eval JSON/HTML。
   - `src/test-strategy.js` 以 `test-scope: media-flow` 和可选 `evidence-profile: audio-asr` 表示真实音频、声学、ASR/转写或语音派生字幕链路，默认要求 `integration, manual`；语义分流显式排除纯字幕文案、翻译和 UI 样式。
   - `src/quality.js` 在现有 `test-strategy` gate 下解析 `openprd.media-evidence.v1` JSON，只校验核心合同、active task id、最终媒体复测状态和无 gold transcript 时的 unknown 声明；不读取媒体二进制、不执行音频算法，也不新增 `QUALITY_GATE_IDS`。报告在 `evalHarness.testStrategy.mediaEvidence` 增加兼容字段，`media` scenario 只要求现有 `test-strategy` gate。
-  - 这项能力不新增 CLI 命令或远程 API；现有 `quality --verify`、task metadata 和 eval-report v1 以 additive 字段承载，旧配置通过默认值合并继续运行。
+  - 这项能力通过 task metadata 与显式 `quality --verify` 诊断承载；历史 eval-report v1 仅兼容读取。
   - `src/knowledge.js` 负责 turn-state 回顾信号、knowledge candidate、draft skill 和 promote 标记。
-  - `quality --verify` 与 `quality --learn --review` 的文本输出在存在 `userFacingExperience.message` 时，优先复用该人话结构化回顾，而不是默认先暴露 candidate id、草案路径或 promote 命令。
-- 质量报告保留策略: `.openprd/quality/config.json` 的 `reports.retentionMaxReports`（默认 60）控制 `.openprd/quality/reports/` 保留的报告数；`writeReport` 每次写入后调用 `pruneQualityReports` 按时间序修剪旧 HTML/JSON 报告，`retentionEnabled: false` 可关闭。
+  - `quality --learn --review` 只在 Agent 明确判断值得沉淀时显式运行，不由 run、doctor 或 loop 自动触发。
 - Agent 集成: `src/agent-integration.js` 负责生成 AGENTS、skills、commands、Codex hooks、hook profile、Codex hooks feature flag 迁移、非阻断式 `optionalCapabilities` 检测，以及执行/文档门禁提示。
   - `optionalCapabilities` 在 `init/setup/update/doctor` 时检查当前工具常见 MCP 配置位置：Codex 的 `.codex/config.toml` 与 `~/.codex/config.toml`、Cursor 的 `.cursor/mcp.json` 与 `~/.cursor/mcp.json`、Claude Code 的项目级 `.mcp.json`。
   - 它把 Context7 / DeepWiki 这类“配上会更好”的增强能力写入 `.openprd/harness/install-manifest.json`，供 CLI 输出和后续 agent 建议复用，但不影响命令成功与否。
-  - 生成给项目的 Codex hook runner 源码由 `src/codex-hook-runner-template.mjs` 单独承接，避免把运行态模板堆在 adapter 编排文件里；runner 在 `UserPromptSubmit` 重置本轮 turn-state、在 `PreToolUse` 记录 touched files，并在 `Stop` 基于本轮信号调用 `quality --learn --review` 判断是否生成 knowledge candidate。
+  - 生成给项目的 Codex hook runner 源码由 `src/codex-hook-runner-template.mjs` 单独承接；runner 在 `UserPromptSubmit` 重置本轮 turn-state、在 `PreToolUse` 记录 touched files，并在 `Stop` 汇总 task-scoped 收尾提醒，不自动生成 quality 或 knowledge artifact。
   - 项目经验由 Agent 按需检索和判断是否复用；hook 不做词面命中或经验注入。
   - 需求入口分流由 `openprd-requirement-intake` skill 承接，最终 L0/L1/L2 判断按影响面、未知数、决策成本和验证成本完成。
   - “用户反馈 / 功能 / 体验”这类咨询或复盘语气不因弱信号自动打开 requirement gate；只有和明确的改动动作、实现意图或正式需求信号组合时，才升级到 intake。
@@ -309,15 +303,14 @@ OpenPrd 的运行时核心采用“事实账本 + 可重建投影 + 有界上下
   - 任务标题默认按实现边界、入口接线、集成闭环和回归项来写，不允许把“主流程 / 功能需求 / 验收目标 / 非功能需求”这类 PRD 小节直接平移成任务；每个 `tasks*.md` 文件的 25 条上限只用于分片，不是默认拆解目标。
   - 除治理任务外，`verify` 必须是能证明实际落地的命令或审查步骤；实现/验证任务默认通过 `openprd tasks . --change <id> --item <task-id> --evidence-required` 检查本任务 evidence 或 waiver，不能只写 `openprd change . --validate`，也不默认在每个任务里运行全局 `openprd run . --verify`。
   - 旧版任务的 per-task `openprd run . --verify` 由 `execute` 限定为 task-only evidence 检查；全仓 standards 结果只作为工作区提醒。
-- `loop` 在 finish 阶段同时沉淀 Markdown 测试报告与 HTML 回归报告，供后续复盘、交接和重复执行使用。
-  - 完成最后一个 loop 任务时运行最终质量评估；未 production-ready 时返回 `claimReady=false/workspaceAttention`，但保持已验证任务与已有 commit 的事实状态。
+- `loop` 在 finish 阶段同时沉淀 task-scoped Markdown 测试报告与 HTML 回归报告，供后续复盘、交接和重复执行使用；不再追加全工作区 quality eval。
   - loop 的任务选择既支持内部 `task.id`，也支持人类可读的 `taskHandle`，让另一个对话只凭任务句柄就能继续同一执行单元。
   - 真实 Codex 代理会话在写入 `run` session 事件前先记录 preflight 结果；preflight 或显式修复失败会写入 `agent-preflight-failed` / `agent-preflight-repair-failed` 事件并停止后续 `codex exec`。
-- `quality` 在 verify 阶段扫描项目代码、包脚本、OpenPrd 任务状态、质量证据源和知识库状态，识别当前场景本期必测块、消耗型成本风险及其额度、滥用、监控、报警和止损证据，生成 JSON 与 HTML 回归测试报告；在 learn 阶段把报告沉淀为 incident、pattern 和经验 Skill。
+- `quality` 只在显式 verify 时扫描项目并返回进程内诊断；learn 阶段兼容 turn-state、诊断材料、候选目录和历史 eval JSON。
 - 项目级性能与极端场景证据通过 `scripts/quality-perf-check.mjs` 生成；`npm run test:perf` 和 `npm run test:perf:extreme` 会分别写入 `.openprd/harness/test-reports/quality-normal-performance.md` 与 `.openprd/harness/test-reports/quality-extreme-performance.md`，供 `quality --verify` 读取当前执行证据。
 - `knowledge` 数据流保留 `.openprd/knowledge/candidates/<id>/candidate.json` 作为原始证据，并用 `.openprd/knowledge/index.json` 维护聚合状态。
   - 自动生成的 draft/promptable skill 带 `Use when` 风格 frontmatter、`触发条件 / 适用范围 / 不要直接套用 / 典型输入 / 典型输出 / 验证方式` 等结构，便于后续 Agent 先做候选判断再复用。
-  - `quality --verify` 只把 `pending-review` 候选作为待确认项，`merged`、`promoted`、`rejected`、`archived` 以及历史 `reviewed-*` 状态只进入审计统计。
+  - 经验候选只由显式 learn/review 生成；默认验证不再批量生产 candidate。
 - `growth` 在 observe 阶段先判断候选类型：代码扩展识别这类白名单工具补全可自动执行 append，并把 `applyMode=auto` 写入 accepted 记录；旧版本留下的 pending 代码扩展候选会在 `init/setup/update` 时顺手自动回收。偏好、项目规矩、豁免和 OpenPrd 默认行为只记录候选，不静默改变需要用户决定的规则。`preferences.local.json` 用于少量用户个性化要求，不应提交到共享项目规则。
 - `benchmark` 数据流把 approved source 存在 `.openprd/benchmarks/sources.yaml`，把待确认线索存在 `.openprd/benchmarks/inbox/*.yaml`，把证据摘要存在 `.openprd/benchmarks/evidence/*.md`。`observe` 更新 candidate，`approve` 才会把它移入 approved registry。
 - OpenPrd 自身维护数据流中，配置类能力先经过 grow-aware 判断，再进入普通实现或 growth 候选设计；高置信可成长时直接补齐候选元数据，不确定时停在用户确认问题。

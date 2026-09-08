@@ -1,108 +1,60 @@
 ---
 name: openprd-quality
-description: 评估 OpenPrd 的可观测性、业务成本与滥用护栏、评估执行环境覆盖、媒体证据、性能基线、极端场景，以及 HTML 质量评估报告和项目级经验 Skill。
+description: 按显式请求诊断 OpenPrd 的可观测性、业务成本、测试证据、媒体证据、性能与历史 eval 数据；默认收口不生成质量评估文件。
 ---
 
 # OpenPrd Quality
 
-## 何时使用
+## 定位
 
-当实现就绪、日志、链路追踪、业务成本、免费额度、滥用防护、评估执行环境、媒体证据、冒烟测试、性能阈值、压力数据、HTML 质量评估报告或项目级经验 Skill 在范围内时，使用这份 skill。
+这份 skill 是按需诊断工具，不再是每个任务的默认收口层。
 
-典型触发词：
+- 默认收口使用本任务测试、task-scoped evidence、`openprd standards . --verify`、`openprd run . --verify` 与必要的 `openprd doctor .`
+- `run --verify` 不调用 quality 全量扫描，不生成 `.openprd/quality/reports/eval-*.json` 或 `.html`
+- `loop --finish` 不生成 quality report，也不根据 quality 自动创建 knowledge candidate
+- 旧 `.openprd/quality/reports/` 保留为历史文件，不删除、不续写、不作为当前任务完成条件
 
-- 日志、链路追踪、中心化日志、排查证据、报错回溯
-- 免费用户、额度、限流、AI 调用、第三方 API、成本、预算、报警、止损、滥用
-- eval、评估体系、冒烟测试、功能覆盖、异常流程、逆向流程
-- 音频证据、media-flow、ASR/转写证据包、最终媒体复测
-- CPU、内存、加载时间、接口耗时、压力测试、极端数据
-- 质量评估报告、HTML 审查产物、质量门禁
-- 界面效果图、实现截图、视觉对比、复刻对标、大界面改动方案评审、阶段性视觉评审
-- 复盘后沉淀经验 Skill，避免同类问题反复出现
+## 何时显式使用
+
+只有用户明确要求下列诊断时，才运行 `openprd quality <path> --verify`：
+
+- 盘点日志、链路追踪、业务成本或滥用护栏
+- 审查冒烟、功能覆盖、性能、极端数据或媒体证据
+- 解释旧 `eval-*.json/html` 中的历史结论
+- 为一次专项审计临时查看完整结构化质量状态
+
+命令返回内存中的结构化诊断结果；不会写入 eval JSON/HTML、latest、index 或 retention 状态。
 
 ## 核心命令
 
-- 初始化质量状态：
-  - `openprd quality <path> --init`
-- 生成评审产物：
-  - `openprd quality <path> --verify`
-- 先生成带来源的后台经验候选：
-  - `openprd quality <path> --learn --review --from .openprd/harness/turn-state.json`
-- 生成界面视觉对比图：
-  - `openprd visual-prepare <path> --reference <效果图> --grid <列>x<行>`
-  - `openprd visual-prepare <path> --reference <效果图> --boxes <plan.json>`
-  - `openprd visual-compare <path> --reference <效果图> --actual <实现截图> --locale <zh-CN|en>`
-  - `openprd visual-compare <path> --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>`
-  - `openprd visual-compare <path> --board <focus-board.json|parallel-board.json|verification-board.json|alignment-board.json> --locale <zh-CN|en>`
-- 大界面改动的实现前方案评审：
-  - 先按用户目标、信息架构变化、视觉决策成本和验证风险判断方案评审形态，用户无需另行提出生图；已有界面时按平台能力截取当前真实界面，三个方向共享同一截图并默认保持原视觉 DNA；冷启动用已确认 PRD、用户群体、第一版切片、视觉目标、气质端点和记忆点生成 design brief；再按工具面用 Codex `imagegen`（Image 2）或 Cursor `GenerateImage` 生成至少 3 个设计方向，并保存横向拼接评审大图到 `.openprd/harness/visual-reviews/`
-- 基于已审查报告生成或刷新项目级经验：
-  - `openprd quality <path> --learn --from <candidate-dir|report-id-or-json>`
-- 审查执行中发现的配置、规则候选或 user-local 偏好：
-  - `openprd grow <path> --review`
+- 初始化显式诊断配置：`openprd quality <path> --init`
+- 运行一次显式诊断：`openprd quality <path> --verify`
+- 严格诊断：`openprd quality <path> --verify --fail-on-violation`
+- 从当前 turn-state 或诊断材料生成经验候选：`openprd quality <path> --learn --review --from <diagnostics-or-turn-state>`
+- 从已确认候选或历史 eval JSON 沉淀项目经验：`openprd quality <path> --learn --from <candidate-dir|legacy-report.json>`
 
-## 质量审查契约
+## 诊断边界
 
-每次阶段性实现都应先判断 EVO 场景，再按场景要求审查。基础场景至少要覆盖冒烟和任务/功能覆盖；涉及 UI、桌面端、后端、成本、安全、性能、极端数据、发布交付时，再叠加对应门禁。
+- `pass` 只说明检测到对应能力与证据，不替代真实测试、浏览器、设备、生产或第三方系统回读
+- `needs-evidence` 表示缺当前证据，不自动生成报告补位
+- `needs-attention` 表示专项诊断发现缺口，不回写为当前 task 的失败
+- 历史 `productionReady` 只属于生成该旧报告时的工作区快照，不能继承成当前状态
+- 没有人工 gold transcript 时，ASR 准确率保持 unknown
+- 视觉任务仍按 `visual-compare` 和 task-scoped evidence 验收，不需要 quality HTML 再包装一次
 
-脚本、依赖或 fixture “存在”只能说明项目具备能力，不能说明本次已经执行。质量报告必须区分：
+## 默认收口合同
 
-- `pass`：当前场景必需门禁已经满足，且有本次执行证据或明确项目证据
-- `needs-evidence`：能力可能存在，但缺本次执行证据
-- `needs-attention`：能力、配置、任务或护栏本身缺失
-- `advisory`：当前场景不阻断，但发布或风险进入范围时必须补齐
+1. 运行当前任务真正需要的单元、集成、端到端、人工、视觉、媒体、性能或安全验证。
+2. 把命令、结果与证据路径写入 `.openprd/harness/test-reports/` 或任务 metadata。
+3. 运行 `openprd dev-check . <touched-code-files...>`。
+4. 阶段或发布收口运行 `openprd standards . --verify`、`openprd run . --verify` 与必要的 `openprd doctor .`。
+5. 最终回复直接说明任务测试结果、工作区结构提醒与未验证边界，不链接或要求新 quality eval 报告。
 
-每次阶段性实现都应从六层审查：
+## 经验沉淀
 
-- 质量契约：这项任务承诺覆盖什么
-- 可观测性：前端、后端、agent 工具、异步任务和错误路径能否通过共享 trace/request/task/error id 串起来
-- 业务成本与滥用护栏：免费、试用、消耗型资源、AI 调用、第三方 API、下载、存储等路径是否有额度、负向验证、监控、报警和止损
-- 评估执行环境：冒烟测试、功能覆盖、正常性能和极端数据场景是否存在并持续维护
-- 媒体证据：`media-flow` 任务是否通过现有 `test-strategy` 门聚合 `openprd.media-evidence.v1`，并完成真实来源锁定、修改前基线、最终媒体重新提取与同口径复测；HTML、波形图或中间字幕只能承载审查，没有人工 gold transcript 时转写准确率保持 unknown
-- 视觉评审证据：大界面改动应存在 3 方向效果图横向评审大图，并记录 Agent 采用的可逆默认方向或用户明确选择及其来源；每个方向应有明确用途、受众、气质端点、审美主张和记忆点，并完成 anti-slop 自检。涉及界面视觉实现且已有用户参考效果图或 Agent 默认参考方向时，确认 `.openprd/harness/visual-reviews/` 下存在本次 `openprd visual-compare` 输出的“效果图 / 实现截图”JPG，并且 Agent 已基于合成图复核差异；如果参考图是一张整板、网格图或多对象候选图，进一步确认已存在 `openprd visual-prepare` 产出的 reference-set、contact sheet 与 compare-plan 或 board 模板，并且 contact sheet 已被检查。没有参考图时先区分新建界面和修改既有界面，新建界面确认 Agent 已在后台完成 3 方向方案评审并采用可逆默认方向，修改既有界面确认存在“修改前 / 修改后”JPG，并已检查预期变化和未改区域漂移；当验收关注局部细节时，确认存在“局部焦点证据板”；当并行跑了多个优化方向时，确认存在“并行实验证据板”；当普通截图、Computer/Browser/Playwright 实测截图作为视觉证据时，确认存在“截图实测证据板”；当新功能或改动包含同构列表、卡片、网格或表格，或用户反馈没有对齐/排版漂移时，确认存在“对齐辅助线证据板”，并检查标题、标签、描述、状态、操作区等相同槽位的 x/y/宽高 spread 是否低于阈值。这些证据不只查有无图片，还要查气质、层级、字体/色彩/动效/表面角色和记忆点是否成立。
-- 局部验收证据：如果任务只改一个组件或不超过 3 个相邻区域，局部裁剪图必须是主证据，不能只生成全屏对比后口头说已复核。证据 artifact 应记录 `presentation=local-first`、左右独立裁剪坐标、`sharedScale`、`stretched=false`、差异图和底部上下文；如果左右局部图被分别拉伸成同宽、裁剪的不是同一语义对象，或 Agent 没有根据差异重新截图返工，不能宣称局部视觉验收完成。
-- 轻量 UI 可视优化：卡片宽度、间距、留白、对齐、颜色、圆角、字号、按钮或图标等小改仍属于用户可见变化。质量审查时至少确认存在修改前后视觉对比、局部焦点证据板、截图实测证据板或对齐辅助线证据板，并且本轮审美意图、气质、层级和记忆点已被复核；同构列表、卡片、网格或表格即使用户没有主动提出“对齐”，也要把相同文案类型/相同组件槽位的对齐作为默认验收项；build、package、`dev-check`、单元测试或单张原始截图都不能替代视觉收口证据。
-- HTML 质量评估报告：`.openprd/quality/reports/` 下的人类审查产物是否存在，且足以支持就绪判断；报告目录按 `reports.retentionMaxReports`（默认 60）自动清理旧 eval 报告，index 保留的最新条目不受影响，不要依赖已被清理的历史报告路径
-- 项目经验沉淀：已验证修复若具备复用价值，先生成带来源的当前项目经验候选并在后台记录“本次情况 / 计划保留的经验 / 以后怎么复用 / 只保留在当前项目里”；不要因此创建用户确认停顿
-- 自我成长：配置缺口、文件识别、命令习惯或用户偏好优先沉淀为带来源的 `.openprd/growth` 候选；高置信低风险项可后台固化，其他项保留候选，不要把个人偏好混进项目共享质量经验
+经验沉淀必须显式触发。只有问题具备重复性、高影响、难以重新发现，或明显由 Agent 误判导致时，才从 turn-state、诊断材料、已确认候选或历史 eval JSON 生成项目级 Skill。
 
-## 可观测性规则
-
-- 优先使用中心化 logs / traces / errors / metrics，而不是零散本地日志。
-- 跨层诊断必须具备关联字段：`trace_id`、`span_id`、`request_id`、`task_id`、`user_session_id`、`error_id`。
-- secrets、token、凭证、个人信息和大体积 payload 必须做脱敏。
-- 每次代码变更都要自查是否需要新增结构化日志或查询示例。
-
-## 业务护栏规则
-
-- 只要需求涉及免费用户、试用、额度、AI 调用、第三方 API、生成、存储、下载或其他消耗型成本，就必须明确成本来源和用户级限制。
-- 必须覆盖额度绕过、重复请求、并发请求、越权身份、异常恢复等负向场景。
-- 必须有用量、成本、调用量或异常行为监控信号，以及可执行的报警阈值。
-- 必须说明异常后如何关闭、降级、暂停或熔断高成本路径，并明确处理负责人或交接动作。
-
-## 评估执行环境规则
-
-- 如果项目还没有冒烟测试体系，先补最小可用的 smoke 路径；如果已有 smoke，也必须留下本次运行证据。
-- 把任务列表映射到主流程、异常流程、逆向/负向流程和边界条件。
-- 持续维护项目级和功能级性能基线；性能敏感、批量、发布交付或用户明确要求时，缺失证据进入 readiness attention 并限制性能或发布就绪声明，不阻断代码修改或本地验证。
-- 持续维护能覆盖当前功能面的极端 fixture 或压力数据；极端数据、并发压力、批量处理、发布交付或用户明确要求时，缺失证据进入 readiness attention 并限制压力或发布就绪声明，不阻断代码修改或本地验证。
-- Agent 自动收紧基线可以做，但放宽阈值必须有用户明确要求。
-
-## 就绪判断规则
-
-- `openprd quality <path> --verify` 生成 advisory 报告时，仍要认真阅读 HTML，不得只看命令退出结果。
-- `openprd run <path> --verify` 若显示 `taskReady=true` 且 `workspaceReady=false`，不能宣称整体工作区就绪；先明确区分“当前任务通过，工作区待关注”，再列出未通过门禁。
-- 若只剩 `feature-coverage`，说明是任务账本或覆盖证据未收口，不要把本次功能表述成失败。
-- 大界面改动可由 Agent 采用最符合目标且可逆的默认方向继续实现，用户明确选择时再覆盖；缺少 3 方向效果图、审美主张和记忆点或来源标注时，只能限制“方案已由用户选定”或“视觉已经收口”的声明，不阻断实现。
-- UI 任务有参考图但缺少 visual-compare 输出时，不要宣称视觉实现完成；如果参考图是一张整板、网格图或多对象组合，但缺少 `visual-prepare` 的 reference-set / contact sheet / compare-plan，也不要把整板盲比当成充分验收；没有参考图时先判断新建界面还是修改既有界面，新建界面缺少 3 方向方案评审、修改既有界面缺少修改前后截图对比时，都不要宣称视觉自检完成；局部细节本该单独审却没有局部焦点证据板时，不要把整屏图当成充分验收；并行跑了多个优化方向却没有并行实验证据板时，不要只凭口头结论收尾；普通截图或 Computer/Browser/Playwright 实测截图没有截图实测证据板时，不要把原始截图当成视觉收口；同构列表、卡片、网格或表格缺少对齐辅助线证据板时，不要宣称相同槽位已经对齐；如果对比图仍有明显结构、气质、层级、字体/色彩/表面角色、记忆点偏差或漂移，先返工而不是把差异留给用户发现。
-- 轻量 UI 可视优化缺少视觉证据或审美复核时，可以说代码或构建已处理，但不要说“界面已经优化完成”。
-- 最终回复必须列出未通过的必需 EVO 门禁；如果某门禁被判定不适用，要说明它是当前场景可选或已有明确豁免。
-
-## 经验 Skill 规则
-
-只有当问题具备重复性、高影响、难以重新发现，或明显由 Agent 误判导致时，才生成项目级 Skill。
-
-每个经验 Skill 至少应包含：
+每个经验 Skill 至少包含：
 
 - 触发条件
 - 先看什么
@@ -111,4 +63,4 @@ description: 评估 OpenPrd 的可观测性、业务成本与滥用护栏、评�
 - 验证证据
 - 预防要求
 
-不要把一次性噪声沉淀成 Skill；知识层应该保持锋利，下一次拿来就有用。
+不要把一次性噪声、每次 doctor/run 的成功状态或大批扫描摘要自动沉淀成 candidate。

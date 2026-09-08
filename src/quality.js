@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { cjoin, exists, readJson, readText, writeJson, writeText } from './fs-utils.js';
-import { renderQualityEvalArtifact } from './html-artifacts.js';
 import { parseOpenSpecTaskDeps } from './openspec/tasks.js';
 import { renderExperienceSkill, resolveQualityLearningSource } from './quality-learning.js';
 import {
@@ -21,20 +20,14 @@ import {
   KNOWLEDGE_CANDIDATES_DIR,
   KNOWLEDGE_DRAFTS_DIR,
   markKnowledgeCandidatePromoted,
-  OPENPRD_HARNESS_TURN_STATE,
-  recordKnowledgeReviewSignal,
   reviewKnowledgeWorkspace,
 } from './knowledge.js';
-import {
-  OPENPRD_GROWTH_LEDGER,
-  recordGrowthCheckpointWorkspace,
-} from './growth.js';
+import { OPENPRD_GROWTH_LEDGER } from './growth.js';
 import { timestamp } from './time.js';
 
 const QUALITY_DIR = cjoin('.openprd', 'quality');
 const QUALITY_REPORTS_DIR = cjoin(QUALITY_DIR, 'reports');
 const QUALITY_CONFIG = cjoin(QUALITY_DIR, 'config.json');
-const QUALITY_INDEX = cjoin(QUALITY_REPORTS_DIR, 'index.json');
 const QUALITY_LATEST = cjoin(QUALITY_REPORTS_DIR, 'latest.json');
 const KNOWLEDGE_DIR = cjoin('.openprd', 'knowledge');
 const KNOWLEDGE_INDEX = cjoin(KNOWLEDGE_DIR, 'index.json');
@@ -194,7 +187,6 @@ function defaultQualityConfig() {
         extreme: ['extreme-performance'],
         release: ['traceability', 'redaction', 'business-guardrails', 'smoke', 'feature-coverage', 'normal-performance', 'extreme-performance', 'knowledge'],
       },
-      reportFormat: 'html',
       baselinePolicy: 'agent-initialized average baseline; user may override; agent ratchet may only tighten thresholds',
       projectBaseline: {
         normal: {
@@ -276,10 +268,6 @@ function defaultQualityConfig() {
       ledgerPath: OPENPRD_GROWTH_LEDGER,
       completionCheckpointRequired: true,
     },
-    reports: {
-      retentionMaxReports: 60,
-      retentionEnabled: true,
-    },
   };
 }
 
@@ -332,15 +320,11 @@ function normalizeQualityConfig(config = {}) {
       ...defaults.growth,
       ...(config.growth ?? {}),
     },
-    reports: {
-      ...defaults.reports,
-      ...(config.reports ?? {}),
-    },
   };
 }
 
 async function ensureQualityDirs(projectRoot) {
-  await fs.mkdir(qualityPath(projectRoot, QUALITY_REPORTS_DIR), { recursive: true });
+  await fs.mkdir(qualityPath(projectRoot, QUALITY_DIR), { recursive: true });
   await ensureKnowledgeWorkspace(projectRoot);
 }
 
@@ -579,7 +563,7 @@ function detectCompletionState({ files, activeTasks, evidenceFiles }) {
   };
 }
 
-function buildQualityPolicy({ config, activeChangeContext, activeTasks, businessGuardrails, completionState, evalHarness }) {
+function buildQualityPolicy({ config, activeChangeContext, activeTasks, businessGuardrails, evalHarness }) {
   const scenarioTags = detectScenarioTags({ activeChangeContext, activeTasks, businessGuardrails });
   if (evalHarness?.testStrategy?.mediaEvidence?.required && !scenarioTags.includes('media')) {
     scenarioTags.push('media');
@@ -608,14 +592,6 @@ function buildQualityPolicy({ config, activeChangeContext, activeTasks, business
   }
   if (!config.knowledge.enabled) {
     required.delete('knowledge');
-  }
-  if (completionState?.postCompletionRequired) {
-    if (config.knowledge.enabled) {
-      required.add('knowledge');
-    }
-    if (config.growth?.enabled && config.growth?.completionCheckpointRequired !== false) {
-      required.add('growth');
-    }
   }
   return {
     scenarioTags,
@@ -1574,7 +1550,7 @@ async function listKnowledgeFiles(projectRoot) {
   return collected;
 }
 
-function detectKnowledge({ config, knowledgeFiles, candidateState, knowledgeIndex, completionState }) {
+function detectKnowledge({ config, knowledgeFiles, candidateState, knowledgeIndex }) {
   const skillDir = config.knowledge.skillDir ?? '.openprd/knowledge/skills';
   const candidateDir = config.knowledge.candidateDir ?? KNOWLEDGE_CANDIDATES_DIR;
   const draftDir = config.knowledge.draftDir ?? KNOWLEDGE_DRAFTS_DIR;
@@ -1597,13 +1573,10 @@ function detectKnowledge({ config, knowledgeFiles, candidateState, knowledgeInde
   const warnings = [];
   const hasReusableArtifact = skills.length > 0 || pendingCandidates.length > 0 || Number(candidateState?.counts?.total ?? 0) > 0;
   if (config.knowledge.enabled && skills.length === 0 && !hasReusableArtifact) {
-    warnings.push('项目级经验 skill 库尚为空；首次问题修复后应沉淀抽象经验。');
+    warnings.push('项目级经验 skill 库尚为空；只有重复、高影响或难以重新发现的问题才需要显式沉淀。');
   }
   if (config.knowledge.enabled && pendingCandidates.length > 0) {
-    warnings.push(`当前有 ${pendingCandidates.length} 个待确认 knowledge candidate；本轮收工前应决定 promote、reject 或 archive。`);
-  }
-  if (config.knowledge.enabled && completionState?.postCompletionRequired && !hasReusableArtifact) {
-    warnings.push('本次已经达到可交付状态，但还没有自动生成 knowledge candidate；收工前至少保留一条可审查的项目经验草案。');
+    warnings.push(`当前有 ${pendingCandidates.length} 个历史待确认 knowledge candidate；它们不影响本次任务或默认收口。`);
   }
   if (config.knowledge.enabled && skills.length > 0 && adoption.totals.referenced === 0) {
     warnings.push('项目级经验 skill 已产出，但还没有任何 run-context 引用记录；优先接入候选召回与判断注入链路。');
@@ -1640,7 +1613,7 @@ function detectKnowledge({ config, knowledgeFiles, candidateState, knowledgeInde
   };
 }
 
-function detectGrowth({ config, growthLedger, completionState }) {
+function detectGrowth({ config, growthLedger }) {
   const summary = growthLedger?.summary ?? {};
   const lifecycleCount = Number(summary.observed ?? 0)
     + Number(summary.manualApplied ?? 0)
@@ -1651,16 +1624,11 @@ function detectGrowth({ config, growthLedger, completionState }) {
   const completionCheckpoints = Number(summary.completionCheckpoints ?? 0);
   const eventCount = Number(summary.eventCount ?? 0);
   const warnings = [];
-  if (config.growth?.enabled && completionState?.postCompletionRequired && completionCheckpoints === 0 && lifecycleCount === 0) {
-    warnings.push('本次已经达到可交付状态，但 .openprd/growth 还没有任何收工账本记录；至少补一条 completion checkpoint 或 growth 观察事件。');
-  }
-  if (config.growth?.enabled && completionState?.postCompletionRequired && completionCheckpoints > 0 && lifecycleCount === 0) {
-    warnings.push('已记录完成检查点，但还没有新增 growth candidate；如果本轮形成了新的偏好、规则或工作流经验，收工前补一条 observe。');
+  if (config.growth?.enabled && lifecycleCount === 0) {
+    warnings.push('当前没有显式 growth 观察；只有确实形成可复用配置或偏好时才需要记录。');
   }
   return {
-    status: !config.growth?.enabled || !completionState?.postCompletionRequired || completionCheckpoints > 0 || lifecycleCount > 0
-      ? 'pass'
-      : 'needs-attention',
+    status: 'pass',
     enabled: config.growth?.enabled !== false,
     ledgerPath: config.growth?.ledgerPath ?? OPENPRD_GROWTH_LEDGER,
     summary: {
@@ -1814,9 +1782,9 @@ async function buildQualityReport(projectRoot, config, options = {}) {
   const evalHarness = detectEvalHarness({ config: normalizedConfig, files, texts, packageJson, activeTasks, evidenceFiles });
   const businessGuardrails = detectBusinessGuardrails({ config: normalizedConfig, files, texts, packageJson });
   const candidateState = await listKnowledgeCandidates(projectRoot, { status: 'all' }).catch(() => null);
-  const knowledge = detectKnowledge({ config: normalizedConfig, knowledgeFiles, candidateState, knowledgeIndex, completionState });
-  const growth = detectGrowth({ config: normalizedConfig, growthLedger, completionState });
-  const policy = buildQualityPolicy({ config: normalizedConfig, activeChangeContext, activeTasks, businessGuardrails, completionState, evalHarness });
+  const knowledge = detectKnowledge({ config: normalizedConfig, knowledgeFiles, candidateState, knowledgeIndex });
+  const growth = detectGrowth({ config: normalizedConfig, growthLedger });
+  const policy = buildQualityPolicy({ config: normalizedConfig, activeChangeContext, activeTasks, businessGuardrails, evalHarness });
   const visualReview = detectVisualReview({ policy, activeChangeContext, activeTasks, visualArtifacts, includesAny });
   const evidenceLedger = buildEvidenceLedger({ evidenceFiles, activeTasks, observability, businessGuardrails, knowledge, growth, visualReview, mediaEvidence: evalHarness.testStrategy.mediaEvidence });
   const gates = buildGates({ observability, evalHarness, businessGuardrails, knowledge, growth, visualReview, policy, evidenceLedger });
@@ -1867,59 +1835,6 @@ async function buildQualityReport(projectRoot, config, options = {}) {
   };
 }
 
-export async function pruneQualityReports(projectRoot, retainedReports, config) {
-  const retention = config?.reports ?? {};
-  if (retention.retentionEnabled === false) {
-    return { pruned: 0 };
-  }
-  const maxReports = Number.isInteger(retention.retentionMaxReports) && retention.retentionMaxReports > 0
-    ? retention.retentionMaxReports
-    : 60;
-  const reportsDir = qualityPath(projectRoot, QUALITY_REPORTS_DIR);
-  const entries = await fs.readdir(reportsDir).catch(() => []);
-  const keepBases = new Set(
-    retainedReports.slice(0, maxReports).map((item) => String(item.reportId ?? '').replace(/[^a-zA-Z0-9._-]/g, '_')),
-  );
-  let pruned = 0;
-  for (const name of entries) {
-    const match = name.match(/^(eval-[a-zA-Z0-9._-]+)\.(json|html)$/);
-    if (!match) {
-      continue;
-    }
-    if (keepBases.has(match[1])) {
-      continue;
-    }
-    await fs.rm(cjoin(reportsDir, name), { force: true }).catch(() => {});
-    pruned += 1;
-  }
-  return { pruned };
-}
-
-async function writeReport(projectRoot, report, config = null) {
-  await ensureQualityDirs(projectRoot);
-  const reportBase = report.id.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const jsonPath = qualityPath(projectRoot, cjoin(QUALITY_REPORTS_DIR, `${reportBase}.json`));
-  const htmlPath = qualityPath(projectRoot, cjoin(QUALITY_REPORTS_DIR, `${reportBase}.html`));
-  await writeJson(jsonPath, report);
-  await writeText(htmlPath, renderQualityEvalArtifact({ report }));
-  await writeJson(qualityPath(projectRoot, QUALITY_LATEST), {
-    reportId: report.id,
-    jsonPath,
-    htmlPath,
-    generatedAt: report.generatedAt,
-    status: report.summary.status,
-  });
-  const indexPath = qualityPath(projectRoot, QUALITY_INDEX);
-  const index = await readJson(indexPath).catch(() => ({ version: 1, reports: [] }));
-  const reports = [
-    { reportId: report.id, jsonPath, htmlPath, generatedAt: report.generatedAt, status: report.summary.status },
-    ...(Array.isArray(index.reports) ? index.reports.filter((item) => item.reportId !== report.id) : []),
-  ].slice(0, 100);
-  await writeJson(indexPath, { version: 1, updatedAt: timestamp(), reports });
-  const retention = await pruneQualityReports(projectRoot, reports, config ?? normalizeQualityConfig());
-  return { jsonPath, htmlPath, indexPath, prunedReports: retention.pruned };
-}
-
 export async function initQualityWorkspace(projectRoot, options = {}) {
   const { config, changed } = await mergeQualityConfig(projectRoot, { force: Boolean(options.force) });
   const knowledgeIndexPath = qualityPath(projectRoot, KNOWLEDGE_INDEX);
@@ -1942,7 +1857,6 @@ export async function initQualityWorkspace(projectRoot, options = {}) {
     changed,
     files: {
       config: qualityPath(projectRoot, QUALITY_CONFIG),
-      reportsDir: qualityPath(projectRoot, QUALITY_REPORTS_DIR),
       knowledgeIndex: knowledgeIndexPath,
     },
   };
@@ -1969,68 +1883,7 @@ export async function verifyQualityWorkspace(projectRoot, options = {}) {
     purpose: 'overall-readiness-claim',
   };
   await ensureQualityDirs(projectRoot);
-  const initialReport = await buildQualityReport(projectRoot, config, { effectiveEnforcement });
-  let report = initialReport;
-  let paths = await writeReport(projectRoot, report, config);
-  const knowledgeSignal = {
-    kind: 'quality-verify',
-    ok: report.readiness.productionReady,
-    productionReady: report.readiness.productionReady,
-    attentionGates: report.readiness.attentionGates,
-    touchedFiles: report.completionState?.substantiveFiles ?? [],
-    summary: `quality ${report.summary.status}`,
-  };
-  await recordKnowledgeReviewSignal(projectRoot, knowledgeSignal).catch(() => null);
-  const growthCheckpoint = report.completionState?.postCompletionRequired && config.growth?.enabled !== false
-    ? await recordGrowthCheckpointWorkspace(projectRoot, {
-      outcome: 'quality-verify',
-      reason: report.evalHarness?.featureCoverage?.activeTasks?.activeChange
-        ?? report.completionState?.substantiveFiles?.slice(0, 4).join('|')
-        ?? 'quality-post-completion',
-      changed: report.completionState?.substantiveFiles ?? [],
-    }).catch((error) => ({
-      ok: false,
-      action: 'growth-checkpoint',
-      projectRoot,
-      recorded: false,
-      errors: [error instanceof Error ? error.message : String(error)],
-    }))
-    : {
-      ok: true,
-      action: 'growth-checkpoint',
-      projectRoot,
-      recorded: false,
-      skipped: true,
-      reason: 'completion-checkpoint-not-required',
-    };
-  const reviewSource = (await exists(qualityPath(projectRoot, OPENPRD_HARNESS_TURN_STATE)))
-    ? OPENPRD_HARNESS_TURN_STATE
-    : paths.jsonPath;
-  const shouldAutoReviewKnowledge = Boolean(
-    report.completionState?.postCompletionRequired
-      && (report.knowledge?.skills?.length ?? 0) === 0
-      && Number(report.knowledge?.candidateCounts?.total ?? 0) === 0
-  );
-  const knowledgeReview = shouldAutoReviewKnowledge
-    ? await reviewKnowledgeWorkspace(projectRoot, {
-      from: reviewSource,
-      signal: knowledgeSignal,
-      touchedFiles: report.completionState?.substantiveFiles ?? [],
-      requiredCorrelationFields: config.observability.requiredCorrelationFields,
-    }).catch((error) => ({
-      ok: false,
-      action: 'quality-knowledge-review',
-      skipped: false,
-      errors: [error instanceof Error ? error.message : String(error)],
-    }))
-    : {
-      ok: true,
-      action: 'quality-knowledge-review',
-      skipped: true,
-      reason: 'reusable-knowledge-artifact-already-exists',
-    };
-  report = await buildQualityReport(projectRoot, config, { reportId: initialReport.id, effectiveEnforcement });
-  paths = await writeReport(projectRoot, report, config);
+  const report = await buildQualityReport(projectRoot, config, { effectiveEnforcement });
   const blocking = effectiveEnforcement.mode === 'blocking' && !report.readiness.productionReady;
   const featureCoverageOnly = report.readiness.failingGates.length === 0
     && report.readiness.attentionGates.length === 1
@@ -2042,11 +1895,25 @@ export async function verifyQualityWorkspace(projectRoot, options = {}) {
     scope: 'workspace-claim',
     effectiveEnforcement,
     report,
-    reportPath: paths.jsonPath,
-    htmlPath: paths.htmlPath,
-    indexPath: paths.indexPath,
-    growthCheckpoint,
-    knowledgeReview,
+    summary: {
+      status: report.summary.status,
+      productionReady: report.readiness.productionReady,
+      requiredChecks: report.gates.filter((gate) => gate.required).map((gate) => ({
+        id: gate.id,
+        status: gate.status,
+      })),
+      attention: report.readiness.attentionGates,
+    },
+    artifactGeneration: {
+      enabled: false,
+      reason: 'OpenPrd quality verification returns an in-memory summary and no longer writes eval JSON/HTML artifacts.',
+      preservedLegacyReportsDir: qualityPath(projectRoot, QUALITY_REPORTS_DIR),
+    },
+    reportPath: null,
+    htmlPath: null,
+    indexPath: null,
+    growthCheckpoint: null,
+    knowledgeReview: null,
     errors: blocking
       ? [
         featureCoverageOnly

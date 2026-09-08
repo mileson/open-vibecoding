@@ -9,10 +9,10 @@
  * 写入 loop prompt、session 事件、进度状态和测试报告，并导出 loop workspace 函数。
  *
  * 定位
- * 位于 OpenPrd 长程单任务执行层，连接 OpenSpec task、quality、learning review 与 Agent runtime。
+ * 位于 OpenPrd 长程单任务执行层，连接 OpenSpec task、task-scoped regression、learning review 与 Agent runtime。
  *
  * 依赖
- * 依赖 openspec、quality、learning-review、knowledge、html-artifacts 和 codex-runtime 模块。
+ * 依赖 openspec、learning-review、html-artifacts 和 codex-runtime 模块。
  *
  * 维护规则
  * 新增执行入口必须保持 dry-run 可见、失败可诊断；真实 Codex 子会话启动前需保留 runtime preflight。
@@ -25,12 +25,10 @@ import { buildTaskCommitMessage } from './change-summary.js';
 import { ensureCodexCliReady } from './codex-runtime.js';
 import { describeExecutionStrategy, labelOwnerRole, taskExecutionStrategy } from './execution-strategy.js';
 import { defaultRegressionArtifactPath, renderRegressionArtifact, writeHtmlArtifact } from './html-artifacts.js';
-import { OPENPRD_HARNESS_TURN_STATE, recordKnowledgeReviewSignal, reviewKnowledgeWorkspace } from './knowledge.js';
 import { generateLearningReviewWorkspace } from './learning-review.js';
 import { listOpenSpecTaskWorkspace, advanceOpenSpecTaskWorkspace, verifyOpenSpecTaskWorkspace } from './openspec/execute.js';
 import { isOpenSpecTaskBlocking } from './openspec/tasks.js';
 import { validateOpenSpecChangeWorkspace } from './openspec/change-validate.js';
-import { verifyQualityWorkspace } from './quality.js';
 import { appendReleaseEntry, getCurrentReleaseEntry, loadReleaseLedger, saveReleaseLedger, updateReleaseTag } from './release-ledger.js';
 import { describeTestStrategy, taskTestStrategy } from './test-strategy.js';
 import { timestamp } from './time.js';
@@ -50,7 +48,6 @@ const LOOP_OPERATIONAL_ARTIFACT_PATTERNS = [
   '.openprd/growth/ledger.json',
   '.openprd/knowledge/**',
   '.openprd/learning/**',
-  '.openprd/quality/reports/**',
   '.openprd/state/changes.json',
   '.openprd/state/current.json',
   '.openprd/state/events.jsonl',
@@ -1890,30 +1887,6 @@ export async function finishLoopWorkspace(projectRoot, options = {}) {
     lastTestReport: testReport.markdownPath,
   });
   const nextAfterFinish = nextLoopTask(updatedList).task;
-  let quality = null;
-  let workspaceAttention = null;
-  if (!nextAfterFinish) {
-    quality = await verifyQualityWorkspace(effectiveRoot, { strict: false }).catch((error) => ({
-      ok: false,
-      action: 'quality-verify',
-      errors: [error instanceof Error ? error.message : String(error)],
-    }));
-    const productionReady = quality.report?.readiness?.productionReady ?? null;
-    if (!quality.ok || productionReady === false) {
-      const attentionGates = quality.report?.readiness?.attentionGates ?? [];
-      workspaceAttention = {
-        kind: 'quality-readiness',
-        scope: 'workspace-claim',
-        blocking: false,
-        productionReady,
-        attentionGates,
-        reportPath: quality.reportPath ?? null,
-        htmlPath: quality.htmlPath ?? null,
-        errors: [...(quality.errors ?? [])],
-        summary: '当前任务已验证并完成；工作区级 EVO 证据仍需关注，不能据此宣称整体 production-ready。',
-      };
-    }
-  }
   await writeFeatureList(effectiveRoot, updatedList);
   let learningReview = null;
   try {
@@ -1947,26 +1920,6 @@ export async function finishLoopWorkspace(projectRoot, options = {}) {
         ...(learningReview.packagePaths?.agentPrompt ? [`Agent 写作提示: ${path.relative(effectiveRoot, learningReview.packagePaths.agentPrompt)}。`] : []),
       ]
       : [`复盘学习: 生成失败 (${learningReview?.errors?.[0] ?? 'unknown'})。`];
-  const knowledgeSignal = {
-    kind: 'loop-finish',
-    ok: true,
-    productionReady: quality?.report?.readiness?.productionReady ?? null,
-    attentionGates: quality?.report?.readiness?.attentionGates ?? [],
-    summary: `loop finish ${task.id}: ${task.title}`,
-  };
-  await recordKnowledgeReviewSignal(effectiveRoot, knowledgeSignal).catch(() => null);
-  const knowledgeReviewSource = (await exists(cjoin(effectiveRoot, OPENPRD_HARNESS_TURN_STATE)))
-    ? OPENPRD_HARNESS_TURN_STATE
-    : (quality?.reportPath ?? null);
-  const knowledgeReview = await reviewKnowledgeWorkspace(effectiveRoot, {
-    from: knowledgeReviewSource,
-    signal: knowledgeSignal,
-  }).catch((error) => ({
-    ok: false,
-    action: 'quality-knowledge-review',
-    skipped: false,
-    errors: [error instanceof Error ? error.message : String(error)],
-  }));
   await appendText(harnessPath(effectiveRoot, LOOP_PROGRESS), renderProgressEntry(timestamp(), [
     `已完成 ${task.id}: ${task.title}。`,
     `自测: ${finishResult.verification?.ok ? '通过' : '未运行'}。`,
@@ -1975,15 +1928,7 @@ export async function finishLoopWorkspace(projectRoot, options = {}) {
     `分支: ${commit?.branch ?? workspaceInfo.branch ?? '未命名分支或 detached HEAD'}。`,
     `测试报告: ${testReport.markdownPath}。`,
     `HTML 回归报告: ${testReport.htmlPath}。`,
-    ...(quality ? [
-      `最终 EVO: ${quality.report?.readiness?.productionReady ? 'production-ready' : 'needs-attention'}。`,
-      ...(workspaceAttention ? ['工作区级 EVO 欠账不回写为当前任务失败。'] : []),
-      ...(quality.htmlPath ? [`EVO 报告: ${path.relative(effectiveRoot, quality.htmlPath)}。`] : []),
-    ] : []),
     ...learningProgress,
-    knowledgeReview?.skipped
-      ? null
-      : `项目经验草案: ${path.relative(effectiveRoot, knowledgeReview.files?.draftSkill ?? knowledgeReview.files?.candidateDir ?? '') || '已生成'}。`,
     commit ? `Commit: ${commit.skipped ? '跳过' : commit.sha}` : 'Commit: 未请求。',
     projectRelease?.version ? `项目版本: ${projectRelease.version}。` : null,
     projectRelease?.tag?.tagName ? `版本 tag: ${projectRelease.tag.tagName}${projectRelease.tag.localSha ? ` -> ${projectRelease.tag.localSha}` : ''}。` : null,
@@ -2014,31 +1959,6 @@ export async function finishLoopWorkspace(projectRoot, options = {}) {
     projectRelease: projectRelease ?? null,
     testReport: testReport.markdownPath,
     regressionHtml: testReport.htmlPath,
-    quality: quality
-      ? {
-        ok: quality.ok,
-        productionReady: quality.report?.readiness?.productionReady ?? null,
-        reportPath: quality.reportPath ?? null,
-        htmlPath: quality.htmlPath ?? null,
-        attentionGates: quality.report?.readiness?.attentionGates ?? [],
-      }
-      : null,
-    workspaceAttention,
-    knowledgeReview: knowledgeReview?.skipped
-      ? {
-          ok: true,
-          skipped: true,
-          reason: knowledgeReview.reason ?? 'skipped',
-        }
-      : knowledgeReview
-        ? {
-            ok: knowledgeReview.ok !== false,
-            skipped: false,
-            candidateId: knowledgeReview.candidateId ?? null,
-            draftSkill: knowledgeReview.files?.draftSkill ?? null,
-            candidateDir: knowledgeReview.files?.candidateDir ?? null,
-          }
-        : null,
     learningReview: learningReview?.ok
       ? {
         ok: true,
@@ -2088,10 +2008,7 @@ export async function finishLoopWorkspace(projectRoot, options = {}) {
     projectRelease,
     testReport: testReport.markdownPath,
     regressionHtml: testReport.htmlPath,
-    quality,
-    workspaceAttention,
     operationalCleanup,
-    knowledgeReview,
     learningReview,
     summary: buildLoopSummary(updatedList),
     next: nextAfterFinish,

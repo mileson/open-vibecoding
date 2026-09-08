@@ -15,7 +15,7 @@ description: OpenPrd 入口路由 skill。先判断当前任务该读哪个 repo
 
 ## 入口顺序
 
-1. 先看 `.openprd/harness/runtime-environment.json` 的 `runtimeDetection.executionMode`。如果识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task，进入 automation-safe mode：默认不要要求 `openprd dev-check` / `quality` / `doctor`；按该自动化自己的 runbook、日志、测试和通知合同收口。只有 prompt 明确说明这是 OpenPrd 维护任务或显式启用 OpenPrd 时，才恢复下列检查。
+1. 先看 `.openprd/harness/runtime-environment.json` 的 `runtimeDetection.executionMode`。如果识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task，进入 automation-safe mode：默认不要要求 `openprd dev-check` / `doctor`；按该自动化自己的 runbook、日志、测试和通知合同收口。只有 prompt 明确说明这是 OpenPrd 维护任务或显式启用 OpenPrd 时，才恢复下列检查。
 2. 如果用户当前明确在说“帮我梳理下”“先想清楚”“进入脑暴模式”，先读取 `$openprd-requirement-intake`；需要时直接进入 `openprd brainstorm . --open`
 3. 其他互动情况直接使用当前会话与用户消息；OpenPrd 不接管 Agent 上下文，只通过生成的提示词注入审查界面判断原则和质量合同
 4. 如果当前是空白工作区的前端/页面冷启动，而且用户已经给了明确的页面主题、模块范围或“直接实现”的意图，先用 3 到 5 行 mini-plan 收口，再进入 `design-starter -> Patch Mode`
@@ -40,7 +40,7 @@ description: OpenPrd 入口路由 skill。先判断当前任务该读哪个 repo
 - 当本轮交付包含只有用户或负责人才能完成的选择、批准或纠错时，最终交付本身就是人类审查节点；Agent 自己把任务标成“直接分析”、L0/L1/L2 或只读分析，不构成豁免。只有用户或宿主明确禁止新增文件、用户明确不要 HTML，或已有同等任务专属界面时才可豁免，并说明理由。
 - 命中强制条件后，如果最终回复没有可点击的任务专属 `.html` 绝对路径和验证说明，不得把该审查节点标记为完成；仅生成 starter、保留无来源占位内容或只证明文件存在，也不算完成。
 - OpenPrd 只注入判断原则和质量合同，不生成这种任务专属 HTML，也不替 Agent 选择页面结构、技术方案或视觉表达。命中候选场景时，读取 `$openprd-harness` 的 `references/agent-authored-html-review.md`。
-- 现有 `review.html`、质量报告和学习阅读器仍是固定流程工件；它们不替代 Agent 针对当前证据与用户决策自行制作的审查界面。
+- 现有 `review.html` 和学习阅读器仍是固定流程工件；历史 quality eval 报告只保留为旧记录，不再生成。
 
 ## 路由表
 
@@ -52,7 +52,7 @@ description: OpenPrd 入口路由 skill。先判断当前任务该读哪个 repo
 - 纯字幕 UI、文案、翻译、错别字、字体、颜色或排版继续按 `$openprd-frontend-design` 或语言/文档任务处理，不触发 `$openprd-audio-evidence`；标题同时出现“字幕”时，按真实媒体声明判断而不是按关键词触发
 - 最佳实践、benchmark、公开 GitHub 仓库、第三方技术事实、prompt/context engineering：`$openprd-benchmark-router`
 - `docs/basic/`、文件说明书、文件夹 README、文档标准：`skills/openprd-standards/SKILL.md`
-- 就绪验证、EVO 门禁、HTML 质量评估报告、项目经验沉淀：`skills/openprd-quality/SKILL.md`
+- 显式质量诊断、历史 eval 兼容读取和按需经验沉淀：`skills/openprd-quality/SKILL.md`
 - 架构图、产品流程图、解释型 SVG、可视评审、大界面改动效果图方案评审：`skills/openprd-diagram-review/SKILL.md` 与 `skills/openprd-harness/SKILL.md`
 - 长时间只读挖掘、参考项目持续调研、requirements/specs/tasks 补全：`skills/openprd-discovery-loop/SKILL.md`
 - 学习包、归档阅读器、知识整理：`skills/openprd-learning-review/SKILL.md`

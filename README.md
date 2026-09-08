@@ -16,7 +16,7 @@ OpenPrd 是一个轻量但结构化的 **PRD harness**。你只需要先把问�
 - 非阻断式风险提醒与交付检查
 - 面向执行系统的结构化交接
 
-它把需求、决策和验证结果沉淀成稳定的 HTML 产物，而不是把状态散落在聊天记录或终端输出里。OpenPrd 的职责是帮助 Agent 做事：PRD、review、change、tasks、设计合同与测试证据由 Agent 在后台维护，不再要求用户回复指定内容才能继续。
+它把真正需要共同审查的需求和学习材料沉淀成稳定 HTML，同时让任务验证直接回到测试证据与简短状态，不再为每次收口重复生成 quality eval 页面。OpenPrd 的职责是帮助 Agent 做事：PRD、review、change、tasks、设计合同与测试证据由 Agent 在后台维护，不再要求用户回复指定内容才能继续。
 
 ## 0.2.3：Agent 主动制作任务专属 HTML 审查页
 
@@ -102,7 +102,7 @@ OpenPrd 解决的问题，不只是“把 spec 写出来”，也不只是“把
 
 | 工具 | 重心 | 用户主要看到的产物 | 更适合什么 |
 |------|------|--------------------|------------|
-| **OpenPrd** | 需求澄清、HTML 优先协作、Agent 后台上下文维护 | `review.html`、学习阅读器、质量报告、图示、结构化 change/task 状态 | 希望用户只说目标、Agent 自动维护上下文并持续推进的团队 |
+| **OpenPrd** | 需求澄清、按需 HTML 协作、Agent 后台上下文维护 | `review.html`、学习阅读器、任务证据、图示、结构化 change/task 状态 | 希望用户只说目标、Agent 自动维护上下文并持续推进的团队 |
 | **OpenSpec** | spec / change 生命周期 | Markdown proposal、spec、design、tasks | 更关注 spec 增量治理和变更编排的团队 |
 | **Superpowers** | skill 驱动的编码执行流 | skills、plans、worktree / subagent 流程、代码评审检查点 | 更关注 AI Agent 如何规划、编码、review、收尾的工程团队 |
 
@@ -659,33 +659,19 @@ openprd visual-compare /path/to/project \
 并在 metadata 里记录主体外接框中心偏移和视觉重心偏移。单张原始截图或
 “看起来居中”的主观判断不能替代这张证据板。
 
-## 回归测试与质量评估报告
+## 任务验证与显式质量诊断
 
-`openprd init` 同时会创建质量契约：
-
-- `.openprd/quality/config.json`
-- `.openprd/quality/reports/`
-- `.openprd/knowledge/`
-
-检查命令：
+默认收口不再生成 `.openprd/quality/reports/eval-*.json` 或 `.html`。Agent 直接运行本任务测试并留下 task-scoped evidence，再用以下命令汇总：
 
 ```bash
-openprd quality /path/to/project --verify
+openprd standards /path/to/project --verify
+openprd run /path/to/project --verify
+openprd doctor /path/to/project
 ```
 
-该命令会在 `.openprd/quality/reports/` 下同时写入 JSON 和 HTML。HTML 回归测试报告
-是阶段性质量查看的主要产物，优先展示整体回归结果、逐需求模块结果、测试块通过情况、
-分层测试策略矩阵、未通过项和需要确认是否属于本期的遗漏。EVO 是 OpenPrd 内部对
-“质量评估/验证层”的简称；用户可见报告不要求理解这个缩写。脚本、依赖或 fixture
-存在只代表项目具备能力，不能替代本次运行证据。
+`run --verify` 只返回简短的 `taskReady / workspaceReady / workspaceAttention` 摘要，不会隐式触发 quality 全量扫描、报告索引、retention 或自动经验候选。历史 `.openprd/quality/reports/` 保留为旧记录，不会被升级流程删除。
 
-当需求涉及免费用户、额度、AI 调用、第三方 API、生成、存储、下载或其他消耗型成本时，
-`quality --verify` 会额外检查是否存在成本来源、用户级限制、负向验证、用量/成本监控、
-报警阈值和止损动作，避免免费额度或高成本路径在上线后才暴露。
-
-`openprd quality --verify` 默认把未 production-ready 的本期必测块留在报告中并返回成功，避免
-证据债截停当前任务；独立治理作业可显式追加 `--fail-on-violation` 获得严格退出码。`openprd run --verify` 把它放入 `claimReady` 和
-`workspaceAttention`，不会把已经通过本任务验证的实现改成失败，也不会回滚已产生的 commit。
+如果用户明确需要专项盘点日志、链路追踪、业务成本、滥用护栏、性能、媒体证据或旧 eval 数据，仍可显式运行 `openprd quality /path/to/project --verify`。它只返回当前进程中的结构化诊断结果，不写入新的 eval 文件。
 如果界面任务已有参考图，视觉就绪还需要 `.openprd/harness/visual-reviews/`
 下存在本次 `openprd visual-compare --reference/--actual` 产物；如果没有参考图但改动界面，
 还需要存在 `openprd visual-compare --before/--after` 修改前后产物。普通截图实测需要截图实测证据板；
@@ -697,7 +683,7 @@ openprd quality /path/to/project --verify
 
 ```bash
 openprd quality /path/to/project --learn --review --from .openprd/harness/turn-state.json
-openprd quality /path/to/project --learn --from <report-id-or-json>
+openprd quality /path/to/project --learn --from <candidate-dir|diagnostics|legacy-report.json>
 openprd quality /path/to/project --learn --from ./diagnostics/incident-2026-05-24
 ```
 

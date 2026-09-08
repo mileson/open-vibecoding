@@ -4,7 +4,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cjoin, exists, readJson } from './fs-utils.js';
 import { buildCodeExtensionCandidate, observeGrowthWorkspace } from './growth.js';
-import { recordKnowledgeReviewSignal, reviewKnowledgeWorkspace } from './knowledge.js';
 
 const DEVELOPMENT_STANDARDS_CONFIG = cjoin('.openprd', 'standards', 'config.json');
 const DEV_CHECK_WRAPUP_COPY_SCRIPT = fileURLToPath(new URL('../scripts/dev-check-wrapup-copy.mjs', import.meta.url));
@@ -617,26 +616,6 @@ export async function checkDevelopmentStandardsWorkspace(projectRoot, options = 
     return counts;
   }, {});
   errors.push(...files.filter((file) => file.status === 'error').map((file) => `${file.path}: ${file.nextAction}`));
-  const touchedFiles = files
-    .filter((file) => file.status !== 'error')
-    .map((file) => file.path);
-  const knowledgeSignal = {
-    kind: 'dev-check',
-    ok: errors.length === 0,
-    summary: `dev-check attention=${statusCounts.attention ?? 0}, warning=${statusCounts.warning ?? 0}`,
-    touchedFiles,
-  };
-  await recordKnowledgeReviewSignal(projectRoot, knowledgeSignal).catch(() => null);
-  const knowledgeReview = await reviewKnowledgeWorkspace(projectRoot, {
-    signal: knowledgeSignal,
-    touchedFiles,
-  }).catch((error) => ({
-    ok: false,
-    action: 'quality-knowledge-review',
-    skipped: false,
-    errors: [error instanceof Error ? error.message : String(error)],
-  }));
-
   return {
     ok: errors.length === 0,
     action: 'dev-check',
@@ -661,7 +640,6 @@ export async function checkDevelopmentStandardsWorkspace(projectRoot, options = 
     wrapUp: buildDevCheckWrapUp(files, lineConfig),
     visualEvidence: await buildVisualEvidenceReminder(projectRoot, files),
     i18nReminder: await buildI18nReminder(projectRoot, files),
-    knowledgeReview,
     errors,
   };
 }

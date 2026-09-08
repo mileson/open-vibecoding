@@ -5,7 +5,6 @@ import { cjoin, writeText } from './fs-utils.js';
 import { escapeHtml, listMarkup, slugify } from './html-artifact-utils.js';
 import { buildReviewModel, projectReviewModel } from './review-model.js';
 export { learningPackagePaths, renderLearningArtifact } from './learning-html-artifact.js';
-import { renderQualityEvalArtifact as renderQualityEvalArtifactV2 } from './quality-html-artifact.js';
 
 function leafName(value) {
   return String(value ?? '').split(/[\\/]/).filter(Boolean).at(-1) ?? String(value ?? '');
@@ -3698,10 +3697,6 @@ export function renderRegressionArtifact({ task, report }) {
         { label: '我接受现状，继续下一步', tone: 'neutral', copyText: `回归报告 ${task.id} 的未通过用例我已知晓，先按现状继续推进，后续再处理。` },
       ],
   });
-}
-
-export function renderQualityEvalArtifact({ report }) {
-  return renderQualityEvalArtifactV2({ report });
 }
 
 export async function writeHtmlArtifact(filePath, html) {

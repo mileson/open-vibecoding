@@ -37,15 +37,14 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - `src/discovery.js`: discovery 运行、覆盖矩阵、claims 和验证逻辑。
 - `src/fleet.js`: 历史项目扫描、批量 setup/update/doctor、仅元数据的 work-unit backfill，以及事务化升级编排。
 - `src/fs-utils.js`: 共享文件、JSON、YAML、JSONL 读写工具。
-- `src/html-artifacts.js`: HTML 协作 artifact 和复盘学习 reader 的渲染骨架；学习 reader 在这里承接章节级图文比喻卡、可选图片槽位和证据锚点，质量报告 HTML 通过独立渲染器接入，避免继续扩大通用 artifact 文件。
+- `src/html-artifacts.js`: HTML 协作 artifact 和复盘学习 reader 的渲染骨架；不再承接 quality eval HTML。
 - `src/registry-hygiene.js`: workspace registry 卫生检查，负责识别过宽 root 和父子嵌套 workspace。
-- `src/quality-html-artifact.js`: `openprd quality --verify` 的 HTML 回归测试报告框架层，负责回归结论概览、工具生成的回归流程图和测试覆盖图、四个固定信息模块、底部双按钮操作栏和折叠明细。
 - `src/test-strategy.js`: 测试策略分流核心规则，负责测试层级、测试规模、验证范围、证据计划、默认推导、任务策略汇总和测试能力识别。
 - `src/visual-prepare.js`: `openprd visual-prepare` 的参考图预处理工具，负责把选定或 Agent 默认采用的整板、网格图或多对象效果图整理成 reference-set，生成 crops、contact sheet、compare-plan 和 board 模板。
 - `src/visual-compare.js`: `openprd visual-compare` 的图片合成工具，负责读取效果图和实现截图、修改前后截图，或基于 board JSON 生成局部焦点证据板、并行实验证据板、截图实测证据板、对齐辅助线证据板和内部居中证据板；会缩放面板、按当前用户主语言添加标签，并输出 JPG / PNG / WebP 视觉评审图。
 - `src/visual-compare-focus.js`: `local-first` 局部证据板渲染层，负责左右独立裁剪、共享像素尺度、无拉伸展示、difference blend 和底部全屏回归缩略图。
 - `src/learning-review.js`: 复盘学习包的证据收集、Agent 写作工具包、内容合同校验、图文解释字段校验和 reader 归档。
-- `src/quality.js`: 质量契约、质量场景与证据检测、日志/追踪检测、业务成本与滥用护栏检测、评估执行环境检测、HTML 回归测试报告和项目经验 Skill 沉淀。
+- `src/quality.js`: 显式质量诊断、质量场景与证据检测、日志/追踪检测、业务成本与滥用护栏检测，以及兼容历史 eval 的项目经验沉淀；不写入 eval artifact。
 - `src/run-harness.js`: `openprd run --verify` 的 `taskReady/workspaceAttention/claimReady/actionReady` 分层验证，以及内部 `--record-hook` 证据记录。
 - `src/github-release.js`: GitHub Release 渲染层，负责把 `package.json` 与 `release-ledger` 汇总成可直接发布的版本标题和 Markdown 正文。
 - `src/loop.js`: 长任务拆分、单任务 prompt、session 记录、任务 verify / finish，以及可跨对话引用的 `taskHandle` 与 worker 合同生成。
@@ -100,7 +99,7 @@ OpenPrd 是一个 Node.js CLI 项目，入口命令通过 `bin/openprd.js` 调�
 - 自我成长候选的记录、review/apply/reject 和安全配置写入放入 `src/growth.js`；`dev-check` 负责发现代码文件候选，并在代码扩展识别场景直接触发自动固化。
 - 共享 IO 工具优先放入 `src/fs-utils.js`，业务模块只保留自己的领域判断。
 - discovery、fleet、run harness 这类可独立验证的流程应保持在各自模块内，通过依赖注入接入工作区核心能力。
-- quality 相关扫描、业务护栏、报告写入和经验沉淀逻辑归入 `src/quality.js`；质量报告的用户可见 HTML 框架归入 `src/quality-html-artifact.js`，`src/html-artifacts.js` 只保留转发出口。
+- quality 专项扫描、业务护栏和历史诊断兼容逻辑归入 `src/quality.js`；默认收口由 `src/run-harness.js` 汇总，不新增独立报告 renderer。
 - 工作区核心状态工具归入 `src/workspace-core.js`；面向用户的工作流命令归入 `src/workspace-workflow.js`。
 
 ## 维护规则

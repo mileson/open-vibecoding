@@ -102,7 +102,7 @@ import {
   listVisualReviewArtifacts,
 } from '../src/quality-visual-review.js';
 
-test('quality verify writes html eval report and learn creates experience skill', async () => {
+test('quality verify returns explicit diagnostics without writing eval artifacts or automatic candidates', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'agent' });
   await fs.writeFile(path.join(project, 'package.json'), `${JSON.stringify({
@@ -133,6 +133,8 @@ test('quality verify writes html eval report and learn creates experience skill'
   const initQuality = await initQualityWorkspace(project);
   assert.equal(initQuality.ok, true);
   assert.equal(initQuality.changed, 'unchanged');
+  const reportsBefore = await fs.readdir(path.join(project, '.openprd', 'quality', 'reports')).catch(() => []);
+  const candidatesBefore = await fs.readdir(path.join(project, '.openprd', 'knowledge', 'candidates')).catch(() => []);
 
   const quality = await verifyQualityWorkspace(project);
   assert.equal(quality.ok, true);
@@ -144,63 +146,23 @@ test('quality verify writes html eval report and learn creates experience skill'
     purpose: 'overall-readiness-claim',
   });
   assert.equal(quality.report.readiness.scope, 'workspace-claim');
-  assert.ok(quality.reportPath.endsWith('.json'));
-  assert.ok(quality.htmlPath.endsWith('.html'));
+  assert.equal(quality.reportPath, null);
+  assert.equal(quality.htmlPath, null);
+  assert.equal(quality.indexPath, null);
+  assert.equal(quality.artifactGeneration.enabled, false);
   assert.equal(quality.report.observability.centralizedTools.includes('@opentelemetry/'), true);
   assert.equal(quality.report.gates.some((gate) => gate.id === 'business-guardrails' && gate.status === 'pass'), true);
   assert.equal(quality.report.evalHarness.smoke.present, true);
   assert.equal(quality.report.evalHarness.performance.present, true);
   assert.equal(quality.report.evalHarness.extremeData.present, true);
-  assert.deepEqual(quality.report.qualityPolicy.requiredGates, ['smoke', 'feature-coverage', 'knowledge', 'growth']);
+  assert.deepEqual(quality.report.qualityPolicy.requiredGates, ['smoke', 'feature-coverage']);
   assert.equal(quality.report.readiness.productionReady, true);
-  assert.equal(quality.knowledgeReview.skipped, false);
-  assert.equal(quality.knowledgeReview.status, 'pending-review');
-  assert.ok(quality.knowledgeReview.userFacingExperience.message.includes('这次我观察到一个以后可能重复出现的情况：'));
-  assert.ok(quality.knowledgeReview.userFacingExperience.message.includes('这条经验只会保留在当前项目里。'));
-  assert.equal(quality.knowledgeReview.userFacingExperience.question, null);
-  assert.equal(quality.knowledgeReview.userFacingExperience.shouldAskUser, false);
-  assert.equal(quality.growthCheckpoint.recorded || quality.growthCheckpoint.reason === 'duplicate-checkpoint', true);
-  assert.equal(quality.report.gates.some((gate) => gate.id === 'knowledge' && gate.status === 'pass'), true);
-  assert.equal(quality.report.gates.some((gate) => gate.id === 'growth' && gate.status === 'pass'), true);
-  assert.equal(Number(quality.report.growth.summary.completionCheckpoints ?? 0) >= 1, true);
-  const html = await fs.readFile(quality.htmlPath, 'utf8');
-  assert.ok(html.includes('回归结论概览'));
-  assert.ok(html.includes('回归流程图'));
-  assert.ok(html.includes('冒烟测试'));
-  assert.ok(html.includes('风险复核'));
-  assert.ok(html.includes('测试覆盖图'));
-  assert.ok(html.includes('本期必测结果'));
-  assert.ok(html.includes('需要处理 / 需确认'));
-  assert.ok(html.includes('验证材料'));
-  assert.ok(html.includes('执行环境与覆盖'));
-  assert.ok(html.includes('需求模块'));
-  assert.ok(html.includes('更多细节'));
-  assert.ok(html.includes('需要补测'));
-  assert.ok(html.includes('认可回归'));
-  assert.ok(html.includes('给 Agent 的质量报告框架'));
-  assert.ok(html.includes('证据链'));
-  assert.ok(html.includes('业务成本与滥用护栏'));
-  assert.ok(html.includes('经验沉淀'));
-  assert.ok(html.includes('附录：结构化 JSON、基线和扫描细节'));
-
-  const learned = await learnQualityWorkspace(project, { from: quality.reportPath });
-  assert.equal(learned.ok, true);
-  assert.ok(learned.files.skill.endsWith('SKILL.md'));
-  assert.doesNotMatch(learned.skillName, /eval-/);
-  assert.doesNotMatch(learned.skillName, /candidate-eval-/);
-  const skill = await fs.readFile(learned.files.skill, 'utf8');
-  assert.match(skill, /description:\s*Use when /);
-  assert.ok(skill.includes('## 触发条件'));
-  assert.ok(skill.includes('## 适用范围'));
-  assert.ok(skill.includes('## 典型输入'));
-  assert.ok(skill.includes('## 典型输出'));
-  assert.ok(skill.includes('## 不要直接套用'));
-  assert.ok(skill.includes('## 关联字段'));
-  assert.ok(skill.includes('## 先看哪些证据'));
-  assert.doesNotMatch(skill, /\.openprd\/quality\/reports\//);
-  assert.doesNotMatch(skill, /candidate-eval-/);
-  const index = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'knowledge', 'index.json'), 'utf8'));
-  assert.equal(index.skills[0].skillName, learned.skillName);
+  assert.equal(quality.knowledgeReview, null);
+  assert.equal(quality.growthCheckpoint, null);
+  const evalArtifacts = await fs.readdir(path.join(project, '.openprd', 'quality', 'reports')).catch(() => []);
+  assert.deepEqual(evalArtifacts, reportsBefore);
+  const candidates = await fs.readdir(path.join(project, '.openprd', 'knowledge', 'candidates')).catch(() => []);
+  assert.deepEqual(candidates, candidatesBefore);
 });
 
 test('knowledge review reuses the same candidate id within one turn instead of promoting a later weaker doc-only candidate', async () => {
@@ -488,7 +450,7 @@ test('quality ignores generated tmp and build trees when sampling traceability s
   assert.equal(quality.report.readiness.productionReady, true);
 });
 
-test('quality requires current smoke evidence and run verify separates task readiness from workspace debt', async () => {
+test('explicit quality diagnostics can flag smoke evidence without affecting run verify', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
   await fs.writeFile(path.join(project, '.openprd', 'state', 'changes.json'), `${JSON.stringify({
@@ -518,6 +480,7 @@ test('quality requires current smoke evidence and run verify separates task read
     },
   }, null, 2)}\n`);
 
+  const reportsBefore = await fs.readdir(path.join(project, '.openprd', 'quality', 'reports')).catch(() => []);
   const quality = await verifyQualityWorkspace(project);
   const smokeGate = quality.report.gates.find((gate) => gate.id === 'smoke');
   assert.equal(quality.ok, true);
@@ -530,15 +493,15 @@ test('quality requires current smoke evidence and run verify separates task read
   const qualityCheck = verified.checks.find((check) => check.name === 'quality');
   assert.equal(verified.ok, true);
   assert.equal(verified.readiness.taskReady, true);
-  assert.equal(verified.readiness.workspaceReady, false);
-  assert.equal(qualityCheck.ok, false);
-  assert.equal(qualityCheck.productionReady, false);
+  assert.equal(verified.readiness.workspaceReady, true);
+  assert.equal(qualityCheck, undefined);
   assert.equal(verified.errors.length, 0);
-  assert.ok(verified.warnings.some((warning) => warning.includes('quality still needs evidence for: smoke')));
-  assert.ok(qualityCheck.errors.some((error) => error.includes('quality still needs evidence for: smoke')));
+  assert.deepEqual(verified.warnings, []);
+  const reportsAfter = await fs.readdir(path.join(project, '.openprd', 'quality', 'reports')).catch(() => []);
+  assert.deepEqual(reportsAfter, reportsBefore);
 });
 
-test('run verify describes feature-coverage debt as task ledger attention instead of task failure', async () => {
+test('run verify validates task structure without re-evaluating the quality feature-coverage ledger', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
   await fs.writeFile(path.join(project, 'package.json'), `${JSON.stringify({
@@ -613,15 +576,10 @@ test('run verify describes feature-coverage debt as task ledger attention instea
   const qualityCheck = verified.checks.find((check) => check.name === 'quality');
   assert.equal(verified.ok, true);
   assert.equal(verified.readiness.taskReady, true);
-  assert.equal(verified.readiness.workspaceReady, false);
-  assert.equal(qualityCheck.ok, false);
-  assert.equal(verified.workspaceAttention?.kind, 'feature-coverage-ledger');
-  assert.equal(verified.workspaceAttention?.activeChange, 'ledger-gap');
-  assert.equal(verified.workspaceAttention?.pending, 2);
-  assert.equal(verified.workspaceAttention?.blocked, 1);
-  assert.ok(verified.workspaceAttention?.detail.includes('task bookkeeping or coverage evidence is incomplete'));
-  assert.ok(verified.warnings.some((warning) => warning.includes('task bookkeeping or coverage evidence is incomplete')));
-  assert.ok(qualityCheck.errors.some((error) => error.includes('不等于当前实现失败') || error.includes('task bookkeeping or coverage evidence is incomplete')));
+  assert.equal(verified.readiness.workspaceReady, true);
+  assert.equal(qualityCheck, undefined);
+  assert.equal(verified.workspaceAttention, null);
+  assert.deepEqual(verified.warnings, []);
 });
 
 test('quality excludes historical active changes from current feature coverage', async () => {
@@ -758,7 +716,7 @@ test('quality requires reference-driven visual evidence for frontend changes', a
   const missingGate = missing.report.gates.find((gate) => gate.id === 'visual-review');
   assert.equal(missing.ok, true);
   assert.equal(missing.effectiveEnforcement.mode, 'advisory');
-  assert.deepEqual(missing.report.qualityPolicy.requiredGates, ['smoke', 'feature-coverage', 'visual-review', 'knowledge', 'growth']);
+  assert.deepEqual(missing.report.qualityPolicy.requiredGates, ['smoke', 'feature-coverage', 'visual-review']);
   assert.equal(missing.report.visualReview.relevant, true);
   assert.equal(missing.report.visualReview.expectsReferenceCompare, true);
   assert.equal(missingGate.required, true);
@@ -911,7 +869,7 @@ test('quality does not treat OpenPRD freeze and handoff wording as a release gat
 
   const quality = await verifyQualityWorkspace(project);
   assert.equal(quality.report.qualityPolicy.scenarioTags.includes('release'), false);
-  assert.deepEqual(quality.report.qualityPolicy.requiredGates, ['smoke', 'feature-coverage', 'knowledge', 'growth']);
+  assert.deepEqual(quality.report.qualityPolicy.requiredGates, ['smoke', 'feature-coverage']);
   assert.equal(quality.report.readiness.productionReady, true);
 });
 

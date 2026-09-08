@@ -411,7 +411,7 @@ test('media evidence completion rejects unknown scopes, generic waivers, regress
   assert.equal(invalidRoles.bundles[0].comparisonComplete, false);
 });
 
-test('quality report requires media evidence through the existing test-strategy gate', async () => {
+test('explicit quality diagnostics checks media evidence without writing eval artifacts', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
   await writeMinimalChange(project, 'media-evidence', {
@@ -450,13 +450,16 @@ test('quality report requires media evidence through the existing test-strategy 
     await fs.writeFile(path.join(project, fixture.path), fixture.text);
   }
 
+  const reportsBefore = await fs.readdir(path.join(project, '.openprd', 'quality', 'reports')).catch(() => []);
   const quality = await verifyQualityWorkspace(project);
   assert.ok(quality.report.qualityPolicy.scenarioTags.includes('media'));
   assert.ok(quality.report.qualityPolicy.requiredGates.includes('test-strategy'));
   assert.equal(quality.report.gates.some((gate) => gate.id === 'media-evidence'), false);
   assert.equal(quality.report.evalHarness.testStrategy.mediaEvidence.status, 'pass');
   assert.ok(quality.report.evidenceLedger['test-strategy'].sources.some((source) => source.source === 'openprd-media-evidence'));
-  const html = await fs.readFile(quality.htmlPath, 'utf8');
-  assert.match(html, /音频与转写证据|媒体证据已闭环/);
-  assert.match(html, /openprd\.media-evidence\.v1/);
+  assert.equal(quality.reportPath, null);
+  assert.equal(quality.htmlPath, null);
+  assert.equal(quality.artifactGeneration.enabled, false);
+  const evalArtifacts = await fs.readdir(path.join(project, '.openprd', 'quality', 'reports')).catch(() => []);
+  assert.deepEqual(evalArtifacts, reportsBefore);
 });

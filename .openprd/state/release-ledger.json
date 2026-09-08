@@ -2,7 +2,7 @@
   "version": 1,
   "enabled": true,
   "strategy": "semver",
-  "currentVersion": "0.3.0",
+  "currentVersion": "0.4.0",
   "versions": [
     {
       "version": "0.1.2",
@@ -1092,9 +1092,9 @@
     },
     {
       "version": "0.3.0",
-      "status": "current",
+      "status": "released",
       "createdAt": "2026-08-29 22:46:26",
-      "updatedAt": "2026-08-29 22:46:26",
+      "updatedAt": "2026-09-08 17:07:12",
       "notes": null,
       "items": [
         {
@@ -1143,8 +1143,62 @@
         }
       ],
       "tag": null
+    },
+    {
+      "version": "0.4.0",
+      "status": "current",
+      "createdAt": "2026-09-08 17:07:12",
+      "updatedAt": "2026-09-08 17:07:13",
+      "notes": null,
+      "items": [
+        {
+          "type": "移除",
+          "summary": "移除",
+          "detail": "默认 quality eval JSON/HTML 评估报告生成",
+          "sentence": "移除：默认 quality eval JSON/HTML 评估报告生成",
+          "recordedAt": "2026-09-08 17:07:12",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1788858432471"
+          }
+        },
+        {
+          "type": "优化",
+          "summary": "优化",
+          "detail": "run、loop、doctor 与 dev-check，停止自动质量扫描和经验候选",
+          "sentence": "优化：run、loop、doctor 与 dev-check，停止自动质量扫描和经验候选",
+          "recordedAt": "2026-09-08 17:07:12",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1788858432773"
+          }
+        },
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "保留旧项目历史 eval 报告，fleet 更新不再覆盖报告目录",
+          "sentence": "调整：保留旧项目历史 eval 报告，fleet 更新不再覆盖报告目录",
+          "recordedAt": "2026-09-08 17:07:13",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1788858433083"
+          }
+        },
+        {
+          "type": "调整",
+          "summary": "调整",
+          "detail": "保留显式 quality 专项诊断与历史 eval 兼容读取",
+          "sentence": "调整：保留显式 quality 专项诊断与历史 eval 兼容读取",
+          "recordedAt": "2026-09-08 17:07:13",
+          "source": {
+            "kind": "manual-note",
+            "manualId": "manual-note-1788858433398"
+          }
+        }
+      ],
+      "tag": null
     }
   ],
   "createdAt": "2026-06-02 21:28:04",
-  "updatedAt": "2026-08-29 22:46:26"
+  "updatedAt": "2026-09-08 17:07:13"
 }

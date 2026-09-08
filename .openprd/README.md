@@ -53,4 +53,4 @@ core -> company -> industry -> project -> session
 
 - 优先更新 `docs/basic/`，不要把长期说明堆回 `AGENTS.md`。
 - 新增工作流或导出物时，同步检查 `src/workspace-core.js`、`src/openprd.js` 和对应模板是否一致。
-- 对外确认前，优先运行 `openprd standards . --verify`、`openprd quality . --verify` 与 `openprd run . --verify`。
+- 对外确认前，优先运行任务级测试、`openprd standards . --verify`、`openprd run . --verify` 与必要的 `openprd doctor .`。

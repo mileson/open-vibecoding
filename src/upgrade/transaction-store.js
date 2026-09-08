@@ -54,6 +54,7 @@ const FLEET_MANAGED_SCOPES = Object.freeze([
 const FLEET_PRESERVED_SCOPES = Object.freeze([
   path.join('.openprd', '.derived-data'),
   path.join('.openprd', 'artifacts'),
+  path.join('.openprd', 'quality', 'reports'),
   path.join('.openprd', 'tmp'),
 ]);
 const FLEET_PRESERVED_SCOPE_PATTERNS = Object.freeze([

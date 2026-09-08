@@ -59,16 +59,10 @@ function printRunResult(result, json) {
       console.log(`工作区就绪: ${workspaceReady ? '是' : '否'}`);
       console.log(`整体就绪可声明: ${result.readiness.claimReady !== false ? '是' : '否'}`);
       console.log(`当前动作可继续: ${result.readiness.actionReady !== false ? '是' : '否'}`);
-      if (result.readiness.qualityProductionReady !== null) {
-        console.log(`质量门禁: ${result.readiness.qualityProductionReady ? 'production-ready' : '待补证据'}`);
-      }
     }
     for (const check of result.checks) {
       const scope = check.scope === 'workspace' ? '工作区' : '任务';
-      const detail = check.name === 'quality' && check.productionReady === false
-        ? ' (production-ready=false)'
-        : '';
-      console.log(`- ${check.ok ? '通过' : '失败'}: ${check.name} [${scope}]${detail}`);
+      console.log(`- ${check.ok ? '通过' : '失败'}: ${check.name} [${scope}]`);
     }
     if (workspaceAttention?.kind === 'feature-coverage-ledger') {
       const changeLabel = workspaceAttention.activeChange

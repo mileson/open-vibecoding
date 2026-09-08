@@ -47,10 +47,8 @@ import { initQualityWorkspace, qualityWorkspace, verifyQualityWorkspace, learnQu
 import {
   archiveKnowledgeCandidate,
   listKnowledgeCandidates,
-  recordKnowledgeReviewSignal,
   rejectKnowledgeCandidate,
   restoreKnowledgeCandidate,
-  reviewKnowledgeWorkspace,
 } from './knowledge.js';
 import { createRunWorkspace } from './run-harness.js';
 import { checkDevelopmentStandardsWorkspace } from './dev-standards.js';
@@ -58,7 +56,6 @@ import {
   applyGrowthCandidateWorkspace,
   checkGrowthWorkspace,
   initGrowthWorkspace,
-  recordGrowthCheckpointWorkspace,
   rejectGrowthCandidateWorkspace,
   reviewGrowthWorkspace,
 } from './growth.js';
@@ -131,9 +128,8 @@ async function initWorkspace(projectRoot, options) {
     ...config.learningReview,
   };
   config.quality = {
-    enabled: config.quality?.enabled !== false,
-    command: config.quality?.command ?? 'openprd quality . --verify',
-    reportFormat: config.quality?.reportFormat ?? 'html',
+    mode: 'explicit-diagnostics',
+    artifactGeneration: false,
     ...config.quality,
   };
   await writeYaml(workspace.paths.config, config);
@@ -315,56 +311,6 @@ async function doctorWorkspace(projectRoot, options = {}) {
         errors: [...(standards.errors ?? [])],
         warnings: [...(standards.warnings ?? [])],
       };
-  const latestQuality = await readJson(cjoin(projectRoot, '.openprd', 'quality', 'reports', 'latest.json')).catch(() => null);
-  const doctorSignal = doctorOk
-    ? {
-      kind: 'doctor-green',
-      ok: true,
-      workspaceReady,
-      summary: workspaceReady
-        ? 'doctor integration, structure, and standards passed'
-        : 'doctor integration and structure passed; workspace standards need attention',
-    }
-    : null;
-  if (doctorSignal) {
-    await recordKnowledgeReviewSignal(projectRoot, doctorSignal).catch(() => null);
-  }
-  const growthCheckpoint = doctorSignal
-    ? await recordGrowthCheckpointWorkspace(projectRoot, {
-      outcome: 'doctor-passed',
-      reason: 'doctor-post-completion',
-    }).catch((error) => ({
-      ok: false,
-      action: 'growth-checkpoint',
-      projectRoot,
-      recorded: false,
-      errors: [error instanceof Error ? error.message : String(error)],
-    }))
-    : {
-      ok: true,
-      action: 'growth-checkpoint',
-      projectRoot,
-      recorded: false,
-      skipped: true,
-      reason: 'doctor-not-green',
-    };
-  const knowledgeReview = doctorSignal
-    ? await reviewKnowledgeWorkspace(projectRoot, {
-      from: latestQuality?.jsonPath ?? null,
-      signal: doctorSignal,
-    }).catch((error) => ({
-      ok: false,
-      action: 'quality-knowledge-review',
-      skipped: false,
-      errors: [error instanceof Error ? error.message : String(error)],
-    }))
-    : {
-      ok: true,
-      action: 'quality-knowledge-review',
-      skipped: true,
-      reason: 'doctor-not-green',
-    };
-
   return {
     ok: doctorOk,
     action: 'doctor',
@@ -390,8 +336,6 @@ async function doctorWorkspace(projectRoot, options = {}) {
       hygiene: registryHygiene,
       warnings: registryWarnings,
     },
-    growthCheckpoint,
-    knowledgeReview,
     errors: [
       ...agentIntegration.errors,
       ...(!projectManifest.ok ? [`project-manifest: ${projectManifest.error}`] : []),
@@ -436,7 +380,6 @@ const runWorkspace = createRunWorkspace({
   validateOpenSpecChangeWorkspace,
   validateWorkspace,
   verifyOpenSpecDiscoveryWorkspace,
-  verifyQualityWorkspace,
 });
 
 const fleetWorkspace = createFleetWorkspace({ setupAgentIntegrationWorkspace, updateAgentIntegrationWorkspace, doctorWorkspace, backfillWorkUnitsWorkspace });

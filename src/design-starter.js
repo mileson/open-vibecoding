@@ -663,7 +663,7 @@ function buildBasicDocMap(projectRoot, starter, context, relativeOutputPath) {
 ## CLI 接入面
 
 - 业务功能层面不提供 CLI。
-- 研发层面使用 OpenPrd 工具链辅助初始化、设计合同、标准校验和项目管理；当前最相关的入口包括 \`openprd design-starter\`、\`openprd standards . --verify\`、\`openprd run . --verify\` 与 \`openprd quality . --verify\`。
+- 研发层面使用 OpenPrd 工具链辅助初始化、设计合同、标准校验和项目管理；当前最相关的入口包括 \`openprd design-starter\`、\`openprd standards . --verify\` 与 \`openprd run . --verify\`。
 
 ## API 接入面
 
@@ -697,7 +697,7 @@ function buildBasicDocMap(projectRoot, starter, context, relativeOutputPath) {
 - \`openprd design-starter . --starter ${starter.id} --out ${relativeOutputPath}\`: 生成首版页面、设计合同与基础文档。
 - \`openprd standards . --verify\`: 校验 \`docs/basic/\`、文件说明书和文件夹 README。
 - \`openprd run . --verify\`: 汇总当前任务与工作区验证状态。
-- \`openprd quality . --verify\`: 生成质量报告并给出当前证据门禁状态。
+- \`openprd run . --verify\`: 直接汇总任务与结构验证状态，不生成额外 eval 报告。
 
 ## 维护规则
 

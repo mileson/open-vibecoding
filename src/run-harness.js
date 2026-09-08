@@ -7,11 +7,6 @@
 import fs from 'node:fs/promises';
 import { detectRuntime } from './adapters/index.js';
 import { appendJsonl, appendText, cjoin, exists, readJson, writeJson, writeText } from './fs-utils.js';
-import {
-  OPENPRD_HARNESS_TURN_STATE,
-  recordKnowledgeReviewSignal,
-  reviewKnowledgeWorkspace,
-} from './knowledge.js';
 import { timestamp } from './time.js';
 
 const OPENPRD_HARNESS_DIR = cjoin('.openprd', 'harness');
@@ -102,58 +97,10 @@ async function writeRunState(projectRoot, state) {
   await writeJson(harnessFile(projectRoot, OPENPRD_HARNESS_RUN_STATE), state);
 }
 
-function summarizeWorkspaceAttention(quality) {
-  const report = quality?.report ?? null;
-  const attentionGates = Array.isArray(report?.readiness?.attentionGates)
-    ? report.readiness.attentionGates.filter(Boolean)
-    : [];
-  const activeTasks = report?.evalHarness?.featureCoverage?.activeTasks ?? null;
-  if (attentionGates.length === 1 && attentionGates[0] === 'feature-coverage' && activeTasks?.pending > 0) {
-    const activeChange = activeTasks.activeChange ?? null;
-    const total = Number(activeTasks.total ?? 0);
-    const done = Number(activeTasks.done ?? 0);
-    const pending = Number(activeTasks.pending ?? 0);
-    const blocked = Number(activeTasks.blocked ?? 0);
-    const progress = total > 0 ? `${done}/${total}` : `${done}`;
-    const changeLabel = activeChange ? `active change ${activeChange}` : 'the active task ledger';
-    return {
-      kind: 'feature-coverage-ledger',
-      gate: 'feature-coverage',
-      gates: attentionGates,
-      activeChange,
-      total,
-      done,
-      pending,
-      blocked,
-      summary: 'feature-coverage ledger remains open',
-      detail: `${changeLabel} still has ${pending} pending tasks (${progress} done)${blocked > 0 ? `, with ${blocked} blocked` : ''}. This usually means task bookkeeping or coverage evidence is incomplete, not that the current implementation failed.`,
-    };
-  }
-  if (attentionGates.length > 0) {
-    return {
-      kind: 'quality-gates',
-      gates: attentionGates,
-      summary: `quality attention gates: ${attentionGates.join(', ')}`,
-      detail: `Current task verification passed, but workspace-level quality still needs evidence for: ${attentionGates.join(', ')}.`,
-    };
-  }
-  if (report?.readiness?.productionReady === false) {
-    return {
-      kind: 'quality-readiness',
-      gates: [],
-      summary: 'quality report is not production-ready',
-      detail: 'Current task verification passed, but the workspace-level quality report still needs attention before overall readiness can be claimed.',
-    };
-  }
-  return null;
-}
-
-function buildVerificationRecommendation({ changeId, readiness, workspaceAttention, knowledgeReview, qualityCheck }) {
+function buildVerificationRecommendation({ changeId, readiness, workspaceAttention }) {
   const verification = {
     ...readiness,
     workspaceAttention,
-    knowledgeCandidateId: knowledgeReview?.candidateId ?? null,
-    qualityReportPath: qualityCheck?.reportPath ?? null,
   };
   if (!readiness.taskReady) {
     return {
@@ -233,7 +180,6 @@ async function verifyRunWorkspace(projectRoot, dependencies) {
     validateOpenSpecChangeWorkspace,
     validateWorkspace,
     verifyOpenSpecDiscoveryWorkspace,
-    verifyQualityWorkspace,
   } = dependencies;
   await ensureRunHarness(projectRoot);
   const [standards, validation, changes, discoveryState] = await Promise.all([
@@ -251,30 +197,6 @@ async function verifyRunWorkspace(projectRoot, dependencies) {
       errors: validation.structuralErrors ?? validation.errors ?? [],
     },
   ];
-  if (verifyQualityWorkspace) {
-    const quality = await verifyQualityWorkspace(projectRoot, { strict: false }).catch((error) => ({
-      ok: false,
-      errors: [error instanceof Error ? error.message : String(error)],
-    }));
-    const productionReady = quality.report?.readiness?.productionReady ?? null;
-    const workspaceAttention = summarizeWorkspaceAttention(quality);
-    checks.push({
-      name: 'quality',
-      scope: 'workspace',
-      ok: quality.ok && productionReady === true,
-      errors: [
-        ...(quality.errors ?? []),
-        ...(productionReady === false
-          ? [workspaceAttention?.detail ?? 'Quality report is not production-ready.']
-          : []),
-      ],
-      reportPath: quality.reportPath ?? null,
-      htmlPath: quality.htmlPath ?? null,
-      productionReady,
-      attentionGates: quality.report?.readiness?.attentionGates ?? [],
-      workspaceAttention,
-    });
-  }
   const changeToVerify = changes?.activeChange ?? null;
   if (changeToVerify) {
     const change = await validateOpenSpecChangeWorkspace(projectRoot, { change: changeToVerify });
@@ -309,17 +231,14 @@ async function verifyRunWorkspace(projectRoot, dependencies) {
   const taskChecks = checks.filter((check) => check.scope !== 'workspace');
   const taskReady = taskChecks.every((check) => check.ok);
   const workspaceReady = checks.every((check) => check.ok);
-  const qualityCheck = checks.find((check) => check.name === 'quality');
   const failedWorkspaceChecks = checks.filter((check) => check.scope === 'workspace' && !check.ok);
   const workspaceAttention = taskReady && !workspaceReady
-    ? (failedWorkspaceChecks.length === 1 && failedWorkspaceChecks[0].name === 'quality' && qualityCheck?.workspaceAttention
-      ? qualityCheck.workspaceAttention
-      : {
-          kind: 'workspace-checks',
-          checks: failedWorkspaceChecks.map((check) => check.name),
-          summary: `workspace attention: ${failedWorkspaceChecks.map((check) => check.name).join(', ')}`,
-          detail: `Current task verification passed. Workspace-wide checks still need attention: ${failedWorkspaceChecks.map((check) => check.name).join(', ')}.`,
-        })
+    ? {
+        kind: 'workspace-checks',
+        checks: failedWorkspaceChecks.map((check) => check.name),
+        summary: `workspace attention: ${failedWorkspaceChecks.map((check) => check.name).join(', ')}`,
+        detail: `Current task verification passed. Workspace-wide checks still need attention: ${failedWorkspaceChecks.map((check) => check.name).join(', ')}.`,
+      }
     : null;
   const readiness = {
     taskReady,
@@ -330,41 +249,11 @@ async function verifyRunWorkspace(projectRoot, dependencies) {
     releaseReady: null,
     actionScope: 'current-task-verification',
     doctorReady: null,
-    qualityProductionReady: qualityCheck?.productionReady ?? null,
   };
-  const knowledgeSignal = {
-    kind: 'run-verify',
-    ok: workspaceReady,
-    taskReady,
-    workspaceReady,
-    claimReady: workspaceReady,
-    actionReady: taskReady,
-    productionReady: qualityCheck?.productionReady ?? null,
-    attentionGates: qualityCheck?.attentionGates ?? [],
-    workspaceAttentionKind: workspaceAttention?.kind ?? null,
-    summary: taskReady
-      ? (workspaceReady ? 'run verify passed' : `run verify task-ready with workspace attention: ${workspaceAttention?.summary ?? 'workspace checks'}`)
-      : `run verify failed: ${taskChecks.filter((check) => !check.ok).map((check) => check.name).join(', ')}`,
-  };
-  await recordKnowledgeReviewSignal(projectRoot, knowledgeSignal).catch(() => null);
-  const reviewSource = (await exists(harnessFile(projectRoot, OPENPRD_HARNESS_TURN_STATE)))
-    ? OPENPRD_HARNESS_TURN_STATE
-    : (qualityCheck?.reportPath ?? null);
-  const knowledgeReview = await reviewKnowledgeWorkspace(projectRoot, {
-    from: reviewSource,
-    signal: knowledgeSignal,
-  }).catch((error) => ({
-    ok: false,
-    action: 'quality-knowledge-review',
-    skipped: false,
-    errors: [error instanceof Error ? error.message : String(error)],
-  }));
   const recommendation = buildVerificationRecommendation({
     changeId: changeToVerify,
     readiness,
     workspaceAttention,
-    knowledgeReview,
-    qualityCheck,
   });
   const runState = await readRunState(projectRoot);
   await writeRunState(projectRoot, {
@@ -375,8 +264,6 @@ async function verifyRunWorkspace(projectRoot, dependencies) {
       changeId: changeToVerify,
       discoveryRunId: discoveryToVerify ? discoveryState.runId : null,
       workspaceAttention,
-      knowledgeCandidateId: knowledgeReview?.candidateId ?? null,
-      qualityReportPath: qualityCheck?.reportPath ?? null,
     },
     lastRecommendation: recommendation,
   });
@@ -402,7 +289,6 @@ async function verifyRunWorkspace(projectRoot, dependencies) {
     warnings: checks
       .filter((check) => check.scope === 'workspace' && !check.ok)
       .flatMap((check) => check.errors.map((error) => `${check.name}: ${error}`)),
-    knowledgeReview,
     recommendation,
     errors: taskChecks.flatMap((check) => check.errors.map((error) => `${check.name}: ${error}`)),
   };

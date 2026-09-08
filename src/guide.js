@@ -44,8 +44,8 @@ export const GUIDE_STAGES = [
   {
     id: 'wrapup',
     title: '验证收口',
-    description: '运行质量门禁，确认全部任务完成且验证通过。',
-    nextAction: '让 Agent 运行 openprd quality . --verify 和 openprd run . --verify 收口。',
+    description: '汇总任务证据与结构校验，确认本次工作已经完成。',
+    nextAction: '让 Agent 运行本任务测试、openprd standards . --verify 和 openprd run . --verify 收口。',
   },
 ];
 
@@ -57,15 +57,6 @@ async function readJson(filePath) {
   } catch {
     return null;
   }
-}
-
-async function latestQualityReadiness(projectRoot) {
-  const reportsDir = path.join(projectRoot, '.openprd', 'quality', 'reports');
-  const entries = await fs.readdir(reportsDir).catch(() => []);
-  const evalReports = entries.filter((name) => name.startsWith('eval-') && name.endsWith('.json')).sort();
-  if (evalReports.length === 0) return null;
-  const latest = await readJson(path.join(reportsDir, evalReports[evalReports.length - 1]));
-  return latest?.readiness ?? null;
 }
 
 export async function guideWorkspace(projectRoot) {
@@ -113,8 +104,9 @@ export async function guideWorkspace(projectRoot) {
   const tasksReady = taskProgress !== null;
   const buildDone = tasksReady && taskProgress.pending === 0;
 
-  const readiness = await latestQualityReadiness(resolvedRoot);
-  const wrappedUp = buildDone && readiness?.productionReady === true;
+  const runState = await readJson(path.join(resolvedRoot, '.openprd', 'harness', 'run-state.json'));
+  const readiness = runState?.lastVerification ?? null;
+  const wrappedUp = buildDone && readiness?.taskReady === true;
 
   const completion = {
     clarify: clarified,
@@ -166,8 +158,8 @@ export async function guideWorkspace(projectRoot) {
       detail = `变更 ${activeChange} 已有 ${taskProgress.total} 个当前动作任务${taskProgress.backgroundPending > 0 ? `，另有 ${taskProgress.backgroundPending} 个后台维护项` : ''}。`;
     } else if (spec.id === 'build' && taskProgress) {
       detail = `任务进度 ${taskProgress.done}/${taskProgress.total}。`;
-    } else if (spec.id === 'wrapup' && readiness && buildDone) {
-      detail = readiness.productionReady ? '质量门禁已通过。' : '质量门禁尚未全部通过。';
+    } else if (spec.id === 'wrapup' && buildDone) {
+      detail = readiness?.taskReady ? '任务验证摘要已通过。' : '任务已完成，仍需运行 run --verify 汇总验证状态。';
     }
 
     stages.push({

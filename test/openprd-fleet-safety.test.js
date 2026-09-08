@@ -126,7 +126,7 @@ test('fleet update stages changes, verifies backup checksum, and atomically appl
   assert.equal(report.projects[0].migration.workUnits.changedVersions, 1);
   const backupManifest = JSON.parse(await fs.readFile(item.backup.manifestPath, 'utf8'));
   assert.ok(backupManifest.scopePolicy.managedRoots.includes('.openprd'));
-  assert.deepEqual(backupManifest.scopePolicy.preservedRoots, ['.openprd/.derived-data', '.openprd/artifacts', '.openprd/tmp']);
+  assert.deepEqual(backupManifest.scopePolicy.preservedRoots, ['.openprd/.derived-data', '.openprd/artifacts', '.openprd/quality/reports', '.openprd/tmp']);
   assert.deepEqual(backupManifest.scopePolicy.preservedPatterns, ['.openprd/harness/DerivedData-*']);
 
   const secondDryRun = await fleetWorkspace(root, {
@@ -214,14 +214,17 @@ test('fleet preserves cache and artifact symlinks across planning and update wit
   const artifactLink = path.join(project, '.openprd', 'artifacts', 'artifact-link');
   const harnessDerivedLink = path.join(project, '.openprd', 'harness', 'DerivedData-Legacy', 'cache-link');
   const tmpDerivedLink = path.join(project, '.openprd', 'tmp', 'derived-data', 'cache-link');
+  const legacyQualityReport = path.join(project, '.openprd', 'quality', 'reports', 'eval-legacy.html');
   await fs.mkdir(path.dirname(cacheLink), { recursive: true });
   await fs.mkdir(path.dirname(artifactLink), { recursive: true });
   await fs.mkdir(path.dirname(harnessDerivedLink), { recursive: true });
   await fs.mkdir(path.dirname(tmpDerivedLink), { recursive: true });
+  await fs.mkdir(path.dirname(legacyQualityReport), { recursive: true });
   await fs.symlink(externalFile, cacheLink, 'file');
   await fs.symlink(externalDirectory, artifactLink, 'dir');
   await fs.symlink(externalFile, harnessDerivedLink, 'file');
   await fs.symlink(externalFile, tmpDerivedLink, 'file');
+  await fs.writeFile(legacyQualityReport, '<html>legacy report</html>\n');
 
   const context = await createFleetTransactionContext({
     backupRoot: path.join(root, 'backups'),
@@ -239,12 +242,14 @@ test('fleet preserves cache and artifact symlinks across planning and update wit
   assert.deepEqual(dryRunPlan.scopePolicy.preservedRoots, [
     '.openprd/.derived-data',
     '.openprd/artifacts',
+    '.openprd/quality/reports',
     '.openprd/tmp',
     '.openprd/harness/DerivedData-Legacy',
   ]);
   assert.deepEqual(dryRunPlan.scopePolicy.preservedPatterns, ['.openprd/harness/DerivedData-*']);
   assert.equal(dryRunPlan.preimage.entries.some((entry) => entry.path.startsWith('.openprd/.derived-data')), false);
   assert.equal(dryRunPlan.preimage.entries.some((entry) => entry.path.startsWith('.openprd/artifacts')), false);
+  assert.equal(dryRunPlan.preimage.entries.some((entry) => entry.path.startsWith('.openprd/quality/reports')), false);
   assert.equal(dryRunPlan.preimage.entries.some((entry) => entry.path.startsWith('.openprd/tmp')), false);
   assert.equal(dryRunPlan.preimage.entries.some((entry) => entry.path.startsWith('.openprd/harness/DerivedData-Legacy')), false);
 
@@ -263,8 +268,10 @@ test('fleet preserves cache and artifact symlinks across planning and update wit
   assert.equal(await fs.readlink(artifactLink), externalDirectory);
   assert.equal(await fs.readlink(harnessDerivedLink), externalFile);
   assert.equal(await fs.readlink(tmpDerivedLink), externalFile);
+  assert.equal(await fs.readFile(legacyQualityReport, 'utf8'), '<html>legacy report</html>\n');
   assert.equal(await pathExists(path.join(plan.backup.path, 'preimage', '.openprd', '.derived-data')), false);
   assert.equal(await pathExists(path.join(plan.backup.path, 'preimage', '.openprd', 'artifacts')), false);
+  assert.equal(await pathExists(path.join(plan.backup.path, 'preimage', '.openprd', 'quality', 'reports')), false);
   assert.equal(await pathExists(path.join(plan.backup.path, 'preimage', '.openprd', 'tmp')), false);
   assert.equal(await pathExists(path.join(plan.backup.path, 'preimage', '.openprd', 'harness', 'DerivedData-Legacy')), false);
   const manifest = JSON.parse(await fs.readFile(plan.backup.manifestPath, 'utf8'));

@@ -1,12 +1,12 @@
 /*
  * 核心功能
- * 渲染 standards、dev-check、quality、knowledge 和 visual compare 等质量相关命令输出。
+ * 渲染 standards、dev-check、显式 quality diagnostics、knowledge 和 visual compare 等质量相关命令输出。
  *
  * 输入
- * 接收标准校验、研发期行数检查、质量报告、知识候选和视觉对比等结构化结果对象。
+ * 接收标准校验、研发期行数检查、质量诊断、知识候选和视觉对比等结构化结果对象。
  *
  * 输出
- * 向终端输出质量门禁、证据状态、知识候选和视觉对比摘要，或在 `--json` 模式下直出 JSON。
+ * 向终端输出显式诊断、证据状态、知识候选和视觉对比摘要，或在 `--json` 模式下直出 JSON。
  *
  * 定位
  * 位于 CLI 表现层的质量输出模块，负责 standards/quality 这一类高频质量反馈。
@@ -15,7 +15,7 @@
  * 依赖 shared-print 中的知识回顾 helper，不承担实际检测逻辑。
  *
  * 维护规则
- * 质量类输出要优先保留 production-ready、门禁范围和证据状态，避免把关键风险埋进长文本里。
+ * 显式诊断输出保持紧凑，不生成第二套 eval 文件，也不把历史 production-ready 当成当前任务状态。
  */
 import { printKnowledgeReview } from './shared-print.js';
 
@@ -149,7 +149,6 @@ function printQualityResult(result, json) {
   if (result.action === 'quality-init') {
     console.log(`OpenPrd quality: 已初始化 (${result.changed})`);
     console.log(`配置: ${result.files.config}`);
-    console.log(`报告目录: ${result.files.reportsDir}`);
     console.log(`知识库索引: ${result.files.knowledgeIndex}`);
     return;
   }
@@ -184,7 +183,7 @@ function printQualityResult(result, json) {
       ? '需关注'
       : (result.ok ? '完成' : '失败'))
     : (result.ok ? '完成' : '失败');
-  console.log(`OpenPrd quality: ${headline}`);
+  console.log(`OpenPrd quality diagnostics: ${headline}`);
   if (result.report) {
     console.log(`质量状态: ${result.report.summary.status}`);
     console.log(`生产就绪: ${result.report.readiness.productionReady ? '是' : '否'}`);
@@ -211,11 +210,8 @@ function printQualityResult(result, json) {
       console.log(`- ${gate.status}: ${gate.label} (${scope}, ${evidence})`);
     }
   }
-  if (result.reportPath) {
-    console.log(`JSON: ${result.reportPath}`);
-  }
-  if (result.htmlPath) {
-    console.log(`HTML: ${result.htmlPath}`);
+  if (result.artifactGeneration?.enabled === false) {
+    console.log('评估文件: 不再生成；旧 eval JSON/HTML 保持原样。');
   }
   printKnowledgeReview(result.knowledgeReview);
   for (const error of result.errors ?? []) {

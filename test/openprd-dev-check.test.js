@@ -1,5 +1,4 @@
 import test from 'node:test';
-import { reviewKnowledgeWorkspace } from '../src/knowledge.js';
 import {
   buildCodeExtensionCandidate,
   initGrowthWorkspace,
@@ -207,7 +206,7 @@ test('dev-check reports code file line status and next actions', async () => {
   assert.doesNotMatch(userOutput, /无明显影响/);
 });
 
-test('dev-check knowledge review attributes current touched files instead of stale turn state', async () => {
+test('dev-check does not auto-generate knowledge from current or stale touched files', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
   await fs.mkdir(path.join(project, 'src'), { recursive: true });
@@ -237,12 +236,9 @@ test('dev-check knowledge review attributes current touched files instead of sta
   });
 
   assert.equal(result.ok, true);
-  assert.equal(result.knowledgeReview.skipped, false);
-  assert.match(result.knowledgeReview.summary, /本轮围绕 1 个可沉淀文件生成回顾/);
-  const candidate = JSON.parse(await fs.readFile(result.knowledgeReview.files.candidate, 'utf8'));
-  assert.deepEqual(candidate.touchedFiles, ['src/agent-current.js']);
-  assert.doesNotMatch(candidate.summary, /old-agent/);
-  assert.equal(candidate.reviewSignals.some((signal) => signal.touchedFiles?.includes('src/old-agent-one.js')), false);
+  assert.equal(result.knowledgeReview, undefined);
+  const candidates = await fs.readdir(path.join(project, '.openprd', 'knowledge', 'candidates')).catch(() => []);
+  assert.deepEqual(candidates, []);
 });
 
 test('Stop hook injects nonblocking dev-check advice for touched large files', async () => {
@@ -318,7 +314,7 @@ test('Stop hook reminds lightweight visible UI fixes need visual evidence', asyn
   assert.match(context, /verification-board/);
 });
 
-test('Stop hook asks for project-level experience in structured plain language', async () => {
+test('Stop hook does not auto-generate project experience candidates', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
   await fs.mkdir(path.join(project, 'src'), { recursive: true });
@@ -349,6 +345,8 @@ test('Stop hook asks for project-level experience in structured plain language',
     touchedFiles: ['src/experience.js'],
   })}\n`);
 
+  const candidatesDir = path.join(project, '.openprd', 'knowledge', 'candidates');
+  const beforeCandidates = await fs.readdir(candidatesDir).catch(() => []);
   const stop = spawnSync(process.execPath, [path.join(project, '.codex', 'hooks', 'openprd-hook.mjs'), 'Stop'], {
     cwd: project,
     input: JSON.stringify({
@@ -363,14 +361,10 @@ test('Stop hook asks for project-level experience in structured plain language',
   });
   assert.equal(stop.status, 0);
   const payload = JSON.parse(stop.stdout);
-  const context = payload.hookSpecificOutput.additionalContext;
   assert.equal(payload.continue, true);
-  assert.match(context, /这次我观察到一个以后可能重复出现的情况：/);
-  assert.match(context, /我计划保留一条项目经验：/);
-  assert.match(context, /这条经验只会保留在当前项目里。/);
-  assert.doesNotMatch(context, /要我把它一起保留下来吗？/);
-  assert.doesNotMatch(context, /Draft Skill:/);
-  assert.doesNotMatch(context, /Promote:/);
+  assert.equal(payload.hookSpecificOutput, undefined);
+  const afterCandidates = await fs.readdir(candidatesDir).catch(() => []);
+  assert.deepEqual(afterCandidates, beforeCandidates);
 });
 
 test('dev-check wrap-up copy script keeps copy compact', () => {

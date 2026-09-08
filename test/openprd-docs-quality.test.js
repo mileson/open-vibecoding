@@ -16,7 +16,6 @@ import {
 } from './helpers/openprd-test-helpers.js';
 import { docsCompactWorkspace } from '../src/docs-compact.js';
 import { buildReviewPresentationFeedback, renderReviewArtifact } from '../src/html-artifacts.js';
-import { pruneQualityReports } from '../src/quality.js';
 
 async function makeStandardsProject() {
   const project = await makeTempProject();
@@ -141,23 +140,4 @@ test('review --direction records the selected design direction', async () => {
   assert.equal(confirmed.designDirection?.id, 'direction-2');
   const currentState = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'state', 'current.json'), 'utf8'));
   assert.equal(currentState.reviewStatus.designDirection.id, 'direction-2');
-});
-
-test('quality report retention prunes stale eval files but keeps indexed ones', async () => {
-  const project = await makeTempProject();
-  const reportsDir = path.join(project, '.openprd', 'quality', 'reports');
-  await fs.mkdir(reportsDir, { recursive: true });
-  const retained = [];
-  for (let index = 4; index >= 0; index -= 1) {
-    const reportId = `eval-2026070100000${index}`;
-    await fs.writeFile(path.join(reportsDir, `${reportId}.json`), '{}');
-    await fs.writeFile(path.join(reportsDir, `${reportId}.html`), '<html></html>');
-    retained.push({ reportId });
-  }
-  await fs.writeFile(path.join(reportsDir, 'index.json'), '{}');
-
-  const result = await pruneQualityReports(project, retained, { reports: { retentionEnabled: true, retentionMaxReports: 2 } });
-  assert.equal(result.pruned, 6);
-  const remaining = (await fs.readdir(reportsDir)).sort();
-  assert.deepEqual(remaining, ['eval-20260701000003.html', 'eval-20260701000003.json', 'eval-20260701000004.html', 'eval-20260701000004.json', 'index.json'].sort());
 });

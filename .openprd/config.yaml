@@ -28,9 +28,8 @@ learningReview:
   defaultGenre: internet-product
   sourceScope: workspace
 quality:
-  enabled: true
-  command: openprd quality . --verify
-  reportFormat: html
+  mode: explicit-diagnostics
+  artifactGeneration: false
 design:
   enabled: true
   frameworkRoot: .openprd/design
@@ -45,9 +44,6 @@ qualityGates:
   standards:
     docsRoot: docs/basic
     command: openprd standards . --verify
-  quality:
-    command: openprd quality . --verify
-    enforcement: advisory
   freezeRequires:
     - meta
     - problem

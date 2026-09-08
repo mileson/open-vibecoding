@@ -83,7 +83,6 @@
         "knowledge"
       ]
     },
-    "reportFormat": "html",
     "baselinePolicy": "agent-initialized average baseline; user may override; agent ratchet may only tighten thresholds",
     "projectBaseline": {
       "normal": {

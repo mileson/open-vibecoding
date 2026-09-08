@@ -621,7 +621,7 @@ describe('Codex hook safety and design gates', () => {
     const payload = JSON.parse(stop.stdout);
     const context = payload.hookSpecificOutput.additionalContext;
     assert.match(context, /项目级收口证据还没补齐/);
-    assert.match(context, /openprd quality \. --verify/);
+    assert.doesNotMatch(context, /openprd quality \. --verify/);
     assert.match(context, /openprd run \. --verify/);
     assert.match(context, /Markdown \/ HTML 测试报告/);
   });

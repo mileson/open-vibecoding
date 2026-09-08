@@ -351,13 +351,13 @@ function normalizeQualityReportSource(projectRoot, report, sourcePath, requiredC
     rootCauseCandidates: attentionGates.map((gate) => ({
       title: `质量门禁未闭环: ${gate}`,
       nextSteps: [
-        '检查最新 HTML 质量报告里的证据链和建议动作。',
+        '检查显式诊断摘要或历史 eval 数据里的证据链和建议动作。',
         '补齐当前任务缺失的可观测性、护栏、测试或性能证据。',
       ],
     })),
     evidenceSources: buildEvidenceSources(projectRoot, [{ kind: 'quality-report', path: sourcePath }]),
     queryExamples: [
-      '先阅读最新 HTML 质量报告，再回查对应门禁的原始证据。',
+      '先阅读显式诊断摘要或历史 eval，再回查对应原始证据。',
       correlationFields.length > 0
         ? `确认日志是否已统一携带 ${correlationFields.join(' / ')}。`
         : '确认核心路径是否已有统一链路字段；没有的话应先补诊断骨架。',
@@ -366,14 +366,14 @@ function normalizeQualityReportSource(projectRoot, report, sourcePath, requiredC
     abstractPattern: '质量缺口反复出现，通常是因为可观测性、护栏、测试与复盘知识被分散维护，没有进入同一套项目级诊断闭环。',
     triggers: attentionGates,
     prevention: [
-      '阶段性开发后运行质量验证。',
-      '声明就绪前先审阅 HTML 质量评估报告。',
+      '阶段性开发后运行 task-scoped 验证和 run --verify。',
+      '显式专项诊断只在用户需要时运行，不生成新的 eval 文件。',
       '把重复或高影响修复沉淀为带日志入口和验证步骤的项目经验 Skill。',
     ],
     verificationSteps: [
-      '运行 openprd quality . --verify 并确认需要关注的门禁已经闭环。',
-      '打开 HTML 报告，核对证据链、评估结论和后续动作是否一致。',
-      '重新执行任务级 verify 命令，并把最终证据路径保留在质量报告里。',
+      '运行任务级 verify 与 openprd run . --verify，确认当前验证摘要。',
+      '如果使用历史 eval，核对它的时间与范围，不把旧结论继承为当前状态。',
+      '把最终证据路径保留在 task-scoped test report 或任务 metadata 里。',
     ],
   }
 }
@@ -537,7 +537,7 @@ export async function resolveQualityLearningSource(projectRoot, options = {}) {
       }
       return {
         ok: false,
-        error: 'Unsupported learn source. Provide a quality report JSON, an extracted diagnostics directory, or runtime-events / timeline / root-cause JSON evidence.',
+        error: 'Unsupported learn source. Provide a legacy quality report JSON, an extracted diagnostics directory, or runtime-events / timeline / root-cause JSON evidence.',
       }
     }
 
@@ -563,7 +563,7 @@ export async function resolveQualityLearningSource(projectRoot, options = {}) {
 
   return {
     ok: false,
-    error: 'No quality report or diagnostic evidence found. Run: openprd quality . --verify or pass --from <diagnostics-dir>',
+    error: 'No diagnostic evidence found. Pass --from <diagnostics-dir|turn-state|legacy-report.json>.',
   }
 }
 

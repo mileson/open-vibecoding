@@ -1117,7 +1117,7 @@ test('loop repair-agent explicitly repairs Codex then launches the child session
   assert.equal(sessions.some((event) => event.action === 'agent-exit' && event.ok === true), true);
 });
 
-test('loop finish keeps a verified committed task done when workspace EVO is not production-ready', async () => {
+test('loop finish keeps a verified committed task done without generating a workspace quality report', async () => {
   const project = await makeTempProject();
   await initWorkspace(project, { templatePack: 'consumer' });
   const changeDir = path.join(project, '.openprd', 'changes', 'loop-evo');
@@ -1173,11 +1173,9 @@ test('loop finish keeps a verified committed task done when workspace EVO is not
   assert.equal(finish.commit.ok, true);
   assert.equal(finish.commit.skipped, false);
   assert.match(finish.commit.sha, /^[a-f0-9]{7,40}$/);
-  assert.equal(finish.quality.report.readiness.productionReady, false);
-  assert.ok(finish.quality.report.readiness.attentionGates.includes('smoke'));
-  assert.equal(finish.workspaceAttention.kind, 'quality-readiness');
-  assert.equal(finish.workspaceAttention.scope, 'workspace-claim');
-  assert.equal(finish.workspaceAttention.blocking, false);
+  assert.equal(finish.quality, undefined);
+  assert.equal(finish.workspaceAttention, undefined);
+  assert.equal(await pathExists(path.join(project, '.openprd', 'quality', 'reports', 'latest.json')), false);
   const featureList = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'feature-list.json'), 'utf8'));
   const completedTask = featureList.tasks.find((task) => task.id === 'T001.01');
   assert.equal(completedTask.status, 'done');

@@ -15,7 +15,7 @@ description: 驱动 OpenPrd 工作区完成从澄清到 handoff 的主流程。�
 
 ## Automation-safe mode
 
-识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task 时，默认不要要求 `openprd dev-check` / `quality` / `doctor`。按自动化自己的 runbook、日志、测试和通知合同收口；只有 prompt 明确说明这是 OpenPrd 维护任务或显式启用 OpenPrd 时才恢复互动流程。
+识别到 Codex automation、Claude Code headless、cron、scheduled 或 unattended task 时，默认不要要求 `openprd dev-check` / `doctor`。按自动化自己的 runbook、日志、测试和通知合同收口；只有 prompt 明确说明这是 OpenPrd 维护任务或显式启用 OpenPrd 时才恢复互动流程。
 
 ## Agent 自主审查界面
 
@@ -28,7 +28,7 @@ OpenPrd 只通过生成的 AGENTS 与 skills 注入判断原则和质量合同�
 5. HTML 的生成时机由审查边界决定，不由 L0/L1/L2、固定关键词或“任务是否结束”机械决定。强制触发条件只提供最低可预测边界，不是穷举式关键词分类；一次长任务可以没有 HTML，也可以在分析中、实现后或外部动作前出现不同审查界面。
 6. 制作 HTML 前先读取 `references/agent-authored-html-review.md`，让真实证据、来源、事实/推断/未知边界和本次需要用户判断的内容成为页面主结构；只加入当前审查真正需要的播放、对比、筛选、标注、状态记录或导出能力。
 7. 命中强制条件后，最终回复必须给出可点击的任务专属 `.html` 绝对路径与验证说明；没有这两项、仅生成 starter、仍有无来源占位内容或只验证文件存在时，不得把审查节点标记完成。
-8. 不要为了形式生成空洞页面；不要把固定 `review.html`、质量报告或学习阅读器误当成所有任务的通用替代品；不要用 HTML 代替真机、模拟器、浏览器、生产环境或第三方系统读回。
+8. 不要为了形式生成空洞页面；不要把固定 `review.html`、历史 quality eval 报告或学习阅读器误当成所有任务的通用替代品；不要用 HTML 代替真机、模拟器、浏览器、生产环境或第三方系统读回。
 
 ## 动手前
 
@@ -68,7 +68,7 @@ OpenPrd 只通过生成的 AGENTS 与 skills 注入判断原则和质量合同�
 17. 用户要求最佳实践、benchmark、对标、参考产品、prompt engineering、Agent harness、context engineering、图标资源、CLI 或 skill 体系设计时，先路由到 `$openprd-benchmark-router`
 18. 用户要求界面更好看、更稳定、有一致审美、能复用视觉资产或内置模板时，先路由到 `$openprd-frontend-design`
 19. 用户要求基线文档、文件说明书、文件夹 README 标准或实现就绪检查时，路由到 `$openprd-standards`
-20. 用户要求日志、链路追踪、业务成本护栏、免费额度、滥用防护、评估执行环境、冒烟覆盖、性能基线、极端场景、HTML 质量评估报告或项目级经验 Skill 时，路由到 `$openprd-quality`
+20. 用户明确要求日志、链路追踪、业务成本护栏、评估执行环境、冒烟覆盖、性能、媒体证据或历史 eval 专项诊断时，路由到 `$openprd-quality`
 21. 用户需要可视化说明，或系统/产品形态仍不清晰时，在进入需求定稿前路由到 `$openprd-diagram-review`
 22. 默认保持 Codex hooks 轻量。除非项目明确需要完整工具级遥测，否则 `openprd setup/update` 使用 `--hook-profile lite`；默认 `lite` 保留 `Stop` 收工回顾，用于记录 task-scoped 证据与后台维护建议，不制造新的用户确认停顿
 23. hook 默认不因 PRD、review、change、tasks、设计合同、测试报告或视觉证据尚未补齐而阻断用户要求的正常实现。缺失材料由 Agent 在后台自动补齐；来不及补齐时继续完成安全范围内的工作，并在收口如实说明证据状态，不把流程作业转嫁给用户。
@@ -83,7 +83,7 @@ OpenPrd 只通过生成的 AGENTS 与 skills 注入判断原则和质量合同�
 - 如果 `.openprd/` 不存在，使用：
   - `openprd init <path> --template-pack <base|consumer|b2b|agent>`
 - `init` 会同时创建 standards 和 agent integration，包括 Codex、Claude、Cursor 的生成引导、项目级 Codex hooks 和用户级 Codex hooks feature flag
-- `init` 也会创建质量状态，包括 `.openprd/quality/config.json`、`.openprd/quality/reports/` 和 `.openprd/knowledge/`
+- `init` 会创建显式质量诊断配置和 knowledge 基础目录，但不创建或生成 quality eval 报告
 - `init` 也会创建自我成长候选队列，包括 `.openprd/growth/candidates.jsonl`、`accepted.json`、`rejected.json` 和本地偏好文件
 - 如果 standards 缺失，或用户要求修复：
   - `openprd standards <path> --init`
@@ -116,12 +116,12 @@ OpenPrd 只通过生成的 AGENTS 与 skills 注入判断原则和质量合同�
   - 大界面改动先按用户目标、信息架构变化、视觉决策成本和验证风险判断方案评审形态；已有界面时用 Codex Computer Use 打开产品内对应功能并截图，冷启动没有现有界面时用当前 PRD、用户群体、第一版切片、视觉目标、气质端点和记忆点生成 design brief；再用 `imagegen`（Codex 原生 Image 2）生成至少 3 个设计方向，横向拼接成一张带 1/2/3 序号的大图作为候选效果图；每个方向都要有具体审美主张和 anti-slop 自检。候选图用于帮助用户判断，但 OpenPrd 不强制停下等待确认；Agent 可按最符合目标且可逆的方向继续，并清楚说明采用的假设
   - 如果已有用户参考效果图或 Agent 采用的可逆默认参考方向并进入实现阶段，阶段性完成后生成实现截图，并用 `openprd visual-compare <path> --reference <效果图> --actual <实现截图> --locale <zh-CN|en>` 输出 JPG 视觉对比图；如果参考图里有多个子图、网格或对象，先运行 `openprd visual-prepare <path> --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>`，检查 contact sheet 后按 compare-plan 逐项对比；如果验收重点是局部组件或不超过 3 个相邻区域，局部证据是默认主路径：Agent 自主从同入口、同视口、同状态截图中选择同一语义对象，使用 `--reference-box/--actual-box` 或 `--before-box/--after-box` 生成 `local-first` 局部证据板，共享像素尺度、禁止左右独立拉伸，差异未消除时直接返工并复用裁剪区域；全屏图只作底部上下文和未改区域回归。如果没有明确参考图，先判断新建界面还是修改既有界面：新建界面由 Agent 在后台完成 3 方向方案评审并采用可逆默认方向，修改既有界面动手前生成修改前截图，完成后生成修改后截图，并用 `openprd visual-compare <path> --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>` 输出 JPG 自检图；如果并行试了多个优化方向，再补 `--board <parallel-board.json>` 输出并行实验证据板；如果新功能或改动包含同构列表、卡片、网格、表格，或用户反馈没对齐/排版漂移，再补 `--board <alignment-board.json>` 输出对齐辅助线证据板。未查看对比图，或对比图仍有明显结构、气质、层级、字体/色彩/表面角色、记忆点差异/漂移时，只限制“视觉完成”声明，不阻断实现；如果用户后续说“跟效果图”“不一致”“好丑”“复刻”，至少先产出一份视觉证据图
   - `openprd loop <path> --finish` 前做文档影响检查：只有本轮代码变化直接让现有 `docs/basic/`、文件说明书或文件夹 README 失真时，才在后台同步相关内容；历史缺失、模板态或全局文档债记入 `workspaceAttention`，不影响当前任务或已授权动作。涉及后端、脚本、Agent、工具链、服务或数据处理变更时，同步评估 CLI 与 API 两个接入面
-  - 声称单个任务完成前，只运行本任务最小足够验证，并通过 `--evidence`、测试报告或任务 metadata 留下 task-scoped evidence；不要在每个任务里反复运行 `openprd quality <path> --verify` 或全局 `openprd run <path> --verify`
-  - 阶段收口、全部任务完成、handoff/commit/release/publish 前，再运行 `openprd quality <path> --verify` 并审阅生成的 HTML 质量评估报告，检查场景标签、必需 EVO 门禁、日志、业务护栏、冒烟覆盖、任务完整性、性能基线、极端场景和知识缺口
+  - 声称单个任务完成前，只运行本任务最小足够验证，并通过 `--evidence`、测试报告或任务 metadata 留下 task-scoped evidence；不要在每个任务里反复运行全局 `openprd run <path> --verify`
+  - 阶段收口、全部任务完成、handoff/commit/release/publish 前，运行 `openprd standards <path> --verify`、`openprd run <path> --verify` 与必要的 `openprd doctor <path>`；不再生成或审阅 quality eval HTML
   - 如果当前任务是在发布 OpenPrd 自身到 GitHub，新版本必须同时具备匹配的项目版本号、版本条目、版本 tag 和 GitHub Release；只有 push/tag 没有 Release 不算发布闭环。优先先用 `openprd release <path> --notes ...` 累计版本条目，再用 `node scripts/openprd-github-release-notes.mjs <path> --version <x.y.z> --tag <vX.Y.Z>` 生成发布文案，并确认仓库 workflow 已成功 create/edit 对应 release
-  - 如果本轮修复已经出现可复用模式，可先运行 `openprd quality <path> --learn --review --from .openprd/harness/turn-state.json` 生成项目经验候选；对用户呈现时先用“这次我观察到的情况 / 我计划保留的一条项目经验 / 以后如果再遇到类似任务我会怎么复用 / 这条经验只会保留在当前项目里，要不要一起保留”这套结构化人话询问。确认值得长期保留后，再运行 `openprd quality <path> --learn --from <candidate-dir>` 正式沉淀为项目经验
+  - 如果本轮修复确实出现可复用模式，由 Agent 明确判断后再运行 `openprd quality <path> --learn --review --from .openprd/harness/turn-state.json`，不要让 run/doctor/loop 自动批量生成经验候选
   - `openprd loop <path> --finish` 应同时留下 Markdown 和 HTML 回归证据到 `.openprd/harness/test-reports/`，把它们视作任务交付物的一部分
-  - 如果本轮准备宣称“整体完成”或“项目级完成”，但还没有最终 `openprd quality <path> --verify`、最终 `openprd run <path> --verify`，或 `.openprd/harness/test-reports/` 下的 Markdown / HTML 测试报告，就只能如实说“局部实现或代码修改已完成，项目级收口仍待补齐”，不要把缺少最终验证的状态表述成已经闭环
+  - 如果本轮准备宣称“整体完成”或“项目级完成”，但还没有最终 `openprd run <path> --verify` 或 task-scoped 测试报告，就只能如实说“局部实现或代码修改已完成，项目级收口仍待补齐”
   - 每个 loop 任务都对应一个全新 Codex 或 Claude 会话边界，不要在同一会话里继续下一项任务
 - 处理历史项目集群前先审计：
   - `openprd fleet <root> --dry-run`
@@ -194,11 +194,10 @@ OpenPrd 只通过生成的 AGENTS 与 skills 注入判断原则和质量合同�
 - 声称实现就绪前，先校验 standards：
   - `openprd standards <path> --verify`
   - 这不只是缺文件检查；对已变更文件，还要判断现有文档是否过期，并在必要时更新
-- 声称实现就绪前，再校验质量：
-  - `openprd quality <path> --verify`
-  - 把 `.openprd/quality/reports/<id>.html` 当作面向人的评审产物，用于查看当前场景必需 EVO 门禁、可观测性、业务成本与滥用护栏、评估执行环境、性能、压力数据和项目知识
-  - 如果 HTML 或 `openprd run <path> --verify` 显示 `productionReady=false`，最终回复不得宣称整体就绪；必须先区分 `taskReady` 与 `workspaceReady`，再列出缺证据或需关注的必需门禁
-  - 如果 `openprd run <path> --verify` 只剩 `feature-coverage` 待关注，要说明是任务账本或覆盖证据未收口，不要把本次功能表述成失败
+- 声称实现就绪前，汇总任务与结构状态：
+  - `openprd run <path> --verify`
+  - 直接读取 `taskReady / workspaceReady / workspaceAttention` 摘要，不生成额外 eval JSON/HTML
+  - 如果摘要显示 `taskReady=true` 且 `workspaceReady=false`，先区分当前任务通过与工作区结构待关注，再列出具体检查项
 - 进入高风险动作前，校验完整 harness：
   - `openprd run <path> --verify`
   - `openprd doctor <path>`

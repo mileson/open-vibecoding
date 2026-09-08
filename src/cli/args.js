@@ -674,7 +674,7 @@ function usage() {
     '  openprd playground [path] [--open] [--json]',
     '  openprd brainstorm [path] [--topic <text>] [--open] [--json]',
     '  openprd learn [path] [--topic <text>] [--genre <internet-product|scientific|fairy-tale|web-novel|xianxia>] [--style <substyle>] [--source <workspace|docs|loop|all>] [--content-json <file>] [--open] [--enable|--disable] [--json]',
-    '  openprd quality [path] [--init|--verify|--report --html|--learn [--review] --from <report-id-or-json-or-diagnostics-or-turn-state>] [--fail-on-violation] [--force] [--json]',
+    '  openprd quality [path] [--init|--verify|--learn [--review] --from <legacy-report-or-diagnostics-or-turn-state>] [--fail-on-violation] [--force] [--json]',
     '  openprd knowledge <candidates|reject|archive|restore> [path-or-id] [--status <pending-review|all|rejected|archived|promoted|merged>] [--id <candidate-id>] [--reason <text>] [--json]',
     '  openprd visual-prepare [path] --reference <effect-image> ((--grid <columns>x<rows>) | (--boxes <plan.json>)) [--include <csv>] [--id <reference-set-id>] [--title <text>] [--out <dir>] [--json]',
     '  openprd visual-compare [path] ((--reference <effect-image> --actual <screenshot-image>) | (--before <before-screenshot> --after <after-screenshot>) | --board <board.json>) [--reference-box <x,y,w,h>] [--actual-box <x,y,w,h>] [--before-box <x,y,w,h>] [--after-box <x,y,w,h>] [--focus-label <text>] [--focus-reason <text>] [--presentation <local-first>] [--out <file.jpg>] [--format <jpg|png|webp>] [--quality <1..100>] [--max-panel-width <px>] [--locale <zh-CN|en>] [--json]',

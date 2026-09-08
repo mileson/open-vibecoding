@@ -244,8 +244,6 @@ function defaultTurnState() {
     reviewSignals: [],
     runtimeEvents: [],
     timeline: [],
-    lastKnowledgePromptCandidateId: null,
-    lastKnowledgePromptAt: null,
   };
 }
 
@@ -338,8 +336,6 @@ function beginTurnReview(root, baseEvent, prompt) {
       message: promptPreview,
       at: now(),
     }] : [],
-    lastKnowledgePromptCandidateId: null,
-    lastKnowledgePromptAt: null,
   });
 }
 
@@ -2761,7 +2757,7 @@ function buildGateFailureEnvelope(result) {
         runCheck.workspaceAttention?.detail ?? null,
         ...(runCheck.warnings ?? []),
       ].filter(Boolean),
-      repair: 'Suggested follow-up: resolve the workspace-level debt from openprd run . --verify or openprd quality . --verify in the background.',
+      repair: 'Suggested follow-up: resolve the workspace-level debt from openprd run . --verify in the background.',
     };
   }
   return {
@@ -2802,7 +2798,7 @@ function toolFailureMessage(kind) {
     return 'A tool command failed in a way that looks like integration drift. Use openprd doctor . to inspect it, then repair confirmed drift with openprd update . or the targeted fix while keeping the user-requested work moving where safe.';
   }
   if (kind === 'workspace-debt') {
-    return 'A tool command reported workspace-level readiness debt. Record it as workspaceAttention, continue safe task-scoped work, and use openprd run . --verify or openprd quality . --verify before making an overall readiness claim.';
+    return 'A tool command reported workspace-level readiness debt. Record it as workspaceAttention, continue safe task-scoped work, and use openprd run . --verify before making an overall readiness claim.';
   }
   return 'A tool command failed against the current task. Use openprd next . and the relevant verification command to identify the smallest task-scoped repair path.';
 }
@@ -3293,9 +3289,6 @@ function closeoutVerificationReminder(root, turnState, stopIntent) {
     return null;
   }
   const missing = [];
-  if (!hasTurnReviewSignal(turnState, 'quality-verify')) {
-    missing.push('最终 `openprd quality . --verify` 与 HTML 质量报告');
-  }
   if (!hasTurnReviewSignal(turnState, 'run-verify')) {
     missing.push('最终 `openprd run . --verify`');
   }
@@ -3643,47 +3636,6 @@ function handle(eventName, cwd, payload) {
     const closeoutReminder = closeoutVerificationReminder(root, turnState, stopIntent);
     if (closeoutReminder) {
       return allowHook(closeoutReminder);
-    }
-    if (Array.isArray(turnState.touchedFiles) && turnState.touchedFiles.length > 0) {
-      const review = runOpenPrd(['quality', '.', '--learn', '--review', '--from', '.openprd/harness/turn-state.json', '--json'], root);
-      if (review.ok) {
-        try {
-          const parsedReview = JSON.parse(review.stdout);
-          if (
-            parsedReview
-            && !parsedReview.skipped
-            && parsedReview.ok !== false
-            && parsedReview.candidateId
-            && parsedReview.status === 'pending-review'
-            && parsedReview.candidateId !== turnState.lastKnowledgePromptCandidateId
-          ) {
-            writeTurnState(root, {
-              ...turnState,
-              lastKnowledgePromptCandidateId: parsedReview.candidateId,
-              lastKnowledgePromptAt: now(),
-            });
-            const userFacingMessage = String(parsedReview.userFacingExperience?.message || '').trim();
-            return allowHook([
-              'OpenPrd 在本轮收工回顾里发现了一条适合沉淀为当前项目经验的内容。',
-              '把它作为当前项目的后台候选经验记录，不要在最终回复中要求用户确认，也不要提 Draft Skill、candidate、promote、路径或命令：',
-              userFacingMessage || [
-                '这次我观察到一个以后可能重复出现的情况：',
-                '这次任务里已经形成了一种以后可能重复出现的处理方式。',
-                '',
-                '我计划保留一条项目经验：',
-                '以后再遇到类似任务时，我会优先复用这次已经验证过的处理顺序和注意事项。',
-                '',
-                '以后如果再遇到类似任务，我会优先按这套经验来处理，减少重复解释和重复判断。',
-                '这条经验只会保留在当前项目里。',
-                '已作为当前项目候选经验记录，不影响当前任务。',
-              ].join('\n'),
-              null,
-              `如果用户明确表示暂不保留，执行：openprd knowledge reject --path . --id ${parsedReview.candidateId} --reason "<用户原话>"`,
-              `如果用户表示先不处理、以后再说，执行：openprd knowledge archive --path . --id ${parsedReview.candidateId} --reason "<用户原话>"`,
-            ].filter(Boolean).join('\n'));
-          }
-        } catch {}
-      }
     }
   }
 

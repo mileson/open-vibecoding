@@ -69,7 +69,7 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
    - 判断当前用户正在和 Codex、Claude Code 还是 Cursor 对话时，按 hook/session payload > 显式 launcher > SDK/headless session > 子进程 env > config/CLI probe > agent 自述的优先级处理。Codex 原生 Image 2、Computer Use、Codex-owned browser window、对话协同画布和当前线程文本桥接属于 surface-dependent 能力，只有当前工具面或 hook/session 证据明确支持时才使用；当前线程桥接只在 Codex App 明确提供线程发送工具时使用，画布图片仍以导出路径或 Markdown 图片引用作为证据；不要仅凭 Codex CLI、`.codex/config.toml` 或 `CODEX_HOME` 推断可用。
    - 前端体验任务优先读取 `skills/openprd-frontend-design/SKILL.md` 与 `.openprd/design/`；lens、theme、layout 和组件由 Agent 作为后台设计合同维护，不创建用户确认停顿。
    - 使用 `.openprd/harness/visual-reviews/` 承接用户参考图或 Agent 采用的可逆默认 reference-set、方向、实现后视觉对比证据、局部焦点证据板、并行实验证据板、截图实测证据板和对齐辅助线证据板；候选效果图只有在 Agent 采用或用户明确选择后才登记，并保留来源标注。
-   - 使用 `.openprd/quality/config.json`、`.openprd/quality/reports/` 和 `.openprd/knowledge/` 判断实现就绪、当前场景必需 EVO 证据和可复用经验。
+   - 使用 task-scoped evidence、`.openprd/harness/run-state.json` 和任务状态判断本次实现是否就绪；历史 `.openprd/quality/reports/` 不再参与默认验证，经验只在明确需要时从 `.openprd/knowledge/` 读取或沉淀。
    - 使用 `.openprd/growth/` 承接收工阶段的自我成长复盘；工具识别补全和减少重复打扰这类高置信低风险项可自动补齐，用户偏好、项目协作规矩和 OpenPrd 默认行为留作带来源的后台候选，不创建用户确认停顿。
 10. 生成图片内容时默认使用 `imagegen`，也就是 Codex 原生 Image 2；Image 2 是工具路径，不是审美豁免。
    - 当用户要求生成图片、封面图、配图、海报、插画、图标、贴纸、头像、banner、主视觉/KV、运营图、效果图、视觉稿、mockup、先看样子或先确认设计方向时，默认直接调用 `imagegen` 产出图片。
@@ -190,7 +190,7 @@ description: OpenPrd 工作区与产物的共用守则。凡是需要查看、�
   - `references/language-and-review.md`
   - `references/skill-architecture.md`
 - 需要项目基线文档、文件说明书、文件夹 README 规则或 standards 校验：使用 `$openprd-standards`
-- 需要日志、链路追踪、业务成本护栏、免费额度、滥用防护、冒烟覆盖、性能基线、压力场景、HTML 质量评估报告、当前场景 EVO 门禁或项目经验 Skill：使用 `$openprd-quality`
+- 需要显式诊断日志、链路追踪、业务成本护栏、冒烟覆盖、性能、媒体证据或读取历史 eval：使用 `$openprd-quality`；默认任务收口不调用
 - 需要检查生成引导漂移、hooks 或用户级 Codex 配置：使用 `$openprd-harness`，并运行 `openprd doctor/update`
 - 需要 Ralph 风格的 hook 驱动执行：使用 `$openprd-harness` 和 `openprd run`
 - 需要按单任务拆分、每个任务一个全新 Codex 或 Claude 会话的长程实现：使用 `$openprd-harness` 和 `openprd loop`

@@ -1063,7 +1063,7 @@ function buildSyntheticReviewSource(projectRoot, options = {}) {
       ...touchedFiles.map((file) => `相关文件: ${file}`),
     ]).slice(0, 8),
     prevention: [
-      '任务完成后自动生成 knowledge candidate，再由维护者决定 promote、reject 或 archive。',
+      '只有明确调用 knowledge review 后才生成 candidate，再由维护者决定 promote、reject 或 archive。',
       '即使没有 hook turn-state，也要回退到最近验证信号和最近改动文件完成后置沉淀。',
       '保持验证证据、实现文件和知识草案之间的最小关联，减少下次复盘时重新拼上下文的成本。',
     ],

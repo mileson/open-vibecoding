@@ -15,7 +15,7 @@ OpenPrd is a lightweight **PRD harness**. Start by describing the problem in pla
 - visual review
 - structured handoff into execution
 
-Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps people and agents aligned around stable HTML artifacts such as `review.html`, learning readers, and quality reports. OpenPrd helps the agent do the work: PRDs, reviews, changes, tasks, design contracts, and evidence are maintained in the background without requiring the user to reply with a prescribed confirmation.
+Instead of hiding key decisions in prompts or terminal logs, OpenPrd keeps people and agents aligned around review HTML and learning readers when they are genuinely useful, while task verification stays in direct evidence and compact status. It no longer generates a second quality-eval page for every closeout.
 
 ## 0.2.3: Agent-authored, task-specific HTML review surfaces
 
@@ -106,7 +106,7 @@ or only on coding execution.
 
 | Tool | Center of gravity | Main user-facing artifacts | Best fit |
 |------|-------------------|----------------------------|----------|
-| **OpenPrd** | Requirement clarification, HTML-first collaboration, and delivery gates | `review.html`, learning readers, quality reports, diagrams, structured change/task state | Teams that need humans and agents to stay aligned through planning, review, execution, and ship decisions |
+| **OpenPrd** | Requirement clarification, review-on-demand collaboration, and delivery checks | `review.html`, learning readers, task evidence, diagrams, structured change/task state | Teams that need humans and agents to stay aligned through planning, review, execution, and ship decisions |
 | **OpenSpec** | Spec and change lifecycle | Markdown proposals, specs, design docs, tasks | Teams that want disciplined spec deltas and a clean change-management workflow |
 | **Superpowers** | Skill-driven coding execution | Skills, plans, worktree/subagent flows, code-review checkpoints | Engineering-heavy teams optimizing how AI agents plan, code, review, and finish branches |
 
@@ -244,7 +244,7 @@ automatically.
 - **Project release/version ledger**: optionally track project versions such as `0.1.23`, version-scoped change items, and local git tag coordination without mixing them with internal PRD `v000x` versions
 - **OpenPrd discovery mode**: initialize durable coverage runs for existing projects, reference projects, or unclear requirements
 - **Project standards**: initialize and verify `docs/basic/`, file manual templates, and folder README templates as part of execution quality gates
-- **Quality Regression Reports**: review overall regression status, per-requirement module status, test-block results, observability, business cost and abuse guardrails, smoke coverage, performance baselines, and project knowledge through HTML reports
+- **Explicit quality diagnostics**: inspect observability, business cost, abuse guardrails, performance, and legacy eval data on demand without generating a second closeout report
 - **Project knowledge skills**: turn verified fixes and recurring diagnosis patterns into reusable `.openprd/knowledge/skills/` experience skills
 - **OpenPrd change and task execution**: materialize PRD snapshots into change files, validate them, apply accepted specs, archive changes, and advance structured tasks by dependency order
 - **Long-running agent loop**: turn accepted change tasks into one-task-per-session Codex or Claude execution prompts with verification, progress logs, and optional task commits
@@ -515,7 +515,7 @@ task metadata. Documentation tasks still use standards checks. Reserve
 `openprd change . --validate` as the only proof. Legacy generated tasks that
 still say `verify: openprd run . --verify` are treated as task evidence checks
 when run through `openprd tasks --verify`, so old task files do not keep
-regenerating workspace quality reports. Use `oracle` when the task must compare against a reference
+creating workspace-wide evaluation artifacts. Use `oracle` when the task must compare against a reference
 implementation, golden data set, screenshot baseline, or other explicit source
 of truth; `openprd loop --finish` then requires `--notes` or `--evidence` so the
 comparison result is recorded.
@@ -752,40 +752,27 @@ yellow visual centroid, then stores bounding-box center offset and
 visual-centroid offset in metadata. A raw screenshot or subjective “looks
 centered” note is not a substitute for this board.
 
-## Quality Regression Reports
+## Task Verification and Explicit Quality Diagnostics
 
-`openprd init` also creates a quality contract:
-
-- `.openprd/quality/config.json`
-- `.openprd/quality/reports/`
-- `.openprd/knowledge/`
-
-Use:
+Default closeout no longer writes `.openprd/quality/reports/eval-*.json` or
+`.html`. The Agent runs the task's real tests, stores task-scoped evidence, and
+then summarizes it with:
 
 ```bash
-openprd quality /path/to/project --verify
+openprd standards /path/to/project --verify
+openprd run /path/to/project --verify
+openprd doctor /path/to/project
 ```
 
-The command writes both JSON and HTML reports under `.openprd/quality/reports/`.
-The HTML regression report is the human-readable quality surface: overall
-regression status, per-requirement module status, test-block pass/fail results,
-test strategy matrix, missing items, and the small set of gaps that need a
-person to decide whether they are in scope for the current delivery. EVO is
-OpenPrd's internal shorthand for the evaluation/verification quality layer; the
-visible report does not ask users to know that acronym. A script or fixture
-being present only proves capability; required gates need current evidence or an
-explicit waiver.
+`run --verify` returns a compact `taskReady / workspaceReady /
+workspaceAttention` summary. It does not trigger a full quality scan, report
+indexes, retention, or automatic knowledge candidates. Existing
+`.openprd/quality/reports/` files remain untouched as historical records.
 
-When a requirement involves free users, quotas, AI calls, third-party APIs,
-generation, storage, downloads, or other metered costs, `quality --verify`
-also checks for cost drivers, user-level limits, negative abuse-path
-verification, usage/cost monitoring, alert thresholds, and stop-loss actions.
-
-`openprd quality --verify` reports required test blocks as advisory attention and
-returns success by default. An explicitly strict governance job can add
-`--fail-on-violation` for a non-zero readiness result. `openprd run --verify`
-reports that as `claimReady=false` and workspace attention; it does not rewrite a
-verified current task as failed or invalidate an existing commit.
+When a user explicitly asks for a diagnostic audit of observability, cost and
+abuse guardrails, performance, media evidence, or a legacy eval, `openprd
+quality /path/to/project --verify` remains available. It returns an in-memory
+structured result and writes no new eval artifacts.
 
 For UI work with an existing reference image, visual readiness also requires a
 current `openprd visual-compare` artifact under `.openprd/harness/visual-reviews/`.
@@ -803,7 +790,7 @@ project knowledge:
 
 ```bash
 openprd quality /path/to/project --learn --review --from .openprd/harness/turn-state.json
-openprd quality /path/to/project --learn --from <report-id-or-json>
+openprd quality /path/to/project --learn --from <candidate-dir|diagnostics|legacy-report.json>
 openprd quality /path/to/project --learn --from ./diagnostics/incident-2026-05-24
 ```
 
@@ -812,8 +799,8 @@ openprd quality /path/to/project --learn --from ./diagnostics/incident-2026-05-2
 `.openprd/knowledge/drafts/`. Once the draft is worth keeping, `--learn --from`
 promotes it into incident, pattern, and experience skill artifacts under
 `.openprd/knowledge/` so future tasks can retrieve the lesson instead of
-rediscovering it. `--from` now accepts either a quality report JSON or an
-extracted diagnostics directory / evidence file that already contains
+rediscovering it. `--from` accepts a confirmed candidate, a legacy quality
+report JSON, or an extracted diagnostics directory / evidence file that contains
 `diagnostic-report`, `runtime-events`, `timeline`, or `root-cause-candidates`
 artifacts, so a verified fix can be promoted directly into a reusable
 troubleshooting skill.

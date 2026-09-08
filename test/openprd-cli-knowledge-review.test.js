@@ -151,7 +151,7 @@ test('printQualityResult shows user-facing knowledge review copy during verify o
     }, false);
   });
 
-  assert.match(output, /OpenPrd quality: 完成/);
+  assert.match(output, /OpenPrd quality diagnostics: 完成/);
   assert.match(output, /项目经验回顾:/);
   assert.match(output, /以后收工时优先先讲清楚本次情况、计划保留的经验和复用方式/);
   assert.doesNotMatch(output, /项目经验草案:/);

@@ -42,7 +42,7 @@ OpenPrd 的需求初始化默认不是重问卷，而是先建立一层轻量的
 - 作为界面需求负责人，我希望确认后的整板、网格图或多对象效果图能先被切成 reference-set 并生成 contact sheet，从而让我先确认裁剪完整，再让 Agent 按对象逐项复刻而不是整板盲比。
 - 作为界面需求负责人，我希望已有参考效果图时 Agent 必须把效果图和实现截图拼成左右对比图并据此返工，从而减少“看起来差不多”但实际不一致的交付。
 - 作为界面需求负责人，我希望没有参考效果图的界面改动也能留下修改前和修改后的左右对比图，从而让 Agent 自己检查预期变化和意外漂移。
-- 作为工程协作者，我希望每次阶段性开发结束后获得 HTML 回归测试报告，从而能先看回归结论概览、回归流程图、测试覆盖图、必测结果和需处理项，再按需要展开证据链、执行环境和结构化细节。
+- 作为工程协作者，我希望阶段性开发结束后直接看到任务测试和 `run --verify` 的简短摘要，不再重复生成全工作区 quality eval 页面。
 - 作为项目负责人，我希望 Agent 在人类审查节点遇到大批逐项证据、可逆审批、多媒体上下文、高影响测试/发布矩阵或长期结构化材料时，必须主动制作适合当前任务的 HTML，而不必等我明确索要；同时 OpenPrd 只负责注入判断与质量合同，不用固定生成器代替 Agent 思考。
 - 作为项目负责人，我希望涉及免费用户、额度、AI 调用或第三方成本的需求会自动追问成本来源、限制、报警和止损动作，从而减少免费额度被滥用造成真实损失的风险。
 - 作为项目维护者，我希望排查并验证修复的问题能抽象成项目级经验 skill，从而让同类问题下次被提前识别。
@@ -85,10 +85,10 @@ OpenPrd 的需求初始化默认不是重问卷，而是先建立一层轻量的
 - 包含：OpenPrd 自身维护时的 grow-aware 配置自检，覆盖新增或修改阈值、规则、识别、豁免、命令别名、环境差异、用户偏好和策略开关；高置信可成长时默认纳入 grow，不确定时主动询问用户。
 - 包含：PRD 业务护栏层，在命中免费、额度、用量、AI 生成、模型调用或第三方成本信号时，要求补齐成本来源、额度限制、滥用防护、监控信号、报警阈值和止损动作。
 - 包含：L2/脑暴阶段的创业验证闭环，要求 requirement 摘要、brainstorm 工作台和 PRD 同步呈现社区契合依据、当前替代与痛点证据、手工/表单/no-code 桥接、付费验证信号、产品化门槛、增长纪律和先活下来方案。
-- 包含：`openprd quality` 质量层，初始化 `.openprd/quality/config.json`，生成 JSON + HTML 回归测试报告，评估当前质量场景、本期必测块、本次执行证据、中心化日志、链路关联字段、业务成本与滥用护栏、冒烟测试、任务覆盖、正常性能、极端压力数据和知识库沉淀。EVO 只作为内部质量评估/验证层代号，不要求用户在报告中理解该缩写。
+- 包含：显式 `openprd quality` 专项诊断，可按需评估日志、业务成本、测试、性能与媒体证据，但不生成 eval JSON/HTML，也不参与默认收口。
 - 包含：`.openprd/knowledge/` 项目级经验层，将已验证修复抽象为 incident、pattern 和可复用 skill。
 - 包含：复盘学习包的 Agent 写作工具包、内容合同校验和 HTML reader 骨架；CLI 不直接生成读者可见的文章内容。
-- 包含：文档反污染层，`standards --verify` 输出 `docsQuality` 巨行/平均行长/`prd.md` 落后版本 warning，`openprd docs-compact` 给出逐行压缩建议，质量报告按 retention 自动修剪，评审 artifact 超过保留数自动归档。
+- 包含：文档反污染层，`standards --verify` 输出 `docsQuality` 巨行/平均行长/`prd.md` 落后版本 warning，`openprd docs-compact` 给出逐行压缩建议，评审 artifact 超过保留数自动归档。
 - 包含：界面类需求的交互方向评审，`reviewPresentation.designDirections` 支持 2 到 4 个 `imagegen` 交互方向卡片进入 `review.html`，用户用 `review --mark confirmed --direction <id>` 一次完成 review 确认和方向选定。
 - 包含：PM 流程指引层，`openprd guide` 按工作区状态输出 7 步流程（澄清 → 摘要 → 评审 → 方向 → 任务 → 实现 → 收口）当前位置和下一步动作；`review.html` 顶部渲染同款阶段条。
 - 包含：画布评审协同层，canvas 右栏“评审协同”区展示流程位置（`/api/guide`），并可一键把当前 review 的交互方向连图带说明导入画布（`/api/review-directions`），供用户圈选批注后回传 Codex。
@@ -129,12 +129,12 @@ OpenPrd 的需求初始化默认不是重问卷，而是先建立一层轻量的
   - 已合成版本后再次 `capture` 用户确认或推导得到的内容，必须把旧评审状态标记为过期并清掉 active 版本指针；仅用于 `agent-normalized` 的内部措辞规范化或 `reviewPresentation` 展示层写回，不触发二次 review。
 - 新 PRD 模板会单独保留“验证与创业闭环”章节，用来记录第一批先找谁、为什么算这个社区里的自己人、用户当前怎么替代、痛点证据、如何先手工或 no-code 交付、如果必须开始做产品也只自动化最重复的一步并先压成 forms / lists / CRUD 骨架、什么承诺算真需求、最低成本验证动作、达到什么条件才允许产品化、增长阶段守什么纪律，以及 default alive 约束，以及这是不是团队愿意长期住进去、不会反过来绑住自己的业务形态。
 - 命中消耗型成本风险的 change 会自动生成成本额度、滥用越权、监控报警和止损验证任务。
-- `openprd quality --verify` 会生成 `.openprd/quality/reports/<id>.html`，报告包含回归结论概览、回归流程图、测试覆盖图、本期必测结果、需要处理或确认的事项、验证材料、执行环境与覆盖、折叠明细和底部“需要补测 / 认可回归”操作栏。
-- `openprd quality --verify` 默认把未 production-ready 的本期必测块写入 `claimReady/workspaceAttention` 并返回成功；只有显式 `--fail-on-violation` 才用非零退出码表达严格整体就绪检查，不改写当前任务结果。
-- `openprd loop --finish` 完成最后一个任务时会生成最终质量评估；报告未 production-ready 时保留任务完成状态和已有 commit，只返回整体就绪提醒。
-- `openprd quality --learn --from <report>` 会把已审查报告沉淀为 `.openprd/knowledge/` 下的 incident、pattern 和项目级经验 Skill。
+- `openprd quality --verify` 只返回显式诊断结果，`reportPath/htmlPath/indexPath` 均为 `null`，并保证旧报告目录不被修改。
+- `openprd run --verify` 不调用 quality，只汇总 standards、validate、当前 change/discovery 与 task-scoped evidence。
+- `openprd loop --finish` 完成最后一个任务时只生成 task-scoped Markdown/HTML 回归报告，不生成 quality eval 或自动 knowledge candidate。
+- `openprd quality --learn --from <turn-state|diagnostics|candidate|legacy-report.json>` 仅在明确值得沉淀时显式执行。
 - `openprd learn` 未传入 Agent 写作内容时只生成待写作包；传入 `--content-json` 后，输出内容必须包含 Agent 写出的标题、大纲、章节和有效证据引用。
-- `npm test`、`openprd standards --verify`、`openprd quality --verify`、`openprd run --verify` 能验证状态分层和真实安全边界没有回退。
+- `npm test`、`openprd standards --verify`、`openprd run --verify` 和 `openprd doctor` 能验证状态分层和真实安全边界没有回退。
 
 ## 维护规则
 

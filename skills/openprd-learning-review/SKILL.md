@@ -14,7 +14,7 @@ description: 生成并维护 OpenPrd 复盘学习包、题材参考库、证据�
 - 用户明确要求复盘某个项目领域或能力面
 - 需要构建或刷新题材模板、证据清单、检索模块或工作示例
 - 需要生成归档在 `.openprd/` 内的 HTML 电子书阅读器
-- 需要把已验证修复或质量复盘连接到可复用的项目经验；此时让 Skill 产物继续经过 `$openprd-quality`，把抽象模式沉淀到 `.openprd/knowledge/skills/`
+- 需要把已验证修复连接到可复用的项目经验；只有明确值得沉淀时，才让 Skill 产物经过 `$openprd-quality` 写入 `.openprd/knowledge/skills/`
 - 需要区分“项目经验沉淀”和“操作配置自我成长”；配置缺口、文件识别、命令习惯或用户偏好应进入 `.openprd/growth` 候选，而不是直接写入学习包或共享 Skill
 
 ## 核心契约
@@ -38,7 +38,7 @@ description: 生成并维护 OpenPrd 复盘学习包、题材参考库、证据�
 7. 把 `learning-package.json`、`learning-content.json`、`learning-content.md`、`evidence-manifest.json` 和 `reader.html` 一起写入归档目录。
 8. 更新 `.openprd/learning/index.json` 和 `.openprd/learning/current.json`，让后续任务能快速找到最新学习包。
 9. 当配置允许自动打开时，在学习包创建后自动打开阅读器。
-10. 如果学习包记录的是已验证修复、重复问题、隐藏调试路径或 Agent 误判，运行或建议运行 `openprd quality <path> --learn --from <eval-report>`，把抽象模式沉淀成未来可触发的项目 Skill。
+10. 如果学习包记录的是已验证修复、重复问题、隐藏调试路径或 Agent 误判，显式运行 `openprd quality <path> --learn --from <turn-state|diagnostics|legacy-report.json>`；不要由默认收口自动生成候选。
 
 ## 章节结构
 

@@ -24,7 +24,7 @@
 - `node ./bin/openprd.js synthesize . --work-unit <id> --target-root <path>` / `node ./bin/openprd.js review . --mark confirmed --version <id> --digest <sha256> --work-unit <id>`: 绑定并校验工具无关的需求工作单元，避免多 Agent 或多对话确认到其他需求。
 - `node ./bin/openprd.js fleet <root> --sync-registry`: 把当前 root 下已初始化的 `.openprd/` 工作区回填到 `~/.openprd/registry/workspaces.jsonl`，给后续历史项目更新提供全局视角。
 - `node ./bin/openprd.js fleet <root> --backfill-work-units`: 只为历史 OpenPrD artifact 补可验证的 work unit 绑定、digest 与索引；不生成缺失的历史需求、评审或任务正文。
-- `node ./bin/openprd.js quality . --verify`: 生成 JSON 与 HTML 回归测试报告，展示整体回归结果、逐需求模块结果、测试块通过情况、本次执行证据、日志链路、业务成本与滥用护栏、冒烟覆盖、性能基线、极端场景和项目经验沉淀。
+- `node ./bin/openprd.js quality . --verify`: 仅在显式专项诊断时返回内存中的结构化结果，不生成 eval JSON/HTML。
 - `node ./bin/openprd.js quality . --learn --from <report>`: 将审查过的问题修复抽象为 `.openprd/knowledge/skills/` 下的项目级经验 skill。
 - `node ./bin/openprd.js visual-prepare . --reference <效果图> --grid <列>x<行>` / `--boxes <plan.json>`: 把确认后的整板、网格图或多对象效果图整理成 reference-set，输出 crops、contact sheet、compare-plan 和 board 模板，供后续逐项视觉验收使用。
 - `node ./bin/openprd.js visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en>`: 把参考图和实现截图合成左右对比图。
