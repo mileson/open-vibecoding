@@ -22,7 +22,7 @@ description: Open VibeCoding 的 Agent 增强总则。按任务场景提供工�
 - 研发：功能实现、故障定位、重构各由独立场景提醒，Agent 自主思考与执行。`dev-check` 是代码变更后的维护提醒，不是执行许可。
 - 测试：测试策略与实际验收分开；真实媒体、小程序、浏览器、性能或安全任务按对应风险补真实证据，不用构建成功替代运行态证据。
 - Vibe Coding 增强：工具选择、画布协作、经验复用各有独立场景；`capabilities` 是 Agent 的能力发现接口，不能按固定关键词自动派发。
-- 人类审查：仅当比较、媒体、复杂矩阵或长期阅读确实需要时，按 `references/agent-authored-html-review.md` 制作任务专属审查界面；普通任务不生成 `review.html`。
+- 人类审查：用户需要 HTML 或比较、媒体、复杂矩阵确需审查界面时，按 `references/agent-authored-html-review.md` 制作；采用结论先行、总分总与业务案例，并复用 `references/review-handoff.md` 的固定“复制评审结果给 AI”组件。普通任务不生成 `review.html`，组件不接管正文或自动发送。
 
 ## 收口
 

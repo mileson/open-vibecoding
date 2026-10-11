@@ -1,0 +1,152 @@
+<!-- Embed this fragment once near the end of an Agent-authored HTML body. -->
+<style>
+  .ovc-review-space{height:calc(100px + env(safe-area-inset-bottom))}
+  .ovc-review-footer{position:fixed;inset:auto 0 0;z-index:50;display:flex;justify-content:center;align-items:center;background:#fff;border-top:1px solid #eee;padding:14px 16px calc(14px + env(safe-area-inset-bottom));box-sizing:border-box}
+  .ovc-review-footer.in-toolbar{position:static;inset:auto;background:transparent;border:0;padding:0;justify-content:flex-end}
+  .ovc-review-space[hidden]{display:none}
+  .ovc-review-copy{display:inline-flex;align-items:center;justify-content:center;gap:7px;max-width:100%;min-height:44px;padding:12px 24px;border:0;border-radius:999px;background:#3A83F7;color:#fff;font:500 13px/1.4 system-ui,sans-serif;cursor:pointer}
+  .ovc-review-copy:hover{background:#3275df}
+  .ovc-review-copy:focus-visible,.ovc-review-close:focus-visible{outline:2px solid #438eca;outline-offset:4px}
+  .ovc-review-copy:disabled{opacity:.65;cursor:wait}
+  .ovc-review-copy svg{width:18px;height:18px;flex:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .ovc-review-eye{fill:currentColor;stroke:none}
+  .ovc-review-toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));z-index:60;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;padding:10px 18px;border:0;border-radius:10px;background:#2f9d6a;color:#fff;box-shadow:0 8px 30px #234e2430;font:400 13px/1.5 system-ui,sans-serif;text-align:center;opacity:0;pointer-events:none;transform:translate(-50%,15px);transition:opacity .2s,transform .2s}
+  .ovc-review-toast.warning{background:#fff3c4;color:#735b22;box-shadow:0 8px 28px #735b2214}
+  .ovc-review-toast.show{opacity:1;transform:translate(-50%,0)}
+  .ovc-review-toast.in-toolbar{left:auto;right:16px;top:80px;bottom:auto;transform:translateY(-15px)}
+  .ovc-review-toast.in-toolbar.show{transform:translateY(0)}
+  .ovc-review-dialog{box-sizing:border-box;width:min(640px,calc(100vw - 32px));max-height:85dvh;overflow:auto;border:1px solid #ddd;border-radius:14px;padding:20px;background:#fff;color:#333;font:14px/1.6 system-ui,sans-serif}
+  .ovc-review-dialog:not([open]){display:none}
+  .ovc-review-dialog::backdrop{background:#0005}
+  .ovc-review-dialog textarea{box-sizing:border-box;width:100%;height:40dvh;resize:vertical;border:1px solid #ddd;border-radius:8px;padding:12px;font:13px/1.6 system-ui,sans-serif}
+  .ovc-review-close{margin-top:12px;border:0;border-radius:8px;padding:10px 16px;background:#f2f2f2;color:#333;font:inherit;cursor:pointer}
+  @media(prefers-reduced-motion:reduce){.ovc-review-toast{transition:none}}
+  @media print{.ovc-review-footer,.ovc-review-toast,.ovc-review-dialog,.ovc-review-space{display:none!important}}
+</style>
+<div class="ovc-review-space" aria-hidden="true"></div>
+<footer class="ovc-review-footer" aria-label="评审反馈交接">
+  <button type="button" class="ovc-review-copy" id="ovc-review-copy" disabled>
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="M7 16H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v1"/><rect x="7" y="7" width="14" height="14" rx="4"/><path d="M11.5 15.8q2.5 2.4 5 0"/><circle cx="11.5" cy="12.3" r=".65" class="ovc-review-eye"/><circle cx="16.5" cy="12.3" r=".65" class="ovc-review-eye"/></svg>
+    <span>复制评审结果给 AI</span>
+  </button>
+</footer>
+<div class="ovc-review-toast" id="ovc-review-toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<dialog class="ovc-review-dialog" id="ovc-review-dialog" aria-labelledby="ovc-review-manual-title">
+  <h2 id="ovc-review-manual-title">手动复制评审结果</h2>
+  <p>自动复制未成功。请复制下面的完整内容，粘贴回 AI 对话。</p>
+  <textarea id="ovc-review-manual" readonly aria-label="完整评审结果"></textarea>
+  <button type="button" class="ovc-review-close" id="ovc-review-close">关闭</button>
+</dialog>
+<script>
+(() => {
+  'use strict';
+  const schema = 'open-vibecoding.review-selection.v1';
+  function required(value, field) {
+    if (typeof value !== 'string' || !value.trim()) throw new Error(`Missing ${field}`);
+    return value;
+  }
+  function snapshot(input) {
+    if (!input || typeof input !== 'object' || !Array.isArray(input.decisions)) throw new Error('Invalid current review');
+    const ids = new Set();
+    const decisions = input.decisions.map((item) => {
+      const id = required(item.id, 'decision.id');
+      if (ids.has(id)) throw new Error('Duplicate decision');
+      ids.add(id);
+      const reviewed = item.reviewed === true;
+      const value = reviewed ? required(item.value, 'decision.value') : null;
+      return { id, label: required(item.label, 'decision.label'), reviewed, value,
+        recommendation: typeof item.recommendation === 'string' ? item.recommendation : null,
+        notes: typeof item.notes === 'string' ? item.notes : '' };
+    });
+    return { schema_version: schema, document_id: required(input.document_id, 'document_id'),
+      version: required(input.version, 'version'), title: required(input.title, 'title'),
+      captured_at: new Date().toISOString(), decisions,
+      notes: typeof input.notes === 'string' ? input.notes : '', review_only: true };
+  }
+  function format(selection) {
+    const done = selection.decisions.filter((item) => item.reviewed).length;
+    const lines = ['评审结果', `主题：${selection.title}`, `页面版本：${selection.version}`,
+      `已明确选择 ${done} 项，待评审 ${selection.decisions.length - done} 项。`, '', '逐项决定'];
+    for (const item of selection.decisions) {
+      lines.push(`- ${item.label}：${item.reviewed ? item.value : '待评审'}`);
+      if (item.recommendation) lines.push(`  AI 建议（不代表用户选择）：${item.recommendation}`);
+      if (item.notes) lines.push(`  用户意见：${item.notes}`);
+    }
+    lines.push('', '补充意见', selection.notes || '未填写', '',
+      '请依据我的明确选择和修改意见继续；待评审项不能视为同意。复制不代表已经发送，也不自动授权部署、发布或其他外部操作。',
+      '', '结构化评审数据', JSON.stringify(selection, null, 2));
+    return lines.join('\n');
+  }
+  function mount({ getSelection, toolbar = null }) {
+    if (typeof getSelection !== 'function') throw new Error('Provide a synchronous current-state adapter');
+    const button = document.getElementById('ovc-review-copy');
+    const toast = document.getElementById('ovc-review-toast');
+    const dialog = document.getElementById('ovc-review-dialog');
+    const manual = document.getElementById('ovc-review-manual');
+    const close = document.getElementById('ovc-review-close');
+    if (!button || !toast || !dialog || !manual || !close) throw new Error('Missing review handoff fragment');
+    if (toolbar) {
+      if (typeof toolbar.appendChild !== 'function') throw new Error('Provide the existing toolbar element');
+      toolbar.appendChild(button.parentNode);
+      button.parentNode.className = 'ovc-review-footer in-toolbar';
+      document.querySelector('.ovc-review-space').hidden = true;
+    }
+    const toastHome = toast.parentNode;
+    let timer;
+    function notify(message, warning = false) {
+      toast.textContent = message;
+      const placement = toolbar && toast.parentNode !== dialog ? ' in-toolbar' : '';
+      toast.className = 'ovc-review-toast show' + placement + (warning ? ' warning' : '');
+      clearTimeout(timer);
+      timer = setTimeout(() => { toast.className = 'ovc-review-toast'; toast.textContent = ''; }, 2300);
+    }
+    function restoreToast() { toastHome.appendChild(toast); button.focus(); }
+    dialog.onclose = restoreToast;
+    close.onclick = () => {
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
+      restoreToast();
+    };
+    const current = () => snapshot(getSelection());
+    async function copy() {
+      if (button.disabled) return { status: 'busy' };
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      let selection;
+      let text;
+      try {
+        selection = current();
+        text = format(selection);
+      } catch (_) {
+        notify('当前评审内容还未准备好，请稍后再试', true);
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        return { status: 'invalid' };
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        notify('评审结果已复制，可粘贴给 AI');
+        return { status: 'copied', selection };
+      } catch (_) {
+        manual.value = text;
+        dialog.appendChild(toast);
+        try { if (!dialog.open) dialog.showModal(); }
+        catch (_) { dialog.setAttribute('open', ''); }
+        manual.focus();
+        manual.select();
+        manual.scrollTop = 0;
+        notify('自动复制未成功，请手动复制', true);
+        return { status: 'manual', selection };
+      } finally {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+      }
+    }
+    button.onclick = copy;
+    button.disabled = false;
+    window.getReviewSelection = current;
+    return { copy, getSelection: current };
+  }
+  window.OpenVibeCodingReview = { snapshot, format, mount };
+})();
+</script>

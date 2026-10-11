@@ -1,0 +1,22 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>评审反馈组件验收（假设案例）</title>
+<style>body{margin:0;background:#fafafa;color:#243042;font:16px/1.7 system-ui,sans-serif}main{max-width:940px;margin:auto;padding:24px;box-sizing:border-box}section{background:white;padding:20px;margin:20px 0;border-radius:12px}label{display:block;margin:12px 0}select,textarea{box-sizing:border-box;width:100%;font:inherit;padding:10px;border:1px solid #ddd;border-radius:8px}textarea{min-height:100px}h1{font-size:25px}h2{font-size:20px}button{font:inherit}.test-widths{display:flex;gap:8px;flex-wrap:wrap}.test-paste{min-height:160px}</style>
+<header id="review-actions" style="display:flex;justify-content:flex-end;flex-wrap:wrap;padding:16px;background:white;border-bottom:1px solid #eee" aria-label="评审操作"></header><main>
+<h1>推荐先保存问题，再生成回答</h1><p>组件验收页，以下是明确标注的假设案例，不代表产品已经实现。</p>
+<div class="test-widths"><button onclick="document.querySelector('main').style.maxWidth='940px'">桌面内容宽度</button><button onclick="document.querySelector('main').style.maxWidth='820px'">中屏内容宽度</button><button onclick="document.querySelector('main').style.maxWidth='390px'">手机内容宽度</button></div>
+<section><h2>理由与案例</h2><p>假设用户发出问题后进入电梯断网，回来应能看到同一条回答，不用重新发送。先保存问题便于关联和恢复结果。</p><p>这只是设计案例，不代表断网恢复已经测试通过。</p></section>
+<section><h2>当前决定与下一步</h2>
+<label>断网恢复<select id="restore"><option value="">待评审</option><option>采用</option><option>需要调整</option></select></label>
+<label>首版范围<select id="scope"><option value="">待评审</option><option>先做文字咨询</option><option>增加语音</option></select></label>
+<label>补充意见<textarea id="review-notes" placeholder="填写修改意见"></textarea></label>
+<p>复制后粘贴回 AI 对话。这里的测试粘贴区可用来检查剪贴板内容。</p>
+<label>测试粘贴区<textarea id="test-paste" class="test-paste"></textarea></label>
+<label><input type="checkbox" id="deny-copy">模拟复制失败（仅测试，不改浏览器权限）</label>
+</section></main>
+__HANDOFF__
+<script>
+const originalClipboard = navigator.clipboard;
+const mountReview = OpenVibeCodingReview.mount;
+OpenVibeCodingReview.mount = (options) => mountReview({...options, toolbar:document.getElementById('review-actions')});
+OpenVibeCodingReview.mount({getSelection:()=>({document_id:'handoff-test',version:'v001',title:'回答恢复方案（假设案例）',decisions:[{id:'restore',label:'断网恢复',reviewed:!!document.getElementById('restore').value,value:document.getElementById('restore').value,recommendation:'采用'},{id:'scope',label:'首版范围',reviewed:!!document.getElementById('scope').value,value:document.getElementById('scope').value,recommendation:'先做文字咨询'}],notes:document.getElementById('review-notes').value})});
+document.getElementById('deny-copy').onchange=()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:document.getElementById('deny-copy').checked?{writeText:()=>Promise.reject(new Error('Test denial'))}:originalClipboard});
+</script></html>
