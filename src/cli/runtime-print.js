@@ -4,11 +4,11 @@ function printTaskRuntimeResult(result, json) {
     return;
   }
   if (!result.ok) {
-    console.log(`OpenPrd 并行任务运行时：未完成（${result.error?.code ?? 'unknown'}）`);
+    console.log(`Open VibeCoding 并行任务运行时：未完成（${result.error?.code ?? 'unknown'}）`);
     console.log(result.error?.message ?? '运行时操作失败。');
     return;
   }
-  console.log(`OpenPrd 并行任务运行时：${result.action.replace(/^runtime-/, '')}`);
+  console.log(`Open VibeCoding 并行任务运行时：${result.action.replace(/^runtime-/, '')}`);
   if (result.laneId) console.log(`处理通道：${result.laneId}`);
   if (result.taskId) console.log(`任务：${result.taskId}`);
   const task = result.result?.task;

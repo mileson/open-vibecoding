@@ -6,7 +6,7 @@
  * 接收项目根目录、参考图路径，以及 grid 或 boxes 形式的裁剪计划。
  *
  * 输出
- * 在 `.openprd/harness/visual-reviews/reference-sets/<id>/` 下写入 staged source、crops、reference-set.json、contact-sheet 和 board 模板。
+ * 在 `.open-vibecoding/harness/visual-reviews/reference-sets/<id>/` 下写入 staged source、crops、reference-set.json、contact-sheet 和 board 模板。
  *
  * 定位
  * 位于视觉验收的准备层，负责“整板 / 多子图 / 网格图”到可比对 reference-set 的确定性几何处理。
@@ -25,7 +25,7 @@ import { compactTimestamp, timestamp } from './time.js';
 
 const REFERENCE_SET_SCHEMA = 'openprd.reference-set.v1';
 const VISUAL_PREPARE_PLAN_SCHEMA = 'openprd.visual-prepare.plan.v1';
-const DEFAULT_REFERENCE_SET_DIR = path.join('.openprd', 'harness', 'visual-reviews', 'reference-sets');
+const DEFAULT_REFERENCE_SET_DIR = path.join('.open-vibecoding', 'harness', 'visual-reviews', 'reference-sets');
 const DEFAULT_SOURCE_FILENAME = 'source.png';
 const DEFAULT_CONTACT_SHEET_FILENAME = 'contact-sheet.jpg';
 const DEFAULT_REFERENCE_SET_FILENAME = 'reference-set.json';
@@ -760,7 +760,7 @@ function buildComparePlan(referenceSetPath, title, items, artifacts) {
       label: item.label,
       reference: item.crop.workspacePath,
       suggestedActual: DEFAULT_IMPLEMENTATION_PLACEHOLDER,
-      suggestedCommand: `openprd visual-compare . --reference ${item.crop.workspacePath} --actual ${DEFAULT_IMPLEMENTATION_PLACEHOLDER}`,
+      suggestedCommand: `open-vibecoding visual-compare . --reference ${item.crop.workspacePath} --actual ${DEFAULT_IMPLEMENTATION_PLACEHOLDER}`,
     })),
   };
 }

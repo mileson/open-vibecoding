@@ -503,7 +503,7 @@ const REVIEW_PRESENTATION_CONTRACT = {
           {
             id: 'direction-1',
             title: '15 字以内方向名',
-            image: '.openprd/design/active/direction-1.png',
+            image: '.open-vibecoding/design/active/direction-1.png',
             summary: '30 字以内一句话说明这个方向的核心体验',
             tradeoff: '30 字以内说明取舍或适用场景',
           },
@@ -682,7 +682,7 @@ function validateReviewDesignDirections(snapshot, violations, addViolation) {
       area: '交互方向评审',
       target: 'designDirections 结构',
       jsonPath: 'reviewPresentation.designDirections',
-      action: 'designDirections 必须是对象，且 directions 为数组。参考 openprd review-presentation . --template。',
+      action: 'designDirections 必须是对象，且 directions 为数组。参考 open-vibecoding review-presentation . --template。',
     });
     return;
   }
@@ -1500,7 +1500,7 @@ function shellQuote(value) {
 }
 
 function reviewCommand(snapshot, status, notes = null, extra = {}) {
-  const parts = ['openprd review . --mark', status];
+  const parts = ['open-vibecoding review . --mark', status];
   if (snapshot.versionId) {
     parts.push('--version', shellQuote(snapshot.versionId));
   }
@@ -3120,7 +3120,7 @@ function renderReviewPage({ snapshot, sectionsData, projectRelease }) {
   <body>
     <main class="review-page">
       <header class="review-topbar">
-        <div class="review-brand">OpenPrd / 评审面板</div>
+        <div class="review-brand">Open VibeCoding / 评审面板</div>
         ${renderReviewProjectVersion(visibleProjectRelease)}
       </header>
       ${renderReviewStageRail(reviewModel)}
@@ -3461,7 +3461,7 @@ export function renderPlaygroundArtifact({ snapshot, state, markdownPath, patchP
   <body>
     <main class="page">
       <h1>${escapeHtml(snapshot.title)} 调试面板</h1>
-      <p class="subtitle">左侧调整关键 PRD 参数，右侧会实时生成 Markdown 数据源和 capture patch。你可以复制 Markdown、复制 patch，或下载文件后再用 <code>openprd capture --artifact-markdown</code> 导回工作区。</p>
+      <p class="subtitle">左侧调整关键 PRD 参数，右侧会实时生成 Markdown 数据源和 capture patch。你可以复制 Markdown、复制 patch，或下载文件后再用 <code>open-vibecoding capture --artifact-markdown</code> 导回工作区。</p>
       <div class="chip-row">
         <span class="chip">版本: ${escapeHtml(snapshot.versionId)}</span>
         <span class="chip">Markdown 数据源: ${escapeHtml(markdownPath)}</span>
@@ -3478,7 +3478,7 @@ export function renderPlaygroundArtifact({ snapshot, state, markdownPath, patchP
                 <button id="downloadMarkdown">下载 data.md</button>
                 <button id="downloadPatch">下载 capture-patch.json</button>
               </div>
-              <p class="hint">推荐流程：在这里微调参数 -> 复制或下载 Markdown / patch -> 运行 <code>openprd capture . --artifact-markdown &lt;data.md&gt;</code> 或使用 JSON patch 导回。</p>
+              <p class="hint">推荐流程：在这里微调参数 -> 复制或下载 Markdown / patch -> 运行 <code>open-vibecoding capture . --artifact-markdown &lt;data.md&gt;</code> 或使用 JSON patch 导回。</p>
             </div>
           </div>
         </div>
@@ -3676,7 +3676,7 @@ export function renderRegressionArtifact({ task, report }) {
   ];
 
   return pageShell({
-    eyebrow: 'OpenPrd / 回归报告',
+    eyebrow: 'Open VibeCoding / 回归报告',
     title: `${task.id} 回归验证`,
     subtitle: '执行结果必须沉淀成结构化回归资产，而不是只把 verify 命令跑一遍。',
     statusBadge: passed
@@ -3730,7 +3730,7 @@ function toRelativeHref(fromFilePath, targetFilePath) {
   return relative.split(path.sep).join('/');
 }
 
-export function renderReviewEntryHtml({ entryPath, reviewPath, title = 'OpenPrd Review' }) {
+export function renderReviewEntryHtml({ entryPath, reviewPath, title = 'Open VibeCoding Review' }) {
   const href = escapeHtml(toRelativeHref(entryPath, reviewPath));
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -3801,7 +3801,7 @@ export function defaultReviewArtifactPath(ws) {
 }
 
 export function defaultRegressionArtifactPath(projectRoot, taskId) {
-  return cjoin(projectRoot, '.openprd', 'harness', 'test-reports', `${taskId.replace(/[^a-zA-Z0-9._-]/g, '_')}.html`);
+  return cjoin(projectRoot, '.open-vibecoding', 'harness', 'test-reports', `${taskId.replace(/[^a-zA-Z0-9._-]/g, '_')}.html`);
 }
 
 export function artifactBundleDir(ws, artifactId) {

@@ -53,7 +53,7 @@ function isoTimestamp() {
 }
 
 async function readQualityBaseline(mode) {
-  const configPath = path.resolve('.openprd/quality/config.json');
+  const configPath = path.resolve('.open-vibecoding/quality/config.json');
   const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
   return mode === 'extreme'
     ? config.evalHarness?.projectBaseline?.extreme
@@ -148,7 +148,7 @@ function runBenchmark(ledger, config) {
 }
 
 async function writeReport(mode, fixtureConfig, baseline, metrics) {
-  const reportDir = path.resolve('.openprd/harness/test-reports');
+  const reportDir = path.resolve('.open-vibecoding/harness/test-reports');
   await fs.mkdir(reportDir, { recursive: true });
   const reportPath = path.join(reportDir, `quality-${mode}-performance.md`);
   const title = mode === 'extreme' ? 'EVO Extreme Performance Report' : 'EVO Normal Performance Report';

@@ -5,9 +5,9 @@ const EVENT_ENVELOPE_VERSION = 1;
 
 class EventEnvelopeValidationError extends Error {
   constructor(errors) {
-    super(`Invalid OpenPrd event envelope: ${errors.map((item) => `${item.path} ${item.message}`).join('; ')}`);
+    super(`Invalid Open VibeCoding event envelope: ${errors.map((item) => `${item.path} ${item.message}`).join('; ')}`);
     this.name = 'EventEnvelopeValidationError';
-    this.code = 'OPENPRD_INVALID_EVENT_ENVELOPE';
+    this.code = 'OPEN_VIBECODING_INVALID_EVENT_ENVELOPE';
     this.errors = errors;
   }
 }

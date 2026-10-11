@@ -18,9 +18,9 @@
  * 错误码属于跨 CLI、Hook 与 Adapter 的稳定协议；新增错误时保持旧 code 与 details 字段兼容。
  */
 
-export const OPENPRD_TASK_ALREADY_CLAIMED = 'OPENPRD_TASK_ALREADY_CLAIMED';
-export const OPENPRD_WRITE_SET_CONFLICT = 'OPENPRD_WRITE_SET_CONFLICT';
-export const OPENPRD_REVISION_CONFLICT = 'OPENPRD_REVISION_CONFLICT';
+export const OPEN_VIBECODING_TASK_ALREADY_CLAIMED = 'OPEN_VIBECODING_TASK_ALREADY_CLAIMED';
+export const OPEN_VIBECODING_WRITE_SET_CONFLICT = 'OPEN_VIBECODING_WRITE_SET_CONFLICT';
+export const OPEN_VIBECODING_REVISION_CONFLICT = 'OPEN_VIBECODING_REVISION_CONFLICT';
 
 export class OpenPrdRuntimeError extends Error {
   constructor(code, message, details = {}, options = {}) {
@@ -43,24 +43,24 @@ export class OpenPrdRuntimeError extends Error {
 export function taskAlreadyClaimedError(details = {}) {
   const taskId = details.taskId ? ` ${details.taskId}` : '';
   return new OpenPrdRuntimeError(
-    OPENPRD_TASK_ALREADY_CLAIMED,
-    `OpenPrd task${taskId} is already claimed or the supplied claim is no longer current.`,
+    OPEN_VIBECODING_TASK_ALREADY_CLAIMED,
+    `Open VibeCoding task${taskId} is already claimed or the supplied claim is no longer current.`,
     details,
   );
 }
 
 export function writeSetConflictError(details = {}) {
   return new OpenPrdRuntimeError(
-    OPENPRD_WRITE_SET_CONFLICT,
-    'OpenPrd cannot claim this task because its write-set overlaps an active claim.',
+    OPEN_VIBECODING_WRITE_SET_CONFLICT,
+    'Open VibeCoding cannot claim this task because its write-set overlaps an active claim.',
     details,
   );
 }
 
 export function revisionConflictError(details = {}) {
   return new OpenPrdRuntimeError(
-    OPENPRD_REVISION_CONFLICT,
-    `OpenPrd revision conflict: expected ${details.expectedRevision}, current ${details.actualRevision}.`,
+    OPEN_VIBECODING_REVISION_CONFLICT,
+    `Open VibeCoding revision conflict: expected ${details.expectedRevision}, current ${details.actualRevision}.`,
     details,
   );
 }

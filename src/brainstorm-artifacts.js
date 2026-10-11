@@ -9,7 +9,7 @@
  * 导出 brainstorm.html、data.md、capture-patch.json 对应的渲染器与展示约束。
  *
  * 定位
- * 位于脑暴模式表现层，复用 OpenPrd artifact 习惯，不直接负责 workspace 状态写入。
+ * 位于脑暴模式表现层，复用 Open VibeCoding artifact 习惯，不直接负责 workspace 状态写入。
  *
  * 依赖
  * 依赖变更摘要风格约定；由 brainstorm.js 与 brainstorm-presentation.js 组合调用。
@@ -1061,9 +1061,9 @@ function brainstormCopyBundle({ label, commands, payload, message }) {
 
 function renderBottomBar(record, artifactPaths) {
   const payload = JSON.stringify(buildBrainstormExportPayload(record, artifactPaths), null, 2);
-  const reopenCommand = 'openprd brainstorm . --open';
-  const captureCommand = `openprd capture . --artifact-markdown ${shellQuote(artifactPaths.markdownPath)}`;
-  const synthesizeCommand = 'openprd synthesize . --open';
+  const reopenCommand = 'open-vibecoding brainstorm . --open';
+  const captureCommand = `open-vibecoding capture . --artifact-markdown ${shellQuote(artifactPaths.markdownPath)}`;
+  const synthesizeCommand = 'open-vibecoding synthesize . --open';
   const continueCopy = brainstormCopyBundle({
     label: '继续一起梳理',
     commands: [reopenCommand],
@@ -1716,7 +1716,7 @@ export function renderBrainstormArtifact({ record, markdownPath, patchPath, stat
   <body>
     <main class="page">
       <header class="brainstorm-topbar">
-        <div class="brainstorm-brand">OpenPrd / 方向梳理</div>
+        <div class="brainstorm-brand">Open VibeCoding / 方向梳理</div>
         <section class="brainstorm-status-card" aria-label="当前建议">
           <div class="brainstorm-status-label">当前判断</div>
           <div class="brainstorm-status-value">${escapeHtml(hero.direction)}</div>

@@ -49,7 +49,7 @@ function number(value) {
 }
 
 function runtimeRoot(projectRoot) {
-  return path.join(path.resolve(projectRoot), '.openprd', 'runtime');
+  return path.join(path.resolve(projectRoot), '.open-vibecoding', 'runtime');
 }
 
 async function taskRuntimeWorkspaceImpl(projectRoot, options = {}) {
@@ -168,7 +168,7 @@ async function taskRuntimeWorkspace(projectRoot, options = {}) {
       laneId: options.laneId ?? options.lane ?? null,
       taskId: options.taskId ?? options.task ?? null,
       error: {
-        code: error?.code ?? 'OPENPRD_RUNTIME_ERROR',
+        code: error?.code ?? 'OPEN_VIBECODING_RUNTIME_ERROR',
         message: error instanceof Error ? error.message : String(error),
         details: Object.fromEntries(Object.entries(error ?? {}).filter(([key]) => key !== 'stack')),
       },

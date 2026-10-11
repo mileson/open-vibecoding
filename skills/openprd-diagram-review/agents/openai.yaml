@@ -1,4 +1,0 @@
-interface:
-  display_name: "OpenPrd Diagram Review"
-  short_description: "Generate and self-review OpenPrd diagrams as readiness evidence"
-  default_prompt: "Use $openprd-diagram-review to generate a diagram artifact, self-review it, and preserve unresolved items as readiness attention without creating a user confirmation pause."

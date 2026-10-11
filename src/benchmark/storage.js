@@ -3,7 +3,7 @@
  * 管理 benchmark 工作区目录、approved/candidate 文件读取和索引落盘。
  *
  * 输入
- * 接收项目根目录以及来源列表，用于创建、读取和刷新 `.openprd/benchmarks`。
+ * 接收项目根目录以及来源列表，用于创建、读取和刷新 `.open-vibecoding/benchmarks`。
  *
  * 输出
  * 导出 benchmark workspace 初始化、source 文件路径和持久化读写能力。
@@ -15,7 +15,7 @@
  * 依赖 node:fs/promises、fs-utils、time，以及 render/source 提供的纯逻辑能力。
  *
  * 维护规则
- * 变更文件布局或落盘格式时必须兼容现有 `.openprd/benchmarks` 目录和已生成 yaml/md 文件。
+ * 变更文件布局或落盘格式时必须兼容现有 `.open-vibecoding/benchmarks` 目录和已生成 yaml/md 文件。
  */
 import fs from 'node:fs/promises';
 import { cjoin, exists, readYaml, writeText, writeYaml } from '../fs-utils.js';
@@ -33,9 +33,9 @@ import { renderBenchmarkIndex } from './render.js';
 import { normalizeSourceRecord } from './source.js';
 
 async function ensureOpenPrdWorkspace(projectRoot) {
-  const workspaceRoot = cjoin(projectRoot, '.openprd');
+  const workspaceRoot = cjoin(projectRoot, '.open-vibecoding');
   if (!(await exists(workspaceRoot))) {
-    throw new Error('Project is not initialized with OpenPrd. Run `openprd init .` first.');
+    throw new Error('Project is not initialized with Open VibeCoding. Run `open-vibecoding init .` first.');
   }
 }
 

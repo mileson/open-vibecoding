@@ -27,9 +27,9 @@ async function renderApprovedBenchmarkRegistrySection(projectRoot) {
       '## Project Benchmark Registry',
       '',
       '- 当前项目还没有 approved benchmark source。',
-      '- 如需补充，用 `openprd benchmark add <url|repo|file>` 添加 candidate，再用 `openprd benchmark approve <id>` 纳入项目级 registry。',
-      '- 被用户采纳过的外部信源可用 `openprd benchmark observe <url|repo|file> --notes <text>` 累计证据；达到阈值后仍需要用户确认 approve。',
-      '- Agent 仍应先读取 `.openprd/benchmarks/index.md` 和 `.openprd/benchmarks/sources.yaml`，但 candidate inbox 不能当成长期事实来源。',
+      '- 如需补充，用 `open-vibecoding benchmark add <url|repo|file>` 添加 candidate，再用 `open-vibecoding benchmark approve <id>` 纳入项目级 registry。',
+      '- 被用户采纳过的外部信源可用 `open-vibecoding benchmark observe <url|repo|file> --notes <text>` 累计证据；达到阈值后仍需要用户确认 approve。',
+      '- Agent 仍应先读取 `.open-vibecoding/benchmarks/index.md` 和 `.open-vibecoding/benchmarks/sources.yaml`，但 candidate inbox 不能当成长期事实来源。',
       '',
     ].join('\n');
   }
@@ -37,8 +37,8 @@ async function renderApprovedBenchmarkRegistrySection(projectRoot) {
   const lines = [
     '## Project Benchmark Registry',
     '',
-    '- 先读取 `.openprd/benchmarks/index.md` 和 `.openprd/benchmarks/sources.yaml`。',
-    '- 项目级 approved benchmark 优先于 OpenPrd 内置 Source Map；`inbox/` candidate 只能作为待确认线索。',
+    '- 先读取 `.open-vibecoding/benchmarks/index.md` 和 `.open-vibecoding/benchmarks/sources.yaml`。',
+    '- 项目级 approved benchmark 优先于 Open VibeCoding 内置 Source Map；`inbox/` candidate 只能作为待确认线索。',
     '- `benchmark observe` 只累计被采纳信源的证据；达到阈值后仍需用户确认 approve。',
     '- 每次最多优先挑 1-3 个与当前任务最相关的 approved source。',
     '',

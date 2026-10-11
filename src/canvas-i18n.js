@@ -1,6 +1,6 @@
 /*
  * Core purpose
- * Provide locale copy for the OpenPrd canvas browser app.
+ * Provide locale copy for the Open VibeCoding canvas browser app.
  *
  * Inputs
  * Receives locale strings from browser/system preferences or explicit user
@@ -18,13 +18,13 @@
  * both Chinese and English together.
  */
 
-const CANVAS_LOCALE_STORAGE_KEY = 'openprd-canvas-locale';
+const CANVAS_LOCALE_STORAGE_KEY = 'open-vibecoding-canvas-locale';
 const CANVAS_DEFAULT_LOCALE = 'zh-CN';
 
 const CANVAS_LOCALES = {
   'zh-CN': {
     appSubtitle: '对话协同画布',
-    openingTitle: '正在打开 OpenPrd 画布',
+    openingTitle: '正在打开 Open VibeCoding 画布',
     openingBody: '画布会自动绑定当前对话记录。',
     bootErrorTitle: '画布启动失败',
     bootErrorBody: '请刷新页面；如果仍失败，把下面这段错误发给 Agent。',
@@ -36,6 +36,8 @@ const CANVAS_LOCALES = {
     reviewBoardTitle: '评审协同',
     reviewGuideStage: '第 {index}/{total} 步 · {title}',
     reviewGuideNext: '下一步：{action}',
+    reviewGuideContextual: '按当前任务选择能力',
+    reviewGuideContextualHint: '直接描述目标，Agent 会按需组合产品、交互设计、研发、测试与增强能力。',
     importReviewDirections: '导入评审方向',
     importingReviewDirections: '正在导入...',
     reviewDirectionsImported: '已把 {count} 个交互方向摆上画布，圈选批注后发送给 Codex。',
@@ -69,7 +71,7 @@ const CANVAS_LOCALES = {
     copyThreadPrompt: '复制线程指令',
     threadPromptCopied: '已复制线程指令，可粘贴到其他 Codex 对话中。',
     threadPromptCopyFailed: '暂时无法复制，请手动复制线程 ID。',
-    threadPromptTemplate: '请在 Codex 中定位并操作这个 OpenPrd 画布绑定的对话线程。\n\n线程标题：{title}\n线程 ID：{id}\n\n请基于这个线程继续处理：<在这里补充你的具体指令>',
+    threadPromptTemplate: '请在 Codex 中定位并操作这个 Open VibeCoding 画布绑定的对话线程。\n\n线程标题：{title}\n线程 ID：{id}\n\n请基于这个线程继续处理：<在这里补充你的具体指令>',
     conversation: '对话',
     placeholderText: '拖动空白卡片，或让 Agent 替换为图片',
     libraryItemName: '素材 {index}',
@@ -98,7 +100,7 @@ const CANVAS_LOCALES = {
     agentBridgeFailed: 'Codex Agent 前台接力失败，请复制提示手动发送。',
     aiGenerating: 'Codex 生成中...',
     aiTemplateOnCanvas: '比例 {ratio}，等待图片回填',
-    aiImagePromptIntro: '请使用 Codex 原生生图能力生成一张图片，并回填到 OpenPrd Canvas 的这张 AI 生图卡片。',
+    aiImagePromptIntro: '请使用 Codex 原生生图能力生成一张图片，并回填到 Open VibeCoding Canvas 的这张 AI 生图卡片。',
     aiImagePromptMeta: '画布会话：{binding}；卡片比例：{ratio}；占位卡 ID：{placeholderId}',
     aiImagePromptSize: '目标尺寸契约：宽 {width}px、高 {height}px、宽高比 {ratio}；生成图片请按这个比例出图，避免回填时变形。',
     aiImagePromptReturn: '生成完成后，请回填到当前画布里的这张占位卡，回填信息如下：',
@@ -106,7 +108,7 @@ const CANVAS_LOCALES = {
     sendBarHint: '预览选区截图，输入指令后发送给 Codex。',
     composerTitle: '发送给 Codex',
     previewLabel: '选区截图',
-    composerPreviewAlt: 'OpenPrd 画布选区截图',
+    composerPreviewAlt: 'Open VibeCoding 画布选区截图',
     instructionLabel: '指令',
     instructionPlaceholder: '告诉 Codex 你希望怎么处理这张截图，例如：按这个标注调整图片、解释这里的问题、继续生成下一版。',
     copiedTitle: '已准备好发送给 Codex',
@@ -131,14 +133,14 @@ const CANVAS_LOCALES = {
     dismiss: '关闭',
     codexPromptDefaultInstruction: '请根据这个画布选区继续协同。',
     codexPromptIntro: '画布选区截图：',
-    codexPromptMeta: '来源：OpenPrd Canvas；选区元素：{count}；会话：{binding}',
+    codexPromptMeta: '来源：Open VibeCoding Canvas；选区元素：{count}；会话：{binding}',
     annotationEditPromptIntro: '这是一次画布标注改图请求：截图里包含原图和用户手绘标注，请把标注当作修改指令，生成一张修改后的新图。',
     annotationEditPromptMeta: '原图元素 ID：{sourceIds}；标注元素 ID：{annotationIds}',
     annotationEditPromptReturn: '生成修改后的新图后，请调用画布接口把新图放到原图旁边（不要覆盖原图），插入信息如下：',
   },
   en: {
     appSubtitle: 'Conversation canvas',
-    openingTitle: 'Opening OpenPrd Canvas',
+    openingTitle: 'Opening Open VibeCoding Canvas',
     openingBody: 'The canvas is bound to the current conversation.',
     bootErrorTitle: 'Canvas failed to start',
     bootErrorBody: 'Refresh the page. If it still fails, send the error below to the agent.',
@@ -150,6 +152,8 @@ const CANVAS_LOCALES = {
     reviewBoardTitle: 'Review board',
     reviewGuideStage: 'Step {index}/{total} · {title}',
     reviewGuideNext: 'Next: {action}',
+    reviewGuideContextual: 'Choose capabilities for this task',
+    reviewGuideContextualHint: 'Describe the goal. The agent combines product, interaction, development, testing, and enhancement capabilities as needed.',
     importReviewDirections: 'Import design directions',
     importingReviewDirections: 'Importing...',
     reviewDirectionsImported: 'Placed {count} design directions on the canvas. Circle and annotate, then send to Codex.',
@@ -183,7 +187,7 @@ const CANVAS_LOCALES = {
     copyThreadPrompt: 'Copy thread prompt',
     threadPromptCopied: 'Thread prompt copied. You can paste it into another Codex conversation.',
     threadPromptCopyFailed: 'Could not copy right now. Copy the thread ID manually.',
-    threadPromptTemplate: 'Please locate and work with this OpenPrd canvas conversation thread in Codex.\n\nThread title: {title}\nThread ID: {id}\n\nContinue with this thread: <add your instruction here>',
+    threadPromptTemplate: 'Please locate and work with this Open VibeCoding canvas conversation thread in Codex.\n\nThread title: {title}\nThread ID: {id}\n\nContinue with this thread: <add your instruction here>',
     conversation: 'Conversation',
     placeholderText: 'Drag this blank card, or ask the agent to replace it with an image',
     libraryItemName: 'Library item {index}',
@@ -212,7 +216,7 @@ const CANVAS_LOCALES = {
     agentBridgeFailed: 'The Codex Agent foreground relay failed. Copy the prompt manually.',
     aiGenerating: 'Codex is generating...',
     aiTemplateOnCanvas: 'Ratio {ratio}, waiting for image',
-    aiImagePromptIntro: 'Use Codex native image generation to create one image and fill this OpenPrd Canvas AI image card.',
+    aiImagePromptIntro: 'Use Codex native image generation to create one image and fill this Open VibeCoding Canvas AI image card.',
     aiImagePromptMeta: 'Canvas session: {binding}; card ratio: {ratio}; placeholder ID: {placeholderId}',
     aiImagePromptSize: 'Target size contract: width {width}px, height {height}px, aspect ratio {ratio}; generate the image at this ratio so it fills the card without distortion.',
     aiImagePromptReturn: 'When the image is ready, fill this placeholder card back into the current canvas with this information:',
@@ -220,7 +224,7 @@ const CANVAS_LOCALES = {
     sendBarHint: 'Preview the selection, add instructions, then send it to Codex.',
     composerTitle: 'Send to Codex',
     previewLabel: 'Selection image',
-    composerPreviewAlt: 'OpenPrd canvas selection image',
+    composerPreviewAlt: 'Open VibeCoding canvas selection image',
     instructionLabel: 'Instruction',
     instructionPlaceholder: 'Tell Codex what to do with this screenshot, such as adjust the image based on the markup, explain the issue, or generate the next version.',
     copiedTitle: 'Ready to send to Codex',
@@ -245,7 +249,7 @@ const CANVAS_LOCALES = {
     dismiss: 'Dismiss',
     codexPromptDefaultInstruction: 'Please continue based on this canvas selection.',
     codexPromptIntro: 'Canvas selection image:',
-    codexPromptMeta: 'Source: OpenPrd Canvas; selected elements: {count}; session: {binding}',
+    codexPromptMeta: 'Source: Open VibeCoding Canvas; selected elements: {count}; session: {binding}',
     annotationEditPromptIntro: 'This is an annotation-driven image revision request: the screenshot contains the original image plus the user\'s hand-drawn annotations. Treat the annotations as edit instructions and generate a revised image.',
     annotationEditPromptMeta: 'Source image element IDs: {sourceIds}; annotation element IDs: {annotationIds}',
     annotationEditPromptReturn: 'After generating the revised image, call the canvas API to place it beside the original (do not overwrite the original). Insert with this information:',

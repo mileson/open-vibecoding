@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { readWorkspaceRegistry } from './workspace-registry.js';
 
-export const DEFAULT_SELF_UPDATE_SOURCE = '@openprd/cli@latest';
+export const DEFAULT_SELF_UPDATE_SOURCE = 'open-vibecoding@latest';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PACKAGE_ROOT = path.resolve(MODULE_DIR, '..');
@@ -100,7 +100,7 @@ export function compareVersions(left, right) {
   return comparePrereleaseIdentifiers(leftParts.prerelease, rightParts.prerelease);
 }
 
-function packageNameFromSource(source, fallback = '@openprd/cli') {
+function packageNameFromSource(source, fallback = 'open-vibecoding') {
   const text = String(source ?? '').trim();
   if (!text) {
     return fallback;
@@ -216,7 +216,7 @@ async function resolveOpenPrdExecutable(deps = {}) {
   if (typeof deps.resolveOpenPrdExecutable === 'function') {
     return deps.resolveOpenPrdExecutable();
   }
-  const command = process.platform === 'win32' ? 'where openprd' : 'command -v openprd';
+  const command = process.platform === 'win32' ? 'where open-vibecoding' : 'command -v open-vibecoding';
   const result = await runProcess(command, [], { shell: true });
   const executable = result.stdout.split(/\r?\n/).map((line) => line.trim()).find(Boolean) ?? null;
   if (!result.ok || !executable) {
@@ -224,7 +224,7 @@ async function resolveOpenPrdExecutable(deps = {}) {
       ok: false,
       executable: null,
       command,
-      error: result.stderr.trim() || 'Unable to resolve openprd executable from PATH.',
+      error: result.stderr.trim() || 'Unable to resolve open-vibecoding executable from PATH.',
     };
   }
   return {
@@ -249,7 +249,7 @@ async function inspectPublishedVersion(packageInfo, options = {}, deps = {}) {
   if (!result.ok) {
     errors.push(result.stderr.trim() || `npm view failed with exit code ${result.exitCode}.`);
   } else if (!publishedVersion) {
-    errors.push('Unable to parse the published npm version for @openprd/cli.');
+    errors.push(`Unable to parse the published npm version for ${packageName}.`);
   }
   const comparison = versionComparisonLabel(packageInfo.version, publishedVersion);
   return {
@@ -280,7 +280,7 @@ async function resolveExecutableVersion(executable, options = {}, deps = {}) {
   if (!result.ok) {
     errors.push(result.stderr.trim() || `Version check failed with exit code ${result.exitCode}.`);
   } else if (!version) {
-    errors.push('Unable to parse the installed OpenPrd version after update.');
+    errors.push('Unable to parse the installed Open VibeCoding version after update.');
   }
   return {
     ok: errors.length === 0,
@@ -353,9 +353,9 @@ function buildSelfUpdatePlan(options = {}) {
 }
 
 function buildProjectRefreshPlan(targetPath, options = {}) {
-  const executable = options.executable ?? 'openprd';
+  const executable = options.executable ?? 'open-vibecoding';
   const args = options.fleet
-    ? ['fleet', targetPath, '--update-openprd']
+    ? ['fleet', targetPath, '--update-open-vibecoding']
     : ['update', targetPath];
 
   if (options.fleet && options.maxDepth) {
@@ -425,7 +425,7 @@ export function createSelfUpdateWorkspace(deps = {}) {
       refreshCandidates,
       errors: [...versionCheck.errors],
       nextActions: versionCheck.updateAvailable
-        ? ['Run `openprd self-update` to install the published CLI version.']
+        ? ['Run `open-vibecoding self-update` to install the published CLI version.']
         : [],
     };
   }
@@ -465,7 +465,7 @@ export function createSelfUpdateWorkspace(deps = {}) {
         ...base,
         skipped: true,
         skipReason: 'dry-run',
-        nextActions: ['Run without --dry-run to update the OpenPrd CLI.'],
+        nextActions: ['Run without --dry-run after the open-vibecoding package is published.'],
       };
     }
 
@@ -476,7 +476,7 @@ export function createSelfUpdateWorkspace(deps = {}) {
         skipped: true,
         skipReason: 'local-source-checkout',
         errors: [
-          'This openprd command is running from a local source checkout. Reinstall the global CLI with npm, or use your local development workflow.',
+          'This open-vibecoding command is running from a local source checkout. Reinstall the global CLI with npm after the new package is published, or use your local development workflow.',
         ],
         nextActions: [
           `Run ${plan.install.display} from outside the source checkout, or update this checkout manually.`,
@@ -510,12 +510,12 @@ export function createSelfUpdateWorkspace(deps = {}) {
       refreshCandidates,
       errors: [
         ...(installResult.ok ? [] : [installResult.stderr.trim() || `Self-update command failed with exit code ${installResult.exitCode}.`]),
-        ...(installResult.ok && !resolvedExecutable?.ok ? [resolvedExecutable?.error ?? 'Unable to resolve updated openprd executable.'] : []),
+        ...(installResult.ok && !resolvedExecutable?.ok ? [resolvedExecutable?.error ?? 'Unable to resolve updated open-vibecoding executable.'] : []),
         ...(installedVersion?.errors ?? []),
       ],
       nextActions: [
         ...(installResult.ok && !resolvedExecutable?.ok
-          ? ['Check that the global npm bin directory is on PATH, then run openprd update <project>.']
+          ? ['Check that the global npm bin directory is on PATH, then run open-vibecoding update <project>.']
           : []),
         ...((refreshCandidates?.total ?? 0) > 0
           ? ['If you want to refresh older workspaces too, review the refreshCandidates list before running fleet or per-project updates.']
@@ -528,7 +528,7 @@ export function createSelfUpdateWorkspace(deps = {}) {
     const resolvedTarget = path.resolve(targetPath ?? process.cwd());
     const selfUpdate = await selfUpdateWorkspace(options);
     const dryRun = Boolean(options.dryRun);
-    const executable = selfUpdate.resolvedExecutable?.executable ?? 'openprd';
+    const executable = selfUpdate.resolvedExecutable?.executable ?? 'open-vibecoding';
     const refreshPlan = buildProjectRefreshPlan(resolvedTarget, {
       ...options,
       executable,

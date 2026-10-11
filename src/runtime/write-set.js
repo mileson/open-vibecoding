@@ -38,10 +38,10 @@ export function normalizeWritePattern(value) {
 
   const slashNormalized = original.replaceAll('\\', '/');
   if (slashNormalized.includes('\0')) {
-    throw new TypeError('OpenPrd write-set patterns cannot contain null bytes.');
+    throw new TypeError('Open VibeCoding write-set patterns cannot contain null bytes.');
   }
   if (path.posix.isAbsolute(slashNormalized) || /^[A-Za-z]:\//.test(slashNormalized)) {
-    throw new TypeError(`OpenPrd write-set patterns must be project-relative: ${original}`);
+    throw new TypeError(`Open VibeCoding write-set patterns must be project-relative: ${original}`);
   }
 
   const hadTrailingSlash = slashNormalized.endsWith('/');
@@ -49,7 +49,7 @@ export function normalizeWritePattern(value) {
   normalized = path.posix.normalize(normalized);
   if (normalized === '.' || normalized === '') return BROAD_PATTERN;
   if (normalized === '..' || normalized.startsWith('../')) {
-    throw new TypeError(`OpenPrd write-set patterns cannot escape the project root: ${original}`);
+    throw new TypeError(`Open VibeCoding write-set patterns cannot escape the project root: ${original}`);
   }
   if (hadTrailingSlash) normalized = `${normalized.replace(/\/+$/, '')}/**`;
   if (normalized === '**') return BROAD_PATTERN;

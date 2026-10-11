@@ -58,14 +58,14 @@ function milliseconds(value) {
 
 function requirePositiveDuration(value, label = 'leaseDurationMs') {
   const number = Number(value);
-  if (!Number.isFinite(number) || number <= 0) throw new TypeError(`OpenPrd ${label} must be a positive number.`);
+  if (!Number.isFinite(number) || number <= 0) throw new TypeError(`Open VibeCoding ${label} must be a positive number.`);
   return Math.round(number);
 }
 
 function taskFrom(lane, taskIdValue) {
   const taskId = normalizeRuntimeId(taskIdValue, 'taskId');
   if (!Object.hasOwn(lane.tasks, taskId)) {
-    const error = new Error(`OpenPrd task not found: ${lane.laneId}/${taskId}`);
+    const error = new Error(`Open VibeCoding task not found: ${lane.laneId}/${taskId}`);
     error.code = 'ENOENT';
     throw error;
   }
@@ -76,7 +76,7 @@ function claimIdFrom(value) {
   const claimId = normalizeOptionalText(
     typeof value === 'string' ? value : (value?.claimId ?? value?.token),
   );
-  if (!claimId) throw new TypeError('OpenPrd claimId is required.');
+  if (!claimId) throw new TypeError('Open VibeCoding claimId is required.');
   return claimId;
 }
 
@@ -188,7 +188,7 @@ export class TaskRuntime {
 
   nowMs() {
     const now = milliseconds(this.clock.now());
-    if (!Number.isFinite(now)) throw new TypeError('OpenPrd runtime clock returned an invalid time.');
+    if (!Number.isFinite(now)) throw new TypeError('Open VibeCoding runtime clock returned an invalid time.');
     return now;
   }
 
@@ -376,7 +376,7 @@ export class TaskRuntime {
     const nowMs = this.nowMs();
     const nowIso = isoTime(nowMs);
     const finishStatus = options.status ?? 'completed';
-    if (!FINISH_STATUSES.has(finishStatus)) throw new TypeError(`Unsupported OpenPrd finish status: ${finishStatus}`);
+    if (!FINISH_STATUSES.has(finishStatus)) throw new TypeError(`Unsupported Open VibeCoding finish status: ${finishStatus}`);
 
     const transaction = await this.store.transact(laneId, {
       expectedRevision: options.expectedLaneRevision,

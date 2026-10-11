@@ -10,7 +10,7 @@
  * 命中命令时执行对应 workspace 函数并打印结果，返回退出码；未命中返回 null。
  *
  * 定位
- * 位于 CLI 应用层，从 openprd.js 拆出的命令分组，不承载领域业务规则。
+ * 位于 CLI 应用层，从 open-vibecoding.js 拆出的命令分组，不承载领域业务规则。
  *
  * 依赖
  * 依赖 standards、quality、knowledge、visual-compare、growth 等 workspace 模块与 cli/print。
@@ -60,7 +60,7 @@ function standardsHasStructuralFailure(result) {
     ...(Array.isArray(result?.errors) ? result.errors : []),
     ...(Array.isArray(result?.report?.errors) ? result.report.errors : []),
   ];
-  return errors.some((error) => String(error).includes('.openprd/standards/config.json'));
+  return errors.some((error) => String(error).includes('.open-vibecoding/standards/config.json'));
 }
 
 export async function runQualityCommand(command, { projectPath, flags, positionals }) {
@@ -116,7 +116,7 @@ export async function runQualityCommand(command, { projectPath, flags, positiona
         id: flags.id ?? positionals[1] ?? null,
       });
     } else {
-      console.log('Usage: openprd knowledge <candidates|reject|archive|restore> [path-or-id] [--status <pending-review|all|rejected|archived|promoted|merged>] [--id <candidate-id>] [--reason <text>] [--json]');
+      console.log('Usage: open-vibecoding knowledge <candidates|reject|archive|restore> [path-or-id] [--status <pending-review|all|rejected|archived|promoted|merged>] [--id <candidate-id>] [--reason <text>] [--json]');
       return 1;
     }
     printKnowledgeResult(result, flags.json);
@@ -245,7 +245,7 @@ export async function runQualityCommand(command, { projectPath, flags, positiona
     if (flags.json) {
       console.log(JSON.stringify(result, null, 2));
     } else {
-      console.log(`OpenPrd i18n: ${result.created ? '已创建' : '配置已存在'} ${result.configPath}`);
+      console.log(`Open VibeCoding i18n: ${result.created ? '已创建' : '配置已存在'} ${result.configPath}`);
       console.log(`基准语言: ${result.config.defaultLanguage}`);
       console.log(`支持语种: ${result.config.supportedLanguages.join(', ')}`);
       console.log(`dev-check 检查: ${result.config.enforceOnDevCheck ? '开启' : '关闭'}`);

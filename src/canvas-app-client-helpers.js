@@ -1,6 +1,6 @@
 /*
  * Core purpose
- * Client-side helper functions for the `openprd canvas` browser app.
+ * Client-side helper functions for the `open-vibecoding canvas` browser app.
  *
  * Positioning
  * Raw inline <script type="module"> payload (part 1 of 2), extracted from
@@ -12,8 +12,8 @@ export const CANVAS_APP_CLIENT_HELPERS = `
     import { createRoot } from "react-dom/client";
     import { Excalidraw, convertToExcalidrawElements, exportToCanvas, serializeAsJSON } from "@excalidraw/excalidraw";
 
-    const session = JSON.parse(document.getElementById("openprd-session").textContent);
-    const localeConfig = JSON.parse(document.getElementById("openprd-canvas-locales").textContent);
+    const session = JSON.parse(document.getElementById("open-vibecoding-session").textContent);
+    const localeConfig = JSON.parse(document.getElementById("open-vibecoding-canvas-locales").textContent);
     const h = React.createElement;
     const apiBase = "";
     const sceneSaveDelay = 700;
@@ -249,7 +249,7 @@ export const CANVAS_APP_CLIENT_HELPERS = `
       return [];
     }
 
-    function createElementId(prefix = "openprd-lib") {
+    function createElementId(prefix = "open-vibecoding-lib") {
       if (window.crypto?.randomUUID) {
         return prefix + "-" + window.crypto.randomUUID();
       }
@@ -318,7 +318,7 @@ export const CANVAS_APP_CLIENT_HELPERS = `
             savedAt: new Date().toISOString(),
           }),
         }).catch((error) => {
-          console.warn("OpenPrd canvas save failed", error);
+          console.warn("Open VibeCoding canvas save failed", error);
         });
       }, sceneSaveDelay);
     }
@@ -355,7 +355,7 @@ export const CANVAS_APP_CLIENT_HELPERS = `
       return prefix + "-" + stamp + ".png";
     }
 
-    function createSceneFilename(prefix = "openprd-canvas") {
+    function createSceneFilename(prefix = "open-vibecoding-canvas") {
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
       return prefix + "-" + stamp + ".excalidraw";
     }
@@ -497,7 +497,7 @@ export const CANVAS_APP_CLIENT_HELPERS = `
         "",
         t.codexPromptIntro,
         "",
-        "![OpenPrd Canvas selection](" + exportPath + ")",
+        "![Open VibeCoding Canvas selection](" + exportPath + ")",
         "",
         exportPath,
         "",
@@ -686,8 +686,8 @@ export const CANVAS_APP_CLIENT_HELPERS = `
 
     function createAiImageCard(template, instruction, t) {
       const point = getViewportDropPoint(template.width, template.height);
-      const requestId = createElementId("openprd-ai-image");
-      const groupId = createElementId("openprd-ai-group");
+      const requestId = createElementId("open-vibecoding-ai-image");
+      const groupId = createElementId("open-vibecoding-ai-group");
       const centerY = point.y + Math.round(template.height / 2);
       const pendingParent = {
         openprdParentId: "__pending__",
@@ -936,7 +936,7 @@ export const CANVAS_APP_CLIENT_HELPERS = `
           });
         }
         if (direction.image?.dataUrl) {
-          const fileId = "openprd-direction-" + direction.id + "-" + Date.now();
+          const fileId = "open-vibecoding-direction-" + direction.id + "-" + Date.now();
           files.push({
             id: fileId,
             dataURL: direction.image.dataUrl,
@@ -980,7 +980,7 @@ export const CANVAS_APP_CLIENT_HELPERS = `
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
-      const fileId = op.fileId || ("openprd-image-" + Date.now());
+      const fileId = op.fileId || ("open-vibecoding-image-" + Date.now());
       excalidrawAPI.addFiles([{ id: fileId, dataURL, mimeType: blob.type || "image/png", created: Date.now() }]);
       const explicitTarget = op.placeholderId
         ? latestElements.find((element) => element.id === op.placeholderId && !element.isDeleted)
@@ -1059,7 +1059,7 @@ export const CANVAS_APP_CLIENT_HELPERS = `
           }
         }
       } catch (error) {
-        console.warn("OpenPrd canvas op polling failed", error);
+        console.warn("Open VibeCoding canvas op polling failed", error);
       }
     }
 
@@ -1074,7 +1074,7 @@ export const CANVAS_APP_CLIENT_HELPERS = `
         const item = claimed || pending[0];
         syncAgentBridgeStatus({ status: item.status || "pending" });
       } catch (error) {
-        console.warn("OpenPrd canvas agent bridge polling failed", error);
+        console.warn("Open VibeCoding canvas agent bridge polling failed", error);
       }
     }
 
@@ -1120,7 +1120,7 @@ export const CANVAS_APP_CLIENT_HELPERS = `
           filename: options.filename || null,
         }),
       });
-      window.dispatchEvent(new CustomEvent("openprd-canvas-exported", { detail: { ...result, intent } }));
+      window.dispatchEvent(new CustomEvent("open-vibecoding-canvas-exported", { detail: { ...result, intent } }));
       return {
         result,
         elements,
@@ -1130,7 +1130,7 @@ export const CANVAS_APP_CLIENT_HELPERS = `
 
     async function exportSelection() {
       return exportCanvasElements({ intent: "manual-export" }).catch((error) => {
-        console.warn("OpenPrd canvas export failed", error);
+        console.warn("Open VibeCoding canvas export failed", error);
         return null;
       });
     }

@@ -21,7 +21,7 @@ const FLEET_IGNORE_DIRS = new Set([
   'tmp',
 ]);
 const FLEET_PROJECT_MARKERS = [
-  '.openprd',
+  '.open-vibecoding',
   '.codex',
   '.claude',
   '.cursor',
@@ -37,8 +37,8 @@ const FLEET_PROJECT_MARKERS = [
   'Makefile',
 ];
 const FLEET_AGENT_MARKERS = ['.codex', '.claude', '.cursor', 'AGENTS.md', 'CLAUDE.md'];
-const FLEET_LEGACY_OPENPRD_MARKER = 'openprd-legacy-artifacts';
-const FLEET_TRANSACTIONAL_ACTIONS = new Set(['update', 'setup', 'backfill-work-units']);
+const FLEET_LEGACY_OPEN_VIBECODING_MARKER = 'open-vibecoding-legacy-artifacts';
+const FLEET_TRANSACTIONAL_ACTIONS = new Set(['update', 'setup']);
 
 function normalizeCsvList(value) {
   if (!value) {
@@ -79,8 +79,8 @@ function pathWithinRoot(rootPath, candidatePath) {
 }
 
 function classifyFleetMarkers(markers) {
-  if (markers.includes('.openprd') || markers.includes(FLEET_LEGACY_OPENPRD_MARKER)) {
-    return 'openprd-workspace';
+  if (markers.includes('.open-vibecoding') || markers.includes(FLEET_LEGACY_OPEN_VIBECODING_MARKER)) {
+    return 'open-vibecoding-workspace';
   }
   if (markers.some((marker) => FLEET_AGENT_MARKERS.includes(marker))) {
     return 'agent-configured';
@@ -89,12 +89,9 @@ function classifyFleetMarkers(markers) {
 }
 
 function plannedFleetAction(category, options) {
-  if (category === 'openprd-workspace') {
+  if (category === 'open-vibecoding-workspace') {
     if (options.updateOpenprd) {
       return 'update';
-    }
-    if (options.backfillWorkUnits) {
-      return 'backfill-work-units';
     }
     if (options.doctor) {
       return 'doctor';
@@ -115,7 +112,7 @@ async function detectFleetMarkers(projectPath) {
   const names = new Set(entries.map((entry) => entry.name));
   const markers = FLEET_PROJECT_MARKERS.filter((marker) => names.has(marker));
   if (await hasLegacyOpenPrdArtifacts(projectPath)) {
-    markers.push(FLEET_LEGACY_OPENPRD_MARKER);
+    markers.push(FLEET_LEGACY_OPEN_VIBECODING_MARKER);
   }
   return markers;
 }
@@ -152,7 +149,7 @@ async function scanFleetProjects(rootPath, options = {}) {
     seenRealPaths.add(realPath);
 
     const markers = await detectFleetMarkers(currentPath);
-    const containsLegacyArtifactTree = markers.includes(FLEET_LEGACY_OPENPRD_MARKER);
+    const containsLegacyArtifactTree = markers.includes(FLEET_LEGACY_OPEN_VIBECODING_MARKER);
     if (markers.length > 0) {
       const category = classifyFleetMarkers(markers);
       const included = projectPathMatches(root, currentPath, include);
@@ -183,9 +180,9 @@ async function scanFleetProjects(rootPath, options = {}) {
       if (FLEET_IGNORE_DIRS.has(entry.name)) {
         continue;
       }
-      // A legacy `openprd/changes` tree belongs to the project just discovered
+      // A legacy `open-vibecoding/changes` tree belongs to the project just discovered
       // above. It is migration input, never another fleet project root.
-      if (containsLegacyArtifactTree && entry.name === 'openprd') {
+      if (containsLegacyArtifactTree && entry.name === 'open-vibecoding') {
         continue;
       }
       await walk(cjoin(currentPath, entry.name), depth + 1);
@@ -215,14 +212,14 @@ async function collectRegistryFleetScope(rootPath, options, registry) {
       continue;
     }
     scopedKnown += 1;
-    if (!(await exists(cjoin(entry.workspaceRoot, '.openprd')))) {
+    if (!(await exists(cjoin(entry.workspaceRoot, '.open-vibecoding')))) {
       continue;
     }
     projects.push({
       path: entry.workspaceRoot,
       relativePath: path.relative(root, entry.workspaceRoot) || '.',
-      category: 'openprd-workspace',
-      markers: ['.openprd', ...(await hasLegacyOpenPrdArtifacts(entry.workspaceRoot) ? [FLEET_LEGACY_OPENPRD_MARKER] : [])],
+      category: 'open-vibecoding-workspace',
+      markers: ['.open-vibecoding', ...(await hasLegacyOpenPrdArtifacts(entry.workspaceRoot) ? [FLEET_LEGACY_OPEN_VIBECODING_MARKER] : [])],
       discoverySource: 'registry',
       registryKnown: true,
       registryEntry: entry,
@@ -281,7 +278,7 @@ function summarizeFleetProjects(projects) {
     healthAttention: 0,
   };
   for (const project of projects) {
-    if (project.category === 'openprd-workspace') {
+    if (project.category === 'open-vibecoding-workspace') {
       summary.openprd += 1;
     } else if (project.category === 'agent-configured') {
       summary.agentConfigured += 1;
@@ -353,7 +350,7 @@ function buildFleetRegistrySummary(rootPath, options, registry) {
 }
 
 async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
-  const { doctorWorkspace, backfillWorkUnitsWorkspace } = dependencies;
+  const { doctorWorkspace } = dependencies;
   const root = path.resolve(rootPath);
   if (!(await exists(root))) {
     throw new Error(`Fleet root does not exist: ${root}`);
@@ -363,7 +360,6 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
     options.updateOpenprd
       || options.setupMissing
       || options.doctor
-      || options.backfillWorkUnits
       || options.syncRegistry,
   );
   const dryRun = Boolean(options.dryRun) || !hasMutationAction;
@@ -387,7 +383,6 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
       ok: true,
       changes: [],
       errors: [],
-      workUnits: null,
     };
 
     if (plannedAction === 'skip' || plannedAction === 'report') {
@@ -418,16 +413,6 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
     }
 
     if (dryRun) {
-      if (plannedAction === 'backfill-work-units' && backfillWorkUnitsWorkspace) {
-        const backfill = await backfillWorkUnitsWorkspace(project.path, { dryRun: true });
-        item.workUnits = {
-          totalVersions: backfill.totalVersions,
-          changedVersions: backfill.changedVersions,
-        };
-        item.changes = backfill.changes.map((change) => ({ ...change, source: 'work-unit' }));
-        item.errors = backfill.errors ?? [];
-        item.ok = backfill.ok;
-      }
       projects.push(item);
       continue;
     }
@@ -467,7 +452,6 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
       applySuccessfulFleetMutation(item, plannedAction, transaction);
       item.errors = [
         ...(transaction.mutationResult?.actionResult?.doctor?.errors ?? []),
-        ...(transaction.mutationResult?.backfill?.errors ?? []),
       ];
       projects.push(item);
       continue;
@@ -518,7 +502,6 @@ async function fleetWorkspaceImpl(rootPath, options = {}, dependencies = {}) {
       updateOpenprd: Boolean(options.updateOpenprd),
       setupMissing: Boolean(options.setupMissing),
       doctor: Boolean(options.doctor),
-      backfillWorkUnits: Boolean(options.backfillWorkUnits),
       syncRegistry: Boolean(options.syncRegistry),
     },
     upgrade: {

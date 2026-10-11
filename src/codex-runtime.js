@@ -9,7 +9,7 @@
  * 导出 checkCodexCliHealth、repairCodexCli 和 ensureCodexCliReady 等结构化结果。
  *
  * 定位
- * 位于 OpenPrd CLI 的 Agent runtime 边界，只处理本机 Codex 命令健康，不管理 PRD/task 状态。
+ * 位于 Open VibeCoding CLI 的 Agent runtime 边界，只处理本机 Codex 命令健康，不管理 PRD/task 状态。
  *
  * 依赖
  * 使用 node:child_process 启动本地命令；被 doctor 与 loop run 复用。
@@ -223,7 +223,7 @@ export function diagnoseCodexVersionFailure(result, options = {}) {
   ) {
     return {
       type: 'command-not-found',
-      summary: 'Codex CLI 不在 PATH 中，OpenPrd 无法启动 Codex 代理子会话。',
+      summary: 'Codex CLI 不在 PATH 中，Open VibeCoding 无法启动 Codex 代理子会话。',
       missingPackage: null,
       repairCommand,
       manualCommand: repairCommand.display,
@@ -342,9 +342,9 @@ export async function ensureCodexCliReady(options = {}) {
       repairAttempted: false,
       repairCommand: preflight.repairCommand,
       errors: [
-        'Codex CLI 健康检查未通过，OpenPrd 已停止启动 Codex 子会话。',
+        'Codex CLI 健康检查未通过，Open VibeCoding 已停止启动 Codex 子会话。',
         ...preflight.errors,
-        '如需让 OpenPrd 执行修复，请显式运行 openprd doctor . --tools codex --fix 或 openprd loop . --run --agent codex --repair-agent。',
+        '如需让 Open VibeCoding 执行修复，请显式运行 open-vibecoding doctor . --tools codex --fix 或 open-vibecoding loop . --run --agent codex --repair-agent。',
       ],
     };
   }

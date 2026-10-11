@@ -9,7 +9,7 @@ const eventName = process.argv[2] || 'Unknown';
 const hookScriptFilePath = fileURLToPath(import.meta.url);
 const hookScriptWorkspaceRoot = (() => {
   const candidate = path.resolve(path.dirname(hookScriptFilePath), '..', '..');
-  return fs.existsSync(path.join(candidate, '.openprd')) ? candidate : null;
+  return fs.existsSync(path.join(candidate, '.open-vibecoding')) ? candidate : null;
 })();
 let input = '';
 process.stdin.setEncoding('utf8');
@@ -46,7 +46,7 @@ function now() {
 function findProjectRoot(start) {
   let current = path.resolve(start || process.cwd());
   for (;;) {
-    if (fs.existsSync(path.join(current, '.openprd'))) {
+    if (fs.existsSync(path.join(current, '.open-vibecoding'))) {
       return current;
     }
     const parent = path.dirname(current);
@@ -58,7 +58,7 @@ function findProjectRoot(start) {
 }
 
 function harnessDir(root) {
-  return path.join(root, '.openprd', 'harness');
+  return path.join(root, '.open-vibecoding', 'harness');
 }
 
 function ensureHarness(root) {
@@ -308,7 +308,7 @@ function beginTurnReview(root, baseEvent, prompt) {
   const promptPreview = preview(prompt, 240);
   writeTurnState(root, {
     version: 1,
-    id: `turn-${String(Date.now())}-${baseEvent.fingerprint ?? 'openprd'}`,
+    id: `turn-${String(Date.now())}-${baseEvent.fingerprint ?? 'open-vibecoding'}`,
     knowledgeCandidateId: null,
     sessionId: baseEvent.sessionId,
     prompt,
@@ -386,15 +386,15 @@ function detectVisualEvidenceSignals(payload) {
   const text = payloadText(payload);
   const haystack = `${tool}\n${command}\n${text}`;
   const signals = [];
-  if (/openprd\s+visual-prepare\b/i.test(haystack)) {
+  if (/open-vibecoding\s+visual-prepare\b/i.test(haystack)) {
     signals.push({
       kind: 'visual-reference-prepared',
       message: 'visual-prepare reference-set/contact sheet observed',
       preview: preview(command || text, 180),
     });
   }
-  if (/openprd\s+visual-compare\b/i.test(haystack)
-    || /\.openprd\/harness\/visual-reviews\/(?:visual-|reference-sets\/)/i.test(haystack)
+  if (/open-vibecoding\s+visual-compare\b/i.test(haystack)
+    || /\.open-vibecoding\/harness\/visual-reviews\/(?:visual-|reference-sets\/)/i.test(haystack)
     || /visual-(?:compare|before-after|focus-board|parallel-board|verification-board|alignment-board|centering-board)/i.test(haystack)
     || /\b(?:reference-actual|before-after|focus-board|parallel-board|verification-board|alignment-board|centering-board|center-board)\b/i.test(haystack)) {
     signals.push({
@@ -428,7 +428,7 @@ function detectVisualEvidenceSignals(payload) {
     || /(?:computer|browser|playwright|page|mp|miniprogram|weapp).*screenshot/i.test(tool);
   const screenshotCommand = /\bscreencapture\b|page\.screenshot|\.screenshot\(|mp_screenshot|browser.*screenshot|computer.*screenshot|playwright.*screenshot/i.test(command);
   const screenshotText = /(?:普通截图|实测截图|运行态截图|Computer\s*实测|Browser\s*实测|截图证据|screenshot captured|captured screenshot)/i.test(text);
-  if ((screenshotTool || screenshotCommand || screenshotText) && !/openprd\s+visual-compare\b/i.test(haystack)) {
+  if ((screenshotTool || screenshotCommand || screenshotText) && !/open-vibecoding\s+visual-compare\b/i.test(haystack)) {
     signals.push({
       kind: 'visual-raw-screenshot',
       message: 'raw screenshot or Computer/Browser visual evidence observed',
@@ -570,20 +570,8 @@ function updateNamedGate(root, gateName, patch, sessionId = null) {
   }, sessionId);
 }
 
-function legacyRequirementGatePath(root) {
-  return path.join(harnessDir(root), 'requirement-gate.json');
-}
 
-function requirementGateDir(root) {
-  return path.join(harnessDir(root), 'requirement-gates');
-}
 
-function requirementGatePath(root, sessionId = null) {
-  if (sessionId) {
-    return path.join(requirementGateDir(root), `${sessionId}.json`);
-  }
-  return legacyRequirementGatePath(root);
-}
 
 function sessionBindingDir(root) {
   return path.join(harnessDir(root), 'session-bindings');
@@ -632,12 +620,12 @@ function automationPromptHeader(prompt) {
 
 function explicitOpenPrdOptInEvidence(payload) {
   const evidence = [];
-  const mode = normalizedMode(process.env.OPENPRD_EXECUTION_MODE);
-  if (['openprd', 'openprd-maintenance', 'maintenance'].includes(mode)) {
-    evidence.push(`env.OPENPRD_EXECUTION_MODE=${mode}`);
+  const mode = normalizedMode(process.env.OPEN_VIBECODING_EXECUTION_MODE);
+  if (['open-vibecoding', 'open-vibecoding-maintenance', 'open-vibecoding', 'open-vibecoding-maintenance', 'maintenance'].includes(mode)) {
+    evidence.push(`env.OPEN_VIBECODING_EXECUTION_MODE=${mode}`);
   }
-  if (truthyFlag(process.env.OPENPRD_AUTOMATION_OPT_IN) || truthyFlag(process.env.OPENPRD_ENABLE_IN_AUTOMATION)) {
-    evidence.push('env.OPENPRD_AUTOMATION_OPT_IN');
+  if (truthyFlag(process.env.OPEN_VIBECODING_AUTOMATION_OPT_IN) || truthyFlag(process.env.OPEN_VIBECODING_ENABLE_IN_AUTOMATION)) {
+    evidence.push('env.OPEN_VIBECODING_AUTOMATION_OPT_IN');
   }
   const explicitField = compactPayloadField(payload, [
     'openprd_automation_opt_in',
@@ -651,23 +639,23 @@ function explicitOpenPrdOptInEvidence(payload) {
     evidence.push(`payload.${explicitField.key}`);
   }
   const text = `${promptText(payload)}\n${payloadText(payload)}`;
-  const negative = /(不要|不需要|无需|禁止|别|不是|非|不要执行|不要调用|do\s+not|don't|never|without|no|not)\s+.{0,24}\bopen\s*prd\b/i
+  const negative = /(不要|不需要|无需|禁止|别|不是|非|不要执行|不要调用|do\s+not|don't|never|without|no|not)\s+.{0,24}\b(?:open\s*prd|open[\s-]*vibecoding)\b/i
     .test(text)
-    || /(不要|不需要|无需|禁止|别|不是|非).{0,24}OpenPrd/i.test(text);
-  if (!negative && /(OpenPrd\s*(维护任务|maintenance|maintain|opt[- ]?in)|显式启用\s*OpenPrd|启用\s*OpenPrd|使用\s*OpenPrd|运行\s*OpenPrd|enable\s+OpenPrd|use\s+OpenPrd|openprd-maintenance)/i.test(text)) {
-    evidence.push('prompt.openprd-opt-in');
+    || /(不要|不需要|无需|禁止|别|不是|非).{0,24}(?:Open VibeCoding|Open[\s-]*VibeCoding)/i.test(text);
+  if (!negative && /((?:Open VibeCoding|Open[\s-]*VibeCoding)\s*(维护任务|maintenance|maintain|opt[- ]?in)|显式启用\s*(?:Open VibeCoding|Open[\s-]*VibeCoding)|启用\s*(?:Open VibeCoding|Open[\s-]*VibeCoding)|使用\s*(?:Open VibeCoding|Open[\s-]*VibeCoding)|运行\s*(?:Open VibeCoding|Open[\s-]*VibeCoding)|enable\s+(?:Open VibeCoding|Open[\s-]*VibeCoding)|use\s+(?:Open VibeCoding|Open[\s-]*VibeCoding)|(?:openprd|open-vibecoding)-maintenance)/i.test(text)) {
+    evidence.push('prompt.open-vibecoding-opt-in');
   }
   return [...new Set(evidence)];
 }
 
 function detectExecutionSignals(eventName, payload) {
   const evidence = [];
-  const mode = normalizedMode(process.env.OPENPRD_EXECUTION_MODE);
+  const mode = normalizedMode(process.env.OPEN_VIBECODING_EXECUTION_MODE);
   if (['automation', 'cron', 'scheduled', 'headless', 'unattended'].includes(mode)) {
-    evidence.push(`env.OPENPRD_EXECUTION_MODE=${mode}`);
+    evidence.push(`env.OPEN_VIBECODING_EXECUTION_MODE=${mode}`);
   }
-  if (truthyFlag(process.env.OPENPRD_AUTOMATION)) {
-    evidence.push('env.OPENPRD_AUTOMATION');
+  if (truthyFlag(process.env.OPEN_VIBECODING_AUTOMATION)) {
+    evidence.push('env.OPEN_VIBECODING_AUTOMATION');
   }
   if (compactString(process.env.CODEX_AUTOMATION_ID)) {
     evidence.push('env.CODEX_AUTOMATION_ID');
@@ -725,7 +713,7 @@ function detectExecutionSignals(eventName, payload) {
     evidence: [...new Set(evidence)],
     optInEvidence,
     executionMode: optInEvidence.length > 0
-      ? 'automation-openprd-opt-in'
+      ? 'automation-open-vibecoding-opt-in'
       : evidence.length > 0
         ? 'automation'
         : 'interactive',
@@ -736,7 +724,7 @@ function rememberAutomationMode(root, sessionId, payload, signals, laneKind) {
   if (!sessionId) {
     return null;
   }
-  const gateStatus = laneKind === 'automation' ? 'automation-safe-mode' : 'openprd-opt-in';
+  const gateStatus = laneKind === 'automation' ? 'automation-safe-mode' : 'open-vibecoding-opt-in';
   const existing = readSessionBinding(root, sessionId);
   // 每个 hook 事件都会经过这里；同一会话的 lane 记忆只需要落一次盘。
   if (existing?.laneKind === laneKind && existing?.gateStatus === gateStatus) {
@@ -744,13 +732,13 @@ function rememberAutomationMode(root, sessionId, payload, signals, laneKind) {
   }
   return writeSessionBinding(root, sessionId, {
     laneKind,
-    tool: 'openprd-hook',
+    tool: 'open-vibecoding-hook',
     promptPreview: preview(promptText(payload) || payloadText(payload), 500),
     gateActive: false,
     gateStatus,
     title: laneKind === 'automation'
-      ? 'Unattended automation bypassed OpenPrd'
-      : 'Unattended automation explicitly enabled OpenPrd',
+      ? 'Unattended automation bypassed Open VibeCoding'
+      : 'Unattended automation explicitly enabled Open VibeCoding',
     executionEvidence: signals.evidence,
     optInEvidence: signals.optInEvidence,
   });
@@ -779,30 +767,14 @@ function sessionStatePath(root, sessionId = null) {
 }
 
 function currentStatePath(root) {
-  return path.join(root, '.openprd', 'state', 'current.json');
+  return path.join(root, '.open-vibecoding', 'state', 'current.json');
 }
 
 function normalizeReviewStatus(value) {
   return ['pending-confirmation', 'confirmed', 'needs-revision'].includes(value) ? value : 'missing';
 }
 
-function normalizeRequirementApprovalPolicy(policy = {}) {
-  const maxClarificationQuestionsRaw = Number(policy?.maxClarificationQuestions);
-  const maxClarificationQuestions = Number.isFinite(maxClarificationQuestionsRaw) && maxClarificationQuestionsRaw > 0
-    ? Math.max(1, Math.floor(maxClarificationQuestionsRaw))
-    : null;
-  return {
-    mode: 'agent-maintained',
-    reviewPolicy: 'background-record',
-    executionMode: 'direct-when-user-requested',
-    suppressExtraConfirmation: true,
-    maxClarificationQuestions,
-  };
-}
 
-function requirementApprovalPolicy(gate) {
-  return normalizeRequirementApprovalPolicy(gate?.approvalPolicy);
-}
 
 function reviewPolicyRequiresHumanConfirmation(policy) {
   return false;
@@ -812,14 +784,6 @@ function reviewPolicyAllowsSilentRecord(policy) {
   return true;
 }
 
-function resolveRequirementApprovalPolicy(prompt, intent = {}) {
-  const explicitExecution = Boolean(intent?.explicitExecution);
-  return normalizeRequirementApprovalPolicy({
-    maxClarificationQuestions: explicitExecution
-      ? 1
-      : null,
-  });
-}
 
 function readCliFlagValue(command, flag) {
   const quotedPattern = new RegExp(`${flag}\\s+(?:'([^']+)'|"([^"]+)"|([^\\s]+))`, 'i');
@@ -829,7 +793,7 @@ function readCliFlagValue(command, flag) {
 
 function parseReviewMarkCommand(text) {
   const command = String(text || '');
-  if (!/openprd\s+review\b/i.test(command) || !/--mark\b/i.test(command)) {
+  if (!/open-vibecoding\s+review\b/i.test(command) || !/--mark\b/i.test(command)) {
     return null;
   }
   const mark = readCliFlagValue(command, '--mark')?.toLowerCase() ?? null;
@@ -880,40 +844,6 @@ function readCurrentPrdReview(root) {
   };
 }
 
-function readRequirementLaneReview(root, sessionId = null) {
-  const binding = readSessionBinding(root, sessionId);
-  if (binding?.versionId || binding?.digest || binding?.workUnitId) {
-    return {
-      versionId: binding.versionId ?? null,
-      digest: binding.digest ?? null,
-      workUnitId: binding.workUnitId ?? null,
-      status: binding.versionId ? normalizeReviewStatus(binding.reviewStatus) : 'missing',
-      artifact: binding.reviewPath || binding.stableReviewArtifact || binding.activeReviewPath || binding.reviewArtifact || null,
-    };
-  }
-  const globalReview = readCurrentPrdReview(root);
-  if (sessionId && globalReview.versionId) {
-    // 全局 current.json 里的确认稿可能属于另一个会话的历史需求。
-    // 如果 lane 归属明确不是当前会话，就按“本轮还没有确认稿”自愈，
-    // 避免把其他需求的旧稿卡成本轮的待确认死锁。
-    const laneSessionId = String(readJsonSync(currentStatePath(root), {})?.laneSessionId || '').trim() || null;
-    if (laneSessionId && laneSessionId !== sessionId) {
-      return {
-        versionId: null,
-        digest: null,
-        workUnitId: null,
-        status: 'missing',
-        artifact: null,
-        staleReview: {
-          versionId: globalReview.versionId,
-          workUnitId: globalReview.workUnitId,
-          laneSessionId,
-        },
-      };
-    }
-  }
-  return globalReview;
-}
 
 function reviewCommandMatchesReview(command, review) {
   if (!command || !review) {
@@ -967,7 +897,7 @@ function readJsonlTailSync(filePath, maxLines = 160, maxBytes = 262144) {
 }
 
 function stateEventsPath(root) {
-  return path.join(root, '.openprd', 'state', 'events.jsonl');
+  return path.join(root, '.open-vibecoding', 'state', 'events.jsonl');
 }
 
 function latestDesignStarterRecord(root) {
@@ -990,12 +920,12 @@ function latestDesignStarterRecord(root) {
 }
 
 const PATCH_MODE_ACTIVE_CONTRACT_FILES = [
-  '.openprd/design/active/task-scope.md',
-  '.openprd/design/active/facts-sheet.md',
-  '.openprd/design/active/asset-spec.md',
-  '.openprd/design/active/image-preflight.md',
-  '.openprd/design/active/direction-plan.md',
-  '.openprd/design/active/selected-direction.md',
+  '.open-vibecoding/design/active/task-scope.md',
+  '.open-vibecoding/design/active/facts-sheet.md',
+  '.open-vibecoding/design/active/asset-spec.md',
+  '.open-vibecoding/design/active/image-preflight.md',
+  '.open-vibecoding/design/active/direction-plan.md',
+  '.open-vibecoding/design/active/selected-direction.md',
 ];
 
 const PATCH_MODE_HANDOFF_FOCUS_ALLOWANCE = 2;
@@ -1205,13 +1135,6 @@ function isPatchModeFocusAttempt(root, payload, gate) {
   return [...focusFiles].some((file) => command.includes(file));
 }
 
-function findChangeDir(root, changeId) {
-  const candidates = [
-    path.join(root, '.openprd', 'changes', changeId),
-    path.join(root, '.openprd', 'archive', 'changes', changeId),
-  ];
-  return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0];
-}
 
 function stripMarkdown(text) {
   return String(text || '')
@@ -1222,19 +1145,12 @@ function stripMarkdown(text) {
     .trim();
 }
 
-function humanizeChangeId(changeId) {
-  return String(changeId || '未命名需求').replace(/[-_]+/g, ' ');
-}
 
 function firstHeading(text, fallback = '') {
   const match = String(text || '').match(/^#\s+(.+)$/m);
   return stripMarkdown(match?.[1] || fallback);
 }
 
-function specRequirementTitle(text) {
-  const match = String(text || '').match(/^###\s+需求[:：]\s*(.+)$/m);
-  return stripMarkdown(match?.[1] || '');
-}
 
 function collectSectionSummary(text, headingPatterns, maxItems = 3) {
   const lines = String(text || '').split(/\r?\n/);
@@ -1264,103 +1180,9 @@ function collectSectionSummary(text, headingPatterns, maxItems = 3) {
   return collected.join('；');
 }
 
-function cleanTaskTitle(title) {
-  return stripMarkdown(title)
-    .replace(/^T\d+\.\d+\s+/, '')
-    .replace(/^(实现主流程|实现需求|验证验收目标)[:：]\s*/, '')
-    .trim();
-}
 
-function pendingTaskTitles(root, changeId, maxItems = 3) {
-  const dir = findChangeDir(root, changeId);
-  let files = [];
-  try {
-    files = fs.readdirSync(dir).filter((name) => /^tasks(?:-\d+)?\.md$/.test(name)).sort();
-  } catch {
-    return [];
-  }
-  const tasks = [];
-  for (const file of files) {
-    const text = readTextSync(path.join(dir, file));
-    for (const line of text.split(/\r?\n/)) {
-      const match = line.match(/^- \[ \]\s+(.+)$/);
-      if (!match) {
-        continue;
-      }
-      const title = cleanTaskTitle(match[1]);
-      if (title) {
-        tasks.push(title);
-      }
-    }
-  }
-  const productTasks = tasks.filter((title) => !/(spec|validate|校验|评审|测试|文档|打包)/i.test(title));
-  return (productTasks.length > 0 ? productTasks : tasks).slice(0, maxItems);
-}
 
-function readLocalTaskSummary(root, changeId) {
-  if (!changeId) {
-    return null;
-  }
-  const dir = findChangeDir(root, changeId);
-  let files = [];
-  try {
-    files = fs.readdirSync(dir).filter((name) => /^tasks(?:-\d+)?\.md$/.test(name)).sort();
-  } catch {
-    return null;
-  }
-  let total = 0;
-  let completed = 0;
-  let pending = 0;
-  for (const file of files) {
-    const text = readTextSync(path.join(dir, file));
-    for (const line of text.split(/\r?\n/)) {
-      if (/^- \[x\]\s+/i.test(line)) {
-        total += 1;
-        completed += 1;
-      } else if (/^- \[ \]\s+/.test(line)) {
-        total += 1;
-        pending += 1;
-      }
-    }
-  }
-  if (total === 0) {
-    return null;
-  }
-  return {
-    total,
-    completed,
-    pending,
-    blocked: 0,
-  };
-}
 
-function changeRequirementSummary(root, changeId) {
-  const dir = findChangeDir(root, changeId);
-  const proposal = readTextSync(path.join(dir, 'proposal.md'));
-  const design = readTextSync(path.join(dir, 'design.md'));
-  let spec = '';
-  try {
-    const specsRoot = path.join(dir, 'specs');
-    const capability = fs.readdirSync(specsRoot).find((name) => !name.startsWith('.'));
-    if (capability) {
-      spec = readTextSync(path.join(specsRoot, capability, 'spec.md'));
-    }
-  } catch {}
-
-  const title = firstHeading(proposal)
-    || specRequirementTitle(spec)
-    || firstHeading(design)
-    || humanizeChangeId(changeId);
-  const summary = collectSectionSummary(proposal, [/背景/, /原因/, /为什么/], 2)
-    || collectSectionSummary(spec, [/新增需求/, /需求/], 2)
-    || collectSectionSummary(design, [/目标/, /背景/], 3);
-
-  return {
-    title,
-    summary,
-    pendingTasks: pendingTaskTitles(root, changeId),
-  };
-}
 
 function inferLearningGenre(text) {
   const value = String(text || '');
@@ -1424,7 +1246,7 @@ function analyzePromptIntent(prompt) {
         || (continuationWorkUnitId && !promptReviewCommand)
     );
   const githubRepoPattern = /(?:https?:\/\/)?github\.com\/[^\s/]+\/[^\s/#?]+|(?:^|[\s(])[\w.-]+\/[\w.-]+(?=$|[\s)#?])/i;
-  const internalOpenPrdExecution = /^#\s*OpenPrd\s+长程单任务执行会话/m.test(text)
+  const internalOpenPrdExecution = /^#\s*Open VibeCoding\s+长程单任务执行会话/m.test(text)
     || /模式:\s*loop-run\b/i.test(text)
     || /模式:\s*loop-finish\b/i.test(text);
   // These signals only decide when to inject/open the requirement-intake lane.
@@ -1589,8 +1411,8 @@ function analyzePromptIntent(prompt) {
   const reviewContinuationPatterns = [
     /认可方案并继续/,
     /认可并继续/,
-    /继续当前\s*openprd\s*下一步/i,
-    /按当前\s*openprd\s*下一步继续/i,
+    /继续当前\s*open-vibecoding\s*下一步/i,
+    /按当前\s*open-vibecoding\s*下一步继续/i,
   ];
   const reviewConfirmPatterns = [
     /认可方案/,
@@ -1655,7 +1477,7 @@ function analyzePromptIntent(prompt) {
   const learningMaterialIntent = detectLearningMaterialIntent(text);
   const learningMaterialRequest = learningMaterialIntent.requested;
   const canvasCollaborationRequest = /(画布|canvas|excalidraw)/i.test(text)
-    && /(标注|批注|协同|改图|回填|贴到画布|放到画布|插入画布|插到画布|画布评审|画布反馈|一起看|openprd\s*canvas|annotation)/i.test(text);
+    && /(标注|批注|协同|改图|回填|贴到画布|放到画布|插入画布|插到画布|画布评审|画布反馈|一起看|open-vibecoding\s*canvas|annotation)/i.test(text);
   const visualReview = /效果图|实现截图|视觉对比|视觉评审|对标效果图|复刻|不一致|好丑|没对齐|对不上|不像/i.test(text);
   const largeUiVisualDirectionRequest = visualMockupRequest
     && /(界面改动比较大|大界面|大改|改版|重做|重新设计|三种设计方向|3\s*种设计方向|多个设计方向|信息架构|核心布局|首屏|关键路径)/i.test(text);
@@ -1785,7 +1607,7 @@ function analyzePromptIntent(prompt) {
       || productCopyRequest
       || learningMaterialRequest
       || canvasCollaborationRequest
-      || /openprd/i.test(normalized)
+      || /open-vibecoding/i.test(normalized)
       || /\bprd\b/i.test(normalized),
   };
 }
@@ -1809,83 +1631,11 @@ function looksLikeClarificationFollowupReply(prompt, intent = null) {
   return true;
 }
 
-function detectRequirementIntakeMode(prompt) {
-  const text = String(prompt || '');
-  const deep = text.length >= 80
-    || /新增|新建|模块|流程|编排|一站式|信息架构|工作流|workflow|wizard/i.test(text)
-    || /多角色|权限|审批|协作|团队|客户|后台|管理/.test(text)
-    || /AI|agent|模型|生成|自动化|集成|第三方/i.test(text)
-    || /体验|优化|提升|更好|智能|自动|高效|完整|体系|平台/.test(text);
-  return deep ? 'deep-reflection' : 'focused-reflection';
-}
 
-function readRequirementGate(root, sessionId = null) {
-  return readJsonSync(requirementGatePath(root, sessionId), null);
-}
 
-function writeRequirementGate(root, value, sessionId = null) {
-  const next = sessionId ? { ...value, sessionId } : value;
-  writeJsonSync(requirementGatePath(root, sessionId), next);
-  if (sessionId) {
-    writeJsonSync(legacyRequirementGatePath(root), next);
-    writeSessionBinding(root, sessionId, {
-      promptPreview: next.promptPreview ?? null,
-      gateStatus: next.status ?? null,
-      gateActive: Boolean(next.active),
-    });
-  }
-}
 
-function mirrorRequirementGate(root, sessionId) {
-  if (!sessionId) return null;
-  const gate = readRequirementGate(root, sessionId);
-  if (gate) {
-    writeJsonSync(legacyRequirementGatePath(root), gate);
-  }
-  return gate;
-}
 
-function openRequirementGate(root, prompt, intent, sessionId = null) {
-  const current = readRequirementGate(root, sessionId);
-  const approvalPolicy = resolveRequirementApprovalPolicy(prompt, intent);
-  const gate = {
-    version: 1,
-    active: true,
-    status: 'requirement-background-attention',
-    openedAt: current?.openedAt || now(),
-    updatedAt: now(),
-    promptPreview: preview(prompt, 500),
-    reason: 'likely-l2 background requirement flow',
-    backgroundFlow: ['requirement-intake', 'clarify', 'capture', 'synthesize', 'review', 'change-generate', 'tasks'],
-    intakeMode: detectRequirementIntakeMode(prompt),
-    intent,
-    executionIntent: {
-      explicitRequested: Boolean(intent?.explicitExecution),
-      suppressExtraConfirmation: true,
-      source: 'original-user-scope',
-      latchedAt: now(),
-    },
-    approvalPolicy,
-    reviewArtifactRecord: null,
-  };
-  writeRequirementGate(root, gate, sessionId);
-  return gate;
-}
 
-function updateRequirementGate(root, patch, sessionId = null) {
-  const current = readRequirementGate(root, sessionId);
-  if (!current?.active) {
-    return current;
-  }
-  const next = {
-    ...current,
-    active: true,
-    updatedAt: now(),
-    ...patch,
-  };
-  writeRequirementGate(root, next, sessionId);
-  return next;
-}
 
 function openResearchGate(root, prompt, intent, sessionId = null) {
   const kind = intent?.publicRepoResearchRequest ? 'deepwiki' : 'context7';
@@ -2076,80 +1826,14 @@ function syncPatchModeGate(root, payload, sessionId = null, intent = null) {
   }, sessionId);
 }
 
-function evaluateRequirementGateProgress(root, sessionId = null) {
-  const gate = readRequirementGate(root, sessionId);
-  const binding = readSessionBinding(root, sessionId);
-  const review = readRequirementLaneReview(root, sessionId);
-  const activeChange = binding?.changeId ?? null;
-  const taskSummary = activeChange ? readLocalTaskSummary(root, activeChange) : null;
-  const hasTaskBreakdown = Boolean(activeChange && Number(taskSummary?.total ?? 0) > 0);
-  let nextStep = 'implementation-ready';
-  if (!review.versionId) nextStep = 'requirement-summary-background';
-  else if (review.status === 'needs-revision') nextStep = 'review-revision-background';
-  else if (review.status !== 'confirmed') nextStep = 'review-recording-background';
-  else if (!activeChange) nextStep = 'change-generation-background';
-  else if (!hasTaskBreakdown) nextStep = 'task-breakdown-background';
-  return {
-    binding,
-    review,
-    activeChange,
-    taskSummary,
-    hasTaskBreakdown,
-    approvalPolicy: requirementApprovalPolicy(gate),
-    nextStep,
-    reason: 'OpenPrd 只记录当前工作区事实；任务上下文与下一步由 Agent 自己管理。',
-  };
-}
-function reviewArtifactRecordFor(intent, progress, prompt) {
-  const review = progress?.review ?? null;
-  const requested = intent?.reviewCommand ?? null;
-  const mark = requested?.mark ?? intent?.reviewDecision ?? null;
-  if (!mark || !review?.versionId || !review?.digest || !review?.workUnitId) {
-    return null;
-  }
-  if (requested && !reviewCommandMatchesReview(requested, review)) {
-    return null;
-  }
-  return {
-    mark,
-    versionId: review.versionId,
-    digest: review.digest,
-    workUnitId: review.workUnitId,
-    promptPreview: preview(prompt, 500),
-    recordedAt: now(),
-    source: 'explicit-user-review-decision',
-  };
-}
 
-function holdRequirementGate(root, prompt, progress, sessionId = null, extra = {}) {
-  const reviewArtifactRecord = extra.reviewArtifactRecord ?? null;
-  const patch = {
-    status: extra.status ?? progress.nextStep,
-    confirmationPreview: preview(prompt, 500),
-    reviewArtifactRecord,
-  };
-  if (extra.clarificationConfirmedAt) {
-    patch.clarificationConfirmedAt = extra.clarificationConfirmedAt;
-    patch.clarificationConfirmationPreview = extra.clarificationConfirmationPreview ?? preview(prompt, 500);
-  }
-  return updateRequirementGate(root, patch, sessionId);
-}
 
 function isImplementationAdvanceIntent(intent) {
   return Boolean(intent?.explicitExecution || intent?.implementationConfirmation);
 }
 
-function isReadOnlyRequirementGate(gate) {
-  return Boolean(gate?.active && gate?.intent?.readOnly && !gate?.intent?.explicitExecution);
-}
 
-function isRequirementAttentionActive(gate) {
-  return Boolean(gate?.active);
-}
 
-function isRequirementGateActive(root, sessionId = null) {
-  return isRequirementAttentionActive(readRequirementGate(root, sessionId));
-}
 
 function isMutationPayload(payload, risk) {
   const text = payloadText(payload);
@@ -2235,10 +1919,10 @@ function detectHighRiskAutonomyMutation(root, payload, intent, risk) {
 
 function formatHighRiskAutonomyBlock(detection) {
   return [
-    `OpenPrd detected an autonomy risk: ${detection.title}.`,
+    `Open VibeCoding detected an autonomy risk: ${detection.title}.`,
     detection.details ? `Matched action: ${detection.details}` : null,
-    'Agent 责任：优先改成配置、迁移、标准状态机、幂等脚本或可回滚发布路径并继续。OpenPrd 只提供风险提醒，不承担授权审批。',
-    'OpenPrd 不阻断工具调用，也不要求用户确认或复述固定授权口令；是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断。',
+    'Agent 责任：优先改成配置、迁移、标准状态机、幂等脚本或可回滚发布路径并继续。Open VibeCoding 只提供风险提醒，不承担授权审批。',
+    'Open VibeCoding 不阻断工具调用，也不要求用户确认或复述固定授权口令；是否需要确认由当前 Agent 依据宿主安全规则和真实上下文自行判断。',
   ].filter(Boolean).join('\n');
 }
 
@@ -2276,7 +1960,7 @@ function shouldRequireAssetSpec(intent = null) {
 }
 
 function designActiveFilePath(root, filename) {
-  return path.join(root, '.openprd', 'design', 'active', filename);
+  return path.join(root, '.open-vibecoding', 'design', 'active', filename);
 }
 
 function designArtifactHasPlaceholder(root, filename) {
@@ -2286,7 +1970,7 @@ function designArtifactHasPlaceholder(root, filename) {
 
 function looksLikeFrontendImplementationFile(relativePath) {
   const file = String(relativePath || '');
-  if (!file || file.startsWith('.openprd/')) {
+  if (!file || file.startsWith('.open-vibecoding/')) {
     return false;
   }
   if (/^(miniprogram|wechat|weapp)\//i.test(file)) {
@@ -2355,12 +2039,12 @@ function captureFieldFromCommand(command) {
 }
 
 function isNonSemanticCaptureCommand(command) {
-  return /openprd\s+capture\b/i.test(command)
+  return /open-vibecoding\s+capture\b/i.test(command)
     && captureSourceFromCommand(command) === 'agent-normalized';
 }
 
 function isDerivedClarificationCaptureCommand(command) {
-  if (!/openprd\s+capture\b/i.test(command)) {
+  if (!/open-vibecoding\s+capture\b/i.test(command)) {
     return false;
   }
   const source = captureSourceFromCommand(command);
@@ -2368,38 +2052,12 @@ function isDerivedClarificationCaptureCommand(command) {
 }
 
 function isMetaStatusCaptureCommand(command) {
-  return /openprd\s+capture\b/i.test(command) && captureFieldFromCommand(command) === 'meta.status';
+  return /open-vibecoding\s+capture\b/i.test(command) && captureFieldFromCommand(command) === 'meta.status';
 }
 
-function gateHasClarificationConfirmation(gate) {
-  return Boolean(gate?.clarificationConfirmedAt || gate?.status === 'clarification-confirmed');
-}
 
-function requirementWritePathExplicitlyAuthorized(gate) {
-  return gateHasClarificationConfirmation(gate)
-    || reviewPolicyAllowsSilentRecord(requirementApprovalPolicy(gate));
-}
 
-function isRequirementWritePathMutation(command) {
-  return /openprd\s+(capture|classify|synthesize|diagram)\b/i.test(command);
-}
 
-function isAllowedDuringRequirementGate(root, payload, gate, sessionId = null) {
-  const text = payloadText(payload);
-  const command = commandText(payload);
-  const alwaysAllowed = [
-    /openprd\s+status\b/i,
-    /openprd\s+next\b/i,
-    /openprd\s+run\s+\.\s+--verify\b/i,
-    /openprd\s+clarify\b/i,
-    /openprd\s+interview\b/i,
-    /openprd\s+standards\s+.*--verify/i,
-    /openprd\s+quality\s+.*--verify/i,
-    /openprd\s+doctor\b/i,
-    /openprd\s+(capture|classify|synthesize|diagram|review|review-presentation|change|tasks|loop)\b/i,
-  ];
-  return alwaysAllowed.some((pattern) => pattern.test(text) || pattern.test(command));
-}
 
 function toolProbe(payload) {
   return `${toolName(payload)}\n${payloadText(payload)}\n${commandText(payload)}`.toLowerCase();
@@ -2408,7 +2066,7 @@ function toolProbe(payload) {
 function looksLikeLocalEvidenceRead(payload) {
   const probe = toolProbe(payload);
   return /\b(rg|grep|cat|sed|head|tail|less|more|wc|ls|find|git show|read_file|open_file|view_file)\b/.test(probe)
-    || /openprd\s+(status|next|doctor|run\s+\.\s+--verify)/.test(probe);
+    || /open-vibecoding\s+(status|next|doctor|run\s+\.\s+--verify)/.test(probe);
 }
 
 function applyResearchToolSignal(root, payload, sessionId = null) {
@@ -2502,7 +2160,7 @@ function researchGateMessage(gate) {
   }
   if (gate.kind === 'deepwiki') {
     return [
-      'OpenPrd 外部仓库证据注意项: active。',
+      'Open VibeCoding 外部仓库证据注意项: active。',
       '当前请求涉及公开 GitHub 仓库的架构、模块、流程或对标判断；如果本地证据不足，可在不中断用户已要求工作的前提下补充 DeepWiki 证据。',
       '最小动作: `read_wiki_structure` 一次，再用 `ask_question` 聚焦 1-2 个关键问题；证据够用后立即停止扩展。',
       gate.externalEvidence?.readWikiStructure ? '已记录: read_wiki_structure。' : '缺少: read_wiki_structure。',
@@ -2510,7 +2168,7 @@ function researchGateMessage(gate) {
     ].join('\n');
   }
   return [
-    'OpenPrd 外部技术证据注意项: active。',
+    'Open VibeCoding 外部技术证据注意项: active。',
     '当前请求涉及项目外技术事实、第三方库、框架、API、SDK、MCP 或 CLI 用法；先利用已有本地证据，不足时在后台补充 Context7 证据，不延迟用户已明确要求的实现。',
     '最小动作: `resolve_library_id` 一次，再 `query_docs` 1-2 次；若覆盖不足，明确缺口后再补官方文档或源码。',
     gate.externalEvidence?.resolveLibraryId ? '已记录: resolve_library_id。' : '缺少: resolve_library_id。',
@@ -2523,7 +2181,7 @@ function skillVisualizationGateMessage(gate) {
     return null;
   }
   return [
-    'OpenPrd skill/AGENTS 可视化注意项: active。',
+    'Open VibeCoding skill/AGENTS 可视化注意项: active。',
     '当前请求涉及 skill、SKILL.md、AGENTS.md 或相关 workflow 规则变更。读取现状并用彩色 Mermaid 说明新增、修改、保持不变和删除/高风险项。',
     'Mermaid 应包含 `unchanged`、`added`、`changed`、`removed` 四种 classDef；这是沟通材料，不是授权门禁，用户已提出修改时可继续执行。',
   ].join('\n');
@@ -2534,7 +2192,7 @@ function credentialMessage(intent) {
     return null;
   }
   return [
-    'OpenPrd 敏感信息规则:',
+    'Open VibeCoding 敏感信息规则:',
     '如果任务需要 API key、token、账号信息、第三方服务凭证或个人信息，先使用 `secrets-vault` skill 获取已有凭证，不要立即向用户索要。',
     '不要直接读取原始 vault 文件，也不要在日志、代码或回复里暴露完整密钥。',
   ].join('\n');
@@ -2545,7 +2203,7 @@ function weappGateMessage(gate) {
     return null;
   }
   return [
-    'OpenPrd 微信小程序验证门禁: active。',
+    'Open VibeCoding 微信小程序验证门禁: active。',
     '只有当用户明确要求小程序实测、复现、截图、抓日志/网络、从 0 到 1 走流程，或当前改动高风险到必须依赖运行态证据时，才升级到本地小程序运行态验证。',
     '一旦进入小程序运行态验证，默认沿用当前小程序运行态或开发者工具会话连续验证，不要为了验证自动重开应用；只有用户明确要求从 0 到 1、冷启动、重开或重新打开时，才从头启动。',
     '优先使用当前环境已配置的小程序本地验证能力；如果当前客户端没有相应工具，不要假定已经安装，也不要把缺少工具本身当成任务失败。',
@@ -2558,7 +2216,7 @@ function browserSafetyMessage(intent) {
     return null;
   }
   return [
-    'OpenPrd 浏览器安全提醒:',
+    'Open VibeCoding 浏览器安全提醒:',
     '用户明确要求 Computer Use 时，优先使用 Computer Use，并尽量在 Codex-owned browser window 中操作。',
     '执行点击、输入、提交、关闭、切换账号、退出登录、支付等高风险动作前，先确认窗口归属，检查当前窗口标题、目标页面和可见内容仍属于本任务。',
   ].join('\n');
@@ -2569,7 +2227,7 @@ function productCopyMessage(intent) {
     return null;
   }
   return [
-    'OpenPrd 产品内文案提醒:',
+    'Open VibeCoding 产品内文案提醒:',
     '先检查项目是否已有 i18n、locales、translations、Localizable 或其他语言资源；若已有，多语言要同步维护。',
     '产品界面上用户能看到的文案必须站在当前用户视角写：说明用户现在能做什么、会发生什么、为什么值得点、下一步怎么走。',
     '多语言文案不得逐字翻译。先识别控件类型、用户动作、上下文和可用空间，再按目标语言的软件产品习惯重写；英文按钮、Tab、菜单和短标签优先使用短而自然的惯用表达，例如“开始自动剪辑”写成 Auto Edit，不要写 Start Automatic Editing。',
@@ -2580,7 +2238,8 @@ function productCopyMessage(intent) {
 }
 
 function runOpenPrd(args, cwd) {
-  const configuredCommand = String(process.env.OPENPRD_CLI || 'openprd').trim() || 'openprd';
+  const installed = readJsonSync(path.join(cwd, '.open-vibecoding/harness/install-manifest.json'), {});
+  const configuredCommand = String(process.env.OPEN_VIBECODING_CLI || installed.cliEntry || 'open-vibecoding').trim() || 'open-vibecoding';
   const jsEntry = /\.(?:c|m)?js$/i.test(configuredCommand);
   let command = configuredCommand;
   let commandArgs = args;
@@ -2594,8 +2253,8 @@ function runOpenPrd(args, cwd) {
       const binDir = path.dirname(normalized);
       const packageDir = path.dirname(binDir);
       const packageName = path.basename(packageDir);
-      if (path.basename(binDir) === 'bin' && packageName === 'openprd') {
-        candidates.push(path.join(path.dirname(packageDir), 'bin', 'openprd.js'));
+      if (path.basename(binDir) === 'bin' && packageName === 'open-vibecoding') {
+        candidates.push(path.join(path.dirname(packageDir), 'bin', 'open-vibecoding.js'));
       }
     };
     if (path.isAbsolute(configuredCommand)) {
@@ -2607,7 +2266,7 @@ function runOpenPrd(args, cwd) {
       addCollapsedPackageCandidate(path.resolve(cwd, configuredCommand));
       addCollapsedPackageCandidate(path.resolve(configuredCommand));
     }
-    candidates.push(path.join(cwd, 'bin', 'openprd.js'));
+    candidates.push(path.join(cwd, 'bin', 'open-vibecoding.js'));
     const resolvedEntry = candidates.find((candidate) => candidate && fs.existsSync(candidate));
     command = process.execPath;
     commandArgs = [resolvedEntry || configuredCommand, ...args];
@@ -2660,7 +2319,7 @@ function devCheckWrapUpMessage(root, turnState) {
   const result = runOpenPrd(['dev-check', '.', ...files, '--json'], root);
   if (!result.ok && !result.stdout) {
     return [
-      'OpenPrd 收工回顾：本轮有 touched code files，但 dev-check 未能完成。',
+      'Open VibeCoding 收工回顾：本轮有 touched code files，但 dev-check 未能完成。',
       '最终回复里请说明无法生成大文件审查表，并列出失败原因。',
       result.stderr ? `错误: ${result.stderr}` : null,
     ].filter(Boolean).join('\n');
@@ -2670,7 +2329,7 @@ function devCheckWrapUpMessage(root, turnState) {
     return null;
   }
   return [
-    'OpenPrd task-scoped dev-check 建议：本轮改动对象存在结构维护注意项。',
+    'Open VibeCoding task-scoped dev-check 建议：本轮改动对象存在结构维护注意项。',
     '这份结果是建议，不是收尾门禁。只有拆分与当前目标同范围、不会扩大风险时才可顺手处理；否则保留建议，并把工作区规模债归入 workspaceAttention。不要强迫当前任务重构，也不要要求用户回复开关确认。',
     parsed.wrapUp.reason ? `建议原因：${parsed.wrapUp.reason}` : null,
     parsed.wrapUp.switchHint ? `模式说明：${parsed.wrapUp.switchHint}` : null,
@@ -2682,12 +2341,12 @@ function devCheckWrapUpMessage(root, turnState) {
 }
 
 function devCheckTaskScopedAdvisory() {
-  return '代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 openprd dev-check . <file...>。它只提供 task-scoped advisory：只有拆分与当前目标同范围且不会扩大风险时才可顺手处理；否则保留建议，并把工作区规模债归入 workspaceAttention。不要强迫当前任务重构，也不要要求用户回复开关确认。';
+  return '代码修改完成后、最终回复前，针对本轮实际 touched code files 运行 open-vibecoding dev-check . <file...>。它只提供 task-scoped advisory：只有拆分与当前目标同范围且不会扩大风险时才可顺手处理；否则保留建议，并把工作区规模债归入 workspaceAttention。不要强迫当前任务重构，也不要要求用户回复开关确认。';
 }
 
 function shouldRunDoctorForHighRisk(payload) {
   const text = commandText(payload) || payloadText(payload);
-  return /(git\s+(commit|push)\b|npm\s+publish|pnpm\s+publish|yarn\s+npm\s+publish|gh\s+release|openprd\s+(freeze|handoff|setup|update|fleet|doctor)\b|openprd\s+change\s+.*--(apply|archive)\b|release|publish)/i.test(text);
+  return /(git\s+(commit|push)\b|npm\s+publish|pnpm\s+publish|yarn\s+npm\s+publish|gh\s+release|open-vibecoding\s+(freeze|handoff|setup|update|fleet|doctor)\b|open-vibecoding\s+change\s+.*--(apply|archive)\b|release|publish)/i.test(text);
 }
 
 function summarizeRunVerifyCheck(parsed, fallbackText = '') {
@@ -2735,7 +2394,7 @@ function buildGateFailureEnvelope(result) {
     return {
       kind: 'integration-drift',
       details: [doctorCheck.summary, ...(doctorCheck.details ?? [])].filter(Boolean),
-      repair: 'Suggested follow-up: use openprd doctor . to inspect drift, then repair it with openprd update . or the targeted command in the background.',
+      repair: 'Suggested follow-up: use open-vibecoding doctor . to inspect drift, then repair it with open-vibecoding update . or the targeted command in the background.',
     };
   }
   if (runCheck?.taskReady === false || changeCheck) {
@@ -2757,7 +2416,7 @@ function buildGateFailureEnvelope(result) {
         runCheck.workspaceAttention?.detail ?? null,
         ...(runCheck.warnings ?? []),
       ].filter(Boolean),
-      repair: 'Suggested follow-up: resolve the workspace-level debt from openprd run . --verify in the background.',
+      repair: 'Suggested follow-up: resolve the workspace-level debt from open-vibecoding run . --verify in the background.',
     };
   }
   return {
@@ -2770,10 +2429,10 @@ function buildGateFailureEnvelope(result) {
 function formatHighRiskGateAttention(result) {
   const envelope = result.envelope ?? buildGateFailureEnvelope(result);
   const headline = envelope.kind === 'workspace-debt'
-    ? 'OpenPrd readiness attention: the current task may be done while the workspace still has evidence debt.'
+    ? 'Open VibeCoding readiness attention: the current task may be done while the workspace still has evidence debt.'
     : envelope.kind === 'integration-drift'
-      ? 'OpenPrd readiness attention: the integration health check found drift.'
-      : 'OpenPrd readiness attention: the current task still has incomplete verification evidence.';
+      ? 'Open VibeCoding readiness attention: the integration health check found drift.'
+      : 'Open VibeCoding readiness attention: the current task still has incomplete verification evidence.';
   return [
     headline,
     result.summary,
@@ -2784,7 +2443,7 @@ function formatHighRiskGateAttention(result) {
 
 function classifyToolFailure(text) {
   const normalized = String(text || '').toLowerCase();
-  if (/doctor|hook|hook-profile|hooks\.json|config\.toml|command-catalog|openprd-router|skill|integration|drift/.test(normalized)) {
+  if (/doctor|hook|hook-profile|hooks\.json|config\.toml|command-catalog|open-vibecoding-router|skill|integration|drift/.test(normalized)) {
     return 'integration-drift';
   }
   if (/production-ready|needs-attention|smoke evidence|feature coverage|workspace ready|workspace debt|quality/.test(normalized)) {
@@ -2795,12 +2454,12 @@ function classifyToolFailure(text) {
 
 function toolFailureMessage(kind) {
   if (kind === 'integration-drift') {
-    return 'A tool command failed in a way that looks like integration drift. Use openprd doctor . to inspect it, then repair confirmed drift with openprd update . or the targeted fix while keeping the user-requested work moving where safe.';
+    return 'A tool command failed in a way that looks like integration drift. Use open-vibecoding doctor . to inspect it, then repair confirmed drift with open-vibecoding update . or the targeted fix while keeping the user-requested work moving where safe.';
   }
   if (kind === 'workspace-debt') {
-    return 'A tool command reported workspace-level readiness debt. Record it as workspaceAttention, continue safe task-scoped work, and use openprd run . --verify before making an overall readiness claim.';
+    return 'A tool command reported workspace-level readiness debt. Record it as workspaceAttention, continue safe task-scoped work, and use open-vibecoding run . --verify before making an overall readiness claim.';
   }
-  return 'A tool command failed against the current task. Use openprd next . and the relevant verification command to identify the smallest task-scoped repair path.';
+  return 'A tool command failed against the current task. Use open-vibecoding next . and the relevant verification command to identify the smallest task-scoped repair path.';
 }
 
 function recordRunHook(cwd, baseEvent, outcome) {
@@ -2821,55 +2480,7 @@ function recordRunHook(cwd, baseEvent, outcome) {
   runOpenPrd(args, cwd);
 }
 
-function requirementGateMessage(intent, gate) {
-  const requirementAttentionActive = isRequirementAttentionActive(gate);
-  if (!intent?.requiresIntake && !requirementAttentionActive) {
-    return null;
-  }
-  if (intent?.visualMockupRequest) {
-    return [
-      'OpenPrd requirement intake is background attention and never restricts implementation writes.',
-      'The user is asking for an image asset such as a cover image, poster, illustration, icon, sticker, visual mockup, or effect image, not code implementation.',
-      'For logo, icon, avatar, badge, and similar development assets, default to a standalone asset: full-frame single subject with no extra UI frame, card shell, device mockup, or presentation container unless the user explicitly asked for one.',
-      'For an avatar or standalone UI bitmap, inspect the original asset and consuming component/CSS first, then lock rendering-mode in the current task-scoped asset-spec. Use transparent-cutout only when the UI needs alpha: generate standalone #00ff00 candidates, remove the chroma key, keep transparent corners, and verify safe cropping. Use opaque-full-bleed-tile when the background must fill the tile: prompt for full-bleed edge-to-edge coverage with NO rounded rectangle, NO white outer margin, and NO transparent corners; verify all four corners are opaque. Never mix the two validations. UI container radius, border, and shadow do not belong in source pixels unless original-asset evidence proves they are baked in. A screenshot alone cannot decide this contract.',
-      'Do not create temporary HTML/SVG/CSS files for this image unless the user explicitly requested that format.',
-      'Image tool routing: on a Codex surface use native `imagegen` (Image 2); on a Cursor surface use the built-in `GenerateImage` tool; both are free inside the conversation tool. If neither surface applies, read the confirmed preference in `.openprd/harness/image-generation-preference.json`; when no preference exists, ask the user which image-generation path to use and persist the answer to that file as the future default. NEVER silently call the user\'s own paid image API. The image tool is the tool path, not an aesthetic exemption, so first state the purpose, audience, intended tone, constraints, and memory point, then put them into the image prompt.',
-      'Before generation, do a quick anti-slop check: without brand or reference support, avoid default purple/blue-purple gradients, generic font taste, white card piles, and context-free decoration.',
-    ].join('\n');
-  }
-  return [
-    'OpenPrd requirement intake runs in background and does not create a user approval stop.',
-    'This prompt looks like a likely 新功能/新流程方案 (L2). Use $openprd-requirement-intake to classify it by impact, unknowns, decision cost, and validation cost while continuing the work the user requested.',
-    'Keep this mapping visible for internal review: 直接处理=L0, 现有功能优化=L1, 新功能/新流程方案=L2.',
-    'L0 and L1 stay on lightweight paths and should not be forced through formal PRD/review/change/tasks unless the scope expands.',
-    'For L2, maintain PRD/review/change/tasks and the appropriate scene lens in the background. Do not block implementation files, do not ask the user to approve OpenPrd artifacts, and do not expose internal enum values unless necessary.',
-    'Write back the best-supported facts with explicit source labels, synthesize the PRD, record the stable review artifact, generate the change, and prepare tasks as Agent-owned maintenance. If information is uncertain, choose a reversible default and state the assumption instead of turning OpenPrd into a confirmation gate.',
-  ].join('\n');
-}
 
-function lightweightRequirementMessage(intent) {
-  if (intent?.requirementTier === 'l0') {
-    return [
-      'OpenPrd 轻量需求路径: 当前更接近直接处理 (L0)。',
-      '先在 chat 用短格式写出“需求类型 / 理由 / 推荐下一步”，并默认写成“需求类型：直接处理（L0）”；只有内部排障确实需要时，才额外单列“内部路由码”。',
-      '对用户先用一句轻量主句说清这次是什么和为什么先这样处理；边界和技术细项放到后一句，不要揉成一大段解释。',
-      '直接处理并事后说明即可，不打开正式 PRD/review/change/tasks。',
-      '优先做最小足够验证，并用 1-2 句说明本轮特别需要强化的测试点；默认不要求正式测试报告。',
-      '如果过程中暴露出跨系统依赖、支付/账号/权限/回调等高风险因素，再升级到 L2 重流程。',
-    ].join('\n');
-  }
-  if (intent?.requirementTier === 'l1') {
-    return [
-      'OpenPrd 轻量需求路径: 当前更接近现有功能优化 (L1)。',
-      '先在 chat 用短格式写出“需求类型 / 理由 / 推荐下一步”，并默认写成“需求类型：现有功能优化（L1）”，再给 3-5 行 mini-plan；只有内部排障确实需要时，才额外单列“内部路由码”。',
-      '主句先轻一点：先说这次调整是什么、要解决什么，再把范围边界和技术细项留给 mini-plan，不要一上来写成长段。',
-      '先在对话里给 3-5 行 mini-plan，至少写清目标、范围内、范围外和验证方式。',
-      '默认不要打开正式 PRD/review/change/tasks；只有在 mini-plan 暴露新决策缺口、跨系统风险或范围升级时，才提升到 L2 重流程。',
-      '验证采用最小足够组合即可，重点说明需要强化测试的地方；默认不要求正式测试报告。',
-    ].filter(Boolean).join('\n');
-  }
-  return null;
-}
 
 function imageGenerationPreferencePath(root) {
   return path.join(harnessDir(root), 'image-generation-preference.json');
@@ -2879,7 +2490,7 @@ function imageGenerationRoutingLines(root) {
   const preference = readJsonSync(imageGenerationPreferencePath(root), null);
   const lines = [
     '生图路由: 第一层先判断当前对话工具面——Codex 环境用原生 `imagegen`（Image 2），Cursor 环境用内置 `GenerateImage` 工具；两者都是对话工具内免费能力，优先默认使用。',
-    '如果当前既不是 Codex 也不是 Cursor，或内置生图工具面证据不存在，先读 `.openprd/harness/image-generation-preference.json` 里用户已确认的生图偏好；没有已确认偏好时必须先询问用户要用哪种生图方式，并把用户答复以 `{"provider","source":"user-confirmed","updatedAt"}` 写回该文件，下次直接作为默认。',
+    '如果当前既不是 Codex 也不是 Cursor，或内置生图工具面证据不存在，先读 `.open-vibecoding/harness/image-generation-preference.json` 里用户已确认的生图偏好；没有已确认偏好时必须先询问用户要用哪种生图方式，并把用户答复以 `{"provider","source":"user-confirmed","updatedAt"}` 写回该文件，下次直接作为默认。',
     '成本护栏: 绝对不要在用户未明确指定的情况下擅自调用用户本地或自有付费生图 API（如用户自己的 OpenAI / Stability key），避免产生额外成本；只有偏好文件或当前消息明确授权时才可以使用。',
   ];
   if (preference?.provider) {
@@ -2896,15 +2507,15 @@ function visualMockupMessage(intent, root = null) {
     '当前用户要的是图片内容生成，例如图片、封面图、配图、海报、插画、图标、贴纸、头像、banner、主视觉/KV、运营图、效果图、视觉稿或 mockup。',
     ...(root ? imageGenerationRoutingLines(root) : []),
     '按生图路由选定的内置生图工具生成图片（Codex=`imagegen`/Image 2，Cursor=`GenerateImage`）；生图工具是工具路径，不是审美豁免；生图前先写清用途、受众、气质、约束和记忆点，并把这些写进 prompt。',
-    '生图前用 `.openprd/design/anti-slop.md` 做快速自检：没有品牌或参考图依据时，不要默认紫白/蓝紫渐变、通用字体、白底卡片堆叠或无语境装饰。',
+    '生图前用 `.open-vibecoding/design/anti-slop.md` 做快速自检：没有品牌或参考图依据时，不要默认紫白/蓝紫渐变、通用字体、白底卡片堆叠或无语境装饰。',
     '除非用户明确指定 HTML、SVG、CSS、Canvas、代码稿或可编辑矢量/source artifact，不要改用临时 HTML/SVG/CSS 再截图。',
     '对 avatar、logo、icon、badge 等独立素材，先检查原始素材与消费组件/CSS，在当前 task-scope 的 asset-spec 锁定 rendering-mode。transparent-cutout 才生成纯 `#00ff00` 绿幕候选、抠透明、保留透明四角并做安全裁切；opaque-full-bleed-tile 的提示词必须写 full-bleed edge-to-edge、NO rounded rectangle、NO white outer margin、NO transparent corners，并验证四角不透明。UI 容器圆角、边框、阴影默认不画进源位图；截图不能单独判断像素合同，两种模式验证不可混用。',
     '只有当用户明确要求 mockup、场景化效果图、容器化呈现，或参考图本身就包含这些承载结构时，才生成对应的容器或场景。',
     '只有在实际发生生图工具调用后，才能汇报生图结果、失败或限流；未调用前，不要声称“生图限流”或“生图失败”。',
-    '把生图结果先当成候选效果图，不要默认登记到 `.openprd/harness/visual-reviews/`，也不要自动当成后续验收参考；看图时不仅判断是否生成成功，还要判断气质、层级、字体/色彩/表面角色和记忆点是否成立。',
+    '把生图结果先当成候选效果图，不要默认登记到 `.open-vibecoding/harness/visual-reviews/`，也不要自动当成后续验收参考；看图时不仅判断是否生成成功，还要判断气质、层级、字体/色彩/表面角色和记忆点是否成立。',
     '如果用户看完图后还要继续做实现，说明 Agent 采用的可逆默认方向及理由，并按已授权范围继续；用户明确指定方向时再覆盖默认值并更新后续 reference-set。候选图仍要和已经明确接受的验收参考分开记录，不把 Agent 默认方向伪装成 user-confirmed。',
-    '如果一张图里有多个子图、网格、多对象或多个方向，不要把整板直接当成单一参考图；先运行 `openprd visual-prepare . --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>` 生成 reference-set、contact sheet 和 compare-plan，确认 contact sheet 后再逐项对比或统一验收。',
-    'OpenPrd review.html 只用于需求评审，visual-compare 只用于实现阶段视觉证据：已有参考图时做效果图/实现截图对比；没有参考图时先判断新建界面还是修改既有界面，新建界面回到实现前 3 方向方案评审，修改既有界面做修改前/修改后自检；局部细节优先补局部焦点证据板，并行优化方向优先补并行实验证据板；同构列表、卡片、网格或表格需要补对齐辅助线证据板，并同时检查容器轨道和内部内容槽位轨道；单个 logo、icon、avatar、badge、按钮图形或图片内部需要居中判定、视觉重心评估或偏心排查时，需要补内部居中证据板，并同时检查画布中心、主体外接框中心和视觉重心偏移。',
+    '如果一张图里有多个子图、网格、多对象或多个方向，不要把整板直接当成单一参考图；先运行 `open-vibecoding visual-prepare . --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>` 生成 reference-set、contact sheet 和 compare-plan，确认 contact sheet 后再逐项对比或统一验收。',
+    'Open VibeCoding review.html 只用于需求评审，visual-compare 只用于实现阶段视觉证据：已有参考图时做效果图/实现截图对比；没有参考图时先判断新建界面还是修改既有界面，新建界面回到实现前 3 方向方案评审，修改既有界面做修改前/修改后自检；局部细节优先补局部焦点证据板，并行优化方向优先补并行实验证据板；同构列表、卡片、网格或表格需要补对齐辅助线证据板，并同时检查容器轨道和内部内容槽位轨道；单个 logo、icon、avatar、badge、按钮图形或图片内部需要居中判定、视觉重心评估或偏心排查时，需要补内部居中证据板，并同时检查画布中心、主体外接框中心和视觉重心偏移。',
   ].join('\n');
 }
 
@@ -2913,8 +2524,8 @@ function canvasCollaborationMessage(intent) {
     return null;
   }
   return [
-    '当前请求涉及 OpenPrd 画布协同（生图上画布、人在画布上标注、标注结果回到对话继续改）。',
-    '打开或复用画布：运行 `openprd canvas .`；无法自动识别当前对话时用 `--thread <id> --thread-title <name>` 或 `--session <id> --session-title <name>` 显式绑定，画布必须绑定当前对话。',
+    '当前请求涉及 Open VibeCoding 画布协同（生图上画布、人在画布上标注、标注结果回到对话继续改）。',
+    '打开或复用画布：运行 `open-vibecoding canvas .`；无法自动识别当前对话时用 `--thread <id> --thread-title <name>` 或 `--session <id> --session-title <name>` 显式绑定，画布必须绑定当前对话。',
     '结构化读画布：需要知道用户正在圈哪些元素时，优先 `GET /api/selection` 读取选中元素的 ID、类型、坐标、尺寸和文本，不要只靠截图猜；需要全量场景再读 `GET /api/scene`。',
     '结构化写画布：把生成的新图放上画布时，优先 `POST /api/insert-image`，用 `anchorElementId` + `placement`（right/left/below/above）把新图放到指定元素旁边，不要覆盖原图；回填 AI 生图占位卡时继续用 `POST /api/images` 带 `placeholderId`。',
     '标注改图闭环：如果交接记录（handoff）的 `selection` 是 `annotation-edit`，或带有 `sourceImageElementIds` / `annotationElementIds`，说明用户在原图上画了标注要求改图。把截图里的标注当修改指令，生成修改后的新图，再用 `POST /api/insert-image` 以原图为 anchor 放到旁边，方便用户对比原图和新版。',
@@ -2928,19 +2539,19 @@ function learningGenreFlag(intent = null) {
 }
 
 function learningReviewCommand(intent = null) {
-  return `openprd learn . --topic "<学习主题>"${learningGenreFlag(intent)} --open`;
+  return `open-vibecoding learn . --topic "<学习主题>"${learningGenreFlag(intent)} --open`;
 }
 
 function learningReviewMessage(intent = null) {
   const command = learningReviewCommand(intent);
   const lines = [
     '如果当前交付目标是把一次工作转成可学习、可复用、可回看、可教学或可沉淀的材料，不要先按关键词判断，也不要只停留在普通说明文档。',
-    '先判断期望产物形态：是否需要章节结构、证据锚点、图文讲解、检索练习、工作示例或阅读体验。需要这些形态时，优先使用 `openprd learn .` 生成学习包骨架、阅读器和证据清单，再补充正文内容；普通 Markdown 只能作为辅助讲义。',
+    '先判断期望产物形态：是否需要章节结构、证据锚点、图文讲解、检索练习、工作示例或阅读体验。需要这些形态时，优先使用 `open-vibecoding learn .` 生成学习包骨架、阅读器和证据清单，再补充正文内容；普通 Markdown 只能作为辅助讲义。',
   ];
   if (intent?.learningMaterialRequest) {
     lines.unshift('当前输入已被识别为学习型交付物请求：这是按产物形态和长期阅读/教学目的判断，不是固定关键词表。');
     lines.push(`建议先运行 \`${command}\`。如果用户指定了仙侠、科幻、童话等风格，把它当作学习包题材/文体参数，而不是绕过阅读器流程的理由。`);
-    lines.push('生成骨架后，读取 `.openprd/learning/archive/<packageId>/agent-prompt.md`，由 Agent 基于证据写入 `learning-content.json`，再运行 `openprd learn . --content-json <file> --open` 渲染最终 reader；不要把聊天里的普通 Markdown 成稿当完成。');
+    lines.push('生成骨架后，读取 `.open-vibecoding/learning/archive/<packageId>/agent-prompt.md`，由 Agent 基于证据写入 `learning-content.json`，再运行 `open-vibecoding learn . --content-json <file> --open` 渲染最终 reader；不要把聊天里的普通 Markdown 成稿当完成。');
   }
   return lines.join('\n');
 }
@@ -2950,14 +2561,14 @@ function largeUiVisualDirectionMessage(intent = null) {
     return null;
   }
   return [
-    'OpenPrd 大界面改动视觉方案评审:',
+    'Open VibeCoding 大界面改动视觉方案评审:',
     '位置: 需求分流之后、PRD 定稿或实现开工之前；它不同于 review.html，也不同于实现后的 visual-compare。',
     '判断: 先从用户目标、信息架构变化、视觉决策成本和验收风险判断是否需要方向评审，不用关键词触发。会决定首屏、核心布局、主视觉、关键路径、组件层级/密度，或用户需要先选设计方向时触发。',
     '自动性: 用户不需要额外提出“请生图”。只要语义判断命中大界面改动或视觉决策成本高，就主动完成 3 方向生成；卡片宽度、间距、对齐、颜色、圆角、字号等轻量微调不触发。',
-    '步骤: 已有界面时，Codex 原生 App 用 Computer Use，Codex 网页环境用 Chrome 插件的任务专用窗口，Cursor 用当前可用的浏览器或项目预览能力，进入对应功能并截当前真实界面。三个方向必须把同一张截图作为 image-to-image 参考；除非用户明确要求换风格，否则锁定现有字体角色、色彩系统、明暗模式、表面语言、圆角/边框/阴影、图标语言、平台框架和信息密度，只探索布局、信息层级、导航、关键路径和空间构图。冷启动没有现有界面时，基于已确认 PRD、用户画像、第一版切片和视觉目标写 design brief，不伪造修改前截图。brief 必须写清用途、受众、气质端点、约束和记忆点，3 个方向要分别说明审美主张和主动避开的模板味。然后按生图路由调用内置生图工具（Codex=`imagegen`/Image 2，Cursor=`GenerateImage`；都不可用时按 `.openprd/harness/image-generation-preference.json` 的用户已确认偏好，没有偏好先问用户）生成至少 3 个不同设计思想方向；把效果图横向拼成一张带 1/2/3 序号的大图，先作为候选效果图给用户评审，不要默认写入 `.openprd/harness/visual-reviews/` 当验收参考。',
+    '步骤: 已有界面时，Codex 原生 App 用 Computer Use，Codex 网页环境用 Chrome 插件的任务专用窗口，Cursor 用当前可用的浏览器或项目预览能力，进入对应功能并截当前真实界面。三个方向必须把同一张截图作为 image-to-image 参考；除非用户明确要求换风格，否则锁定现有字体角色、色彩系统、明暗模式、表面语言、圆角/边框/阴影、图标语言、平台框架和信息密度，只探索布局、信息层级、导航、关键路径和空间构图。冷启动没有现有界面时，基于已确认 PRD、用户画像、第一版切片和视觉目标写 design brief，不伪造修改前截图。brief 必须写清用途、受众、气质端点、约束和记忆点，3 个方向要分别说明审美主张和主动避开的模板味。然后按生图路由调用内置生图工具（Codex=`imagegen`/Image 2，Cursor=`GenerateImage`；都不可用时按 `.open-vibecoding/harness/image-generation-preference.json` 的用户已确认偏好，没有偏好先问用户）生成至少 3 个不同设计思想方向；把效果图横向拼成一张带 1/2/3 序号的大图，先作为候选效果图给用户评审，不要默认写入 `.open-vibecoding/harness/visual-reviews/` 当验收参考。',
     '质量: 每个方向都要从用途、用户、业务约束、核心动作和唯一记忆点出发，同时检查字体角色、色彩、空间构图、信息层级、表面/图标语言和动效含义；拒绝无依据蓝紫渐变、默认字体、等权白卡堆叠、过量大圆角、无语境装饰和只换颜色的伪方向。',
-    '交互: 把三个方向直接给用户看，并说明 Agent 采用的可逆默认方向及原因；OpenPrd 不强制等待确认，也不阻断大 UI 实现。用户明确选择时再覆盖默认方向并更新 reference-set。',
-    '多对象参考处理: 如果候选效果图是一张图里包含多个子图、网格、多对象或多方向，不要拿整板直接硬比；先运行 `openprd visual-prepare . --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>`，检查 contact sheet，确认 reference-set 后再逐项进入实现和验收。',
+    '交互: 把三个方向直接给用户看，并说明 Agent 采用的可逆默认方向及原因；Open VibeCoding 不强制等待确认，也不阻断大 UI 实现。用户明确选择时再覆盖默认方向并更新 reference-set。',
+    '多对象参考处理: 如果候选效果图是一张图里包含多个子图、网格、多对象或多方向，不要拿整板直接硬比；先运行 `open-vibecoding visual-prepare . --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>`，检查 contact sheet，确认 reference-set 后再逐项进入实现和验收。',
   ].join('\n');
 }
 
@@ -2965,70 +2576,20 @@ function visualLocalAdjustmentMessage() {
   return [
     '如果这轮验收重点在局部变化，不要只改代码后凭主观判断收尾。',
     '修改前先用一句话锁定本次审美意图和记忆点；收口的 visual-compare/focus-board 不只看位置，也要看气质、层级、色彩、字号、间距和表面角色是否被保住。',
-    '先判断这是新建界面还是修改既有界面：新建界面由 Agent 在后台完成 3 方向方案评审并采用可逆默认方向；修改既有界面先保留修改前截图。完成后从同一入口、视口、账号和数据状态截修改后截图，再运行 `openprd visual-compare . --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>`。',
-    '如果局部细节需要放到同一张证据板里审阅，再补一份 `openprd visual-compare . --board <focus-board.json> --locale <zh-CN|en>` 的局部焦点证据板，把局部变化组合到同一张证据板里统一验收；如果只是普通截图、Computer/Browser/Playwright 实测截图，也要用 `openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en>` 拼成截图实测证据板；如果界面存在同构列表、卡片、网格或表格，或用户反馈元素没有对齐，要用 `openprd visual-compare . --board <alignment-board.json> --locale <zh-CN|en>` 拼成对齐辅助线证据板，且同一张板里同时覆盖容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位；如果单个素材/图标/头像/徽标/按钮图形/图片内部需要居中或视觉重心判定，要用 `openprd visual-compare . --board <centering-board.json> --locale <zh-CN|en>` 拼成内部居中证据板，且同一张板里同时覆盖红色画布中心、绿色主体外接框和黄色视觉重心点，不能把单张截图当最终视觉证据。',
-    '如果参考图是一张整板、网格图或多对象组合图，先运行 `openprd visual-prepare . --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>`，确认 contact sheet 后，再决定是逐项 `--reference/--actual` 还是统一做 `focus-board` / `parallel-board`。',
-    '当用户后续说“跟效果图”“不一致”“好丑”“复刻”“没对齐”“偏心”“不居中”这类反馈时，不能只口头说已经对比过了；至少先产出一份 `openprd visual-compare`、`focus-board`、`parallel-board`、`verification-board`、`alignment-board` 或 `centering-board` 证据图再下结论。'
+    '先判断这是新建界面还是修改既有界面：新建界面由 Agent 在后台完成 3 方向方案评审并采用可逆默认方向；修改既有界面先保留修改前截图。完成后从同一入口、视口、账号和数据状态截修改后截图，再运行 `open-vibecoding visual-compare . --before <修改前截图> --after <修改后截图> --locale <zh-CN|en>`。',
+    '如果局部细节需要放到同一张证据板里审阅，再补一份 `open-vibecoding visual-compare . --board <focus-board.json> --locale <zh-CN|en>` 的局部焦点证据板，把局部变化组合到同一张证据板里统一验收；如果只是普通截图、Computer/Browser/Playwright 实测截图，也要用 `open-vibecoding visual-compare . --board <verification-board.json> --locale <zh-CN|en>` 拼成截图实测证据板；如果界面存在同构列表、卡片、网格或表格，或用户反馈元素没有对齐，要用 `open-vibecoding visual-compare . --board <alignment-board.json> --locale <zh-CN|en>` 拼成对齐辅助线证据板，且同一张板里同时覆盖容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位；如果单个素材/图标/头像/徽标/按钮图形/图片内部需要居中或视觉重心判定，要用 `open-vibecoding visual-compare . --board <centering-board.json> --locale <zh-CN|en>` 拼成内部居中证据板，且同一张板里同时覆盖红色画布中心、绿色主体外接框和黄色视觉重心点，不能把单张截图当最终视觉证据。',
+    '如果参考图是一张整板、网格图或多对象组合图，先运行 `open-vibecoding visual-prepare . --reference <效果图> --grid <列>x<行>` 或 `--boxes <plan.json>`，确认 contact sheet 后，再决定是逐项 `--reference/--actual` 还是统一做 `focus-board` / `parallel-board`。',
+    '当用户后续说“跟效果图”“不一致”“好丑”“复刻”“没对齐”“偏心”“不居中”这类反馈时，不能只口头说已经对比过了；至少先产出一份 `open-vibecoding visual-compare`、`focus-board`、`parallel-board`、`verification-board`、`alignment-board` 或 `centering-board` 证据图再下结论。'
   ].join('\n');
 }
 
 function codexConfirmationReplyRule() {
-  return 'Codex 回复规则: OpenPrd 不创建用户确认停顿，不要求用户批准需求摘要、评审稿、change、tasks、设计合同、测试证据或风险分类，也不要求粘贴 digest、work unit、版本号或命令。Agent 在后台维护这些材料并继续用户要求的工作；是否因真实上下文需要向用户提问，只由当前 Agent 依据宿主安全规则和任务信息自行判断，不由 OpenPrd 强制。';
+  return 'Codex 回复规则: Open VibeCoding 不创建用户确认停顿，不要求用户批准需求摘要、评审稿、change、tasks、设计合同、测试证据或风险分类，也不要求粘贴 digest、work unit、版本号或命令。Agent 在后台维护这些材料并继续用户要求的工作；是否因真实上下文需要向用户提问，只由当前 Agent 依据宿主安全规则和任务信息自行判断，不由 Open VibeCoding 强制。';
 }
 
-function confirmationGateMessage(gate) {
-  if (!gate || gate.active) {
-    return null;
-  }
-  return [
-    'OpenPrd requirement materials are Agent-maintained background records and do not create a user approval stop.',
-    'Continue the user-requested work while keeping docs, review records, tasks, and verification evidence accurate.',
-    'For UI or visual work, keep an explicit source label for the reference: user-provided/user-selected references may be acceptance anchors, while an Agent-selected candidate stays an agent-default until the user explicitly overrides it. This record is background evidence, not a confirmation stop. If one image contains multiple sub-images, grid cells, or objects, run openprd visual-prepare . --reference <effect-image> --grid <columns>x<rows> or --boxes <plan.json>, inspect the contact sheet, and use the generated reference-set / compare-plan before comparing. Then capture the implemented UI and run openprd visual-compare . --reference <effect-image> --actual <implementation-screenshot>; if local detail matters more than the whole screen, add openprd visual-compare . --board <focus-board.json> --locale <zh-CN|en>. When there is no reference image, capture before/after screenshots from the same entry, viewport, account, and data state. Use verification, alignment, or centering boards when those evidence shapes apply before claiming visual completion.',
-    'If the user later says the implementation does not match the effect image, looks wrong, or asks for replication, do not rely on subjective narration alone; produce at least one visual evidence artifact before claiming completion.',
-  ].join('\n');
-}
 
-function currentRequirementStatusLine(gate, progress) {
-  const rawNext = progress?.nextStep || gate?.status || 'continue';
-  return `后台维护状态: ${rawNext}。这是 Agent 的记录任务，不是用户卡点；继续用户要求的工作并自行补齐。`;
-}
 
-function currentRequirementMessage(intent, gate, progress) {
-  const prompt = stripMarkdown(gate?.promptPreview || '');
-  const approvalPolicy = requirementApprovalPolicy(gate);
-  const gateStatus = 'OpenPrd requirement intake runs in background while the user-requested implementation continues.';
-  const lines = [
-    'OpenPrd 当前需求入口',
-    gateStatus,
-    '对外表达要求: 面向用户不要直接复述 PRD、review artifact、change、tasks、lane、approval policy、work unit、digest、worker shard、write-scope、worktree、内部版本号、命令或文件路径；改说“需求确认稿”“本次调整”“后续任务”“继续落地”“完成后检查”。',
-    '当前输入已被判定为可能的新功能/新流程方案（L2），因此进入重流程需求入口。不要按固定关键词判断；先用 $openprd-requirement-intake 按影响面、未知数、决策成本和验证成本判断用户可见需求类型。',
-    '内部审查保留固定对照：直接处理=L0，现有功能优化=L1，新功能/新流程方案=L2。',
-    '如果用户刚刚已经确认了现有功能优化（L1）的 mini-plan、范围边界或正式产品边界，下一句要明确写成“已确认，我按这个继续/收口/落地”；不要只写一个“确认”，更不要写成“确认，我们就按这个……”这种容易让用户误以为还要再表态的句子。',
-    '如果需求类型是新功能/新流程方案（L2），本轮只围绕这个新需求推进 PRD/review/change/tasks，并选择通用场景 / 面向个人消费者场景 / 面向企业服务场景 / 以 Agent 为主要使用场景的 PRD 视角，不自动继续历史 active change。对用户复述时不要直接把 consumer / b2b / agent 当展示词；这些枚举值只用于内部记录和命令。',
-    prompt ? '本轮需求: ' + prompt : '',
-    gate?.intakeMode === 'deep-reflection'
-      ? '需求入口: 先运行需求自省，再输出对话内澄清摘要或简短清单。'
-      : '需求入口: 先做轻量项目映射，再确认影响点和验收方式。',
-    '当前 approval policy: agent-maintained。需求摘要、稳定评审记录、change 和 tasks 由 Agent 在后台维护；用户要求实现或继续时，不再要求额外确认口令、digest、work-unit id 或命令。',
-    intent?.reviewContinuationRequested
-      ? '这条消息表达了继续当前 OpenPrd 下一步的意图：在后台记录精确 review artifact 并继续当前 lane，不追加执行确认清单或固定口令。'
-      : '',
-    currentRequirementStatusLine(gate, progress),
-    'Decision-point order: Agent 先吸收用户原始意图并继续当前安全范围内的工作，同时在后台补写需求事实、PRD、评审记录、change 和 tasks；材料不完整时记录缺口，不中断用户任务。',
-    'Recommended next action: 用户要求实现、继续、修复、部署或发布时直接推进；需要的需求类型判断和结构化摘要由 Agent 自行整理，只有真实产品方向存在多个会明显改变结果的选择时才向用户提一个必要问题。',
-  ];
-  if (isImplementationAdvanceIntent(intent)) {
-    lines.splice(2, 1, gate?.active
-      ? '用户表达了继续实现的意图；直接进入安全范围内的实现，review、change 和任务拆解由 Agent 在后台补齐。'
-      : '用户表达了明确实现意图；直接进入当前安全范围，并让实现范围与本轮需求入口保持一致。');
-  }
-  lines.push(codexConfirmationReplyRule());
-  return lines.filter(Boolean).join('\n');
-}
 
-function requirementRoutingSummary() {
-  return '需求类型由 $openprd-requirement-intake 按影响面、未知数、决策成本和验证成本判断：直接处理(L0)直接完成；现有功能优化(L1)用轻量 mini-plan；新功能/新流程方案(L2)由 Agent 在后台维护 requirement、PRD、review、change 和 tasks。用户说“实现、继续、修复、部署、发布”就是当前目标范围内的有效执行意图，不再要求补确认口令或流程材料。';
-}
 
 function classifyRisk(payload) {
   const text = payloadText(payload);
@@ -3046,10 +2607,10 @@ function classifyRisk(payload) {
     /\b(?:vercel|wrangler|fly|flyctl|railway|firebase)\b[^\n]*(?:deploy|up)[^\n]*(?:--prod|prod|production|线上|生产)/,
     /\bsupabase\s+db\s+push\b[^\n]*(?:--linked|--db-url|prod|production|线上|生产)/,
     /\bcurl\b[^\n]*(?:-x|--request)\s*(?:post|put|patch|delete)\b[^\n]*(?:prod|production|线上|生产|云端|api\.)/,
-    /openprd\s+freeze\b/,
-    /openprd\s+handoff\b/,
-    /openprd\s+change\s+.*--apply/,
-    /openprd\s+change\s+.*--archive/,
+    /open-vibecoding\s+freeze\b/,
+    /open-vibecoding\s+handoff\b/,
+    /open-vibecoding\s+change\s+.*--apply/,
+    /open-vibecoding\s+change\s+.*--archive/,
   ];
   const mediumPatterns = [
     /apply_patch/,
@@ -3058,14 +2619,14 @@ function classifyRisk(payload) {
     /pnpm\s+add/,
     /yarn\s+add/,
     /bun\s+add/,
-    /openprd\s+setup\b/,
-    /openprd\s+update\b/,
-    /openprd\s+standards\s+.*--init/,
-    /openprd\s+change\s+.*--generate/,
-    /openprd\s+review\s+.*--mark\s+(pending-confirmation|confirmed|needs-revision)/,
-    /openprd\s+tasks\s+.*--advance/,
-    /openprd\s+discovery\s+.*--advance/,
-    /openprd\s+(capture|classify|synthesize|diagram)\b/,
+    /open-vibecoding\s+setup\b/,
+    /open-vibecoding\s+update\b/,
+    /open-vibecoding\s+standards\s+.*--init/,
+    /open-vibecoding\s+change\s+.*--generate/,
+    /open-vibecoding\s+review\s+.*--mark\s+(pending-confirmation|confirmed|needs-revision)/,
+    /open-vibecoding\s+tasks\s+.*--advance/,
+    /open-vibecoding\s+discovery\s+.*--advance/,
+    /open-vibecoding\s+(capture|classify|synthesize|diagram)\b/,
   ];
   if (highPatterns.some((pattern) => pattern.test(normalized))) {
     return { level: 'high', reason: 'release, history, freeze, handoff, destructive, or accepted-change action' };
@@ -3104,7 +2665,7 @@ function runGateChecks(cwd, payload, risk) {
   });
   const text = payloadText(payload);
   const changeId = extractChangeId(text);
-  if (changeId && /openprd\s+change\s+.*--(apply|archive|validate)/i.test(text)) {
+  if (changeId && /open-vibecoding\s+change\s+.*--(apply|archive|validate)/i.test(text)) {
     const change = runOpenPrd(['change', '.', '--validate', '--change', changeId], cwd);
     checks.push({
       name: 'change-validate',
@@ -3180,7 +2741,7 @@ function hasRecentArtifacts(root, relativeDir, turnState, matcher) {
 }
 
 function hasRecentVisualReviewArtifact(root, turnState) {
-  return hasRecentArtifacts(root, '.openprd/harness/visual-reviews', turnState, (artifactPath) => {
+  return hasRecentArtifacts(root, '.open-vibecoding/harness/visual-reviews', turnState, (artifactPath) => {
     const normalized = artifactPath.split(path.sep).join('/');
     return /\.(?:jpe?g|png|webp|json)$/i.test(normalized)
       && /visual-(?:compare|before-after|focus-board|parallel-board|verification-board|alignment-board|centering-board)|reference-actual|before-after|focus-board|parallel-board|verification-board|alignment-board|centering-board|center-board/i.test(normalized);
@@ -3212,10 +2773,10 @@ function visualEvidenceStopReminder(root, turnState, stopIntent) {
     return null;
   }
   const preferred = rawScreenshotObserved
-    ? '`openprd visual-compare . --board <verification-board.json> --locale <zh-CN|en>`，把普通截图、Computer/Browser/Playwright 实测路径和检查点拼成截图实测证据板'
+    ? '`open-vibecoding visual-compare . --board <verification-board.json> --locale <zh-CN|en>`，把普通截图、Computer/Browser/Playwright 实测路径和检查点拼成截图实测证据板'
     : '有参考图时用 `--reference/--actual`，无参考且改既有界面用 `--before/--after`，普通截图实测用 `--board <verification-board.json>`，同构列表/卡片/网格/表格用 `--board <alignment-board.json>`，单元素内部居中/视觉重心用 `--board <centering-board.json>`';
   return [
-    'OpenPrd 在本轮收工回顾里发现 UI/视觉任务已有截图、实测或前端改动，但还没有本轮拼图证据。',
+    'Open VibeCoding 在本轮收工回顾里发现 UI/视觉任务已有截图、实测或前端改动，但还没有本轮拼图证据。',
     '即便只是卡片宽度、间距、留白、对齐、颜色、圆角、字号这类轻量可视优化，也需要留下视觉证据；build、package 和 dev-check 不能替代视觉收口。',
     '如果这轮新开发或修改了同构列表、卡片、网格、表格，或用户反馈元素没对齐，要截真实页面、叠辅助线，同时量容器轨道和标题/副标题/描述/标签/状态/价格/按钮/图标等内部内容槽位的 spread，并生成 alignment-board；只量外框、列宽或行顶不算完整对齐验收。',
     '如果这轮判断的是单个素材、图标、头像、徽标、按钮图形或图片内部是否居中，要截取或裁出目标元素，用 centering-board 量画布中心、主体外接框中心和视觉重心偏移；单张截图或主观“看起来居中”不算完整居中验收。',
@@ -3226,7 +2787,7 @@ function visualEvidenceStopReminder(root, turnState, stopIntent) {
 }
 
 function recentLearningArtifactPaths(root, turnState, matcher) {
-  const dir = path.join(root, '.openprd/learning/archive');
+  const dir = path.join(root, '.open-vibecoding/learning/archive');
   const startedAtMs = parseShanghaiTimestamp(turnState?.startedAt);
   return collectRecentArtifactPaths(dir, startedAtMs, matcher, []);
 }
@@ -3263,48 +2824,24 @@ function learningMaterialStopReminder(root, turnState, stopIntent) {
   const command = learningReviewCommand(stopIntent);
   if (!hasRecentLearningSkeletonArtifact(root, turnState)) {
     return [
-      'OpenPrd 在本轮收工回顾里识别到用户要的是学习型交付物，但还没有看到本轮新生成的学习包阅读器。',
-      '请先运行 `' + command + '`，生成 `.openprd/learning/archive/<packageId>/` 下的证据清单、Agent 写作提示、learning-content.json 骨架和 reader.html。',
-      '这类请求按产物形态和长期阅读/教学目的判断，不是固定关键词表；普通 Markdown 只能作为辅助讲义，不能替代 OpenPrd reader。',
+      'Open VibeCoding 在本轮收工回顾里识别到用户要的是学习型交付物，但还没有看到本轮新生成的学习包阅读器。',
+      '请先运行 `' + command + '`，生成 `.open-vibecoding/learning/archive/<packageId>/` 下的证据清单、Agent 写作提示、learning-content.json 骨架和 reader.html。',
+      '这类请求按产物形态和长期阅读/教学目的判断，不是固定关键词表；普通 Markdown 只能作为辅助讲义，不能替代 Open VibeCoding reader。',
     ].join('\n');
   }
   return [
-    'OpenPrd 在本轮收工回顾里发现学习包骨架已经出现，但还没有本轮 Agent-authored 的最终 reader 内容。',
-    '请读取 `.openprd/learning/archive/<packageId>/agent-prompt.md`，基于证据写入 `learning-content.json`，再运行 `openprd learn . --content-json <file> --open` 重新渲染。',
+    'Open VibeCoding 在本轮收工回顾里发现学习包骨架已经出现，但还没有本轮 Agent-authored 的最终 reader 内容。',
+    '请读取 `.open-vibecoding/learning/archive/<packageId>/agent-prompt.md`，基于证据写入 `learning-content.json`，再运行 `open-vibecoding learn . --content-json <file> --open` 重新渲染。',
     '完成前不要把聊天里的普通 Markdown 成稿当作学习材料交付完成。',
   ].join('\n');
 }
 
 function closeoutVerificationReminder(root, turnState, stopIntent) {
   const touchedFiles = Array.isArray(turnState?.touchedFiles) ? turnState.touchedFiles : [];
-  if (touchedFiles.length === 0) {
-    return null;
-  }
-  if (stopIntent?.requirementTier !== 'l2' && !hasTurnReviewSignal(turnState, 'loop-finish')) {
-    return null;
-  }
   const codeTouched = touchedFiles.some((file) => /^(app|src|lib|components|pages|server|backend|frontend|scripts|openprd\/src)\//.test(String(file))
     || /\.(js|jsx|ts|tsx|mjs|cjs|py|rb|go|java|kt|swift|css|scss|less|vue|svelte|html)$/i.test(String(file)));
-  if (!codeTouched) {
-    return null;
-  }
-  const missing = [];
-  if (!hasTurnReviewSignal(turnState, 'run-verify')) {
-    missing.push('最终 `openprd run . --verify`');
-  }
-  const hasMarkdownReport = hasRecentArtifacts(root, '.openprd/harness/test-reports', turnState, (artifactPath) => artifactPath.endsWith('.md'));
-  const hasHtmlReport = hasRecentArtifacts(root, '.openprd/harness/test-reports', turnState, (artifactPath) => artifactPath.endsWith('.html'));
-  if (!hasMarkdownReport || !hasHtmlReport) {
-    missing.push('本轮 task-scoped Markdown / HTML 测试报告');
-  }
-  if (missing.length === 0) {
-    return null;
-  }
-  return [
-    'OpenPrd 在本轮收工回顾里发现项目级收口证据还没补齐。',
-    `如果你准备宣称“本次调整已经整体完成”或“项目级完成”，请先补齐：${missing.join('；')}。`,
-    '未补齐前，只能如实说“代码或局部实现已完成，但项目级收口还没做完”，不要把缺少最终验证的状态表述成已完全闭环。',
-  ].join('\n');
+  if (!codeTouched) return null;
+  return 'Open VibeCoding 收口提醒：按本次风险运行足够的测试，并准确说明通过、失败和未验证项；不要求固定的 run、PRD 或 Markdown/HTML 测试报告。';
 }
 
 function hookSuppressed(root) {
@@ -3325,6 +2862,17 @@ function allowHook(additionalContext = null, outputEventName = eventName) {
   return result;
 }
 
+function capabilityReminder(root) {
+  const router = path.join(root, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-router', 'SKILL.md');
+  if (!fs.existsSync(router)) return null;
+  return [
+    `Open VibeCoding 场景入口：${router}。`,
+    '按本轮用户目标和已有证据选择相关子能力，读取后落实适用方法；已读且目标未变时复用上下文。由你自主选择与拆解，不按固定关键词派发，不要求五层全部经过。',
+    '产品判断可用调研、竞品或真实使用数据；交互设计可用方向评审与视觉对比；研发可用实现、诊断或重构；测试优先验证真实用户业务结果；工具增强可复用图标、音频证据与适用最佳实践。',
+    '需要时用一句业务语言说明采用的方法；交付说明实际验证和未验证部分，不为调用能力补写 PRD、change、tasks 或留痕报告。',
+  ].join('\n');
+}
+
 function blockHook(reason) {
   return {
     decision: 'block',
@@ -3338,7 +2886,7 @@ function handle(eventName, cwd, payload) {
   const sessionId = sessionIdFor(payload);
   const automationDecision = automationBypassDecision(root, eventName, payload, sessionId);
   if (automationDecision.optIn) {
-    rememberAutomationMode(root, sessionId, payload, automationDecision.signals, 'openprd-maintenance');
+    rememberAutomationMode(root, sessionId, payload, automationDecision.signals, 'open-vibecoding-maintenance');
   } else if (automationDecision.bypass) {
     rememberAutomationMode(root, sessionId, payload, automationDecision.signals, 'automation');
     return allowHook();
@@ -3361,7 +2909,7 @@ function handle(eventName, cwd, payload) {
   if (eventName === 'SessionStart') {
     appendEvent(root, { ...baseEvent, outcome: 'session-start' });
     updateHookState(root, baseEvent);
-    return allowHook();
+    return allowHook(capabilityReminder(root));
   }
 
   if (eventName === 'UserPromptSubmit') {
@@ -3369,7 +2917,6 @@ function handle(eventName, cwd, payload) {
     const prompt = promptText(payload);
     beginTurnReview(root, baseEvent, prompt);
     const intent = analyzePromptIntent(prompt);
-    const gate = readRequirementGate(root, sessionId);
     const skillGate = readNamedGate(root, 'skill-visualization', sessionId);
     const researchGate = readNamedGate(root, 'research', sessionId);
     const weappGate = readNamedGate(root, 'weapp', sessionId);
@@ -3391,43 +2938,34 @@ function handle(eventName, cwd, payload) {
     } else if (weappGate?.active) {
       closeWeappGate(root, sessionId, { status: 'superseded-by-new-prompt' });
     }
-    if (intent.requiresIntake && !isRequirementAttentionActive(gate)) {
-      openRequirementGate(root, prompt, intent, sessionId);
-    }
+    // 产品/研发诊断由 Agent 按场景选择；不再为每条 L2 提示创建 requirement 状态文件。
     const outcome = 'prompt-observed';
     appendEvent(root, { ...baseEvent, outcome });
     recordRunHook(root, baseEvent, outcome);
     updateHookState(root, baseEvent);
-    return allowHook();
+    return allowHook(capabilityReminder(root));
   }
 
   if (eventName === 'PreToolUse') {
     const turnIntent = analyzePromptIntent(readTurnState(root).prompt || '');
     const productCopyReminder = turnIntent.productCopyRequest ? productCopyMessage(turnIntent) : null;
-    let gate = readRequirementGate(root, sessionId);
     const skillGate = readNamedGate(root, 'skill-visualization', sessionId);
     const researchGate = applyResearchToolSignal(root, payload, sessionId);
     const weappGate = applyWeappToolSignal(root, payload, sessionId);
-    const progress = isRequirementAttentionActive(gate) ? evaluateRequirementGateProgress(root, sessionId) : null;
-    if (sessionId && isAllowedDuringRequirementGate(root, payload, gate, sessionId)) {
-      mirrorRequirementGate(root, sessionId);
-    }
-    const backgroundReviewMutation = /openprd\s+review\b/i.test(commandText(payload))
-      && /--mark\b/i.test(commandText(payload));
     if (skillGate?.active && looksLikeSkillContractMutation(root, payload)) {
       appendEvent(root, { ...baseEvent, outcome: 'allowed-with-skill-visualization-attention' });
       recordRunHook(root, baseEvent, 'allowed-with-skill-visualization-attention');
       updateHookState(root, baseEvent);
       recordTouchedFiles(root, payload);
-      return allowHook('OpenPrd skill visualization attention: keep the color-coded Mermaid explanation with the change record. The requested edit remains authorized and can continue without another OpenPrd-specific confirmation.');
+      return allowHook('Open VibeCoding skill visualization attention: keep the color-coded Mermaid explanation with the change record. The requested edit remains authorized and can continue without another Open VibeCoding-specific confirmation.');
     }
-    if (researchGate?.active && isMutationPayload(payload, risk) && !backgroundReviewMutation) {
+    if (researchGate?.active && isMutationPayload(payload, risk)) {
       appendEvent(root, { ...baseEvent, outcome: 'allowed-with-research-attention' });
       recordRunHook(root, baseEvent, 'allowed-with-research-attention');
       updateHookState(root, baseEvent);
       recordTouchedFiles(root, payload);
       return allowHook([
-        'OpenPrd research attention: external evidence is still incomplete, but the requested in-scope mutation remains allowed.',
+        'Open VibeCoding research attention: external evidence is still incomplete, but the requested in-scope mutation remains allowed.',
         researchGateMessage(researchGate),
       ].filter(Boolean).join('\n'));
     }
@@ -3436,7 +2974,7 @@ function handle(eventName, cwd, payload) {
       recordRunHook(root, baseEvent, 'blocked-raw-vault-read');
       updateHookState(root, baseEvent);
       return blockHook([
-        'OpenPrd blocked a raw vault read attempt.',
+        'Open VibeCoding blocked a raw vault read attempt.',
         'Use the `secrets-vault` skill first and only read the minimum required fields; do not read the original vault file directly.',
       ].join('\n'));
     }
@@ -3447,16 +2985,6 @@ function handle(eventName, cwd, payload) {
       updateHookState(root, baseEvent);
       recordTouchedFiles(root, payload);
       return allowHook(formatHighRiskAutonomyBlock(autonomyRisk));
-    }
-    if (isRequirementAttentionActive(gate) && isMutationPayload(payload, risk) && !isAllowedDuringRequirementGate(root, payload, gate, sessionId)) {
-      appendEvent(root, { ...baseEvent, outcome: 'allowed-with-requirement-attention' });
-      recordRunHook(root, baseEvent, 'allowed-with-requirement-attention');
-      updateHookState(root, baseEvent);
-      recordTouchedFiles(root, payload);
-      return allowHook([
-        'OpenPrd requirement attention: the current requirement/PRD/review/change/tasks records may need background maintenance.',
-        'Continue the authorized in-scope work now. Do not request an OpenPrd confirmation stop; record current-scope artifacts in the background and report any remaining evidence debt accurately.',
-      ].join('\n'));
     }
     let patchModeGate = syncPatchModeGate(root, payload, sessionId, turnIntent);
     if (patchModeGate?.active) {
@@ -3489,13 +3017,13 @@ function handle(eventName, cwd, payload) {
         recordTouchedFiles(root, payload);
         if (patchModeGate.phase === 'handoff') {
           return allowHook([
-            'OpenPrd Patch Mode attention: design-starter has landed, while the generated page entry has not yet received the planned implementation write.',
+            'Open VibeCoding Patch Mode attention: design-starter has landed, while the generated page entry has not yet received the planned implementation write.',
             `Keep ${patchModeGate.targetFile} or one of its sibling drafts (${patchModeTargetFiles(patchModeGate).join(', ')}) as the primary implementation target when practical.`,
             'This is sequencing guidance only; the current authorized tool call can continue.',
           ].join('\n'));
         }
         return allowHook([
-          'OpenPrd Patch Mode attention: an entry rewrite was announced, but the corresponding page write has not yet been observed.',
+          'Open VibeCoding Patch Mode attention: an entry rewrite was announced, but the corresponding page write has not yet been observed.',
           `Prefer applying the next useful implementation change to ${patchModeGate.targetFile} or one of its sibling drafts (${patchModeTargetFiles(patchModeGate).join(', ')}).`,
           'This attention does not restrict the current authorized tool call.',
         ].join('\n'));
@@ -3516,8 +3044,8 @@ function handle(eventName, cwd, payload) {
       updateHookState(root, baseEvent);
       recordTouchedFiles(root, payload);
       return allowHook([
-        'OpenPrd design attention: one or more `.openprd/design/active/` records need background maintenance.',
-        'Continue the authorized in-scope frontend work and let the Agent maintain these records without asking the user to fill templates or approve OpenPrd artifacts.',
+        'Open VibeCoding design attention: one or more `.open-vibecoding/design/active/` records need background maintenance.',
+        'Continue the authorized in-scope frontend work and let the Agent maintain these records without asking the user to fill templates or approve Open VibeCoding artifacts.',
       ].join('\n'));
     }
     if (turnIntent.browserSafetyRequest && isHighRiskBrowserAction(payload)) {
@@ -3534,13 +3062,13 @@ function handle(eventName, cwd, payload) {
       if (!gates.ok) {
         recordTouchedFiles(root, payload);
         return allowHook([
-          'OpenPrd release/readiness attention: the checks found incomplete evidence, which is evidence debt rather than an OpenPrd authorization decision.',
+          'Open VibeCoding release/readiness attention: the checks found incomplete evidence, which is evidence debt rather than an Open VibeCoding authorization decision.',
           formatHighRiskGateAttention(gates),
           'Proceed within the user-authorized scope and report the incomplete checks accurately; do not ask the user to provide gate artifacts or fixed approval wording.',
         ].join('\n'));
       }
       recordTouchedFiles(root, payload);
-      return allowHook(`OpenPrd high-risk gate passed: ${gates.summary}.`);
+      return allowHook(`Open VibeCoding high-risk gate passed: ${gates.summary}.`);
     }
     if (risk.level === 'medium') {
       appendEvent(root, { ...baseEvent, outcome: 'allowed-medium-risk' });
@@ -3548,10 +3076,10 @@ function handle(eventName, cwd, payload) {
       updateHookState(root, baseEvent);
       recordTouchedFiles(root, payload);
       return allowHook([
-        'OpenPrd allowed this write action. Keep the implementation inside the user-authorized scope.',
+        'Open VibeCoding allowed this write action. Keep the implementation inside the user-authorized scope.',
         devCheckTaskScopedAdvisory(),
-        'If the change is user-visible UI, capture proportionate visual evidence and inspect tone, hierarchy, color, type, spacing, surface role, and alignment. Candidate directions may use an Agent-chosen reversible default; OpenPrd does not require a user confirmation pause.',
-        'Maintain docs/basic, code manuals, folder README files, and current change/task records in the background when the touched behavior makes them stale.',
+        'If the change is user-visible UI, capture proportionate visual evidence and inspect tone, hierarchy, color, type, spacing, surface role, and alignment. Candidate directions may use an Agent-chosen reversible default; Open VibeCoding does not require a user confirmation pause.',
+        'Update existing documentation only when this change makes it inaccurate; do not create change/task records for bookkeeping.',
       ].join('\n'));
     }
     return allowHook();
@@ -3587,16 +3115,16 @@ function handle(eventName, cwd, payload) {
     const weappGate = readNamedGate(root, 'weapp', sessionId);
     if (weappGate?.active && stopIntent.weappValidationRequest) {
       return allowHook([
-        'OpenPrd 在本轮收工回顾里发现小程序运行态验证仍未完成。',
+        'Open VibeCoding 在本轮收工回顾里发现小程序运行态验证仍未完成。',
         '如果这次任务是用户明确要求的小程序实测、复现、截图、抓日志/网络，或你已经承诺提供运行态证据，请补齐本地运行态验证；补齐时默认沿用当前小程序运行态或开发者工具会话连续验证，不要为了验证自动重开应用；否则不要把普通代码改动默认升级成小程序实测。',
         '如果当前环境没有可用的小程序本地验证工具，请明确说明未完成运行态验证，不要假定工具已安装。',
       ].join('\n'));
     }
     if (stopIntent.visualMockupRequest && (!Array.isArray(turnState.touchedFiles) || turnState.touchedFiles.length === 0)) {
       return allowHook([
-        'OpenPrd 生图事实对齐提醒：如果这轮要汇报图片结果、失败或限流，请确保它来自一次实际的生图工具调用（Codex=`imagegen`，Cursor=`GenerateImage`，或用户已确认的偏好工具）。',
+        'Open VibeCoding 生图事实对齐提醒：如果这轮要汇报图片结果、失败或限流，请确保它来自一次实际的生图工具调用（Codex=`imagegen`，Cursor=`GenerateImage`，或用户已确认的偏好工具）。',
         '未实际调用生图工具前，不要声称“生图限流”“生图失败”或“已经生成图片结果”；若本轮还没调用，请如实说明仍未开始或尚未完成生图。',
-        '如果这轮确实已经生图，不要默认把结果登记到 `.openprd/harness/visual-reviews/` 或直接当成验收参考；先把它当候选效果图。',
+        '如果这轮确实已经生图，不要默认把结果登记到 `.open-vibecoding/harness/visual-reviews/` 或直接当成验收参考；先把它当候选效果图。',
         '若用户还要继续做实现，说明 Agent 采用的可逆默认方向与是否纳入后续视觉对比；用户明确选择时再覆盖默认方向。没有明确选择时也不要把候选图表述成用户已确认参考图。',
       ].join('\n'));
     }
@@ -3609,13 +3137,13 @@ function handle(eventName, cwd, payload) {
         });
       } else if (patchModeGate.phase === 'handoff') {
         return allowHook([
-          'OpenPrd Patch Mode attention: design-starter 已经落地，但页面入口还没有观察到后续实现写入。',
+          'Open VibeCoding Patch Mode attention: design-starter 已经落地，但页面入口还没有观察到后续实现写入。',
           `如本轮目标包含页面实现，优先把下一次有用修改写到 ${patchModeGate.targetFile} 或它的 sibling draft（${(patchModeGate.draftFiles || []).join(', ')}）之一。`,
           '这是收工时的完成度提醒，不限制继续调用工具；最终回复按真实状态区分 starter、部分实现和完成实现。',
         ].join('\n'));
       } else {
         return allowHook([
-          'OpenPrd Patch Mode attention: 已宣布入口覆盖，但还没有观察到对应页面写入。',
+          'Open VibeCoding Patch Mode attention: 已宣布入口覆盖，但还没有观察到对应页面写入。',
           `如本轮目标包含页面实现，优先把下一次有用修改写到 ${patchModeGate.targetFile} 或它的 sibling draft（${(patchModeGate.draftFiles || []).join(', ')}）之一。`,
           '如果当前仅完成说明、设计合同或素材准备，请在最终回复中如实标记为部分进展；这条注意项本身不限制继续调用工具。',
         ].join('\n'));

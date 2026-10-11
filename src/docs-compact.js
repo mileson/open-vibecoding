@@ -73,7 +73,7 @@ export async function docsCompactWorkspace(projectRoot, options = {}) {
   const recommendations = [];
   if (needsAttention.length > 0) {
     recommendations.push('压缩原则：同一事实只保留一处最新版本；把巨行拆成分点；过时段落直接删除而不是追加“更新：”。');
-    recommendations.push('压缩后运行 openprd standards . --verify 确认警告消除，再运行 openprd dev-check . 收口。');
+    recommendations.push('压缩后运行 open-vibecoding standards . --verify 确认警告消除，再运行 open-vibecoding dev-check . 收口。');
   }
   for (const doc of needsAttention) {
     if (doc.status.includes('backfill')) {

@@ -22,14 +22,14 @@ import {
   markKnowledgeCandidatePromoted,
   reviewKnowledgeWorkspace,
 } from './knowledge.js';
-import { OPENPRD_GROWTH_LEDGER } from './growth.js';
+import { OPEN_VIBECODING_GROWTH_LEDGER } from './growth.js';
 import { timestamp } from './time.js';
 
-const QUALITY_DIR = cjoin('.openprd', 'quality');
+const QUALITY_DIR = cjoin('.open-vibecoding', 'quality');
 const QUALITY_REPORTS_DIR = cjoin(QUALITY_DIR, 'reports');
 const QUALITY_CONFIG = cjoin(QUALITY_DIR, 'config.json');
 const QUALITY_LATEST = cjoin(QUALITY_REPORTS_DIR, 'latest.json');
-const KNOWLEDGE_DIR = cjoin('.openprd', 'knowledge');
+const KNOWLEDGE_DIR = cjoin('.open-vibecoding', 'knowledge');
 const KNOWLEDGE_INDEX = cjoin(KNOWLEDGE_DIR, 'index.json');
 const HISTORICAL_LIFECYCLE_STATUSES = new Set(['applied', 'archived', 'closed', 'historical', 'legacy-frozen']);
 const HISTORICAL_TASK_METADATA_VALUES = new Set([...HISTORICAL_LIFECYCLE_STATUSES, 'context-only']);
@@ -39,7 +39,7 @@ const IGNORE_DIRS = new Set([
   '.codex',
   '.claude',
   '.cursor',
-  '.openprd',
+  '.open-vibecoding',
   '.tmp',
   '.wrangler',
   'node_modules',
@@ -122,12 +122,12 @@ const EVIDENCE_TOKENS = {
   'business-guardrails': ['quota', 'rate limit', 'abuse', 'budget', 'kill switch', 'cost_usd', '额度', '限流', '滥用', '止损'],
   'test-strategy': ['test-layer', 'test-size', 'test-scope', 'evidence-plan', 'media-flow', 'testing pyramid', '测试策略', '测试分流', '单元测试', '集成测试', '端到端'],
   smoke: ['smoke', 'e2e', 'playwright', 'cypress', 'main flow', 'happy path', '冒烟', '主流程'],
-  'feature-coverage': ['feature coverage', 'acceptance', 'tasks done', 'openprd tasks', '验收', '功能覆盖', '任务完成'],
+  'feature-coverage': ['feature coverage', 'acceptance', 'tasks done', 'open-vibecoding tasks', '验收', '功能覆盖', '任务完成'],
   'visual-review': ['visual-compare', 'visual-before-after', 'visual-focus-board', 'visual-parallel-board', 'visual-verification-board', 'visual-alignment-board', 'visual-centering-board', 'reference-actual', 'before-after', 'focus-board', 'parallel-board', 'verification-board', 'alignment-board', 'centering-board', 'center-board', '效果图', '实现截图', '修改前', '修改后', '视觉对比', '局部焦点证据板', '并行实验证据板', '截图实测证据板', '对齐辅助线证据板', '内部居中证据板', '内容槽位', '内部槽位', '视觉重心', '主体外接框', '画布中心', '偏心'],
   'normal-performance': ['performance', 'perf', 'benchmark', 'latency', 'p95', 'lighthouse', 'k6', '性能', '耗时'],
   'extreme-performance': ['extreme', 'stress', 'load test', 'large-data', 'pressure', 'k6', '压力', '极端', '大数据'],
   knowledge: ['quality learn', 'incident', 'pattern', 'skill', '复盘', '经验', '沉淀'],
-  growth: ['growth ledger', 'completion checkpoint', 'openprd grow', 'workflow-gotcha', 'code-extension', '自我成长', '账本', '候选'],
+  growth: ['growth ledger', 'completion checkpoint', 'open-vibecoding grow', 'workflow-gotcha', 'code-extension', '自我成长', '账本', '候选'],
 };
 
 const DIAGNOSTIC_SURFACE_LABELS = {
@@ -168,9 +168,9 @@ function defaultQualityConfig() {
       extremePerformanceRequired: true,
       currentEvidenceRequired: true,
       evidenceSources: [
-        '.openprd/harness/test-reports',
-        '.openprd/harness/visual-reviews',
-        '.openprd/quality/evidence',
+        '.open-vibecoding/harness/test-reports',
+        '.open-vibecoding/harness/visual-reviews',
+        '.open-vibecoding/quality/evidence',
         'test-results',
         'tests/reports',
         'coverage',
@@ -258,14 +258,14 @@ function defaultQualityConfig() {
     knowledge: {
       enabled: true,
       skillGenerationRequiredFor: ['repeated-issue', 'high-impact-fix', 'hidden-debug-knowledge', 'agent-misjudgment'],
-      skillDir: '.openprd/knowledge/skills',
-      candidateDir: '.openprd/knowledge/candidates',
-      draftDir: '.openprd/knowledge/drafts',
+      skillDir: '.open-vibecoding/knowledge/skills',
+      candidateDir: '.open-vibecoding/knowledge/candidates',
+      draftDir: '.open-vibecoding/knowledge/drafts',
       abstractionRequired: true,
     },
     growth: {
       enabled: true,
-      ledgerPath: OPENPRD_GROWTH_LEDGER,
+      ledgerPath: OPEN_VIBECODING_GROWTH_LEDGER,
       completionCheckpointRequired: true,
     },
   };
@@ -462,7 +462,7 @@ async function readActiveChangeContext(projectRoot, activeChange) {
     return { activeChange: null, files: [], text: '' };
   }
   const roots = [
-    cjoin('.openprd', 'changes', activeChange),
+    cjoin('.open-vibecoding', 'changes', activeChange),
   ];
   const files = [];
   async function walk(root, dir) {
@@ -617,7 +617,7 @@ function buildEvidenceLedger({ evidenceFiles, activeTasks, observability, busine
 
   if ((mediaEvidence?.bundles ?? []).length > 0) {
     const mediaSources = mediaEvidence.bundles
-      .map((bundle) => ({ path: bundle.path, source: 'openprd-media-evidence' }));
+      .map((bundle) => ({ path: bundle.path, source: 'open-vibecoding-media-evidence' }));
     const existingSources = ledger['test-strategy'].sources ?? [];
     const byPath = new Map([...mediaSources, ...existingSources].map((source) => [source.path, source]));
     ledger['test-strategy'] = {
@@ -633,7 +633,7 @@ function buildEvidenceLedger({ evidenceFiles, activeTasks, observability, busine
       present: true,
       sources: [
         ...ledger['feature-coverage'].sources,
-        { path: activeTasks.activeChange ? `${activeTasks.activeChange}/tasks.md` : 'no-active-change', source: 'openprd-tasks' },
+        { path: activeTasks.activeChange ? `${activeTasks.activeChange}/tasks.md` : 'no-active-change', source: 'open-vibecoding-tasks' },
       ].slice(0, 12),
       summary: activeTasks.total === 0 ? '当前没有激活任务清单' : `任务清单已完成 ${activeTasks.done}/${activeTasks.total}`,
     };
@@ -673,8 +673,8 @@ function buildEvidenceLedger({ evidenceFiles, activeTasks, observability, busine
       present: true,
       sources: [
         ...ledger.knowledge.sources,
-        ...knowledge.skills.slice(0, 6).map((skill) => ({ path: skill, source: 'openprd-knowledge' })),
-        ...knowledge.candidates.slice(0, 3).map((candidate) => ({ path: candidate, source: 'openprd-knowledge-candidate' })),
+        ...knowledge.skills.slice(0, 6).map((skill) => ({ path: skill, source: 'open-vibecoding-knowledge' })),
+        ...knowledge.candidates.slice(0, 3).map((candidate) => ({ path: candidate, source: 'open-vibecoding-knowledge-candidate' })),
       ].slice(0, 12),
       summary: knowledge.candidates.length > 0
         ? `已沉淀 ${knowledge.skills.length} 条项目经验，近期被实际复用 ${knowledge.adoption?.totals?.referenced ?? 0} 次，另有 ${knowledge.candidates.length} 条经验草案等确认`
@@ -686,7 +686,7 @@ function buildEvidenceLedger({ evidenceFiles, activeTasks, observability, busine
       present: true,
       sources: [
         ...ledger.knowledge.sources,
-        ...knowledge.candidates.slice(0, 6).map((candidate) => ({ path: candidate, source: 'openprd-knowledge-candidate' })),
+        ...knowledge.candidates.slice(0, 6).map((candidate) => ({ path: candidate, source: 'open-vibecoding-knowledge-candidate' })),
       ].slice(0, 12),
       summary: `已有 ${knowledge.candidates.length} 条经验草案等确认，确认后会成为可复用的项目经验`,
     };
@@ -700,7 +700,7 @@ function buildEvidenceLedger({ evidenceFiles, activeTasks, observability, busine
         present: true,
         sources: [
           ...ledger.growth.sources,
-          { path: growth.ledgerPath ?? OPENPRD_GROWTH_LEDGER, source: 'openprd-growth-ledger' },
+          { path: growth.ledgerPath ?? OPEN_VIBECODING_GROWTH_LEDGER, source: 'open-vibecoding-growth-ledger' },
         ].slice(0, 12),
         summary: `成长记录已有 ${growth.summary.eventCount ?? 0} 条，其中收尾检查记录 ${completionCheckpoints} 条`,
       };
@@ -1412,7 +1412,7 @@ function detectBusinessGuardrails({ config, files, texts, packageJson }) {
 }
 
 async function readActiveTasks(projectRoot) {
-  const state = await readJson(cjoin(projectRoot, '.openprd', 'state', 'changes.json')).catch(() => null);
+  const state = await readJson(cjoin(projectRoot, '.open-vibecoding', 'state', 'changes.json')).catch(() => null);
   const activeChange = state?.activeChange ?? null;
   if (!activeChange) {
     return {
@@ -1427,8 +1427,8 @@ async function readActiveTasks(projectRoot) {
     };
   }
   const lifecycleStatus = String(state?.changes?.[activeChange]?.status ?? '').trim().toLowerCase();
-  const currentChangeDir = cjoin(projectRoot, '.openprd', 'changes', activeChange);
-  const archivedChangeDir = cjoin(projectRoot, '.openprd', 'archive', 'changes', activeChange);
+  const currentChangeDir = cjoin(projectRoot, '.open-vibecoding', 'changes', activeChange);
+  const archivedChangeDir = cjoin(projectRoot, '.open-vibecoding', 'archive', 'changes', activeChange);
   const archivedOnDisk = !(await exists(currentChangeDir)) && await exists(archivedChangeDir);
   if (HISTORICAL_LIFECYCLE_STATUSES.has(lifecycleStatus) || archivedOnDisk) {
     return {
@@ -1448,7 +1448,7 @@ async function readActiveTasks(projectRoot) {
   }
   const taskFiles = [];
   for (const root of [
-    cjoin('.openprd', 'changes', activeChange),
+    cjoin('.open-vibecoding', 'changes', activeChange),
   ]) {
     const dir = cjoin(projectRoot, root);
     const entries = await fs.readdir(dir).catch(() => []);
@@ -1533,7 +1533,7 @@ async function readActiveTasks(projectRoot) {
 }
 
 async function listKnowledgeFiles(projectRoot) {
-  const knowledgeRoot = cjoin(projectRoot, '.openprd', 'knowledge');
+  const knowledgeRoot = cjoin(projectRoot, '.open-vibecoding', 'knowledge');
   const collected = [];
   async function walk(dir) {
     const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
@@ -1551,7 +1551,7 @@ async function listKnowledgeFiles(projectRoot) {
 }
 
 function detectKnowledge({ config, knowledgeFiles, candidateState, knowledgeIndex }) {
-  const skillDir = config.knowledge.skillDir ?? '.openprd/knowledge/skills';
+  const skillDir = config.knowledge.skillDir ?? '.open-vibecoding/knowledge/skills';
   const candidateDir = config.knowledge.candidateDir ?? KNOWLEDGE_CANDIDATES_DIR;
   const draftDir = config.knowledge.draftDir ?? KNOWLEDGE_DRAFTS_DIR;
   const skills = knowledgeFiles
@@ -1568,7 +1568,7 @@ function detectKnowledge({ config, knowledgeFiles, candidateState, knowledgeInde
     .filter((file) => file.path.startsWith(draftDir.replace(/\//g, path.sep)) || file.path.startsWith(draftDir))
     .filter((file) => file.path.endsWith('SKILL.md'))
     .map((file) => file.path);
-  const incidents = knowledgeFiles.filter((file) => /\.openprd[\\/]knowledge[\\/]incidents[\\/].+\.json$/.test(file.path));
+  const incidents = knowledgeFiles.filter((file) => /\.open-vibecoding[\\/]knowledge[\\/]incidents[\\/].+\.json$/.test(file.path));
   const adoption = buildKnowledgeAdoptionSummary(Array.isArray(knowledgeIndex?.skills) ? knowledgeIndex.skills : []);
   const warnings = [];
   const hasReusableArtifact = skills.length > 0 || pendingCandidates.length > 0 || Number(candidateState?.counts?.total ?? 0) > 0;
@@ -1630,7 +1630,7 @@ function detectGrowth({ config, growthLedger }) {
   return {
     status: 'pass',
     enabled: config.growth?.enabled !== false,
-    ledgerPath: config.growth?.ledgerPath ?? OPENPRD_GROWTH_LEDGER,
+    ledgerPath: config.growth?.ledgerPath ?? OPEN_VIBECODING_GROWTH_LEDGER,
     summary: {
       eventCount,
       lifecycleCount,
@@ -1776,7 +1776,7 @@ async function buildQualityReport(projectRoot, config, options = {}) {
   const visualArtifacts = await listVisualReviewArtifacts(projectRoot);
   const knowledgeFiles = await listKnowledgeFiles(projectRoot);
   const knowledgeIndex = await readJson(qualityPath(projectRoot, KNOWLEDGE_INDEX)).catch(() => ({ version: 1, skills: [] }));
-  const growthLedger = await readJson(qualityPath(projectRoot, normalizedConfig.growth?.ledgerPath ?? OPENPRD_GROWTH_LEDGER)).catch(() => null);
+  const growthLedger = await readJson(qualityPath(projectRoot, normalizedConfig.growth?.ledgerPath ?? OPEN_VIBECODING_GROWTH_LEDGER)).catch(() => null);
   const completionState = detectCompletionState({ files, activeTasks, evidenceFiles });
   const observability = detectObservability({ config: normalizedConfig, files, texts, packageJson });
   const evalHarness = detectEvalHarness({ config: normalizedConfig, files, texts, packageJson, activeTasks, evidenceFiles });
@@ -1869,7 +1869,7 @@ export async function verifyQualityWorkspace(projectRoot, options = {}) {
       ok: false,
       action: 'quality-verify',
       projectRoot,
-      errors: [`${QUALITY_CONFIG} is required. Run: openprd quality . --init`],
+      errors: [`${QUALITY_CONFIG} is required. Run: open-vibecoding quality . --init`],
     };
   }
   const config = normalizeQualityConfig(await readJson(configPath));
@@ -1906,7 +1906,7 @@ export async function verifyQualityWorkspace(projectRoot, options = {}) {
     },
     artifactGeneration: {
       enabled: false,
-      reason: 'OpenPrd quality verification returns an in-memory summary and no longer writes eval JSON/HTML artifacts.',
+      reason: 'Open VibeCoding quality verification returns an in-memory summary and no longer writes eval JSON/HTML artifacts.',
       preservedLegacyReportsDir: qualityPath(projectRoot, QUALITY_REPORTS_DIR),
     },
     reportPath: null,

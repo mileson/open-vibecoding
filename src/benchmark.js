@@ -9,7 +9,7 @@
  * 导出保持兼容的 benchmark workspace API、registry 渲染函数和共享常量。
  *
  * 定位
- * 位于 OpenPrd CLI 应用边界，只负责模块拼装与 action 路由，不再承载具体 benchmark 细节实现。
+ * 位于 Open VibeCoding CLI 应用边界，只负责模块拼装与 action 路由，不再承载具体 benchmark 细节实现。
  *
  * 依赖
  * 依赖 benchmark 子目录中的 operations、verify、registry、storage 和 constants 模块。

@@ -9,7 +9,7 @@
  * 返回结构化 GitHub Release payload，或把正文写入指定 Markdown 文件。
  *
  * 定位
- * 位于 OpenPrd 的开源发布表达层，保证 GitHub Release 与 release-ledger 共用同一份版本事实。
+ * 位于 Open VibeCoding 的开源发布表达层，保证 GitHub Release 与 release-ledger 共用同一份版本事实。
  *
  * 依赖
  * 仅依赖 Node 内置文件系统和 change-summary，不要求安装额外 node_modules。
@@ -43,13 +43,13 @@ function normalizeTagInput(value, fallbackVersion = '') {
   return version ? `v${version}` : '';
 }
 
-function renderReleaseMarkdown({ version, tag, changeSummary }) {
+function renderReleaseMarkdown({ version, tag, changeSummary, packageName }) {
   const bullets = changeSummary.items.map((item) => `- ${item.sentence}`);
   return [
     '## 安装',
     '',
     '```bash',
-    `npm install -g @openprd/cli@${version}`,
+    `npm install -g ${packageName}@${version}`,
     '```',
     '',
     '## 本次更新',
@@ -77,7 +77,7 @@ function errorResult(projectRoot, code, error) {
 export async function buildGitHubReleasePayload(projectRoot, options = {}) {
   const resolvedRoot = path.resolve(projectRoot || '.');
   const packageJsonPath = cjoin(resolvedRoot, 'package.json');
-  const ledgerPath = cjoin(resolvedRoot, '.openprd', 'state', 'release-ledger.json');
+  const ledgerPath = cjoin(resolvedRoot, '.open-vibecoding', 'state', 'release-ledger.json');
 
   try {
     const requestedVersion = normalizeVersionInput(options.version || options.tag || '');
@@ -94,7 +94,10 @@ export async function buildGitHubReleasePayload(projectRoot, options = {}) {
 
     const version = requestedVersion || packageVersion;
     const tag = normalizeTagInput(options.tag, version);
-    const title = String(options.title || '').trim() || `OpenPrd ${version}`;
+    const packageName = typeof pkg.name === 'string' ? pkg.name : 'open-vibecoding';
+    const branded = packageName === 'open-vibecoding';
+    const cliName = branded ? 'open-vibecoding' : 'open-vibecoding';
+    const title = String(options.title || '').trim() || `${branded ? 'Open VibeCoding' : 'Open VibeCoding'} ${version}`;
 
     const ledger = await readJson(ledgerPath).catch((error) => {
       throw new Error(`Missing release ledger at ${ledgerPath}: ${error.message}`);
@@ -104,8 +107,8 @@ export async function buildGitHubReleasePayload(projectRoot, options = {}) {
     if (!releaseEntry) {
       throw new Error([
         `Missing release-ledger entry for version ${version}.`,
-        `Run: openprd release ${resolvedRoot} --set ${version}`,
-        'Then add user-visible notes with `openprd release <path> --notes "..."` before publishing.',
+        `Run: ${cliName} release ${resolvedRoot} --set ${version}`,
+        `Then add user-visible notes with \`${cliName} release <path> --notes "..."\` before publishing.`,
       ].join(' '));
     }
 
@@ -117,18 +120,18 @@ export async function buildGitHubReleasePayload(projectRoot, options = {}) {
     if (changeSummary.items.length === 0) {
       throw new Error([
         `Release-ledger entry for version ${version} has no release items.`,
-        `Run: openprd release ${resolvedRoot} --notes "新增 / 修复 / 优化 ..."`,
+        `Run: ${cliName} release ${resolvedRoot} --notes "新增 / 修复 / 优化 ..."`,
       ].join(' '));
     }
 
-    const markdown = renderReleaseMarkdown({ version, tag, changeSummary });
+    const markdown = renderReleaseMarkdown({ version, tag, changeSummary, packageName });
     return {
       ok: true,
       projectRoot: resolvedRoot,
       version,
       tag,
       title,
-      packageName: typeof pkg.name === 'string' ? pkg.name : null,
+      packageName,
       packageJsonPath,
       ledgerPath,
       itemCount: changeSummary.items.length,

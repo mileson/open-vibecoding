@@ -166,13 +166,13 @@ export function getBrainstormPresentationGate(record, feedback = buildBrainstorm
   const presentation = record?.brainstormPresentation;
   const meta = record?.brainstormPresentationMeta;
   if (!presentation || typeof presentation !== 'object' || Array.isArray(presentation)) {
-    errors.push('缺少已由脚本写入的 brainstormPresentation。先运行 openprd brainstorm-presentation . --template，再填写 presentation JSON。');
+    errors.push('缺少已由脚本写入的 brainstormPresentation。先运行 open-vibecoding brainstorm-presentation . --template，再填写 presentation JSON。');
   }
   if (feedback.violations.length > 0) {
     errors.push(`brainstormPresentation 仍有 ${feedback.violations.length} 个超限或格式问题。请按 presentationFeedback 中的 jsonPath 重写后再写入。`);
   }
   if (!meta || typeof meta !== 'object' || Array.isArray(meta)) {
-    errors.push('缺少 brainstormPresentationMeta。必须通过 openprd brainstorm-presentation --presentation <json> --write --fail-on-violation 写入，不能手工改状态文件。');
+    errors.push('缺少 brainstormPresentationMeta。必须通过 open-vibecoding brainstorm-presentation --presentation <json> --write --fail-on-violation 写入，不能手工改状态文件。');
   } else {
     const expectedPresentationHash = hashStableJson(presentation ?? null);
     const expectedViolationsHash = hashStableJson(feedback.violations);
@@ -190,7 +190,7 @@ export function getBrainstormPresentationGate(record, feedback = buildBrainstorm
     ok: errors.length === 0,
     errors,
     violations: feedback.violations,
-    requiredCommand: 'openprd brainstorm-presentation . --presentation <brainstorm-presentation.json> --write --fail-on-violation',
+    requiredCommand: 'open-vibecoding brainstorm-presentation . --presentation <brainstorm-presentation.json> --write --fail-on-violation',
   };
 }
 
@@ -200,7 +200,7 @@ function buildBrainstormPresentationMeta({ presentation, feedback, source }) {
     source: source ?? 'state',
     presentationHash: hashStableJson(presentation ?? null),
     violationsHash: hashStableJson(feedback.violations),
-    validator: 'openprd brainstorm-presentation',
+    validator: 'open-vibecoding brainstorm-presentation',
   };
 }
 

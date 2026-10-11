@@ -1,6 +1,6 @@
 /*
  * 核心功能
- * 解析 OpenPrd CLI 参数并生成用户可见 usage 文案。
+ * 解析 Open VibeCoding CLI 参数并生成用户可见 usage 文案。
  *
  * 输入
  * 接收 process argv 风格的字符串数组。
@@ -12,18 +12,25 @@
  * 位于 CLI 边界层，只负责参数归一化，不执行业务流程。
  *
  * 依赖
- * 被 openprd.js 主入口调用；flag 名称需与 print、workspace 函数和文档保持一致。
+ * 被 open-vibecoding.js 主入口调用；flag 名称需与 print、workspace 函数和文档保持一致。
  *
  * 维护规则
  * 新增 flag 时必须同步默认值、解析分支、usage、测试和 docs/basic/backend-structure.md。
  */
 function parseCommandArgs(argv) {
   const args = [...argv];
-  const flags = { json: false, force: false, fix: false, open: false, append: false, init: false, check: false, review: false, reject: false, resume: false, advance: false, verify: false, evidenceRequired: false, next: false, generate: false, validate: false, apply: false, archive: false, activate: false, close: false, keep: false, write: false, dryRun: false, repairAgent: false, allowDirtyMain: false, fleet: false, updateOpenprd: false, backfillWorkUnits: false, syncRegistry: false, setupMissing: false, doctor: false, recordHook: false, plan: false, prompt: false, loopRun: false, finish: false, commit: false, html: false, template: false, failOnViolation: false, noExternalFacts: false, noBrandAssets: false, noRealImages: false, daemon: false, stop: false, bridgeOutbox: false, bridgeSent: false, bridgeFailed: false, mark: null, direction: null, autoRefactor: null, type: 'architecture', mode: 'auto', input: null, field: null, value: null, set: null, jsonFile: null, artifactMarkdown: null, contentJson: null, presentation: null, source: null, reference: null, actual: null, before: null, after: null, referenceBox: null, actualBox: null, beforeBox: null, afterBox: null, focusLabel: null, focusReason: null, board: null, grid: null, boxes: null, out: null, format: null, quality: null, maxPanelWidth: null, referenceLabel: null, actualLabel: null, locale: null, classifyExternal: null, maxIterations: null, maxDepth: null, include: null, exclude: null, report: null, item: null, id: null, status: null, claim: null, notes: null, reason: null, confidence: null, threshold: null, change: null, starter: null, sections: null, brief: null, tools: 'all', hookProfile: null, templatePack: null, target: 'openprd', targetRoot: null, path: null, productType: null, title: null, owner: null, problem: null, whyNow: null, evidence: null, from: null, to: null, version: null, digest: null, workUnit: null, event: null, risk: null, outcome: null, preview: null, learn: null, genre: null, style: null, topic: null, enable: false, disable: false, agent: 'codex', agentCommand: null, worktree: null, branch: null, message: null, thread: null, threadTitle: null, conversationTitle: null, session: null, sessionTitle: null, host: null, port: null, openTarget: 'auto', runtimeAction: null, lane: null, task: null, claimId: null, client: null, leaseMs: null, expectedRevision: null, expectedLaneRevision: null, writeSet: null, baseCommit: null, gateId: null, approvalId: null, symlinkStrategy: null, installSafetyBackupRoot: null };
+  const flags = { json: false, force: false, fix: false, open: false, append: false, init: false, check: false, review: false, reject: false, resume: false, advance: false, verify: false, evidenceRequired: false, next: false, generate: false, validate: false, apply: false, archive: false, activate: false, close: false, keep: false, write: false, dryRun: false, repairAgent: false, allowDirtyMain: false, fleet: false, updateOpenprd: false, backfillWorkUnits: false, syncRegistry: false, setupMissing: false, doctor: false, recordHook: false, plan: false, prompt: false, loopRun: false, finish: false, commit: false, html: false, template: false, failOnViolation: false, noExternalFacts: false, noBrandAssets: false, noRealImages: false, daemon: false, stop: false, bridgeOutbox: false, bridgeSent: false, bridgeFailed: false, mark: null, direction: null, autoRefactor: null, type: 'architecture', mode: 'auto', input: null, field: null, value: null, set: null, jsonFile: null, artifactMarkdown: null, contentJson: null, presentation: null, source: null, reference: null, actual: null, before: null, after: null, referenceBox: null, actualBox: null, beforeBox: null, afterBox: null, focusLabel: null, focusReason: null, board: null, grid: null, boxes: null, out: null, format: null, quality: null, maxPanelWidth: null, referenceLabel: null, actualLabel: null, locale: null, classifyExternal: null, maxIterations: null, maxDepth: null, include: null, exclude: null, report: null, item: null, id: null, status: null, claim: null, notes: null, reason: null, confidence: null, threshold: null, change: null, starter: null, sections: null, brief: null, tools: 'all', hookProfile: null, templatePack: null, target: 'open-vibecoding', targetRoot: null, path: null, productType: null, title: null, owner: null, problem: null, whyNow: null, evidence: null, from: null, to: null, version: null, digest: null, workUnit: null, event: null, risk: null, outcome: null, preview: null, learn: null, genre: null, style: null, topic: null, enable: false, disable: false, agent: 'codex', agentCommand: null, worktree: null, branch: null, message: null, thread: null, threadTitle: null, conversationTitle: null, session: null, sessionTitle: null, host: null, port: null, openTarget: 'auto', runtimeAction: null, lane: null, task: null, claimId: null, client: null, leaseMs: null, expectedRevision: null, expectedLaneRevision: null, writeSet: null, baseCommit: null, gateId: null, approvalId: null, symlinkStrategy: null, installSafetyBackupRoot: null };
   const positionals = [];
 
   while (args.length > 0) {
     const arg = args.shift();
+    if (['--key-color', '--tolerance', '--feather'].includes(arg)) {
+      const value = args.shift();
+      if (!value || value.startsWith('--')) throw new Error(`${arg} requires a value`);
+      const key = { '--key-color': 'keyColor', '--tolerance': 'tolerance', '--feather': 'feather' }[arg];
+      flags[key] = value;
+      continue;
+    }
     if (arg === '--json') {
       flags.json = true;
       continue;
@@ -240,12 +247,8 @@ function parseCommandArgs(argv) {
       flags.template = true;
       continue;
     }
-    if (arg === '--update-openprd') {
+    if (arg === '--update-open-vibecoding') {
       flags.updateOpenprd = true;
-      continue;
-    }
-    if (arg === '--backfill-work-units') {
-      flags.backfillWorkUnits = true;
       continue;
     }
     if (arg === '--sync-registry') {
@@ -627,7 +630,7 @@ function parseCommandArgs(argv) {
       continue;
     }
     if (arg === '--target') {
-      flags.target = args.shift() ?? 'openprd';
+      flags.target = args.shift() ?? 'open-vibecoding';
       continue;
     }
     if (arg === '--target-root') {
@@ -650,62 +653,53 @@ function parseCommandArgs(argv) {
 
 function usage() {
   return [
-    'OpenPrd CLI',
+    'Open VibeCoding CLI',
+    'The open-vibecoding executable remains available for existing projects.',
     '',
     'Usage:',
-    '  openprd init [path] [--template-pack <base|consumer|b2b|agent>] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--symlink-strategy <block|materialize>] [--install-safety-backup-root <path>] [--force]',
-    '  openprd setup [path] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--symlink-strategy <block|materialize>] [--install-safety-backup-root <path>] [--force] [--json]',
-    '  openprd update [path] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--symlink-strategy <block|materialize>] [--install-safety-backup-root <path>] [--force] [--json]',
-    '  openprd self-update [--check] [--dry-run] [--json]',
-    '  openprd upgrade [path] [--fleet] [--dry-run] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--max-depth <n>] [--include <csv>] [--exclude <csv>] [--report <file>] [--force] [--json]',
-    '  openprd doctor [path] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--fix] [--json]',
-    '  openprd fleet <root> [--dry-run|--doctor|--update-openprd|--backfill-work-units|--sync-registry|--setup-missing] [--hook-profile <lite|guarded|full>] [--max-depth <n>] [--include <csv>] [--exclude <csv>] [--report <file>] [--json]',
-    '  openprd run [path] [--verify|--record-hook --event <name> --risk <level> --outcome <text> --preview <text>] [--json]',
-    '  openprd runtime [path] --action <status|create-lane|ensure-lane|add-task|claim|heartbeat|release|finish|recover> [--lane <id>] [--task <id>] [--claim-id <id>] [--write-set <csv>] [--lease-ms <n>] [--expected-revision <n>] [--expected-lane-revision <n>] [--client <codex|claude|cursor>] [--session <id>] [--thread <id>] [--worktree <path>] [--branch <name>] [--base-commit <sha>] [--evidence <ref>] [--json]',
-    '  openprd gate [path] --action <status|define|evidence|approve|evaluate> [--json-file <record.json>] [--gate <id>] [--approval-id <id>] [--json]',
-    '  openprd loop [path] [--init|--plan|--next|--prompt|--run|--verify|--finish] [--change <id>] [--item <task-id-or-handle>] [--agent <codex|claude>] [--agent-command <cmd>] [--repair-agent] [--worktree <path>] [--branch <name>] [--allow-dirty-main] [--commit] [--dry-run] [--message <text>] [--json]',
-    '  openprd canvas [path] [--thread <id> [--thread-title <name>]|--session <id> [--session-title <name>]] [--host <host>] [--port <number>] [--daemon|--stop] [--open] [--open-target <auto|system|codex-browser>] [--dry-run] [--json]',
-    '  openprd canvas [path] --bridge-outbox [--thread <id>|--session <id>] [--claim <next|id>] [--json]',
-    '  openprd canvas [path] (--bridge-sent|--bridge-failed) --id <bridge-id> [--thread <id>|--session <id>] [--reason <text>] [--json]',
-    '  openprd classify [path] <consumer|b2b|agent>',
-    '  openprd clarify [path] [--mode <auto|inline|inline-with-checklist>] [--json]',
-    '  openprd capture [path] (--field <section.path> --value <text|json> | --json-file <answers.json> | --artifact-markdown <artifact.md>) [--source <user-confirmed|project-derived|agent-inferred|agent-normalized>] [--append] [--json]',
-    '  openprd interview [path] [--product-type <consumer|b2b|agent>]',
-    '  openprd playground [path] [--open] [--json]',
-    '  openprd brainstorm [path] [--topic <text>] [--open] [--json]',
-    '  openprd learn [path] [--topic <text>] [--genre <internet-product|scientific|fairy-tale|web-novel|xianxia>] [--style <substyle>] [--source <workspace|docs|loop|all>] [--content-json <file>] [--open] [--enable|--disable] [--json]',
-    '  openprd quality [path] [--init|--verify|--learn [--review] --from <legacy-report-or-diagnostics-or-turn-state>] [--fail-on-violation] [--force] [--json]',
-    '  openprd knowledge <candidates|reject|archive|restore> [path-or-id] [--status <pending-review|all|rejected|archived|promoted|merged>] [--id <candidate-id>] [--reason <text>] [--json]',
-    '  openprd visual-prepare [path] --reference <effect-image> ((--grid <columns>x<rows>) | (--boxes <plan.json>)) [--include <csv>] [--id <reference-set-id>] [--title <text>] [--out <dir>] [--json]',
-    '  openprd visual-compare [path] ((--reference <effect-image> --actual <screenshot-image>) | (--before <before-screenshot> --after <after-screenshot>) | --board <board.json>) [--reference-box <x,y,w,h>] [--actual-box <x,y,w,h>] [--before-box <x,y,w,h>] [--after-box <x,y,w,h>] [--focus-label <text>] [--focus-reason <text>] [--presentation <local-first>] [--out <file.jpg>] [--format <jpg|png|webp>] [--quality <1..100>] [--max-panel-width <px>] [--locale <zh-CN|en>] [--json]',
+    '  open-vibecoding capabilities <list|get <id>|contract> [--path <project>]  # 独立场景与项目扩展发现；JSON 输出',
+    '  open-vibecoding init [path] [--template-pack <base|consumer|b2b|agent>] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--symlink-strategy <block|materialize>] [--install-safety-backup-root <path>] [--force]',
+    '  open-vibecoding setup [path] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--symlink-strategy <block|materialize>] [--install-safety-backup-root <path>] [--force] [--json]',
+    '  open-vibecoding update [path] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--symlink-strategy <block|materialize>] [--install-safety-backup-root <path>] [--force] [--json]',
+    '  open-vibecoding self-update [--check] [--dry-run] [--json]',
+    '  open-vibecoding upgrade [path] [--fleet] [--dry-run] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--max-depth <n>] [--include <csv>] [--exclude <csv>] [--report <file>] [--force] [--json]',
+    '  open-vibecoding doctor [path] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--fix] [--json]',
+    '  open-vibecoding fleet <root> [--dry-run|--doctor|--update-open-vibecoding|--sync-registry|--setup-missing] [--hook-profile <lite|guarded|full>] [--max-depth <n>] [--include <csv>] [--exclude <csv>] [--report <file>] [--json]',
+    '  open-vibecoding run [path] [--verify|--record-hook --event <name> --risk <level> --outcome <text> --preview <text>] [--json]',
+    '  open-vibecoding runtime [path] --action <status|create-lane|ensure-lane|add-task|claim|heartbeat|release|finish|recover> [--lane <id>] [--task <id>] [--claim-id <id>] [--write-set <csv>] [--lease-ms <n>] [--expected-revision <n>] [--expected-lane-revision <n>] [--client <codex|claude|cursor>] [--session <id>] [--thread <id>] [--worktree <path>] [--branch <name>] [--base-commit <sha>] [--evidence <ref>] [--json]',
+    '  open-vibecoding gate [path] --action <status|define|evidence|approve|evaluate> [--json-file <record.json>] [--gate <id>] [--approval-id <id>] [--json]',
+    '  open-vibecoding canvas [path] [--thread <id> [--thread-title <name>]|--session <id> [--session-title <name>]] [--host <host>] [--port <number>] [--daemon|--stop] [--open] [--open-target <auto|system|codex-browser>] [--dry-run] [--json]',
+    '  open-vibecoding canvas [path] --bridge-outbox [--thread <id>|--session <id>] [--claim <next|id>] [--json]',
+    '  open-vibecoding canvas [path] (--bridge-sent|--bridge-failed) --id <bridge-id> [--thread <id>|--session <id>] [--reason <text>] [--json]',
+    '  open-vibecoding brainstorm [path] [--topic <text>] [--open] [--json]',
+    '  open-vibecoding learn [path] [--topic <text>] [--genre <internet-product|scientific|fairy-tale|web-novel|xianxia>] [--style <substyle>] [--source <workspace|docs|loop|all>] [--content-json <file>] [--open] [--enable|--disable] [--json]',
+    '  open-vibecoding quality [path] [--init|--verify|--learn [--review] --from <legacy-report-or-diagnostics-or-turn-state>] [--fail-on-violation] [--force] [--json]',
+    '  open-vibecoding knowledge <candidates|reject|archive|restore> [path-or-id] [--status <pending-review|all|rejected|archived|promoted|merged>] [--id <candidate-id>] [--reason <text>] [--json]',
+    '  open-vibecoding icon-cutout --source <image> --out <new.png> [--key-color <#RRGGBB>] [--tolerance <0..255>] [--feather <0..255>]  # 本地透明化；JSON 输出',
+    '  open-vibecoding visual-prepare [path] --reference <effect-image> ((--grid <columns>x<rows>) | (--boxes <plan.json>)) [--include <csv>] [--id <reference-set-id>] [--title <text>] [--out <dir>] [--json]',
+    '  open-vibecoding visual-compare [path] ((--reference <effect-image> --actual <screenshot-image>) | (--before <before-screenshot> --after <after-screenshot>) | --board <board.json>) [--reference-box <x,y,w,h>] [--actual-box <x,y,w,h>] [--before-box <x,y,w,h>] [--after-box <x,y,w,h>] [--focus-label <text>] [--focus-reason <text>] [--presentation <local-first>] [--out <file.jpg>] [--format <jpg|png|webp>] [--quality <1..100>] [--max-panel-width <px>] [--locale <zh-CN|en>] [--json]',
     '    --board modes: focus-board, parallel-board, verification-board, alignment-board, centering-board',
-    '  openprd design-starter [path] [--starter <content-home|product-launch|ops-dashboard>] [--out <index.html>] [--title <name>] [--brief <text>] [--sections <a|b|c>] [--no-external-facts] [--no-brand-assets] [--no-real-images] [--force] [--json]',
-    '  openprd dev-check [path] <file...> [--auto-refactor <on|off>] [--json]',
-    '  openprd i18n-init [path] [--locale <zh-Hans|en|...>] [--json]',
-    '  openprd grow [path] [--review|--apply --id <candidate-id>|--reject --id <candidate-id>|--init|--check] [--notes <text>] [--json]',
-    '  openprd benchmark <add|observe|list|approve|verify> [target-or-id] [path-for-list-or-verify] [--path <project>] [--notes <text>] [--threshold <n>] [--id <benchmark-id>] [--json]',
-    '  openprd synthesize [path] [--title <text>] [--owner <text>] [--problem <text>] [--why-now <text>] [--work-unit <id>] [--target-root <path>] [--open] [--json]',
-    '  openprd review [path] [--open] [--mark <pending-confirmation|confirmed|needs-revision>] [--version <id>] [--digest <sha256>] [--work-unit <id>] [--direction <design-direction-id>] [--notes <text>] [--json]',
-    '  openprd brainstorm-presentation [path] [--template] [--presentation <json>] [--write] [--fail-on-violation] [--json]',
-    '  openprd review-presentation [path] [--template] [--version <id>] [--presentation <json>] [--write] [--fail-on-violation] [--json]',
-    '  openprd docs-compact [path] [--json]',
-    '  openprd guide [path] [--json]',
-    '  openprd diagram [path] [--type <architecture|product-flow>] [--input <contract.json>] [--mark <pending-confirmation|confirmed|needs-revision>] [--open] [--json]',
-    '  openprd diff [path] [--from <version>] [--to <version>]',
-    '  openprd history [path]',
-    '  openprd release [path] [--enable|--disable] [--set <0.1.23>] [--status <draft|current|released>] [--version <id>] [--notes <text>] [--json]',
-    '  openprd validate [path] [--json]',
-    '  openprd status [path] [--json]',
-    '  openprd freeze [path] [--json]',
-    '  openprd handoff [path] [--target openprd] [--json]',
-    '  openprd standards [path] [--init|--classify-external <path>] [--check|--verify] [--fail-on-violation] [--force] [--json]',
-    '  openprd change [path] (--generate|--validate|--apply|--archive|--activate|--close) [--change <id>] [--force] [--keep] [--json]',
-    '  openprd changes [path] [--json]',
-    '  openprd specs [path] [--json]',
-    '  openprd tasks [path] [--next] [--advance] [--verify|--evidence-required] [--item <task-id>] [--change <id>] [--evidence <path>] [--notes <text>] [--json]',
-    '  openprd discovery [path] [--mode <auto|brownfield|reference|requirement>] [--reference <path>] [--max-iterations <n>] [--resume] [--advance] [--verify] [--item <id>] [--status <covered|blocked|pending>] [--claim <text>] [--evidence <path>] [--notes <text>] [--confidence <0..1>] [--json]',
+    '  open-vibecoding design-starter [path] [--starter <content-home|product-launch|ops-dashboard>] [--out <index.html>] [--title <name>] [--brief <text>] [--sections <a|b|c>] [--no-external-facts] [--no-brand-assets] [--no-real-images] [--force] [--json]',
+    '  open-vibecoding dev-check [path] <file...> [--auto-refactor <on|off>] [--json]',
+    '  open-vibecoding i18n-init [path] [--locale <zh-Hans|en|...>] [--json]',
+    '  open-vibecoding grow [path] [--review|--apply --id <candidate-id>|--reject --id <candidate-id>|--init|--check] [--notes <text>] [--json]',
+    '  open-vibecoding benchmark <add|observe|list|approve|verify> [target-or-id] [path-for-list-or-verify] [--path <project>] [--notes <text>] [--threshold <n>] [--id <benchmark-id>] [--json]',
+    '  open-vibecoding brainstorm-presentation [path] [--template] [--presentation <json>] [--write] [--fail-on-violation] [--json]',
+    '  open-vibecoding docs-compact [path] [--json]',
+    '  open-vibecoding guide [path] [--json]',
+    '  open-vibecoding diagram [path] [--type <architecture|product-flow>] [--input <contract.json>] [--mark <pending-confirmation|confirmed|needs-revision>] [--open] [--json]',
+    '  open-vibecoding diff [path] [--from <version>] [--to <version>]',
+    '  open-vibecoding history [path]',
+    '  open-vibecoding release [path] [--enable|--disable] [--set <0.1.23>] [--status <draft|current|released>] [--version <id>] [--notes <text>] [--json]',
+    '  open-vibecoding validate [path] [--json]',
+    '  open-vibecoding status [path] [--json]',
+    '  open-vibecoding standards [path] [--init|--classify-external <path>] [--check|--verify] [--fail-on-violation] [--force] [--json]',
+    '  open-vibecoding change [path] [--validate] [--change <id>] [--json]  # 只读旧版 change',
+    '  open-vibecoding changes [path] [--json]',
+    '  open-vibecoding specs [path] [--json]',
+    '  open-vibecoding tasks [path] [--change <id>] [--json]  # 只读历史任务',
     '',
-  ].join('\n');
+  ].map((line) => line.startsWith('  open-vibecoding ') ? line.replace('  open-vibecoding ', '  open-vibecoding ') : line).join('\n');
 }
 
 

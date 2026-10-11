@@ -51,9 +51,9 @@ export async function resolveOpenSpecChangeId(projectRoot, requestedChange) {
     return changeDirs[0];
   }
   if (changeDirs.length === 0) {
-    throw new Error('.openprd/changes 下没有找到 OpenPrd change。');
+    throw new Error('.open-vibecoding/changes 下没有找到 Open VibeCoding change。');
   }
-  throw new Error(`找到多个 OpenPrd change；请传入 --change <id>。已找到: ${changeDirs.join(', ')}`);
+  throw new Error(`找到多个 Open VibeCoding change；请传入 --change <id>。已找到: ${changeDirs.join(', ')}`);
 }
 
 function extractProposalCapabilities(text) {
@@ -117,11 +117,11 @@ export async function validateOpenSpecChangeWorkspace(projectRoot, options = {})
   const warnings = [];
   const checks = [];
   const workspaceAttention = [];
-  const changeState = await readJson(cjoin(projectRoot, '.openprd', 'state', 'changes.json')).catch(() => null);
+  const changeState = await readJson(cjoin(projectRoot, '.open-vibecoding', 'state', 'changes.json')).catch(() => null);
   const lifecycleStatus = changeState?.changes?.[changeId]?.status ?? null;
 
   if (!(await exists(changeDir))) {
-    errors.push(`缺少 OpenPrd change 目录: ${path.relative(projectRoot, changeDir)}`);
+    errors.push(`缺少 Open VibeCoding change 目录: ${path.relative(projectRoot, changeDir)}`);
     return {
       ok: false,
       valid: false,
@@ -170,7 +170,7 @@ export async function validateOpenSpecChangeWorkspace(projectRoot, options = {})
     };
   }
 
-  const metadataPaths = [cjoin(changeDir, '.openprd.yaml'), cjoin(changeDir, '.openspec.yaml')];
+  const metadataPaths = [cjoin(changeDir, '.open-vibecoding.yaml'), cjoin(changeDir, '.openspec.yaml')];
   for (const metadataPath of metadataPaths) {
     if (await exists(metadataPath)) {
       await readYaml(metadataPath).catch((error) => {
@@ -249,7 +249,7 @@ export async function validateOpenSpecChangeWorkspace(projectRoot, options = {})
   checks.push(...taskVolume.checks);
 
   const standards = await checkStandardsWorkspace(projectRoot, {
-    optional: !(await exists(cjoin(projectRoot, '.openprd'))),
+    optional: !(await exists(cjoin(projectRoot, '.open-vibecoding'))),
     sourceManuals: options.sourceManuals,
     docsContent: options.docsContent,
     folderManualModuleName: options.folderManualModuleName,
@@ -263,13 +263,13 @@ export async function validateOpenSpecChangeWorkspace(projectRoot, options = {})
       warnings: [...(standards.warnings ?? [])],
       checks: [...(standards.checks ?? [])],
     });
-    const hasStandardsTask = taskVolume.files.some((file) => file.text.includes('openprd standards') && file.text.includes('docs/basic'));
+    const hasStandardsTask = taskVolume.files.some((file) => file.text.includes('open-vibecoding standards') && file.text.includes('docs/basic'));
     if (!hasStandardsTask) {
       warnings.push(`${path.relative(projectRoot, changeDir)} 应包含 docs/basic 标准文档维护任务。`);
     }
   }
 
-  checks.unshift(`OpenPrd change ${changeId}: ${specs.length} 个 spec delta。`);
+  checks.unshift(`Open VibeCoding change ${changeId}: ${specs.length} 个 spec delta。`);
 
   return {
     ok: errors.length === 0,

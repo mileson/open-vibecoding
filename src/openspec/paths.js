@@ -1,11 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
-  OPENPRD_ACCEPTED_SPEC_ROOT,
-  OPENPRD_ARCHIVE_CHANGE_ROOT,
-  OPENPRD_CHANGE_ROOT,
-  OPENPRD_DISCOVERY_CONFIG_PATH,
-  OPENPRD_DISCOVERY_DIR,
+  LEGACY_OPEN_VIBECODING_ACCEPTED_SPEC_ROOT,
+  LEGACY_OPEN_VIBECODING_ARCHIVE_CHANGE_ROOT,
+  LEGACY_OPEN_VIBECODING_CHANGE_ROOT,
+  OPEN_VIBECODING_ACCEPTED_SPEC_ROOT,
+  OPEN_VIBECODING_ARCHIVE_CHANGE_ROOT,
+  OPEN_VIBECODING_CHANGE_ROOT,
+  OPEN_VIBECODING_DISCOVERY_CONFIG_PATH,
+  OPEN_VIBECODING_DISCOVERY_DIR,
 } from './constants.js';
 
 export function cjoin(...parts) {
@@ -17,11 +20,11 @@ export function exists(filePath) {
 }
 
 export function openPrdDiscoveryDir(projectRoot) {
-  return cjoin(projectRoot, ...OPENPRD_DISCOVERY_DIR);
+  return cjoin(projectRoot, ...OPEN_VIBECODING_DISCOVERY_DIR);
 }
 
 export function openPrdDiscoveryConfigPath(projectRoot) {
-  return cjoin(projectRoot, ...OPENPRD_DISCOVERY_CONFIG_PATH);
+  return cjoin(projectRoot, ...OPEN_VIBECODING_DISCOVERY_CONFIG_PATH);
 }
 
 export async function readDiscoveryConfig(projectRoot, readJson) {
@@ -29,21 +32,27 @@ export async function readDiscoveryConfig(projectRoot, readJson) {
 }
 
 export function openPrdChangeRoot(projectRoot) {
-  return cjoin(projectRoot, ...OPENPRD_CHANGE_ROOT);
+  return cjoin(projectRoot, ...OPEN_VIBECODING_CHANGE_ROOT);
 }
 
 export function openPrdAcceptedSpecRoot(projectRoot) {
-  return cjoin(projectRoot, ...OPENPRD_ACCEPTED_SPEC_ROOT);
+  return cjoin(projectRoot, ...OPEN_VIBECODING_ACCEPTED_SPEC_ROOT);
+}
+
+export function legacyAcceptedSpecRoot(projectRoot) {
+  return cjoin(projectRoot, ...LEGACY_OPEN_VIBECODING_ACCEPTED_SPEC_ROOT);
 }
 
 export function openPrdArchiveChangeRoot(projectRoot) {
-  return cjoin(projectRoot, ...OPENPRD_ARCHIVE_CHANGE_ROOT);
+  return cjoin(projectRoot, ...OPEN_VIBECODING_ARCHIVE_CHANGE_ROOT);
 }
 
 export async function resolveChangeDir(projectRoot, changeId) {
   const candidates = [
     cjoin(openPrdChangeRoot(projectRoot), changeId),
     cjoin(openPrdArchiveChangeRoot(projectRoot), changeId),
+    cjoin(projectRoot, ...LEGACY_OPEN_VIBECODING_CHANGE_ROOT, changeId),
+    cjoin(projectRoot, ...LEGACY_OPEN_VIBECODING_ARCHIVE_CHANGE_ROOT, changeId),
   ];
   for (const candidate of candidates) {
     if (await exists(candidate)) {
@@ -55,8 +64,10 @@ export async function resolveChangeDir(projectRoot, changeId) {
 
 export async function listChangeDirs(projectRoot) {
   const roots = [
-    { root: openPrdChangeRoot(projectRoot), source: 'openprd', archived: false },
-    { root: openPrdArchiveChangeRoot(projectRoot), source: 'openprd-archive', archived: true },
+    { root: openPrdChangeRoot(projectRoot), source: 'open-vibecoding', archived: false },
+    { root: openPrdArchiveChangeRoot(projectRoot), source: 'open-vibecoding-archive', archived: true },
+    { root: cjoin(projectRoot, ...LEGACY_OPEN_VIBECODING_CHANGE_ROOT), source: 'legacy', archived: false },
+    { root: cjoin(projectRoot, ...LEGACY_OPEN_VIBECODING_ARCHIVE_CHANGE_ROOT), source: 'legacy-archive', archived: true },
   ];
   const changes = [];
   const seen = new Set();

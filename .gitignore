@@ -10,16 +10,16 @@ node_modules/
 .codex/
 .claude/
 .cursor/
-.openprd/artifacts/
-.openprd/harness/
-.openprd/growth/preferences.local.json
-.openprd/learning/
-.openprd/quality/evidence/
-.openprd/quality/reports/
+.open-vibecoding/artifacts/
+.open-vibecoding/harness/
+.open-vibecoding/growth/preferences.local.json
+.open-vibecoding/learning/
+.open-vibecoding/quality/evidence/
+.open-vibecoding/quality/reports/
 CLAUDE.md
 
 # local demo artifacts
-openprd-architecture-diagram-demo.png
+open-vibecoding-architecture-diagram-demo.png
 
 # temp / logs
 *.log

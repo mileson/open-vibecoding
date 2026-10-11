@@ -1,0 +1,34 @@
+version: 2
+activeTemplatePack: base
+supportedProductTypes:
+  - consumer
+  - b2b
+  - agent
+templateInheritance:
+  - base
+  - industry
+  - company
+  - project
+  - session
+learningReview:
+  enabled: true
+  autoOpen: true
+  defaultGenre: internet-product
+  sourceScope: workspace
+quality:
+  mode: explicit-diagnostics
+  artifactGeneration: false
+design:
+  enabled: true
+  frameworkRoot: .open-vibecoding/design
+  templateRoot: .open-vibecoding/design/templates
+  activeArtifacts:
+    facts: .open-vibecoding/design/active/facts-sheet.md
+    assets: .open-vibecoding/design/active/asset-spec.md
+    imagePreflight: .open-vibecoding/design/active/image-preflight.md
+    directions: .open-vibecoding/design/active/direction-plan.md
+    selectedDirection: .open-vibecoding/design/active/selected-direction.md
+qualityGates:
+  standards:
+    docsRoot: docs/basic
+    command: open-vibecoding standards . --verify

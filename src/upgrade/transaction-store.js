@@ -29,43 +29,43 @@ const FLEET_TRANSACTION_SCHEMA = 'openprd.fleet-upgrade-transaction';
 const FLEET_TRANSACTION_VERSION = 1;
 const CHECKSUM_ALGORITHM = 'sha256';
 
-const OPENPRD_AGENT_ARTIFACT_SCOPES = Object.freeze([
+const OPEN_VIBECODING_AGENT_ARTIFACT_SCOPES = Object.freeze([
   ...CANONICAL_SKILLS.flatMap((skill) => [
     path.join('.codex', 'skills', skill.id),
     path.join('.claude', 'skills', skill.id),
   ]),
   ...CANONICAL_COMMANDS.flatMap((command) => [
-    path.join('.codex', 'prompts', `openprd-${command.id}.md`),
-    path.join('.claude', 'commands', 'openprd', `${command.id}.md`),
-    path.join('.cursor', 'commands', `openprd-${command.id}.md`),
+    path.join('.codex', 'prompts', `open-vibecoding-${command.id}.md`),
+    path.join('.claude', 'commands', 'open-vibecoding', `${command.id}.md`),
+    path.join('.cursor', 'commands', `open-vibecoding-${command.id}.md`),
   ]),
 ]);
 const FLEET_MANAGED_SCOPES = Object.freeze([
-  '.openprd',
+  '.open-vibecoding',
   'AGENTS.md',
   'CLAUDE.md',
   '.gitignore',
   path.join('.codex', 'config.toml'),
   path.join('.codex', 'hooks.json'),
-  path.join('.codex', 'hooks', 'openprd-hook.mjs'),
-  path.join('.cursor', 'rules', 'openprd.mdc'),
-  ...OPENPRD_AGENT_ARTIFACT_SCOPES,
+  path.join('.codex', 'hooks', 'open-vibecoding-hook.mjs'),
+  path.join('.cursor', 'rules', 'open-vibecoding.mdc'),
+  ...OPEN_VIBECODING_AGENT_ARTIFACT_SCOPES,
 ]);
 const FLEET_PRESERVED_SCOPES = Object.freeze([
-  path.join('.openprd', '.derived-data'),
-  path.join('.openprd', 'artifacts'),
-  path.join('.openprd', 'quality', 'reports'),
-  path.join('.openprd', 'tmp'),
+  path.join('.open-vibecoding', '.derived-data'),
+  path.join('.open-vibecoding', 'artifacts'),
+  path.join('.open-vibecoding', 'quality', 'reports'),
+  path.join('.open-vibecoding', 'tmp'),
 ]);
 const FLEET_PRESERVED_SCOPE_PATTERNS = Object.freeze([
-  '.openprd/harness/DerivedData-*',
+  '.open-vibecoding/harness/DerivedData-*',
 ]);
 
 async function managedScopesForRoot(projectRoot) {
   const scopes = [...FLEET_MANAGED_SCOPES];
-  // `openprd/` is only managed when it is the legacy changes/specs tree. A
+  // `open-vibecoding/` is only managed when it is the legacy changes/specs tree. A
   // normal nested repository named `openprd` must never enter the transaction.
-  if (await hasLegacyOpenPrdArtifacts(projectRoot)) scopes.push('openprd');
+  if (await hasLegacyOpenPrdArtifacts(projectRoot)) scopes.push('open-vibecoding');
   return scopes;
 }
 
@@ -84,20 +84,20 @@ function isPreservedScopePath(relativePath) {
     return normalizedPath === normalizedScope || normalizedPath.startsWith(`${normalizedScope}/`);
   })) return true;
   const parts = normalizedPath.split('/');
-  return parts[0] === '.openprd'
+  return parts[0] === '.open-vibecoding'
     && parts[1] === 'harness'
     && /^derived[-_]?data(?:[-_].*)?$/i.test(parts[2] ?? '');
 }
 
 async function preservedScopesForRoot(projectRoot) {
   const scopes = [...FLEET_PRESERVED_SCOPES];
-  const harnessRoot = path.join(projectRoot, '.openprd', 'harness');
+  const harnessRoot = path.join(projectRoot, '.open-vibecoding', 'harness');
   const entries = await fs.readdir(harnessRoot, { withFileTypes: true }).catch((error) => {
     if (error.code === 'ENOENT') return [];
     throw error;
   });
   for (const entry of entries) {
-    const scope = path.join('.openprd', 'harness', entry.name);
+    const scope = path.join('.open-vibecoding', 'harness', entry.name);
     if (isPreservedScopePath(scope)) scopes.push(scope);
   }
   return [...new Set(scopes)];
@@ -180,7 +180,7 @@ async function snapshotManagedState(projectRoot) {
     const normalizedPath = normalizeRelativePath(relativePath);
     if (stat.isSymbolicLink()) {
       const error = new Error(`Symbolic link cannot be included in a fleet transaction: ${normalizedPath}`);
-      error.code = 'OPENPRD_FLEET_SYMLINK_HAZARD';
+      error.code = 'OPEN_VIBECODING_FLEET_SYMLINK_HAZARD';
       throw error;
     }
     if (stat.isDirectory()) {
@@ -203,7 +203,7 @@ async function snapshotManagedState(projectRoot) {
       return;
     }
     const error = new Error(`Unsupported filesystem entry in fleet transaction: ${normalizedPath}`);
-    error.code = 'OPENPRD_FLEET_UNSUPPORTED_ENTRY';
+    error.code = 'OPEN_VIBECODING_FLEET_UNSUPPORTED_ENTRY';
     throw error;
   }
   for (const scope of await managedScopesForRoot(projectRoot)) await visit(path.join(projectRoot, scope), scope);
@@ -228,7 +228,7 @@ async function copyScope(sourceRoot, targetRoot, scope) {
   const targetPath = path.join(targetRoot, scope);
   if (sourceStat.isSymbolicLink()) {
     const error = new Error(`Symbolic link cannot be copied into a fleet transaction: ${normalizeRelativePath(scope)}`);
-    error.code = 'OPENPRD_FLEET_SYMLINK_HAZARD';
+    error.code = 'OPEN_VIBECODING_FLEET_SYMLINK_HAZARD';
     throw error;
   }
   if (sourceStat.isDirectory()) {
@@ -243,7 +243,7 @@ async function copyScope(sourceRoot, targetRoot, scope) {
   }
   if (!sourceStat.isFile()) {
     const error = new Error(`Unsupported filesystem entry in fleet transaction: ${normalizeRelativePath(scope)}`);
-    error.code = 'OPENPRD_FLEET_UNSUPPORTED_ENTRY';
+    error.code = 'OPEN_VIBECODING_FLEET_UNSUPPORTED_ENTRY';
     throw error;
   }
   await fs.mkdir(path.dirname(targetPath), { recursive: true });
@@ -267,7 +267,7 @@ async function createPreimageBackup(plan) {
   const backupSnapshot = await snapshotManagedState(payloadRoot);
   if (backupSnapshot.checksum !== plan.preimage.checksum) {
     const error = new Error(`Preimage backup checksum mismatch: expected ${plan.preimage.checksum}, found ${backupSnapshot.checksum}`);
-    error.code = 'OPENPRD_FLEET_BACKUP_CHECKSUM_MISMATCH';
+    error.code = 'OPEN_VIBECODING_FLEET_BACKUP_CHECKSUM_MISMATCH';
     throw error;
   }
   const manifest = {
@@ -319,7 +319,7 @@ async function assertPreservedScopesEmpty(projectRoot) {
     if (!allowDirectory || !stat.isDirectory() || stat.isSymbolicLink()) {
       const normalizedPath = normalizeRelativePath(relativePath);
       const error = new Error(`Staged fleet mutation wrote into preserved scope: ${normalizedPath}`);
-      error.code = 'OPENPRD_FLEET_PRESERVED_SCOPE_MUTATION';
+      error.code = 'OPEN_VIBECODING_FLEET_PRESERVED_SCOPE_MUTATION';
       throw error;
     }
     const children = await fs.readdir(absolutePath, { withFileTypes: true });
@@ -338,7 +338,7 @@ async function assertNoSymlinkAncestor(projectRoot, relativePath) {
   const relation = path.relative(resolvedRoot, target);
   if (relation.startsWith('..') || path.isAbsolute(relation)) {
     const error = new Error(`Fleet transaction path escapes project root: ${relativePath}`);
-    error.code = 'OPENPRD_FLEET_PATH_ESCAPE';
+    error.code = 'OPEN_VIBECODING_FLEET_PATH_ESCAPE';
     throw error;
   }
   const parts = relation.split(path.sep).filter(Boolean);
@@ -351,7 +351,7 @@ async function assertNoSymlinkAncestor(projectRoot, relativePath) {
     });
     if (stat?.isSymbolicLink()) {
       const error = new Error(`Symbolic link ancestor appeared during fleet transaction: ${path.relative(projectRoot, cursor)}`);
-      error.code = 'OPENPRD_FLEET_SYMLINK_ANCESTOR';
+      error.code = 'OPEN_VIBECODING_FLEET_SYMLINK_ANCESTOR';
       throw error;
     }
   }
@@ -384,14 +384,14 @@ async function applyStagedState(plan, stagingRoot, stagedSnapshot, options = {})
   const currentSnapshot = await snapshotManagedState(plan.projectRoot);
   if (currentSnapshot.checksum !== plan.preimage.checksum) {
     const error = new Error(`Project changed after planning: expected ${plan.preimage.checksum}, found ${currentSnapshot.checksum}`);
-    error.code = 'OPENPRD_FLEET_PREIMAGE_CONFLICT';
+    error.code = 'OPEN_VIBECODING_FLEET_PREIMAGE_CONFLICT';
     throw error;
   }
   if (options.beforeApply) await options.beforeApply({ plan, stagingRoot, stagedSnapshot });
   const compareSnapshot = await snapshotManagedState(plan.projectRoot);
   if (compareSnapshot.checksum !== plan.preimage.checksum) {
     const error = new Error(`Project changed before atomic apply: expected ${plan.preimage.checksum}, found ${compareSnapshot.checksum}`);
-    error.code = 'OPENPRD_FLEET_PREIMAGE_CONFLICT';
+    error.code = 'OPEN_VIBECODING_FLEET_PREIMAGE_CONFLICT';
     throw error;
   }
 
@@ -445,7 +445,7 @@ async function applyStagedState(plan, stagingRoot, stagedSnapshot, options = {})
   const appliedSnapshot = await snapshotManagedState(plan.projectRoot);
   if (appliedSnapshot.checksum !== stagedSnapshot.checksum) {
     const error = new Error(`Atomic apply checksum mismatch: expected ${stagedSnapshot.checksum}, found ${appliedSnapshot.checksum}`);
-    error.code = 'OPENPRD_FLEET_APPLY_CHECKSUM_MISMATCH';
+    error.code = 'OPEN_VIBECODING_FLEET_APPLY_CHECKSUM_MISMATCH';
     throw error;
   }
   return appliedSnapshot;
@@ -465,7 +465,7 @@ async function relocateStagingPaths(stagingRoot, stagingHome, projectRoot, openp
     for (const [from, to] of replacements) next = next.split(from).join(to);
     if (next !== current) await atomicWriteText(filePath, next, { mode: entry.mode });
   }
-  const manifestPath = path.join(stagingRoot, '.openprd', 'harness', 'install-manifest.json');
+  const manifestPath = path.join(stagingRoot, '.open-vibecoding', 'harness', 'install-manifest.json');
   const manifest = await fs.readFile(manifestPath, 'utf8').then(JSON.parse).catch(() => null);
   if (!manifest?.managedFiles) return;
   let changed = false;

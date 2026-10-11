@@ -1,0 +1,4 @@
+interface:
+  display_name: "Open VibeCoding Requirement Intake"
+  short_description: "Assess implementation complexity without a document gate"
+  default_prompt: "Use $open-vibecoding-requirement-intake to assess impact, uncertainty, decision cost, and verification cost without generating PRDs, changes, or tasks."

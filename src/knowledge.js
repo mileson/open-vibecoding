@@ -12,15 +12,15 @@ import {
 } from './session-evidence.js';
 import { timestamp } from './time.js';
 
-const KNOWLEDGE_DIR = cjoin('.openprd', 'knowledge');
+const KNOWLEDGE_DIR = cjoin('.open-vibecoding', 'knowledge');
 const KNOWLEDGE_INDEX = cjoin(KNOWLEDGE_DIR, 'index.json');
 const KNOWLEDGE_SKILLS_DIR = cjoin(KNOWLEDGE_DIR, 'skills');
 const KNOWLEDGE_CANDIDATES_DIR = cjoin(KNOWLEDGE_DIR, 'candidates');
 const KNOWLEDGE_DRAFTS_DIR = cjoin(KNOWLEDGE_DIR, 'drafts');
 const KNOWLEDGE_ADOPTION_LOG = cjoin(KNOWLEDGE_DIR, 'adoption.jsonl');
 const KNOWLEDGE_REVIEW_SIGNAL_LOG = cjoin(KNOWLEDGE_DIR, 'review-signals.jsonl');
-const OPENPRD_HARNESS_TURN_STATE = cjoin('.openprd', 'harness', 'turn-state.json');
-const QUALITY_LATEST_REPORT = cjoin('.openprd', 'quality', 'reports', 'latest.json');
+const OPEN_VIBECODING_HARNESS_TURN_STATE = cjoin('.open-vibecoding', 'harness', 'turn-state.json');
+const QUALITY_LATEST_REPORT = cjoin('.open-vibecoding', 'quality', 'reports', 'latest.json');
 const PENDING_KNOWLEDGE_CANDIDATE_STATUSES = new Set(['pending-review', 'pending']);
 const REVIEWED_KNOWLEDGE_CANDIDATE_STATUSES = new Set([
   'promoted',
@@ -865,7 +865,7 @@ function deriveKnowledgeNames(source, options = {}) {
     : `incident-${slugify(sourceRef, 'diagnostic')}`;
   const patternSeed = stablePattern ? deriveStablePatternKey(source) : sourceRef;
   const patternId = `${sourceKind}-${slugify(patternSeed, sourceKind)}`;
-  const skillName = `openprd-experience-${slugify(patternId)}`;
+  const skillName = `open-vibecoding-experience-${slugify(patternId)}`;
   return { incidentId, patternId, skillName };
 }
 
@@ -942,7 +942,7 @@ function shouldIgnoreInferredTouchedPath(relativePath) {
   return [
     '.git/',
     'node_modules/',
-    '.openprd/',
+    '.open-vibecoding/',
     'dist/',
     'build/',
     'coverage/',
@@ -1100,7 +1100,7 @@ use_when: ${useWhen}
 
 > 状态：draft
 > 候选目录：\`${relativeCandidateDir}\`
-> Promote：\`openprd quality . --learn --from ${relativeCandidateDir}\`
+> Promote：\`open-vibecoding quality . --learn --from ${relativeCandidateDir}\`
 
 ## 触发条件
 
@@ -1220,7 +1220,7 @@ function buildKnowledgeCandidateMeta({
       candidateDir,
       draftSkill: draftSkillPath,
     },
-    suggestedLearnCommand: `openprd quality . --learn --from ${path.relative(projectRoot, candidateDir) || '.'}`,
+    suggestedLearnCommand: `open-vibecoding quality . --learn --from ${path.relative(projectRoot, candidateDir) || '.'}`,
   };
 }
 
@@ -1241,7 +1241,7 @@ function cleanUserFacingExperienceText(value, fallback = null, max = 160) {
     [/\bturn-state\b/gi, '本轮记录'],
     [/\brun-state\b/gi, '当前状态'],
     [/\bOpenPrd\b/gi, '当前流程'],
-    [/\.openprd\/[^\s，。；]+/g, ''],
+    [/\.open-vibecoding\/[^\s，。；]+/g, ''],
     [/[A-Za-z0-9_.-]+\/[A-Za-z0-9_./-]+/g, ''],
   ];
   for (const [pattern, replacement] of replacements) {
@@ -1358,7 +1358,7 @@ function buildKnowledgeUserFacingExperience({ candidate, source, touchedFiles, r
 }
 
 export async function recordKnowledgeReviewSignal(projectRoot, signal = {}) {
-  const statePath = knowledgePath(projectRoot, OPENPRD_HARNESS_TURN_STATE);
+  const statePath = knowledgePath(projectRoot, OPEN_VIBECODING_HARNESS_TURN_STATE);
   const normalized = normalizeReviewSignal(projectRoot, signal);
   await appendJsonl(knowledgePath(projectRoot, KNOWLEDGE_REVIEW_SIGNAL_LOG), normalized).catch(() => null);
   if (!(await exists(statePath))) {
@@ -1413,7 +1413,7 @@ export async function reviewKnowledgeWorkspace(projectRoot, options = {}) {
   const recentSignals = await readRecentKnowledgeReviewSignals(projectRoot, { limit: 24 });
   const latestQuality = await readJson(knowledgePath(projectRoot, QUALITY_LATEST_REPORT)).catch(() => null);
   const latestReportPath = firstString(options.latestReportPath, latestQuality?.jsonPath, latestQuality?.reportPath);
-  const turnStateSource = (await exists(knowledgePath(projectRoot, OPENPRD_HARNESS_TURN_STATE))) ? OPENPRD_HARNESS_TURN_STATE : null;
+  const turnStateSource = (await exists(knowledgePath(projectRoot, OPEN_VIBECODING_HARNESS_TURN_STATE))) ? OPEN_VIBECODING_HARNESS_TURN_STATE : null;
   const from = firstString(options.from, turnStateSource, latestReportPath);
   const rawInput = from ? await loadRawReviewInput(projectRoot, from) : { sourcePath: null, raw: null };
   const evidenceRecords = normalizeSessionEvidenceRecords([
@@ -1655,7 +1655,7 @@ export async function reviewKnowledgeWorkspace(projectRoot, options = {}) {
 function candidateIdFromSourcePath(projectRoot, sourcePath) {
   if (!sourcePath) return null;
   const relative = toRelativeProjectPath(projectRoot, sourcePath);
-  const match = relative.match(/^\.openprd\/knowledge\/candidates\/([^/]+)/);
+  const match = relative.match(/^\.open-vibecoding\/knowledge\/candidates\/([^/]+)/);
   return match ? match[1] : null;
 }
 
@@ -2207,6 +2207,6 @@ export {
   KNOWLEDGE_INDEX,
   KNOWLEDGE_SKILLS_DIR,
   normalizeCandidateStatus,
-  OPENPRD_HARNESS_TURN_STATE,
+  OPEN_VIBECODING_HARNESS_TURN_STATE,
   buildKnowledgeAdoptionSummary,
   };

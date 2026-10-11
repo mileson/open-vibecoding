@@ -1,0 +1,3 @@
+interface:
+  display_name: "【测试】按真实用户操作验收功能"
+  short_description: "用可用的界面操作工具走完整用户路径，检查业务结果和异常情况。"

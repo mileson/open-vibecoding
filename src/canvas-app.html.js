@@ -1,12 +1,12 @@
 /*
  * Core purpose
- * Render the browser app used by `openprd canvas`.
+ * Render the browser app used by `open-vibecoding canvas`.
  *
  * Inputs
  * Receives a resolved canvas session and emits a single HTML document.
  *
  * Outputs
- * A local Excalidraw-powered canvas shell that saves scenes to the OpenPrd
+ * A local Excalidraw-powered canvas shell that saves scenes to the Open VibeCoding
  * canvas session service and applies agent-queued image/card operations.
  *
  * Positioning
@@ -46,7 +46,7 @@ function renderCanvasAppHtml(session) {
     ?? session.binding?.name
     ?? session.binding?.displayId
     ?? session.sessionKey;
-  const title = `OpenPrd Canvas · ${bindingTitle}`;
+  const title = `Open VibeCoding Canvas · ${bindingTitle}`;
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -77,13 +77,13 @@ ${CANVAS_APP_STYLES}
   <div id="root">
     <div class="fallback">
       <div>
-        <strong>正在打开 OpenPrd 画布</strong>
+        <strong>正在打开 Open VibeCoding 画布</strong>
         <span>画布会自动绑定当前对话记录。</span>
       </div>
     </div>
   </div>
-  <script id="openprd-session" type="application/json">${serialize(session)}</script>
-  <script id="openprd-canvas-locales" type="application/json">${serialize({
+  <script id="open-vibecoding-session" type="application/json">${serialize(session)}</script>
+  <script id="open-vibecoding-canvas-locales" type="application/json">${serialize({
     defaultLocale: CANVAS_DEFAULT_LOCALE,
     storageKey: CANVAS_LOCALE_STORAGE_KEY,
     messages: CANVAS_LOCALES,

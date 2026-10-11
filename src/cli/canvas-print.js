@@ -1,6 +1,6 @@
 /*
  * Core purpose
- * Print user-facing output for `openprd canvas`.
+ * Print user-facing output for `open-vibecoding canvas`.
  *
  * Inputs
  * Receives the canvas workspace result.
@@ -27,12 +27,12 @@ function printCanvasResult(result, asJson = false) {
   }
 
   if (!printable?.ok) {
-    console.log('OpenPrd 画布启动失败。');
+    console.log('Open VibeCoding 画布启动失败。');
     return;
   }
 
   if (printable.action === 'canvas-stop') {
-    console.log(printable.stopped ? 'OpenPrd 画布后台服务已停止。' : 'OpenPrd 画布后台服务未在运行。');
+    console.log(printable.stopped ? 'Open VibeCoding 画布后台服务已停止。' : 'Open VibeCoding 画布后台服务未在运行。');
     const stopBinding = printable.session?.binding ?? {};
     console.log(`绑定: ${stopBinding.kind ?? 'session'} ${stopBinding.displayId ?? stopBinding.id ?? printable.session?.sessionKey}`);
     console.log(`目录: ${printable.paths?.sessionDir}`);
@@ -63,13 +63,13 @@ function printCanvasResult(result, asJson = false) {
   }
 
   if (printable.dryRun) {
-    console.log('OpenPrd 画布会话检查完成。');
+    console.log('Open VibeCoding 画布会话检查完成。');
   } else if (printable.daemon && printable.alreadyRunning) {
-    console.log('OpenPrd 画布后台服务已在运行。');
+    console.log('Open VibeCoding 画布后台服务已在运行。');
   } else if (printable.daemon) {
-    console.log('OpenPrd 画布后台服务已启动。');
+    console.log('Open VibeCoding 画布后台服务已启动。');
   } else {
-    console.log('OpenPrd 画布已启动。');
+    console.log('Open VibeCoding 画布已启动。');
   }
   if (printable.url) {
     console.log(`地址: ${printable.url}`);

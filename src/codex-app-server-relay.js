@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*
  * Core purpose
- * Relay an OpenPrd Canvas handoff into a Codex Desktop thread through the
+ * Relay an Open VibeCoding Canvas handoff into a Codex Desktop thread through the
  * local Codex app-server protocol.
  *
  * Inputs
@@ -236,7 +236,7 @@ async function handleRpcMessage(message) {
 
 sendRpc(child, 1, 'initialize', {
   clientInfo: {
-    name: 'openprd-canvas',
+    name: 'open-vibecoding-canvas',
     version: '0.0.0',
   },
   capabilities: {

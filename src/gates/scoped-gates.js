@@ -28,7 +28,7 @@ class ScopedGateValidationError extends Error {
   constructor(message, details = {}) {
     super(message);
     this.name = 'ScopedGateValidationError';
-    this.code = 'OPENPRD_SCOPED_GATE_INVALID';
+    this.code = 'OPEN_VIBECODING_SCOPED_GATE_INVALID';
     Object.assign(this, details);
   }
 }

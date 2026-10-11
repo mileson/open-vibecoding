@@ -1,6 +1,6 @@
 # Security Policy
 
-If you discover a security issue in OpenPrd, please do **not** open a public issue with exploit details.
+If you discover a security issue in Open VibeCoding, please do **not** open a public issue with exploit details.
 
 ## Reporting
 
@@ -20,4 +20,4 @@ Relevant examples include:
 - credential leakage
 - unsafe file export behavior
 - diagram contract injection leading to unsafe output
-- issues that could expose sensitive data in `.openprd/` workspaces
+- issues that could expose sensitive data in `.open-vibecoding/` workspaces

@@ -1,6 +1,6 @@
 /*
  * 核心功能
- * 为 OpenPrd fleet 项目刷新提供预检、preimage 备份、隔离 staging、校验和 CAS、原子落盘与自动恢复。
+ * 为 Open VibeCoding fleet 项目刷新提供预检、preimage 备份、隔离 staging、校验和 CAS、原子落盘与自动恢复。
  *
  * 输入
  * 接收单个项目路径、fleet 分类与动作、目标版本、备份根目录，以及在 staging 项目上执行的更新回调。
@@ -57,8 +57,7 @@ const ARCHIVE_PATH_SEGMENTS = new Set([
   'deprecated',
 ]);
 const ACTION_CATEGORY_RULES = Object.freeze({
-  update: new Set(['openprd-workspace']),
-  'backfill-work-units': new Set(['openprd-workspace']),
+  update: new Set(['open-vibecoding-workspace']),
   setup: new Set(['agent-configured']),
 });
 
@@ -66,7 +65,7 @@ class FleetUpgradeRefusalError extends Error {
   constructor(refusals) {
     super(`Fleet upgrade refused: ${refusals.map((item) => item.message).join('; ')}`);
     this.name = 'FleetUpgradeRefusalError';
-    this.code = 'OPENPRD_FLEET_UPGRADE_REFUSED';
+    this.code = 'OPEN_VIBECODING_FLEET_UPGRADE_REFUSED';
     this.refusals = refusals;
   }
 }
@@ -75,7 +74,7 @@ class FleetUpgradeMutationError extends Error {
   constructor(message, details = {}) {
     super(message);
     this.name = 'FleetUpgradeMutationError';
-    this.code = 'OPENPRD_FLEET_UPGRADE_MUTATION_FAILED';
+    this.code = 'OPEN_VIBECODING_FLEET_UPGRADE_MUTATION_FAILED';
     this.details = details;
   }
 }
@@ -95,7 +94,7 @@ function timestampToken(clock = () => new Date()) {
 }
 
 function resolveOpenPrdHome(options = {}) {
-  return path.resolve(options.openprdHome ?? process.env.OPENPRD_HOME ?? path.join(os.homedir(), '.openprd'));
+  return path.resolve(options.openprdHome ?? process.env.OPEN_VIBECODING_HOME ?? path.join(os.homedir(), '.open-vibecoding'));
 }
 
 async function packageVersion() {
@@ -147,10 +146,10 @@ function isArchiveProject(projectRoot) {
 
 async function inspectManifestCompatibility(projectRoot, targetVersion) {
   const refusals = [];
-  const projectManifest = await readJsonIfPresent(path.join(projectRoot, '.openprd', 'manifest.json')).catch((error) => {
+  const projectManifest = await readJsonIfPresent(path.join(projectRoot, '.open-vibecoding', 'manifest.json')).catch((error) => {
     refusals.push({
       code: 'invalid-project-manifest',
-      path: '.openprd/manifest.json',
+      path: '.open-vibecoding/manifest.json',
       message: `Project manifest cannot be read: ${error.message}`,
     });
     return null;
@@ -161,17 +160,17 @@ async function inspectManifestCompatibility(projectRoot, targetVersion) {
     } catch (error) {
       refusals.push({
         code: error.code ?? 'incompatible-project-manifest',
-        path: '.openprd/manifest.json',
+        path: '.open-vibecoding/manifest.json',
         message: error.message,
       });
     }
   }
 
-  const installManifestPath = path.join(projectRoot, '.openprd', 'harness', 'install-manifest.json');
+  const installManifestPath = path.join(projectRoot, '.open-vibecoding', 'harness', 'install-manifest.json');
   const installManifest = await readJsonIfPresent(installManifestPath).catch((error) => {
     refusals.push({
       code: 'invalid-install-manifest',
-      path: '.openprd/harness/install-manifest.json',
+      path: '.open-vibecoding/harness/install-manifest.json',
       message: `Install manifest cannot be read: ${error.message}`,
     });
     return null;
@@ -179,21 +178,21 @@ async function inspectManifestCompatibility(projectRoot, targetVersion) {
   if (installManifest && !Number.isSafeInteger(installManifest.version)) {
     refusals.push({
       code: 'invalid-install-manifest-version',
-      path: '.openprd/harness/install-manifest.json',
+      path: '.open-vibecoding/harness/install-manifest.json',
       message: 'Install manifest version must be an integer before fleet can write the project',
     });
   } else if (Number.isSafeInteger(installManifest?.version) && installManifest.version > INSTALL_MANIFEST_SCHEMA_VERSION) {
     refusals.push({
       code: 'install-manifest-too-new',
-      path: '.openprd/harness/install-manifest.json',
+      path: '.open-vibecoding/harness/install-manifest.json',
       message: `Install manifest schema ${installManifest.version} is newer than supported ${INSTALL_MANIFEST_SCHEMA_VERSION}`,
     });
   }
   if (compareSemver(installManifest?.openprdVersion, targetVersion) === 1) {
     refusals.push({
       code: 'project-version-too-new',
-      path: '.openprd/harness/install-manifest.json',
-      message: `Project OpenPrd ${installManifest.openprdVersion} is newer than fleet target ${targetVersion}`,
+      path: '.open-vibecoding/harness/install-manifest.json',
+      message: `Project Open VibeCoding ${installManifest.openprdVersion} is newer than fleet target ${targetVersion}`,
     });
   }
   return { refusals, installManifest, projectManifest };
@@ -285,7 +284,7 @@ async function planFleetProjectTransaction(project, context, options = {}) {
 }
 
 async function readAppliedVersion(projectRoot) {
-  const manifest = await readJsonIfPresent(path.join(projectRoot, '.openprd', 'harness', 'install-manifest.json'));
+  const manifest = await readJsonIfPresent(path.join(projectRoot, '.open-vibecoding', 'harness', 'install-manifest.json'));
   return manifest?.openprdVersion ?? null;
 }
 
@@ -313,14 +312,14 @@ async function executeFleetProjectTransaction(plan, options = {}) {
       const freshPreimage = await snapshotManagedState(plan.projectRoot);
       if (freshPreimage.checksum !== plan.preimage.checksum) {
         const error = new Error(`Project changed after fleet planning: expected ${plan.preimage.checksum}, found ${freshPreimage.checksum}`);
-        error.code = 'OPENPRD_FLEET_PREIMAGE_CONFLICT';
+        error.code = 'OPEN_VIBECODING_FLEET_PREIMAGE_CONFLICT';
         throw error;
       }
 
       await createPreimageBackup(plan);
       backupCreated = true;
       const stagingRoot = path.join(plan.backup.path, 'staging');
-      const stagingHome = path.join(plan.backup.path, 'staging-openprd-home');
+      const stagingHome = path.join(plan.backup.path, 'staging-open-vibecoding-home');
       await copyManagedScopes(plan.projectRoot, stagingRoot);
       mutationResult = await options.mutate(stagingRoot, {
         openprdHome: stagingHome,

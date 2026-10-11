@@ -6,7 +6,7 @@
  * 接收已规范化的门禁记录和 evaluate 请求。
  *
  * 输出
- * 提供 record/list/evaluate API；所有状态保存在项目 `.openprd/gates/state.json`。
+ * 提供 record/list/evaluate API；所有状态保存在项目 `.open-vibecoding/gates/state.json`。
  *
  * 定位
  * 位于纯策略与 CLI/高风险操作之间，负责本地单项目并发一致性。
@@ -28,7 +28,7 @@ import {
 const GATE_STORE_SCHEMA_VERSION = 1;
 
 function gateStorePath(projectRoot) {
-  return path.join(path.resolve(projectRoot), '.openprd', 'gates', 'state.json');
+  return path.join(path.resolve(projectRoot), '.open-vibecoding', 'gates', 'state.json');
 }
 
 function emptyState() {
@@ -72,7 +72,7 @@ function openGateStore(projectRoot, options = {}) {
       const existing = state[collection][id];
       if (existing && !same(existing, record)) {
         const error = new Error(`${collection} ID ${id} 已存在且内容不同。`);
-        error.code = 'OPENPRD_GATE_ID_CONFLICT';
+        error.code = 'OPEN_VIBECODING_GATE_ID_CONFLICT';
         throw error;
       }
       if (existing) return { changed: false, value: existing };
@@ -101,7 +101,7 @@ function openGateStore(projectRoot, options = {}) {
         const gate = state.gates[input.gateId];
         if (!gate) {
           const error = new Error(`Gate 不存在：${input.gateId}。`);
-          error.code = 'OPENPRD_GATE_NOT_FOUND';
+          error.code = 'OPEN_VIBECODING_GATE_NOT_FOUND';
           throw error;
         }
         const decision = evaluateScopedGate({

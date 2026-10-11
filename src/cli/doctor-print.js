@@ -25,7 +25,7 @@ function printAgentIntegrationResult(result, json) {
     return;
   }
 
-  console.log(`OpenPrd agent ${result.action}: ${result.ok ? '通过' : '需修复'}`);
+  console.log(`Open VibeCoding agent ${result.action}: ${result.ok ? '通过' : '需修复'}`);
   console.log(`项目: ${result.projectRoot}`);
   console.log(`工具: ${result.tools.join(', ')}`);
   if (result.hookProfile) {
@@ -100,7 +100,7 @@ function printCodexRuntimeResult(codexRuntime, prefix = '') {
       console.log(`${prefix}复查版本: ${codexRuntime.repair.recheck.version}`);
     }
   } else if (health?.diagnostic && health?.repairCommand?.display) {
-    console.log(`${prefix}提示: OpenPrd 默认不会静默安装全局依赖；需要显式运行 openprd doctor . --tools codex --fix 或 openprd loop . --run --agent codex --repair-agent。`);
+    console.log(`${prefix}提示: Open VibeCoding 默认不会静默安装全局依赖；需要显式运行 open-vibecoding doctor . --tools codex --fix 或 open-vibecoding loop . --run --agent codex --repair-agent。`);
   }
 }
 
@@ -129,7 +129,7 @@ function printDoctorResult(result, json) {
     return;
   }
 
-  console.log(`OpenPrd doctor: ${result.ok ? '通过' : '失败'}`);
+  console.log(`Open VibeCoding doctor: ${result.ok ? '通过' : '失败'}`);
   console.log(`项目: ${result.projectRoot}`);
   console.log(`工具: ${result.tools.join(', ')}`);
   if (result.agentIntegration.hookProfile) {
@@ -188,12 +188,12 @@ function printFleetResult(result, json) {
       .filter(([, enabled]) => enabled)
       .map(([name]) => name)
       .join(', ');
-  console.log(`OpenPrd fleet: ${result.ok ? '通过' : '需处理'}`);
+  console.log(`Open VibeCoding fleet: ${result.ok ? '通过' : '需处理'}`);
   console.log(`根目录: ${result.root}`);
   console.log(`模式: ${mode || 'report'}`);
   console.log(`最大深度: ${result.maxDepth}`);
   console.log(`项目: ${result.summary.total}`);
-  console.log(`- OpenPrd: ${result.summary.openprd}`);
+  console.log(`- Open VibeCoding: ${result.summary.openprd}`);
   console.log(`- Agent-only: ${result.summary.agentConfigured}`);
   console.log(`- Plain: ${result.summary.plain}`);
   console.log(`结果: 计划 ${result.summary.planned}，已更新 ${result.summary.updated}，已接入 ${result.summary.setup}，已检查 ${result.summary.doctored}，已补身份 ${result.summary.backfilled}，已同步 registry ${result.summary.synced}，失败 ${result.summary.failed}，跳过 ${result.summary.skipped}`);
@@ -246,7 +246,7 @@ function printSelfUpdateResult(result, json) {
         : result.skipped
           ? '已跳过'
           : '失败';
-  console.log(`OpenPrd self-update: ${status}`);
+  console.log(`Open VibeCoding self-update: ${status}`);
   console.log(`当前版本: ${result.package?.version ?? 'unknown'}`);
   if (result.publishedVersion) {
     console.log(`已发布版本: ${result.publishedVersion}`);
@@ -273,7 +273,7 @@ function printSelfUpdateResult(result, json) {
     console.log(`安装退出码: ${result.result.exitCode}`);
   }
   if (result.resolvedExecutable?.executable) {
-    console.log(`OpenPrd 可执行文件: ${result.resolvedExecutable.executable}`);
+    console.log(`Open VibeCoding 可执行文件: ${result.resolvedExecutable.executable}`);
   }
   if (result.installedVersion?.version) {
     console.log(`安装后版本: ${result.installedVersion.version}`);
@@ -300,7 +300,7 @@ function printUpgradeResult(result, json) {
     return;
   }
 
-  console.log(`OpenPrd upgrade: ${result.dryRun ? '预演' : result.ok ? '完成' : '失败'}`);
+  console.log(`Open VibeCoding upgrade: ${result.dryRun ? '预演' : result.ok ? '完成' : '失败'}`);
   console.log(`模式: ${result.mode === 'fleet' ? '历史项目批量刷新' : '单项目刷新'}`);
   console.log(`目标: ${result.targetPath}`);
   console.log(`阶段 self-update: ${result.stages.selfUpdateOk ? '通过' : '失败'}`);

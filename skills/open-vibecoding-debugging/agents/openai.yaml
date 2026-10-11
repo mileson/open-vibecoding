@@ -1,0 +1,3 @@
+interface:
+  display_name: "【研发】定位故障，按需修复"
+  short_description: "结合复现、日志和代码确认原因，明确要求修复时修改并回归验证。"

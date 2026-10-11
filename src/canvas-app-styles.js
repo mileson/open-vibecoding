@@ -1,6 +1,6 @@
 /*
  * Core purpose
- * Hold the CSS for the `openprd canvas` browser shell.
+ * Hold the CSS for the `open-vibecoding canvas` browser shell.
  *
  * Positioning
  * Extracted from canvas-app.html.js so the HTML renderer stays small.

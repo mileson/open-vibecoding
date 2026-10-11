@@ -7,7 +7,7 @@ class AtomicStoreConflictError extends Error {
   constructor(message, details = {}) {
     super(message);
     this.name = 'AtomicStoreConflictError';
-    this.code = 'OPENPRD_ATOMIC_STORE_CONFLICT';
+    this.code = 'OPEN_VIBECODING_ATOMIC_STORE_CONFLICT';
     Object.assign(this, details);
   }
 }
@@ -16,7 +16,7 @@ class AtomicStoreLockTimeoutError extends Error {
   constructor(lockPath, timeoutMs) {
     super(`Timed out after ${timeoutMs}ms waiting for lock ${lockPath}`);
     this.name = 'AtomicStoreLockTimeoutError';
-    this.code = 'OPENPRD_LOCK_TIMEOUT';
+    this.code = 'OPEN_VIBECODING_LOCK_TIMEOUT';
     this.lockPath = lockPath;
     this.timeoutMs = timeoutMs;
   }
@@ -26,7 +26,7 @@ class JsonlCorruptionError extends Error {
   constructor(filePath, line, cause) {
     super(`JSONL corruption in ${filePath} at line ${line}: ${cause.message}`);
     this.name = 'JsonlCorruptionError';
-    this.code = 'OPENPRD_JSONL_CORRUPTION';
+    this.code = 'OPEN_VIBECODING_JSONL_CORRUPTION';
     this.filePath = filePath;
     this.line = line;
     this.cause = cause;

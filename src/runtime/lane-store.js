@@ -75,7 +75,7 @@ function pidIsAlive(pid) {
 
 export class LaneStore {
   constructor(rootDir, options = {}) {
-    if (!rootDir) throw new TypeError('OpenPrd LaneStore requires a root directory.');
+    if (!rootDir) throw new TypeError('Open VibeCoding LaneStore requires a root directory.');
     this.rootDir = path.resolve(rootDir);
     this.lanesDir = path.join(this.rootDir, 'lanes');
     this.clock = options.clock ?? { now: () => Date.now() };
@@ -178,12 +178,12 @@ export class LaneStore {
     const laneId = normalizeRuntimeId(laneIdValue, 'laneId');
     const transactionOptions = typeof options === 'function' ? {} : (options ?? {});
     const mutator = typeof options === 'function' ? options : mutate;
-    if (typeof mutator !== 'function') throw new TypeError('OpenPrd LaneStore transaction requires a mutator function.');
+    if (typeof mutator !== 'function') throw new TypeError('Open VibeCoding LaneStore transaction requires a mutator function.');
 
     return this.#withLock(laneId, async () => {
       const current = await this.#readUnlocked(laneId);
       if (!current) {
-        const error = new Error(`OpenPrd lane not found: ${laneId}`);
+        const error = new Error(`Open VibeCoding lane not found: ${laneId}`);
         error.code = 'ENOENT';
         throw error;
       }
@@ -240,8 +240,8 @@ export class LaneStore {
         await this.#recoverAbandonedLock(lockPath);
         if (Date.now() - startedAt >= this.lockTimeoutMs) {
           throw new OpenPrdRuntimeError(
-            'OPENPRD_RUNTIME_LOCK_TIMEOUT',
-            `Timed out waiting for OpenPrd lane lock ${laneId}.`,
+            'OPEN_VIBECODING_RUNTIME_LOCK_TIMEOUT',
+            `Timed out waiting for Open VibeCoding lane lock ${laneId}.`,
             { laneId, lockPath, timeoutMs: this.lockTimeoutMs },
           );
         }

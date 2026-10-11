@@ -595,7 +595,7 @@ function resolveProductLayerTitle(productType) {
 
 function buildArchitectureComponents(snapshot) {
   const { sections } = snapshot;
-  const reviewTarget = sections.handoff.targetSystem ?? 'OpenPrd';
+  const reviewTarget = sections.handoff.targetSystem ?? 'Open VibeCoding';
   return [
     {
       id: 'users',
@@ -719,7 +719,7 @@ export function buildArchitectureDiagramModel(snapshot) {
       productType: snapshot.productType ?? '未分类',
       owner: snapshot.owner,
       versionId: snapshot.versionId,
-      targetSystem: snapshot.sections.handoff.targetSystem ?? 'OpenPrd',
+      targetSystem: snapshot.sections.handoff.targetSystem ?? 'Open VibeCoding',
       reviewStatus: normalizeReviewStatus(snapshot?.reviewStatus),
     },
   };
@@ -912,7 +912,7 @@ export function buildProductFlowDiagramModel(snapshot) {
       productType: snapshot.productType ?? '未分类',
       owner: snapshot.owner,
       versionId: snapshot.versionId,
-      targetSystem: snapshot.sections.handoff.targetSystem ?? 'OpenPrd',
+      targetSystem: snapshot.sections.handoff.targetSystem ?? 'Open VibeCoding',
       reviewStatus: normalizeReviewStatus(snapshot?.reviewStatus),
     },
   };

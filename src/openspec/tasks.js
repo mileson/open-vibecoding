@@ -114,13 +114,13 @@ function looksLikeGovernanceTitle(title) {
   const value = String(title ?? '').trim();
   return (
     /^(评审|检查|校验|验证|运行|Review|Check|Validate|Verify|Run)/i.test(value)
-    && /(OpenPrd\s+spec|OpenPrd\s+change|change\s+structure|change\s+schema|spec\s*(覆盖|校验|语言)?|review(?:\.html|\s+html)?|proposal|design|任务拆解)/i.test(value)
+    && /(Open VibeCoding\s+spec|Open VibeCoding\s+change|change\s+structure|change\s+schema|spec\s*(覆盖|校验|语言)?|review(?:\.html|\s+html)?|proposal|design|任务拆解)/i.test(value)
   );
 }
 
 function isSpecOnlyValidateCommand(rawValue) {
   const value = String(rawValue ?? '').replace(/\s+/g, ' ').trim();
-  if (!value || !/^openprd change \. --validate\b/i.test(value)) {
+  if (!value || !/^open-vibecoding change \. --validate\b/i.test(value)) {
     return false;
   }
   return !/(?:&&|\|\||;|\n)/.test(value);
@@ -333,7 +333,7 @@ export function validateOpenSpecStructuredTasks(sortedFiles, errors, checks) {
 
   const strategySummary = summarizeTaskTestStrategies(tasks);
   const executionSummary = summarizeTaskExecutionStrategies(tasks);
-  checks.push(`结构化 OpenPrd 任务: ${tasks.length} 个任务，${dependencyCount} 条依赖；测试策略显式 ${strategySummary.explicit} 个、推导 ${strategySummary.inferred} 个；执行策略显式 ${executionSummary.explicit} 个、推导 ${executionSummary.inferred} 个。`);
+  checks.push(`结构化 Open VibeCoding 任务: ${tasks.length} 个任务，${dependencyCount} 条依赖；测试策略显式 ${strategySummary.explicit} 个、推导 ${strategySummary.inferred} 个；执行策略显式 ${executionSummary.explicit} 个、推导 ${executionSummary.inferred} 个。`);
 }
 
 export async function analyzeOpenSpecTaskVolumes(projectRoot, options = {}) {
@@ -345,7 +345,7 @@ export async function analyzeOpenSpecTaskVolumes(projectRoot, options = {}) {
   const filesByGroup = new Map();
 
   if (!Number.isInteger(maxItemsPerFile) || maxItemsPerFile < 1) {
-    errors.push(`OpenPrd 任务分片 maxItemsPerFile 无效: ${discoveryConfig?.taskSharding?.maxItemsPerFile}`);
+    errors.push(`Open VibeCoding 任务分片 maxItemsPerFile 无效: ${discoveryConfig?.taskSharding?.maxItemsPerFile}`);
   }
 
   for (const file of taskFiles) {
@@ -372,7 +372,7 @@ export async function analyzeOpenSpecTaskVolumes(projectRoot, options = {}) {
 
   if (taskFiles.length > 0) {
     const totalCheckboxes = taskFiles.reduce((sum, file) => sum + file.checkboxCount, 0);
-    checks.push(`OpenPrd 任务文件: ${taskFiles.length} 个文件，${totalCheckboxes} 个 checkbox 任务，每个文件最多 ${maxItemsPerFile} 个。`);
+    checks.push(`Open VibeCoding 任务文件: ${taskFiles.length} 个文件，${totalCheckboxes} 个 checkbox 任务，每个文件最多 ${maxItemsPerFile} 个。`);
   }
 
   return {

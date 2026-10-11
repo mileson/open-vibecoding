@@ -167,7 +167,7 @@ function formatLearningEmptyState(content, packageMeta, evidenceManifest) {
   const contextPath = content.agentContextPath ?? packageMeta?.paths?.agentContext ?? null;
   const contentPath = content.packagePaths?.contentJson ?? packageMeta?.paths?.contentJson ?? null;
   const assetsDir = content.packagePaths?.assetsDir ?? packageMeta?.paths?.assetsDir ?? null;
-  const renderCommand = contentPath ? `openprd learn . --content-json ${contentPath} --open` : null;
+  const renderCommand = contentPath ? `open-vibecoding learn . --content-json ${contentPath} --open` : null;
   const sourceCount = evidenceManifest?.sourceCount ?? (evidenceManifest?.sources?.length ?? 0);
   const claimCount = evidenceManifest?.claimCount ?? (evidenceManifest?.claims?.length ?? 0);
   const gapCount = Array.isArray(evidenceManifest?.gaps) ? evidenceManifest.gaps.length : 0;
@@ -200,7 +200,7 @@ function formatLearningEmptyState(content, packageMeta, evidenceManifest) {
 export function renderLearningArtifact({ packageMeta, content, evidenceManifest }) {
   const chapters = Array.isArray(content.chapters) ? content.chapters : [];
   const sources = Array.isArray(evidenceManifest.sources) ? evidenceManifest.sources : [];
-  const title = content.title || packageMeta?.title || 'OpenPrd 复盘学习包';
+  const title = content.title || packageMeta?.title || 'Open VibeCoding 复盘学习包';
   const outline = Array.isArray(content.outline) && content.outline.length > 0
     ? content.outline
     : chapters.map((chapter, index) => ({
@@ -901,7 +901,7 @@ export function renderLearningArtifact({ packageMeta, content, evidenceManifest 
 
       <article class="reader">
         <header class="reader-header">
-          <p class="eyebrow">OpenPrd 复盘学习 · ${escapeHtml(content.genre?.label ?? '默认题材')}</p>
+          <p class="eyebrow">Open VibeCoding 复盘学习 · ${escapeHtml(content.genre?.label ?? '默认题材')}</p>
           <h1>${escapeHtml(title)}</h1>
           <p class="subtitle">${escapeHtml(content.subtitle ?? '')}</p>
           <details class="meta-details">
@@ -929,7 +929,7 @@ export function renderLearningArtifact({ packageMeta, content, evidenceManifest 
             </div>
           </div>
         </header>
-        <div class="reader-scroll" tabindex="0" aria-label="OpenPrd 复盘学习阅读器 · 当前章节正文">
+        <div class="reader-scroll" tabindex="0" aria-label="Open VibeCoding 复盘学习阅读器 · 当前章节正文">
           ${chapters.length > 0 ? chapters.map((chapter, index) => formatLearningChapter(chapter, index, sourcesById)).join('\n') : formatLearningEmptyState(content, packageMeta, evidenceManifest)}
         </div>
       </article>
@@ -943,7 +943,7 @@ export function renderLearningArtifact({ packageMeta, content, evidenceManifest 
       const progressBar = document.getElementById('progressBar');
       const progressText = document.getElementById('progressText');
       let activeIndex = 0;
-      let fontScale = Number(localStorage.getItem('openprd-learning-font-scale') || '1');
+      let fontScale = Number(localStorage.getItem('open-vibecoding-learning-font-scale') || '1');
 
       function clamp(value, min, max) {
         return Math.max(min, Math.min(max, value));
@@ -952,7 +952,7 @@ export function renderLearningArtifact({ packageMeta, content, evidenceManifest 
       function applyFontScale() {
         fontScale = clamp(fontScale, 0.9, 1.25);
         document.documentElement.style.setProperty('--reader-scale', String(fontScale));
-        localStorage.setItem('openprd-learning-font-scale', String(fontScale));
+        localStorage.setItem('open-vibecoding-learning-font-scale', String(fontScale));
       }
 
       function setActive(index, shouldScroll = false) {

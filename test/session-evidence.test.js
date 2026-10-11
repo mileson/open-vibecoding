@@ -16,7 +16,7 @@ test('session evidence extractor keeps user evidence separate from AGENTS and sy
   const records = extractSessionEvidenceRecords([
     {
       role: 'system',
-      content: 'You are Codex. AGENTS.md instructions for /repo. OpenPrd Harness skill hook context.',
+      content: 'You are Codex. AGENTS.md instructions for /repo. Open VibeCoding Harness skill hook context.',
     },
     {
       event_msg: {
@@ -43,7 +43,7 @@ test('session evidence extractor keeps user evidence separate from AGENTS and sy
   assert.match(cleanText, /raw session 先抽成 clean evidence/);
   assert.match(cleanText, /sourceKind 过滤/);
   assert.doesNotMatch(cleanText, /AGENTS\.md instructions/);
-  assert.doesNotMatch(cleanText, /OpenPrd Harness skill hook context/);
+  assert.doesNotMatch(cleanText, /Open VibeCoding Harness skill hook context/);
 });
 
 test('sanitizeEvidenceText strips embedded instruction blocks before matching', () => {
@@ -52,7 +52,7 @@ test('sanitizeEvidenceText strips embedded instruction blocks before matching', 
     '<INSTRUCTIONS>',
     'AGENTS.md instructions for /repo',
     '### Available skills',
-    'openprd-router, openprd-quality',
+    'open-vibecoding-router, open-vibecoding-quality',
     '</INSTRUCTIONS>',
     '最终结论：只读复盘先分层抽取证据。',
   ].join('\n'));
@@ -65,17 +65,17 @@ test('sanitizeEvidenceText strips embedded instruction blocks before matching', 
 
 test('generic framework tokens cannot be the only knowledge match signal', () => {
   assert.deepEqual(
-    filterGenericFrameworkTokens(['openprd', 'skill', 'agent', 'clean-evidence', 'session']),
+    filterGenericFrameworkTokens(['open-vibecoding', 'skill', 'agent', 'clean-evidence', 'session']),
     ['clean-evidence', 'session'],
   );
 });
 
 test('knowledge review can create an evidence-only candidate from clean session records', async () => {
-  const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'openprd-evidence-'));
+  const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'open-vibecoding-evidence-'));
   const records = extractSessionEvidenceRecords([
     {
       role: 'system',
-      content: 'AGENTS.md instructions. OpenPrd Harness. skill list.',
+      content: 'AGENTS.md instructions. Open VibeCoding Harness. skill list.',
     },
     {
       event_msg: {

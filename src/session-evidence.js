@@ -12,7 +12,7 @@
  * 位于会话证据层，服务 daily review、knowledge review 和项目经验召回，不直接读写工作区。
  *
  * 依赖
- * 仅依赖标准 JavaScript，不依赖 CLI、文件系统或 OpenPrd workspace 状态。
+ * 仅依赖标准 JavaScript，不依赖 CLI、文件系统或 Open VibeCoding workspace 状态。
  *
  * 维护规则
  * 这里负责证据卫生，不负责判断需求类型；新增来源时先补 sourceKind 和污染样例测试。
@@ -47,7 +47,7 @@ const GENERIC_FRAMEWORK_TERMS = new Set([
   'harness',
   'instruction',
   'instructions',
-  'openprd',
+  'open-vibecoding',
   'schema',
   'skill',
   'skills',
@@ -188,7 +188,7 @@ function classifyEvent(event = {}, text = '') {
   ) {
     return { sourceKind: 'tool-action', reason: 'tool-event' };
   }
-  if (/\b(git status|npm test|node --test|openprd .*--verify|doctor)\b/i.test(text)) {
+  if (/\b(git status|npm test|node --test|open-vibecoding .*--verify|doctor)\b/i.test(text)) {
     return { sourceKind: 'tool-action', reason: 'command-evidence' };
   }
   return { sourceKind: 'context-only', reason: 'unclassified' };

@@ -1,6 +1,6 @@
 /*
  * Core purpose
- * Shared low-level primitives for the OpenPrd canvas subsystem: session key
+ * Shared low-level primitives for the Open VibeCoding canvas subsystem: session key
  * hashing, string/JSON normalization helpers, and the file-backed ops ledger
  * (read/append/update operations in ops.json).
  *

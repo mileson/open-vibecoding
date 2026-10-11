@@ -1,3 +1,0 @@
-name: openprd-discovery-loop
-short_description: "Continuously mine and complete OpenPrd requirements, specs, and tasks"
-default_prompt: "Route natural-language OpenPrd/OpenSpec deep, continuous, comprehensive, or reference-mining requests into OpenPrd's long-running discovery workflow."

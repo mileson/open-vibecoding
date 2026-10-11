@@ -1,6 +1,6 @@
 /*
  * Core purpose
- * Scene-level domain logic for the OpenPrd canvas: scene/library
+ * Scene-level domain logic for the Open VibeCoding canvas: scene/library
  * normalization, structured selection payloads, size-contract handling,
  * anchored image placement math, and asset materialization (data URL, local
  * path, or remote URL into the session assets directory).
@@ -300,7 +300,7 @@ async function insertAnchoredCanvasImage(session, input) {
     sourcePath: asset.sourcePath,
     sourceUrl: asset.sourceUrl,
     mimeType: asset.mimeType,
-    fileId: `openprd-${asset.digest}`,
+    fileId: `open-vibecoding-${asset.digest}`,
   });
   return {
     operation,

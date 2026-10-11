@@ -1,0 +1,3 @@
+interface:
+  display_name: "【最佳实践】实现或升级 iOS 多语言"
+  short_description: "检查工具链与兼容条件，选择多语言实现或迁移方案并验证实际表现。"

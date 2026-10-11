@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-05T15:37:30.733Z",
+  "summary": {
+    "eventCount": 0,
+    "observed": 0,
+    "pendingObserved": 0,
+    "autoApplied": 0,
+    "manualApplied": 0,
+    "reconciledAutoApplied": 0,
+    "rejected": 0,
+    "skipped": 0,
+    "completionCheckpoints": 0,
+    "skippedReasons": {},
+    "current": {
+      "total": 0,
+      "pending": 0,
+      "applied": 0,
+      "rejected": 0
+    }
+  },
+  "recentEvents": []
+}

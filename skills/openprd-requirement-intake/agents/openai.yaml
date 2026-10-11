@@ -1,4 +1,0 @@
-interface:
-  display_name: "OpenPrd Requirement Intake"
-  short_description: "Route requirements into clarify, mini-plan, or PRD"
-  default_prompt: "Use $openprd-requirement-intake to classify a user request as L0, L1, or L2 and choose the right PRD path."

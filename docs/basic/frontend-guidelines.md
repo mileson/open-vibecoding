@@ -2,7 +2,7 @@
 
 ## 适用范围
 
-说明前端界面、组件、交互、样式，以及 OpenPrd 内置前端设计资产框架的项目级约定。
+说明前端界面、组件、交互、样式，以及 Open VibeCoding 内置前端设计资产框架的项目级约定。
 
 ## 设计前置顺序
 
@@ -19,7 +19,7 @@
 9. 没参考方向时先做 3 个异源方向
 10. 用户选定方向后再进入实现
 
-这些资产默认放在 `.openprd/design/`。
+这些资产默认放在 `.open-vibecoding/design/`。
 
 ## 审美框架
 
@@ -65,17 +65,17 @@
 
 ## 验收规则
 
-- 已有参考图时，用 `openprd visual-prepare` 和 `openprd visual-compare` 留下视觉证据。
+- 已有参考图时，用 `open-vibecoding visual-prepare` 和 `open-vibecoding visual-compare` 留下视觉证据。
 - 无参考图的大界面任务先做方向评审，再实现。
 - 视觉证据不仅检查结构是否摆对，也要检查选定气质、字体/色彩/动效/表面层级和记忆点是否保住。
 - 轻量 UI 可视优化也要视觉证据：卡片宽度、间距、留白、对齐、颜色、圆角、字号、按钮和图标等小改，动手前要有一句审美意图和记忆点，收口时用修改前后对比图、局部焦点证据板、截图实测证据板或对齐辅助线证据板复核。
 - 局部改动默认局部优先：一个组件或不超过 3 个相邻区域的调整，使用 `--reference-box/--actual-box` 或 `--before-box/--after-box` 生成 `local-first` 证据板。左右区域要代表同一语义对象、保留少量周边语境并共享像素尺度；较小区域不能被单独拉伸成同宽。局部参考/实现和差异图是主证据，全屏缩略图只作底部上下文和未改区域回归。
-- 新功能或改动包含同构列表、卡片、网格或表格时，即使用户没有主动反馈“没对齐”，也默认同时检查容器轨道和内部内容槽位：容器轨道包括卡片外框、列宽、行顶、间距，内部槽位包括标题、副标题、标签、描述、状态、价格、按钮、图标、操作区等相同文案类型/相同组件槽位的 x/y/宽高/baseline spread，并用 `openprd visual-compare . --board <alignment-board.json>` 留下辅助线证据。只量外框、列宽或行顶不算完整对齐验收。
+- 新功能或改动包含同构列表、卡片、网格或表格时，即使用户没有主动反馈“没对齐”，也默认同时检查容器轨道和内部内容槽位：容器轨道包括卡片外框、列宽、行顶、间距，内部槽位包括标题、副标题、标签、描述、状态、价格、按钮、图标、操作区等相同文案类型/相同组件槽位的 x/y/宽高/baseline spread，并用 `open-vibecoding visual-compare . --board <alignment-board.json>` 留下辅助线证据。只量外框、列宽或行顶不算完整对齐验收。
 - 网格、基线和辅助线不是所有截图的默认装饰。只有布局、间距、对齐或同构结构验收才走 `alignment-board`；普通 before/after、reference/actual 和 verification-board 使用紧凑结果画布，只展示截图、关键标签与结论。
-- 单个 logo、icon、avatar、badge、按钮图形或图片内部需要居中判定、视觉重心评估或偏心排查时，默认裁出目标元素并用 `openprd visual-compare . --board <centering-board.json>` 留下内部居中证据。证据板要显示红色画布中心线、绿色主体外接框、黄色视觉重心点，并记录主体外接框中心偏移和视觉重心偏移；单张截图或“看起来居中”的主观判断不能替代。
-- build、package、`openprd dev-check`、单元测试和单张原始截图不能替代视觉证据。
-- 空白工作区的静态原型默认先从 `.openprd/design/templates/` 里挑最近模板，再按选中的 `lens + theme + layout + component set` 改写。
+- 单个 logo、icon、avatar、badge、按钮图形或图片内部需要居中判定、视觉重心评估或偏心排查时，默认裁出目标元素并用 `open-vibecoding visual-compare . --board <centering-board.json>` 留下内部居中证据。证据板要显示红色画布中心线、绿色主体外接框、黄色视觉重心点，并记录主体外接框中心偏移和视觉重心偏移；单张截图或“看起来居中”的主观判断不能替代。
+- build、package、`open-vibecoding dev-check`、单元测试和单张原始截图不能替代视觉证据。
+- 空白工作区的静态原型默认先从 `.open-vibecoding/design/templates/` 里挑最近模板，再按选中的 `lens + theme + layout + component set` 改写。
 
 ## 维护规则
 
-- 每次新增界面模式、组件规范、设计骨架或交互规则后，必须同步更新本文件和 `.openprd/design/`。
+- 每次新增界面模式、组件规范、设计骨架或交互规则后，必须同步更新本文件和 `.open-vibecoding/design/`。

@@ -1,8 +1,8 @@
-export const OPENPRD_FALLBACK_LOCALE = 'zh-CN';
-export const OPENPRD_CONTENT_LOCALE = OPENPRD_FALLBACK_LOCALE;
+export const OPEN_VIBECODING_FALLBACK_LOCALE = 'zh-CN';
+export const OPEN_VIBECODING_CONTENT_LOCALE = OPEN_VIBECODING_FALLBACK_LOCALE;
 
-export const OPENPRD_LANGUAGE_POLICY =
-  'OpenPrd 用户可见内容以及 Agent 产出的 spec、tasks 和说明文案应跟随用户当前主语言；无法判断时才使用简体中文兜底。PRD、OpenPrd、OpenSpec、API、SDK、CLI、TypeScript、JSON、HTTP、WebSocket、字段 key、命令名、品牌名、产品名和协议名等必要专有名词按原文保留。';
+export const OPEN_VIBECODING_LANGUAGE_POLICY =
+  'Open VibeCoding 用户可见内容以及 Agent 产出的 spec、tasks 和说明文案应跟随用户当前主语言；无法判断时才使用简体中文兜底。PRD、Open VibeCoding、OpenSpec、API、SDK、CLI、TypeScript、JSON、HTTP、WebSocket、字段 key、命令名、品牌名、产品名和协议名等必要专有名词按原文保留。';
 
 export const TBD_ZH = '待补充';
 
@@ -29,7 +29,7 @@ export function isChineseLocale(locale) {
   return normalizeOutputLocale(locale).startsWith('zh');
 }
 
-export function normalizeOutputLocale(locale, fallback = OPENPRD_FALLBACK_LOCALE) {
+export function normalizeOutputLocale(locale, fallback = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const text = String(locale ?? '').trim();
   if (!text) {
     return fallback;
@@ -44,7 +44,7 @@ export function normalizeOutputLocale(locale, fallback = OPENPRD_FALLBACK_LOCALE
   return text;
 }
 
-export function detectPrimaryLanguage(values, fallback = OPENPRD_FALLBACK_LOCALE) {
+export function detectPrimaryLanguage(values, fallback = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const text = (Array.isArray(values) ? values : [values])
     .map((value) => String(value ?? ''))
     .join('\n');
@@ -72,7 +72,7 @@ export function preferSimplifiedChinese(value, fallback = TBD_ZH) {
   return hasSimplifiedChinese(text) ? text : fallback;
 }
 
-export function preferUserLanguage(value, locale = OPENPRD_FALLBACK_LOCALE, fallbacks = {}) {
+export function preferUserLanguage(value, locale = OPEN_VIBECODING_FALLBACK_LOCALE, fallbacks = {}) {
   const text = scalarZh(value, '');
   if (text) {
     return text;
@@ -86,7 +86,7 @@ export function preferUserLanguage(value, locale = OPENPRD_FALLBACK_LOCALE, fall
 
 export function languagePolicyLines() {
   return [
-    '> 语言规则：用户可见说明、PRD、spec 和 tasks 跟随用户当前主语言；无法判断时才使用简体中文兜底。PRD、OpenPrd、OpenSpec、API、SDK、CLI、TypeScript、JSON、HTTP、WebSocket、字段 key、命令名、品牌名、产品名和协议名等必要专有名词保留原文。',
+    '> 语言规则：用户可见说明、PRD、spec 和 tasks 跟随用户当前主语言；无法判断时才使用简体中文兜底。PRD、Open VibeCoding、OpenSpec、API、SDK、CLI、TypeScript、JSON、HTTP、WebSocket、字段 key、命令名、品牌名、产品名和协议名等必要专有名词保留原文。',
     '',
   ];
 }

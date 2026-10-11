@@ -302,7 +302,7 @@ function buildDiagnosticPrevention({ correlationFields, missingCorrelationFields
   const requirements = [
     '关键路径默认保留 runtime-events、timeline、root-cause-candidates、diagnostic-report 四类证据，而不是等故障出现后再补日志。',
     '失败事件和补偿事件使用稳定事件名，避免把根因埋在自由文本里。',
-    '修复完成后保留一份成功与失败对照诊断包，并运行 openprd quality . --learn --from <diagnostics-dir> 更新项目经验。',
+    '修复完成后保留一份成功与失败对照诊断包，并运行 open-vibecoding quality . --learn --from <diagnostics-dir> 更新项目经验。',
   ]
   if (correlationFields.length > 0) {
     requirements.unshift(`同一条链路的前端、后端、异步任务和 Agent 日志统一携带 ${correlationFields.join(', ')}。`)
@@ -371,7 +371,7 @@ function normalizeQualityReportSource(projectRoot, report, sourcePath, requiredC
       '把重复或高影响修复沉淀为带日志入口和验证步骤的项目经验 Skill。',
     ],
     verificationSteps: [
-      '运行任务级 verify 与 openprd run . --verify，确认当前验证摘要。',
+      '运行任务级 verify 与 open-vibecoding run . --verify，确认当前验证摘要。',
       '如果使用历史 eval，核对它的时间与范围，不把旧结论继承为当前状态。',
       '把最终证据路径保留在 task-scoped test report 或任务 metadata 里。',
     ],
@@ -541,7 +541,7 @@ export async function resolveQualityLearningSource(projectRoot, options = {}) {
       }
     }
 
-    const asReportId = cjoin(projectRoot, '.openprd', 'quality', 'reports', `${from}.json`)
+    const asReportId = cjoin(projectRoot, '.open-vibecoding', 'quality', 'reports', `${from}.json`)
     if (await exists(asReportId)) {
       const source = await resolveDirectSource(asReportId, projectRoot, requiredCorrelationFields)
       if (source) {

@@ -5,9 +5,9 @@ import { appendJsonl, cjoin, exists, readJson, readJsonl } from './fs-utils.js';
 import { atomicWriteText, withFileLock } from './kernel/atomic-store.js';
 import { timestamp } from './time.js';
 
-const OPENPRD_WORKSPACE_MARKER = '.openprd';
-const OPENPRD_HARNESS_MANIFEST = cjoin('.openprd', 'harness', 'install-manifest.json');
-const OPENPRD_WORKSPACE_REGISTRY = cjoin('registry', 'workspaces.jsonl');
+const OPEN_VIBECODING_WORKSPACE_MARKER = '.open-vibecoding';
+const OPEN_VIBECODING_HARNESS_MANIFEST = cjoin('.open-vibecoding', 'harness', 'install-manifest.json');
+const OPEN_VIBECODING_WORKSPACE_REGISTRY = cjoin('registry', 'workspaces.jsonl');
 
 function normalizeToolsArray(value) {
   if (Array.isArray(value)) {
@@ -35,7 +35,7 @@ function normalizeWorkspaceRegistryEntry(entry) {
   const realpath = entry.realpath ? path.resolve(String(entry.realpath)) : workspaceRoot;
   const manifestPath = entry.manifestPath
     ? path.resolve(String(entry.manifestPath))
-    : cjoin(workspaceRoot, OPENPRD_HARNESS_MANIFEST);
+    : cjoin(workspaceRoot, OPEN_VIBECODING_HARNESS_MANIFEST);
   const lastUpdatedAt = entry.lastUpdatedAt ?? entry.generatedAt ?? entry.recordedAt ?? null;
   const firstRegisteredAt = entry.firstRegisteredAt ?? entry.recordedAt ?? lastUpdatedAt;
   return {
@@ -58,24 +58,24 @@ function normalizeWorkspaceRegistryEntry(entry) {
 
 function resolveOpenPrdHome(options = {}) {
   const testHome = process.env.NODE_TEST_CONTEXT
-    ? cjoin(os.tmpdir(), 'openprd-node-test-home', String(process.pid))
+    ? cjoin(os.tmpdir(), 'open-vibecoding-node-test-home', String(process.pid))
     : null;
   return path.resolve(
     options.openprdHome
-      ?? process.env.OPENPRD_HOME
+      ?? process.env.OPEN_VIBECODING_HOME
       ?? testHome
-      ?? cjoin(os.homedir(), '.openprd'),
+      ?? cjoin(os.homedir(), '.open-vibecoding'),
   );
 }
 
 function workspaceRegistryFilePath(options = {}) {
-  return cjoin(resolveOpenPrdHome(options), OPENPRD_WORKSPACE_REGISTRY);
+  return cjoin(resolveOpenPrdHome(options), OPEN_VIBECODING_WORKSPACE_REGISTRY);
 }
 
 async function buildWorkspaceRegistrySnapshot(projectRoot, options = {}) {
   const workspaceRoot = path.resolve(projectRoot);
   const realpath = await fs.realpath(workspaceRoot).catch(() => workspaceRoot);
-  const manifestPath = cjoin(workspaceRoot, OPENPRD_HARNESS_MANIFEST);
+  const manifestPath = cjoin(workspaceRoot, OPEN_VIBECODING_HARNESS_MANIFEST);
   const manifest = options.manifest ?? await readJson(manifestPath).catch(() => null);
   const recordedAt = options.recordedAt ?? timestamp();
 
@@ -115,11 +115,11 @@ async function readWorkspaceRegistry(options = {}) {
   const staleEntries = [];
   for (const entry of entries) {
     const workspaceExists = await exists(entry.workspaceRoot);
-    const markerExists = workspaceExists && await exists(cjoin(entry.workspaceRoot, OPENPRD_WORKSPACE_MARKER));
+    const markerExists = workspaceExists && await exists(cjoin(entry.workspaceRoot, OPEN_VIBECODING_WORKSPACE_MARKER));
     if (!markerExists) {
       staleEntries.push({
         ...entry,
-        reason: workspaceExists ? 'missing-openprd-marker' : 'missing-path',
+        reason: workspaceExists ? 'missing-open-vibecoding-marker' : 'missing-path',
       });
     }
   }

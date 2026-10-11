@@ -7,7 +7,7 @@ const SOURCE_INVENTORY_IGNORE_DIRS = new Set([
   '.git',
   '.hg',
   '.svn',
-  '.openprd',
+  '.open-vibecoding',
   '.openspec',
   '.next',
   '.turbo',
@@ -133,7 +133,7 @@ async function collectSourceInventory(sourceRoot, options = {}) {
   let truncated = false;
 
   if (!(await exists(sourceRoot))) {
-    throw new Error(`Missing source root for OpenPrd discovery: ${sourceRoot}`);
+    throw new Error(`Missing source root for Open VibeCoding discovery: ${sourceRoot}`);
   }
 
   async function walk(currentDir, depth) {

@@ -40,7 +40,7 @@ function printStandardsResult(result, json) {
   }
 
   if (result.action === 'init') {
-    console.log(`已初始化 OpenPrd standards: ${result.docsRoot}`);
+    console.log(`已初始化 Open VibeCoding standards: ${result.docsRoot}`);
     for (const item of result.changed) {
       console.log(`- ${item.status}: ${item.path}`);
     }
@@ -53,7 +53,7 @@ function printStandardsResult(result, json) {
     return;
   }
 
-  console.log(`OpenPrd standards: ${result.ok ? '通过' : '失败'}`);
+  console.log(`Open VibeCoding standards: ${result.ok ? '通过' : '失败'}`);
   console.log(`Docs root: ${result.docsRoot}`);
   for (const check of result.checks) {
     console.log(`- ${check}`);
@@ -87,7 +87,7 @@ function printDevelopmentStandardsResult(result, json) {
   }
 
   if (result.action === 'dev-check-auto-refactor') {
-    console.log(`OpenPrd dev-check 主动结构优化建议: 已${result.autoRefactor?.enabled ? '开启' : '关闭'}`);
+    console.log(`Open VibeCoding dev-check 主动结构优化建议: 已${result.autoRefactor?.enabled ? '开启' : '关闭'}`);
     console.log(`当前模式: ${result.autoRefactor?.enabled ? '同范围内主动建议' : '普通建议'}`);
     console.log('该设置不会强制扩大当前任务范围。');
     console.log(`配置文件: ${result.configPath}`);
@@ -95,7 +95,7 @@ function printDevelopmentStandardsResult(result, json) {
   }
 
   const autoMode = result.autoRefactor?.enabled === true;
-  console.log(`OpenPrd ${autoMode ? '结构优化建议' : '后续建议'}: ${result.ok ? '完成' : '失败'}`);
+  console.log(`Open VibeCoding ${autoMode ? '结构优化建议' : '后续建议'}: ${result.ok ? '完成' : '失败'}`);
   console.log(`结构建议: ${autoMode ? '主动（仅限当前目标同范围，不阻断任务）' : '普通（仅提示，不阻断任务）'}`);
   const attentionFiles = result.files.filter((file) => ['attention', 'warning', 'error'].includes(file.status));
   if (attentionFiles.length > 0) {
@@ -131,7 +131,7 @@ function printDevelopmentStandardsResult(result, json) {
       console.log(`  最佳实践: ${result.i18nReminder.guideline}`);
     }
     if (!result.i18nReminder.configExists) {
-      console.log('  建议: 创建 .openprd/i18n-config.json 启用项目级多语言检查。');
+      console.log('  建议: 创建 .open-vibecoding/i18n-config.json 启用项目级多语言检查。');
     }
   }
   printKnowledgeReview(result.knowledgeReview);
@@ -147,14 +147,14 @@ function printQualityResult(result, json) {
   }
 
   if (result.action === 'quality-init') {
-    console.log(`OpenPrd quality: 已初始化 (${result.changed})`);
+    console.log(`Open VibeCoding quality: 已初始化 (${result.changed})`);
     console.log(`配置: ${result.files.config}`);
     console.log(`知识库索引: ${result.files.knowledgeIndex}`);
     return;
   }
 
   if (result.action === 'quality-learn') {
-    console.log(`OpenPrd quality learn: ${result.ok ? '已沉淀' : '失败'}`);
+    console.log(`Open VibeCoding quality learn: ${result.ok ? '已沉淀' : '失败'}`);
     if (result.ok) {
       console.log(`来源类型: ${result.sourceKind}`);
       console.log(`来源: ${result.sourcePath}`);
@@ -173,7 +173,7 @@ function printQualityResult(result, json) {
   }
 
   if (result.action === 'quality-knowledge-review') {
-    console.log('OpenPrd quality review: 已完成');
+    console.log('Open VibeCoding quality review: 已完成');
     printKnowledgeReview(result);
     return;
   }
@@ -183,7 +183,7 @@ function printQualityResult(result, json) {
       ? '需关注'
       : (result.ok ? '完成' : '失败'))
     : (result.ok ? '完成' : '失败');
-  console.log(`OpenPrd quality diagnostics: ${headline}`);
+  console.log(`Open VibeCoding quality diagnostics: ${headline}`);
   if (result.report) {
     console.log(`质量状态: ${result.report.summary.status}`);
     console.log(`生产就绪: ${result.report.readiness.productionReady ? '是' : '否'}`);
@@ -226,7 +226,7 @@ function printKnowledgeResult(result, json) {
   }
 
   if (!result.ok) {
-    console.log(`OpenPrd knowledge: 失败 (${result.action ?? 'unknown'})`);
+    console.log(`Open VibeCoding knowledge: 失败 (${result.action ?? 'unknown'})`);
     for (const error of result.errors ?? []) {
       console.log(`- ${error}`);
     }
@@ -235,7 +235,7 @@ function printKnowledgeResult(result, json) {
 
   if (result.action === 'knowledge-candidates') {
     const counts = result.counts ?? {};
-    console.log(`OpenPrd knowledge candidates: ${result.candidates.length} 个 (${result.status})`);
+    console.log(`Open VibeCoding knowledge candidates: ${result.candidates.length} 个 (${result.status})`);
     console.log(`统计: pending ${counts.pending ?? 0}, promoted ${counts.promoted ?? 0}, rejected ${counts.rejected ?? 0}, archived ${counts.archived ?? 0}, reviewed ${counts.reviewed ?? 0}, total ${counts.total ?? 0}`);
     const ordered = [...result.candidates].sort((left, right) => (right.occurrences ?? 1) - (left.occurrences ?? 1));
     for (const candidate of ordered) {
@@ -248,9 +248,9 @@ function printKnowledgeResult(result, json) {
         console.log(`  草案 Skill: ${candidate.draftSkillPath ?? candidate.files?.draftSkill}`);
       }
       if (candidate.pending) {
-        console.log(`  保留: openprd quality . --learn --review --from ${candidate.files?.candidateDir ?? candidate.candidateId}`);
-        console.log(`  拒绝: openprd knowledge reject --id ${candidate.candidateId} --reason <原因>`);
-        console.log(`  归档: openprd knowledge archive --id ${candidate.candidateId} --reason <原因>`);
+        console.log(`  保留: open-vibecoding quality . --learn --review --from ${candidate.files?.candidateDir ?? candidate.candidateId}`);
+        console.log(`  拒绝: open-vibecoding knowledge reject --id ${candidate.candidateId} --reason <原因>`);
+        console.log(`  归档: open-vibecoding knowledge archive --id ${candidate.candidateId} --reason <原因>`);
       }
     }
     if (result.candidates.length === 0) {
@@ -261,7 +261,7 @@ function printKnowledgeResult(result, json) {
     return;
   }
 
-  console.log(`OpenPrd knowledge ${result.action?.replace(/^knowledge-/, '') ?? 'update'}: ${result.candidateId}`);
+  console.log(`Open VibeCoding knowledge ${result.action?.replace(/^knowledge-/, '') ?? 'update'}: ${result.candidateId}`);
   if (result.candidate) {
     console.log(`状态: ${result.candidate.status}`);
     if (result.candidate.reviewDecision) {
@@ -292,7 +292,7 @@ function printVisualCompareResult(result, json) {
       : result.mode === 'parallel-board'
         ? '并行实验证据板'
         : '效果图对比';
-  console.log('OpenPrd visual compare: 已生成');
+  console.log('Open VibeCoding visual compare: 已生成');
   console.log(`输出图片: ${result.outputPath}`);
   console.log(`模式: ${modeLabel}`);
   if (result.presentation === 'local-first') {
@@ -333,7 +333,7 @@ function printVisualPrepareResult(result, json) {
   }
 
   const modeLabel = result.mode === 'grid' ? '规则网格切片' : '手工裁剪计划';
-  console.log('OpenPrd visual prepare: 已生成');
+  console.log('Open VibeCoding visual prepare: 已生成');
   console.log(`reference-set: ${result.referenceSetPath}`);
   console.log(`输出目录: ${result.outputDir}`);
   console.log(`模式: ${modeLabel}`);
@@ -357,14 +357,14 @@ function printDesignStarterResult(result, json) {
   }
 
   if (!result.ok) {
-    console.log('OpenPrd design starter: 失败');
+    console.log('Open VibeCoding design starter: 失败');
     for (const error of result.errors ?? []) {
       console.log(`- ${error}`);
     }
     return;
   }
 
-  console.log('OpenPrd design starter: 已生成');
+  console.log('Open VibeCoding design starter: 已生成');
   console.log(`模板: ${result.starterId} (${result.relativeTemplatePath})`);
   console.log(`输出: ${result.relativeOutputPath}`);
   if (result.defaults?.lens || result.defaults?.theme || result.defaults?.layout) {

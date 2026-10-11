@@ -20,7 +20,7 @@
 import { cjoin } from '../fs-utils.js';
 import { timestamp } from '../time.js';
 
-const BENCHMARK_DIR = cjoin('.openprd', 'benchmarks');
+const BENCHMARK_DIR = cjoin('.open-vibecoding', 'benchmarks');
 const BENCHMARK_INBOX_DIR = cjoin(BENCHMARK_DIR, 'inbox');
 const BENCHMARK_EVIDENCE_DIR = cjoin(BENCHMARK_DIR, 'evidence');
 const BENCHMARK_SOURCES_FILE = cjoin(BENCHMARK_DIR, 'sources.yaml');
@@ -69,13 +69,13 @@ function defaultSourcesFile() {
 
 function defaultIndex() {
   return [
-    '# OpenPrd Benchmark Registry',
+    '# Open VibeCoding Benchmark Registry',
     '',
     '## 规则',
     '',
-    '- 项目级 approved benchmark 优先于 OpenPrd 内置 Source Map。',
+    '- 项目级 approved benchmark 优先于 Open VibeCoding 内置 Source Map。',
     '- `inbox/` 里的 candidate 只表示待确认线索，不表示长期最佳实践。',
-    '- 被采纳信源先用 `openprd benchmark observe <url|repo|file>` 累计证据，达到阈值后只推荐 approve，不自动晋级。',
+    '- 被采纳信源先用 `open-vibecoding benchmark observe <url|repo|file>` 累计证据，达到阈值后只推荐 approve，不自动晋级。',
     '- 每次只挑 1-3 个高相关来源；来源目录不是事实来源。',
     '',
     '## Approved Sources',

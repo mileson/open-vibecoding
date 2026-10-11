@@ -14,7 +14,7 @@ class UnsafeManagedWriteError extends Error {
       + `Use symlinkStrategy=materialize with a trusted installSafetyBackupRoot to snapshot and replace the link before writing.`,
     );
     this.name = 'UnsafeManagedWriteError';
-    this.code = 'OPENPRD_UNSAFE_MANAGED_WRITE_SYMLINK';
+    this.code = 'OPEN_VIBECODING_UNSAFE_MANAGED_WRITE_SYMLINK';
     this.targetPath = targetPath;
     this.symlinkPath = symlink.path;
     this.linkTarget = symlink.linkTarget;
@@ -95,7 +95,7 @@ async function resolveBackupRoot(options = {}) {
     return path.resolve(options.installSafetyBackupRoot);
   }
   const physicalTemp = await fs.realpath(os.tmpdir()).catch(() => path.resolve(os.tmpdir()));
-  return path.join(physicalTemp, 'openprd-install-safety', String(process.pid));
+  return path.join(physicalTemp, 'open-vibecoding-install-safety', String(process.pid));
 }
 
 function backupEntryName(symlinkPath) {
@@ -162,7 +162,7 @@ async function materializeSymlink(targetPath, symlink, options = {}) {
 
   const stagingPath = path.join(
     path.dirname(symlink.path),
-    `.${path.basename(symlink.path)}.openprd-materialize-${crypto.randomBytes(6).toString('hex')}`,
+    `.${path.basename(symlink.path)}.open-vibecoding-materialize-${crypto.randomBytes(6).toString('hex')}`,
   );
   if (targetStat) {
     await copyPath(snapshotPath, stagingPath, targetStat);

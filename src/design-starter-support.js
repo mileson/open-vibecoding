@@ -85,7 +85,7 @@ function withAlpha(hexColor, alpha) {
 }
 
 function commonsApiBaseUrl() {
-  return process.env.OPENPRD_COMMONS_API_BASE_URL?.trim() || 'https://commons.wikimedia.org/w/api.php';
+  return process.env.OPEN_VIBECODING_COMMONS_API_BASE_URL?.trim() || 'https://commons.wikimedia.org/w/api.php';
 }
 
 function derivedQueryFromText(text) {
@@ -181,7 +181,7 @@ function buildThemeLockStyle({ theme, projectRoot, outputPath }) {
     return '';
   }
   const preset = SURFACE_PRESETS[theme.surfacePreset] ?? SURFACE_PRESETS['paper-grid'];
-  const assetPath = path.join(projectRoot, '.openprd', 'design', 'assets', preset.asset);
+  const assetPath = path.join(projectRoot, '.open-vibecoding', 'design', 'assets', preset.asset);
   const overlayUrl = relativeAssetUrl(outputPath, assetPath);
   const radius = theme.tokens.radius ?? '8px';
   const styleLines = [
@@ -234,7 +234,7 @@ function buildThemeLockStyle({ theme, projectRoot, outputPath }) {
     '  box-shadow: var(--shadow);',
     '}',
   ];
-  return `<style data-openprd-theme-lock>\n${styleLines.join('\n')}\n</style>`;
+  return `<style data-open-vibecoding-theme-lock>\n${styleLines.join('\n')}\n</style>`;
 }
 
 function injectThemeLockStyle(html, themeLockStyle) {
@@ -298,7 +298,7 @@ function buildAltText(candidate) {
 async function fetchJson(url, fetchImpl) {
   const response = await fetchImpl(url, {
     headers: {
-      'user-agent': '@openprd/cli design-starter image sourcing',
+      'user-agent': 'open-vibecoding design-starter image sourcing',
     },
   });
   if (!response.ok) {
@@ -310,7 +310,7 @@ async function fetchJson(url, fetchImpl) {
 async function downloadBinary(url, fetchImpl) {
   const response = await fetchImpl(url, {
     headers: {
-      'user-agent': '@openprd/cli design-starter image sourcing',
+      'user-agent': 'open-vibecoding design-starter image sourcing',
     },
   });
   if (!response.ok) {
@@ -391,7 +391,7 @@ async function sourceStarterImages({ projectRoot, outputPath, starter, context, 
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 48) || starter.id;
-    const outputDir = path.join(projectRoot, '.openprd', 'design', 'assets', 'fetched', bundleId);
+    const outputDir = path.join(projectRoot, '.open-vibecoding', 'design', 'assets', 'fetched', bundleId);
     await fs.mkdir(outputDir, { recursive: true });
     const assets = [];
     for (const [index, page] of pages.entries()) {

@@ -7,35 +7,35 @@
 
 ## 核心依赖
 
-- `yaml`: 读写 `.openprd/config.yaml`、schema 和 OpenPrd 元数据。
+- `yaml`: 读写 `.open-vibecoding/config.yaml`、schema 和 Open VibeCoding 元数据。
 - `sharp`: 读取常见图片格式、缩放截图、切片参考图、生成 contact sheet、合成界面效果图与实现截图，或合成修改前后截图，并输出 JPG / PNG / WebP 视觉评审图。
 - Node.js 标准库: `fs/promises`、`path`、`crypto`、`child_process`、`url`。
 
 ## 工具链
 
 - `npm test`: 使用 Node test runner 运行全量测试。
-- `npm run test:perf`: 运行项目级版本轨道与变化摘要路径的正常性能基线检查，并把结果写入 `.openprd/harness/test-reports/quality-normal-performance.md`。
-- `npm run test:perf:extreme`: 使用 `test/fixtures/release-ledger-extreme.json` 执行极端规模性能检查，并把结果写入 `.openprd/harness/test-reports/quality-extreme-performance.md`。
+- `npm run test:perf`: 运行项目级版本轨道与变化摘要路径的正常性能基线检查，并把结果写入 `.open-vibecoding/harness/test-reports/quality-normal-performance.md`。
+- `npm run test:perf:extreme`: 使用 `test/fixtures/release-ledger-extreme.json` 执行极端规模性能检查，并把结果写入 `.open-vibecoding/harness/test-reports/quality-extreme-performance.md`。
 - `node --check <file>`: 对单个 ESM 文件做语法检查。
-- `node ./bin/openprd.js standards . --verify`: 校验 `docs/basic/` 和 standards 基础契约。
-- `node ./bin/openprd.js dev-check . <file...>` / `node scripts/openprd-dev-check.mjs . <file...>`: Agent 研发期检查 touched code files 的关注程度和下一步动作建议；需要关注的文件会输出最终回复可直接使用的 **后续建议** Markdown 区块。
-- `node scripts/openprd-codex-isolated-worker.mjs --cwd <path> --prompt-file <prompt.md> --output-jsonl <output.jsonl> --output-last-message <last.txt>`: 用隔离 `CODEX_HOME` 启动独立 Codex worker，只复制认证文件，可选继承 model，并保存 raw JSONL 与最后一条 agent 消息，适合 blind worker 回归或全局 Codex home 已被启动噪音污染的场景。
-- `node ./bin/openprd.js grow . --review|--apply --id <candidate-id>|--reject --id <candidate-id>`: 收工时审查并固化需要用户确认的配置、规则候选或 user-local 偏好；代码扩展识别这类白名单工具补全可由 dev-check 自动固化并记录。
-- `node ./bin/openprd.js synthesize . --work-unit <id> --target-root <path>` / `node ./bin/openprd.js review . --mark confirmed --version <id> --digest <sha256> --work-unit <id>`: 绑定并校验工具无关的需求工作单元，避免多 Agent 或多对话确认到其他需求。
-- `node ./bin/openprd.js fleet <root> --sync-registry`: 把当前 root 下已初始化的 `.openprd/` 工作区回填到 `~/.openprd/registry/workspaces.jsonl`，给后续历史项目更新提供全局视角。
-- `node ./bin/openprd.js fleet <root> --backfill-work-units`: 只为历史 OpenPrD artifact 补可验证的 work unit 绑定、digest 与索引；不生成缺失的历史需求、评审或任务正文。
-- `node ./bin/openprd.js quality . --verify`: 仅在显式专项诊断时返回内存中的结构化结果，不生成 eval JSON/HTML。
-- `node ./bin/openprd.js quality . --learn --from <report>`: 将审查过的问题修复抽象为 `.openprd/knowledge/skills/` 下的项目级经验 skill。
-- `node ./bin/openprd.js visual-prepare . --reference <效果图> --grid <列>x<行>` / `--boxes <plan.json>`: 把确认后的整板、网格图或多对象效果图整理成 reference-set，输出 crops、contact sheet、compare-plan 和 board 模板，供后续逐项视觉验收使用。
-- `node ./bin/openprd.js visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en>`: 把参考图和实现截图合成左右对比图。
+- `node ./bin/open-vibecoding.js standards . --verify`: 校验 `docs/basic/` 和 standards 基础契约。
+- `node ./bin/open-vibecoding.js dev-check . <file...>` / `node scripts/open-vibecoding-dev-check.mjs . <file...>`: Agent 研发期检查 touched code files 的关注程度和下一步动作建议；需要关注的文件会输出最终回复可直接使用的 **后续建议** Markdown 区块。
+- `node scripts/open-vibecoding-codex-isolated-worker.mjs --cwd <path> --prompt-file <prompt.md> --output-jsonl <output.jsonl> --output-last-message <last.txt>`: 用隔离 `CODEX_HOME` 启动独立 Codex worker，只复制认证文件，可选继承 model，并保存 raw JSONL 与最后一条 agent 消息，适合 blind worker 回归或全局 Codex home 已被启动噪音污染的场景。
+- `node ./bin/open-vibecoding.js grow . --review|--apply --id <candidate-id>|--reject --id <candidate-id>`: 收工时审查并固化需要用户确认的配置、规则候选或 user-local 偏好；代码扩展识别这类白名单工具补全可由 dev-check 自动固化并记录。
+- `node ./bin/open-vibecoding.js synthesize . --work-unit <id> --target-root <path>` / `node ./bin/open-vibecoding.js review . --mark confirmed --version <id> --digest <sha256> --work-unit <id>`: 绑定并校验工具无关的需求工作单元，避免多 Agent 或多对话确认到其他需求。
+- `node ./bin/open-vibecoding.js fleet <root> --sync-registry`: 把当前 root 下已初始化的 `.open-vibecoding/` 工作区回填到 `~/.open-vibecoding/registry/workspaces.jsonl`，给后续历史项目更新提供全局视角。
+- `node ./bin/open-vibecoding.js fleet <root> --backfill-work-units`: 只为历史 OpenPrD artifact 补可验证的 work unit 绑定、digest 与索引；不生成缺失的历史需求、评审或任务正文。
+- `node ./bin/open-vibecoding.js quality . --verify`: 仅在显式专项诊断时返回内存中的结构化结果，不生成 eval JSON/HTML。
+- `node ./bin/open-vibecoding.js quality . --learn --from <report>`: 将审查过的问题修复抽象为 `.open-vibecoding/knowledge/skills/` 下的项目级经验 skill。
+- `node ./bin/open-vibecoding.js visual-prepare . --reference <效果图> --grid <列>x<行>` / `--boxes <plan.json>`: 把确认后的整板、网格图或多对象效果图整理成 reference-set，输出 crops、contact sheet、compare-plan 和 board 模板，供后续逐项视觉验收使用。
+- `node ./bin/open-vibecoding.js visual-compare . --reference <效果图> --actual <实现截图> --locale <zh-CN|en>`: 把参考图和实现截图合成左右对比图。
   - 局部 UI 改动用 `--reference-box <x,y,w,h> --actual-box <x,y,w,h> --presentation local-first`；左右共享像素尺度，不独立拉伸，并生成差异图与底部全屏上下文。
   - `--before <修改前截图> --after <修改后截图>` 在无参考图界面改动中生成修改前后自检图。
   - `--board <board.json>` 生成局部焦点证据板或并行实验证据板。
-  - 默认输出 JPG 到 `.openprd/harness/visual-reviews/`，可用 `--format jpg|png|webp`、`--quality` 和 `--max-panel-width` 调整。
-- `node ./bin/openprd.js docs-compact .`: 分析 `docs/basic/` 巨行与 `prd.md` 版本落后情况，输出逐行压缩建议，只读不写。
-- `node ./bin/openprd.js guide .`: 按工作区状态输出 PM 7 步流程指引、当前阶段和下一步动作，只读不写。
-- `node ./bin/openprd.js run . --verify`: 验证当前工作区和激活 change 的分层就绪状态。
-- `node ./bin/openprd.js update . --hook-profile lite|guarded|full`: 刷新 agent guidance 并选择 Codex hook 重量；默认 `lite` 保留非阻断 advisory，不启用完整遥测。
+  - 默认输出 JPG 到 `.open-vibecoding/harness/visual-reviews/`，可用 `--format jpg|png|webp`、`--quality` 和 `--max-panel-width` 调整。
+- `node ./bin/open-vibecoding.js docs-compact .`: 分析 `docs/basic/` 巨行与 `prd.md` 版本落后情况，输出逐行压缩建议，只读不写。
+- `node ./bin/open-vibecoding.js guide .`: 按工作区状态输出 PM 7 步流程指引、当前阶段和下一步动作，只读不写。
+- `node ./bin/open-vibecoding.js run . --verify`: 验证当前工作区和激活 change 的分层就绪状态。
+- `node ./bin/open-vibecoding.js update . --hook-profile lite|guarded|full`: 刷新 agent guidance 并选择 Codex hook 重量；默认 `lite` 保留非阻断 advisory，不启用完整遥测。
 
 ## 维护规则
 

@@ -3,15 +3,15 @@ import path from 'node:path';
 import { DEFAULT_DEVELOPMENT_STANDARDS, validateDevelopmentStandardsConfig } from './dev-standards.js';
 import { DEFAULT_GROWTH_CONFIG, validateGrowthConfig } from './growth.js';
 
-export const OPENPRD_STANDARDS_CONFIG = path.join('.openprd', 'standards', 'config.json');
-export const OPENPRD_STANDARDS_DIR = path.join('.openprd', 'standards');
+export const OPEN_VIBECODING_STANDARDS_CONFIG = path.join('.open-vibecoding', 'standards', 'config.json');
+export const OPEN_VIBECODING_STANDARDS_DIR = path.join('.open-vibecoding', 'standards');
 export const STANDARD_DOCS_ROOT = path.join('docs', 'basic');
 export const STANDARD_MANUAL_SECTIONS = ['核心功能', '输入', '输出', '定位', '依赖', '维护规则'];
 const SOURCE_FILE_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.css', '.html', '.swift', '.py', '.go', '.rs']);
 const SOURCE_IGNORE_DIRS = new Set([
   '.git',
-  '.openprd',
-  'openprd',
+  '.open-vibecoding',
+  'open-vibecoding',
   '.openspec',
   '.codex',
   '.claude',
@@ -253,7 +253,7 @@ export const STANDARD_DOCS = [
 
 export const STANDARD_TEMPLATE_FILES = [
   {
-    relativePath: path.join(OPENPRD_STANDARDS_DIR, 'file-manual-template.md'),
+    relativePath: path.join(OPEN_VIBECODING_STANDARDS_DIR, 'file-manual-template.md'),
     title: '文件说明书模板',
     body: [
       '# 文件说明书模板',
@@ -290,7 +290,7 @@ export const STANDARD_TEMPLATE_FILES = [
     ].join('\n'),
   },
   {
-    relativePath: path.join(OPENPRD_STANDARDS_DIR, 'folder-readme-template.md'),
+    relativePath: path.join(OPEN_VIBECODING_STANDARDS_DIR, 'folder-readme-template.md'),
     title: '文件夹说明书模板',
     body: [
       '# 文件夹说明书模板',
@@ -359,7 +359,7 @@ function requiredDocPath(projectRoot, fileName) {
 }
 
 function standardsConfigPath(projectRoot) {
-  return cjoin(projectRoot, OPENPRD_STANDARDS_CONFIG);
+  return cjoin(projectRoot, OPEN_VIBECODING_STANDARDS_CONFIG);
 }
 
 function validateTextSections(relativePath, text, sections, errors) {
@@ -564,7 +564,7 @@ function buildExternalReferenceCandidates({ filesMissingManual, foldersMissingMa
       confidence,
       missingFiles: 0,
       missingFolders: 0,
-      suggestedCommand: `openprd standards . --classify-external ${shellQuoteArg(candidatePath)}`,
+      suggestedCommand: `open-vibecoding standards . --classify-external ${shellQuoteArg(candidatePath)}`,
     };
     if (current.reason !== 'nested-git' && reason === 'nested-git') {
       current.reason = reason;
@@ -612,7 +612,7 @@ function filterRelativePathsOutsideParents(relativePaths, parentPaths = []) {
 
 async function isOpenPrdToolProject(projectRoot) {
   const packageJson = await readJson(cjoin(projectRoot, 'package.json')).catch(() => null);
-  return packageJson?.name === '@openprd/cli';
+  return packageJson?.name === 'open-vibecoding';
 }
 
 function hasAllManualSections(text) {
@@ -796,7 +796,7 @@ export function analyzeDocQuality(relativePath, text) {
 }
 
 export async function analyzeDocStaleness(projectRoot, docMtimeMs) {
-  const versionsDir = cjoin(projectRoot, '.openprd', 'state', 'versions');
+  const versionsDir = cjoin(projectRoot, '.open-vibecoding', 'state', 'versions');
   const entries = await fs.readdir(versionsDir).catch(() => []);
   const versionFiles = entries.filter((name) => /^v\d+\.json$/.test(name)).sort();
   let versionsBehind = 0;
@@ -833,12 +833,12 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
         docsRoot: STANDARD_DOCS_ROOT,
         errors,
         warnings,
-        checks: ['OpenPrd standards are not initialized.'],
+        checks: ['Open VibeCoding standards are not initialized.'],
         requiredDocs: [],
         templateFiles: [],
       };
     }
-    errors.push(`${OPENPRD_STANDARDS_CONFIG} is required. Run: openprd standards . --init`);
+    errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} is required. Run: open-vibecoding standards . --init`);
     return {
       ok: false,
       valid: false,
@@ -862,16 +862,16 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
   }
 
   const config = await readJson(configPath).catch((error) => {
-    errors.push(`Invalid ${OPENPRD_STANDARDS_CONFIG}: ${error.message}`);
+    errors.push(`Invalid ${OPEN_VIBECODING_STANDARDS_CONFIG}: ${error.message}`);
     return null;
   });
 
   if (config) {
     if (config.docsRoot !== 'docs/basic') {
-      errors.push(`${OPENPRD_STANDARDS_CONFIG} docsRoot must be docs/basic.`);
+      errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} docsRoot must be docs/basic.`);
     }
     if (config?.folderManual?.moduleName != null && (typeof config.folderManual.moduleName !== 'string' || !config.folderManual.moduleName.trim())) {
-      errors.push(`${OPENPRD_STANDARDS_CONFIG} folderManual.moduleName must be a non-empty string when provided.`);
+      errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} folderManual.moduleName must be a non-empty string when provided.`);
     }
     validateDevelopmentStandardsConfig(config, errors);
     validateGrowthConfig(config, errors);
@@ -879,7 +879,7 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
       try {
         normalizeExternalReferencePath(projectRoot, externalPath);
       } catch (error) {
-        errors.push(`${OPENPRD_STANDARDS_CONFIG} externalReferences.paths has invalid path ${externalPath}: ${error.message}`);
+        errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} externalReferences.paths has invalid path ${externalPath}: ${error.message}`);
       }
     }
   }
@@ -917,7 +917,7 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
     if (options.docsQuality !== false) {
       const quality = analyzeDocQuality(relativePath, text);
       if (quality.megaLines > 0) {
-        warnings.push(`${relativePath} 存在 ${quality.megaLines} 行超过 ${DOC_MEGA_LINE_CHARS} 字符的巨行（最长 ${quality.maxLineChars} 字符），疑似 append-only 污染，建议运行 openprd docs-compact . 查看压缩建议。`);
+        warnings.push(`${relativePath} 存在 ${quality.megaLines} 行超过 ${DOC_MEGA_LINE_CHARS} 字符的巨行（最长 ${quality.maxLineChars} 字符），疑似 append-only 污染，建议运行 open-vibecoding docs-compact . 查看压缩建议。`);
       }
       if (quality.contentLines >= 10 && quality.avgLineChars > DOC_AVG_LINE_CHARS) {
         warnings.push(`${relativePath} 平均行长 ${quality.avgLineChars} 字符（阈值 ${DOC_AVG_LINE_CHARS}），文档结构疑似退化为长段落堆叠，建议拆分为结构化小节。`);
@@ -1013,7 +1013,7 @@ export async function checkStandardsWorkspace(projectRoot, options = {}) {
 export async function classifyExternalReferenceWorkspace(projectRoot, options = {}) {
   const configPath = standardsConfigPath(projectRoot);
   if (!(await exists(configPath))) {
-    throw new Error(`${OPENPRD_STANDARDS_CONFIG} is required. Run: openprd standards . --init`);
+    throw new Error(`${OPEN_VIBECODING_STANDARDS_CONFIG} is required. Run: open-vibecoding standards . --init`);
   }
   const config = await readJson(configPath);
   const externalPath = normalizeExternalReferencePath(projectRoot, options.externalReference);

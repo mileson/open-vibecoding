@@ -85,13 +85,13 @@ function inferParallelGroup(text, type, phase) {
 
 function inferWriteScope(parallelGroup) {
   const scopeByGroup = {
-    governance: ['.openprd/changes/**', '.openprd/**'],
+    governance: ['.open-vibecoding/changes/**', '.open-vibecoding/**'],
     contracts: ['src/**', 'test/**', 'docs/basic/backend-structure.md'],
     domain: ['src/**', 'test/**'],
     surface: ['src/cli/**', 'src/**', 'test/**'],
     implementation: ['src/**', 'test/**'],
     integration: ['src/**', 'test/**', 'docs/basic/**'],
-    verification: ['test/**', '.openprd/harness/test-reports/**'],
+    verification: ['test/**', '.open-vibecoding/harness/test-reports/**'],
     docs: ['docs/basic/**', 'README*.md'],
     none: ['src/**'],
   };
@@ -99,7 +99,7 @@ function inferWriteScope(parallelGroup) {
 }
 
 function defaultLocalVerify(task = {}) {
-  return task.verify ?? task.metadata?.verify ?? 'openprd tasks . --change <change-id> --verify --item <task-id>';
+  return task.verify ?? task.metadata?.verify ?? 'open-vibecoding tasks . --change <change-id> --verify --item <task-id>';
 }
 
 export function normalizeWriteScopes(value) {

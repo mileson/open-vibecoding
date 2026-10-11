@@ -3,14 +3,14 @@ import path from 'node:path';
 import { appendJsonl, cjoin, exists, readJson, readJsonl, writeJson } from './fs-utils.js';
 import { listBenchmarkRecommendationsWorkspace } from './benchmark.js';
 
-export const OPENPRD_GROWTH_DIR = path.join('.openprd', 'growth');
-export const OPENPRD_GROWTH_CANDIDATES = path.join(OPENPRD_GROWTH_DIR, 'candidates.jsonl');
-export const OPENPRD_GROWTH_ACCEPTED = path.join(OPENPRD_GROWTH_DIR, 'accepted.json');
-export const OPENPRD_GROWTH_REJECTED = path.join(OPENPRD_GROWTH_DIR, 'rejected.json');
-export const OPENPRD_GROWTH_LOCAL_PREFERENCES = path.join(OPENPRD_GROWTH_DIR, 'preferences.local.json');
-export const OPENPRD_GROWTH_LEDGER = path.join(OPENPRD_GROWTH_DIR, 'ledger.json');
-export const OPENPRD_GROWTH_EVENTS = path.join(OPENPRD_GROWTH_DIR, 'events.jsonl');
-export const OPENPRD_STANDARDS_CONFIG = path.join('.openprd', 'standards', 'config.json');
+export const OPEN_VIBECODING_GROWTH_DIR = path.join('.open-vibecoding', 'growth');
+export const OPEN_VIBECODING_GROWTH_CANDIDATES = path.join(OPEN_VIBECODING_GROWTH_DIR, 'candidates.jsonl');
+export const OPEN_VIBECODING_GROWTH_ACCEPTED = path.join(OPEN_VIBECODING_GROWTH_DIR, 'accepted.json');
+export const OPEN_VIBECODING_GROWTH_REJECTED = path.join(OPEN_VIBECODING_GROWTH_DIR, 'rejected.json');
+export const OPEN_VIBECODING_GROWTH_LOCAL_PREFERENCES = path.join(OPEN_VIBECODING_GROWTH_DIR, 'preferences.local.json');
+export const OPEN_VIBECODING_GROWTH_LEDGER = path.join(OPEN_VIBECODING_GROWTH_DIR, 'ledger.json');
+export const OPEN_VIBECODING_GROWTH_EVENTS = path.join(OPEN_VIBECODING_GROWTH_DIR, 'events.jsonl');
+export const OPEN_VIBECODING_STANDARDS_CONFIG = path.join('.open-vibecoding', 'standards', 'config.json');
 
 export const DEFAULT_GROWTH_CONFIG = {
   enabled: true,
@@ -21,7 +21,7 @@ export const DEFAULT_GROWTH_CONFIG = {
     safeTypes: ['code-extension'],
   },
   candidateLimit: 200,
-  scopes: ['project', 'user-local', 'openprd-core'],
+  scopes: ['project', 'user-local', 'open-vibecoding-core'],
   supportedCandidateTypes: [
     'code-extension',
     'exempt-path-segment',
@@ -111,7 +111,7 @@ function normalizeCandidate(raw = {}) {
   const type = String(raw.type ?? '').trim();
   const key = String(raw.key ?? raw.extension ?? raw.pattern ?? raw.preferenceKey ?? '').trim();
   const id = raw.id ? String(raw.id) : growthCandidateId(type || 'candidate', key || raw.title || raw.path || 'unknown');
-  const scope = ['project', 'user-local', 'openprd-core'].includes(raw.scope) ? raw.scope : 'project';
+  const scope = ['project', 'user-local', 'open-vibecoding-core'].includes(raw.scope) ? raw.scope : 'project';
   const status = ['pending', 'applied', 'rejected'].includes(raw.status) ? raw.status : 'pending';
   return {
     version: 1,
@@ -157,7 +157,7 @@ async function writeCandidateEvent(projectRoot, candidate, patch = {}) {
     ...patch,
     updatedAt: nowIso(),
   };
-  await appendJsonl(growthPath(projectRoot, OPENPRD_GROWTH_CANDIDATES), event);
+  await appendJsonl(growthPath(projectRoot, OPEN_VIBECODING_GROWTH_CANDIDATES), event);
   return normalizeCandidate(event);
 }
 
@@ -186,11 +186,11 @@ function normalizeGrowthConfig(value = {}) {
 }
 
 async function ensureGrowthFiles(projectRoot) {
-  await fs.mkdir(growthPath(projectRoot, OPENPRD_GROWTH_DIR), { recursive: true });
-  const acceptedPath = growthPath(projectRoot, OPENPRD_GROWTH_ACCEPTED);
-  const rejectedPath = growthPath(projectRoot, OPENPRD_GROWTH_REJECTED);
-  const localPreferencesPath = growthPath(projectRoot, OPENPRD_GROWTH_LOCAL_PREFERENCES);
-  const ledgerPath = growthPath(projectRoot, OPENPRD_GROWTH_LEDGER);
+  await fs.mkdir(growthPath(projectRoot, OPEN_VIBECODING_GROWTH_DIR), { recursive: true });
+  const acceptedPath = growthPath(projectRoot, OPEN_VIBECODING_GROWTH_ACCEPTED);
+  const rejectedPath = growthPath(projectRoot, OPEN_VIBECODING_GROWTH_REJECTED);
+  const localPreferencesPath = growthPath(projectRoot, OPEN_VIBECODING_GROWTH_LOCAL_PREFERENCES);
+  const ledgerPath = growthPath(projectRoot, OPEN_VIBECODING_GROWTH_LEDGER);
   if (!(await exists(acceptedPath))) {
     await writeJson(acceptedPath, { version: 1, candidates: [] });
   }
@@ -206,7 +206,7 @@ async function ensureGrowthFiles(projectRoot) {
 }
 
 async function readGrowthAutoApplyConfig(projectRoot) {
-  const configPath = growthPath(projectRoot, OPENPRD_STANDARDS_CONFIG);
+  const configPath = growthPath(projectRoot, OPEN_VIBECODING_STANDARDS_CONFIG);
   const config = await readJsonIfExists(configPath, null);
   return normalizeGrowthConfig(config?.growth).autoApply;
 }
@@ -270,10 +270,10 @@ function summarizeGrowthLedgerEvents(events = [], state = { candidates: [] }) {
 
 async function syncGrowthLedger(projectRoot, event = null) {
   if (event) {
-    await appendJsonl(growthPath(projectRoot, OPENPRD_GROWTH_EVENTS), normalizeGrowthLedgerEvent(event));
+    await appendJsonl(growthPath(projectRoot, OPEN_VIBECODING_GROWTH_EVENTS), normalizeGrowthLedgerEvent(event));
   }
   const state = await readGrowthState(projectRoot);
-  const events = await readJsonlIfExists(growthPath(projectRoot, OPENPRD_GROWTH_EVENTS));
+  const events = await readJsonlIfExists(growthPath(projectRoot, OPEN_VIBECODING_GROWTH_EVENTS));
   const normalizedEvents = events.map((entry) => normalizeGrowthLedgerEvent(entry));
   const ledger = {
     ...defaultGrowthLedger(),
@@ -281,7 +281,7 @@ async function syncGrowthLedger(projectRoot, event = null) {
     summary: summarizeGrowthLedgerEvents(normalizedEvents, state),
     recentEvents: normalizedEvents.slice(-12).reverse(),
   };
-  await writeJson(growthPath(projectRoot, OPENPRD_GROWTH_LEDGER), ledger);
+  await writeJson(growthPath(projectRoot, OPEN_VIBECODING_GROWTH_LEDGER), ledger);
   return ledger;
 }
 
@@ -291,7 +291,7 @@ export async function recordGrowthCheckpointWorkspace(projectRoot, options = {})
   const reason = String(options.reason ?? outcome).trim() || outcome;
   const scope = String(options.scope ?? 'project').trim() || 'project';
   const changed = normalizeArray(options.changed).map((item) => String(item));
-  const recentEvents = await readJsonlIfExists(growthPath(projectRoot, OPENPRD_GROWTH_EVENTS));
+  const recentEvents = await readJsonlIfExists(growthPath(projectRoot, OPEN_VIBECODING_GROWTH_EVENTS));
   const normalizedRecent = recentEvents
     .map((entry) => normalizeGrowthLedgerEvent(entry))
     .slice(-24)
@@ -372,7 +372,7 @@ export async function initGrowthWorkspace(projectRoot) {
     });
   }
   const ledger = reconciled.length > 0
-    ? await readJsonIfExists(growthPath(projectRoot, OPENPRD_GROWTH_LEDGER), defaultGrowthLedger())
+    ? await readJsonIfExists(growthPath(projectRoot, OPEN_VIBECODING_GROWTH_LEDGER), defaultGrowthLedger())
     : await syncGrowthLedger(projectRoot);
   return {
     ok: true,
@@ -381,23 +381,23 @@ export async function initGrowthWorkspace(projectRoot) {
     reconciledAutoApplied: reconciled,
     ledger,
     files: {
-      dir: OPENPRD_GROWTH_DIR,
-      candidates: OPENPRD_GROWTH_CANDIDATES,
-      accepted: OPENPRD_GROWTH_ACCEPTED,
-      rejected: OPENPRD_GROWTH_REJECTED,
-      localPreferences: OPENPRD_GROWTH_LOCAL_PREFERENCES,
-      ledger: OPENPRD_GROWTH_LEDGER,
-      events: OPENPRD_GROWTH_EVENTS,
+      dir: OPEN_VIBECODING_GROWTH_DIR,
+      candidates: OPEN_VIBECODING_GROWTH_CANDIDATES,
+      accepted: OPEN_VIBECODING_GROWTH_ACCEPTED,
+      rejected: OPEN_VIBECODING_GROWTH_REJECTED,
+      localPreferences: OPEN_VIBECODING_GROWTH_LOCAL_PREFERENCES,
+      ledger: OPEN_VIBECODING_GROWTH_LEDGER,
+      events: OPEN_VIBECODING_GROWTH_EVENTS,
     },
   };
 }
 
 async function readGrowthState(projectRoot) {
   await ensureGrowthFiles(projectRoot);
-  const records = await readJsonlIfExists(growthPath(projectRoot, OPENPRD_GROWTH_CANDIDATES));
+  const records = await readJsonlIfExists(growthPath(projectRoot, OPEN_VIBECODING_GROWTH_CANDIDATES));
   const candidates = latestCandidates(records);
-  const accepted = await readJsonIfExists(growthPath(projectRoot, OPENPRD_GROWTH_ACCEPTED), { version: 1, candidates: [] });
-  const rejected = await readJsonIfExists(growthPath(projectRoot, OPENPRD_GROWTH_REJECTED), { version: 1, candidates: [] });
+  const accepted = await readJsonIfExists(growthPath(projectRoot, OPEN_VIBECODING_GROWTH_ACCEPTED), { version: 1, candidates: [] });
+  const rejected = await readJsonIfExists(growthPath(projectRoot, OPEN_VIBECODING_GROWTH_REJECTED), { version: 1, candidates: [] });
   return {
     candidates,
     accepted: normalizeArray(accepted.candidates),
@@ -549,7 +549,7 @@ export function assessAutoApplyGrowthCandidate(candidate, rawConfig = {}) {
   }
   const patch = candidate.suggestedPatch ?? {};
   if (
-    patch.file !== OPENPRD_STANDARDS_CONFIG
+    patch.file !== OPEN_VIBECODING_STANDARDS_CONFIG
     || patch.op !== 'append'
     || patch.path !== 'developmentStandards.codeFileLines.codeFileExtensions'
     || normalizeExtension(patch.value) !== extension
@@ -578,7 +578,7 @@ async function applyGrowthCandidate(projectRoot, candidate, options = {}) {
     applyMode: options.mode ?? 'manual',
     applyReason: options.reason ?? null,
   });
-  const acceptedPath = growthPath(projectRoot, OPENPRD_GROWTH_ACCEPTED);
+  const acceptedPath = growthPath(projectRoot, OPEN_VIBECODING_GROWTH_ACCEPTED);
   const accepted = await readJsonIfExists(acceptedPath, { version: 1, candidates: [] });
   const acceptedCandidates = normalizeArray(accepted.candidates).filter((item) => item.id !== stored.id);
   acceptedCandidates.push(stored);
@@ -616,7 +616,7 @@ export async function reviewGrowthWorkspace(projectRoot) {
     nextActions: [
       ...(pending.length === 0
         ? ['当前没有待确认增长候选。']
-        : pending.map((candidate) => `收工复盘时确认后运行 openprd grow . --apply --id ${candidate.id}；不采用则运行 openprd grow . --reject --id ${candidate.id}`)),
+        : pending.map((candidate) => `收工复盘时确认后运行 open-vibecoding grow . --apply --id ${candidate.id}；不采用则运行 open-vibecoding grow . --reject --id ${candidate.id}`)),
       ...benchmarkRecommendations.map((source) => `信源 ${source.sourceKey} 最近 ${source.windowDays} 天已被采纳 ${source.adoptedCount} 次（累计 ${source.totalAdoptedCount} 次），建议确认后运行 ${source.approveCommand} 纳入 benchmark。`),
     ],
   };
@@ -644,11 +644,11 @@ function appendUnique(list, value, normalize = (item) => String(item)) {
 }
 
 async function applyStandardsCandidate(projectRoot, candidate) {
-  const configPath = growthPath(projectRoot, OPENPRD_STANDARDS_CONFIG);
+  const configPath = growthPath(projectRoot, OPEN_VIBECODING_STANDARDS_CONFIG);
   if (!(await exists(configPath))) {
     return {
       ok: false,
-      errors: [`${OPENPRD_STANDARDS_CONFIG} is required. Run: openprd standards . --init`],
+      errors: [`${OPEN_VIBECODING_STANDARDS_CONFIG} is required. Run: open-vibecoding standards . --init`],
       changed: [],
     };
   }
@@ -674,7 +674,7 @@ async function applyStandardsCandidate(projectRoot, candidate) {
 }
 
 async function applyUserPreferenceCandidate(projectRoot, candidate) {
-  const preferencesPath = growthPath(projectRoot, OPENPRD_GROWTH_LOCAL_PREFERENCES);
+  const preferencesPath = growthPath(projectRoot, OPEN_VIBECODING_GROWTH_LOCAL_PREFERENCES);
   const current = await readJsonIfExists(preferencesPath, { version: 1, preferences: {} });
   const preferences = current.preferences && typeof current.preferences === 'object' ? { ...current.preferences } : {};
   preferences[candidate.key] = candidate.suggestedPatch?.value ?? candidate.summary ?? true;
@@ -682,7 +682,7 @@ async function applyUserPreferenceCandidate(projectRoot, candidate) {
   return {
     ok: true,
     errors: [],
-    changed: [`${OPENPRD_GROWTH_LOCAL_PREFERENCES} preferences.${candidate.key}`],
+    changed: [`${OPEN_VIBECODING_GROWTH_LOCAL_PREFERENCES} preferences.${candidate.key}`],
   };
 }
 
@@ -733,7 +733,7 @@ export async function rejectGrowthCandidateWorkspace(projectRoot, options = {}) 
     rejectedAt: nowIso(),
     notes: String(options.notes ?? '').trim() || null,
   });
-  const rejectedPath = growthPath(projectRoot, OPENPRD_GROWTH_REJECTED);
+  const rejectedPath = growthPath(projectRoot, OPEN_VIBECODING_GROWTH_REJECTED);
   const rejected = await readJsonIfExists(rejectedPath, { version: 1, candidates: [] });
   const rejectedCandidates = normalizeArray(rejected.candidates).filter((item) => item.id !== stored.id);
   rejectedCandidates.push(stored);
@@ -783,33 +783,33 @@ export function validateGrowthConfig(config, errors = []) {
   const growth = config?.growth;
   if (!growth) return errors;
   if (growth.enabled !== undefined && typeof growth.enabled !== 'boolean') {
-    errors.push(`${OPENPRD_STANDARDS_CONFIG} growth.enabled must be a boolean.`);
+    errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} growth.enabled must be a boolean.`);
   }
   if (growth.reviewRequired !== undefined && growth.reviewRequired !== true) {
-    errors.push(`${OPENPRD_STANDARDS_CONFIG} growth.reviewRequired must remain true; non-whitelisted shared rules still require wrap-up review.`);
+    errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} growth.reviewRequired must remain true; non-whitelisted shared rules still require wrap-up review.`);
   }
   if (growth.candidateLimit !== undefined) {
     const limit = Number(growth.candidateLimit);
     if (!Number.isInteger(limit) || limit < 1) {
-      errors.push(`${OPENPRD_STANDARDS_CONFIG} growth.candidateLimit must be a positive integer.`);
+      errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} growth.candidateLimit must be a positive integer.`);
     }
   }
   if (growth.autoApply !== undefined) {
     const autoApply = growth.autoApply;
     if (!autoApply || typeof autoApply !== 'object' || Array.isArray(autoApply)) {
-      errors.push(`${OPENPRD_STANDARDS_CONFIG} growth.autoApply must be an object.`);
+      errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} growth.autoApply must be an object.`);
     } else {
       if (autoApply.enabled !== undefined && typeof autoApply.enabled !== 'boolean') {
-        errors.push(`${OPENPRD_STANDARDS_CONFIG} growth.autoApply.enabled must be a boolean.`);
+        errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} growth.autoApply.enabled must be a boolean.`);
       }
       if (autoApply.minConfidence !== undefined) {
         const minConfidence = Number(autoApply.minConfidence);
         if (!Number.isFinite(minConfidence) || minConfidence < 0 || minConfidence > 1) {
-          errors.push(`${OPENPRD_STANDARDS_CONFIG} growth.autoApply.minConfidence must be between 0 and 1.`);
+          errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} growth.autoApply.minConfidence must be between 0 and 1.`);
         }
       }
       if (autoApply.safeTypes !== undefined && !Array.isArray(autoApply.safeTypes)) {
-        errors.push(`${OPENPRD_STANDARDS_CONFIG} growth.autoApply.safeTypes must be an array.`);
+        errors.push(`${OPEN_VIBECODING_STANDARDS_CONFIG} growth.autoApply.safeTypes must be an array.`);
       }
     }
   }
@@ -824,7 +824,7 @@ export function buildCodeExtensionCandidate(relativePath, details = {}) {
     key: extension,
     scope: 'project',
     title: `新增代码文件扩展名 ${extension}`,
-    summary: `检测到 ${normalized} 看起来像代码文件，但 ${extension} 尚未纳入 OpenPrd dev-check 代码扩展名配置。`,
+    summary: `检测到 ${normalized} 看起来像代码文件，但 ${extension} 尚未纳入 Open VibeCoding dev-check 代码扩展名配置。`,
     evidence: [
       {
         path: normalized,
@@ -834,7 +834,7 @@ export function buildCodeExtensionCandidate(relativePath, details = {}) {
     ],
     confidence: details.confidence ?? 0.74,
     suggestedPatch: {
-      file: OPENPRD_STANDARDS_CONFIG,
+      file: OPEN_VIBECODING_STANDARDS_CONFIG,
       op: 'append',
       path: 'developmentStandards.codeFileLines.codeFileExtensions',
       value: extension,

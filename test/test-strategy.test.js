@@ -3,9 +3,28 @@ import test from 'node:test';
 
 import {
   inferTestStrategyForTask,
+  summarizeTaskTestStrategies,
   taskTestStrategy,
   validateTaskTestStrategy,
 } from '../src/test-strategy.js';
+
+test('explicit user-journey evidence is not penalized for lacking lower test layers', () => {
+  for (const layer of ['e2e', 'visual', 'weapp']) {
+    const summary = summarizeTaskTestStrategies([{
+      title: '核对用户实际取得的结果',
+      metadata: {
+        'test-layer': layer,
+        'test-size': 'large',
+        'test-scope': 'user-flow',
+        evidence: '在隔离测试环境完成受影响路径并检查结果',
+      },
+    }]);
+    assert.equal(summary.layerCounts[layer], 1);
+    assert.equal(summary.layerCounts.unit, 0);
+    assert.equal(summary.evidencePresent, 1);
+    assert.deepEqual(summary.warnings, []);
+  }
+});
 
 test('inferTestStrategyForTask only upgrades to weapp runtime for explicit runtime validation intent', () => {
   const runtimeStrategy = inferTestStrategyForTask({

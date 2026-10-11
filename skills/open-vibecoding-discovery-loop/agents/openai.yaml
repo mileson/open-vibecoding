@@ -1,0 +1,3 @@
+name: open-vibecoding-discovery-loop
+short_description: "Investigate complex product and project questions with evidence"
+default_prompt: "Use $open-vibecoding-discovery-loop for sustained research and evidence coverage without generating PRDs, changes, or task files."

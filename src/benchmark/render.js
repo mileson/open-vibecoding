@@ -54,11 +54,11 @@ function renderSourceCard(source) {
 
 function renderBenchmarkIndex(approved, candidates) {
   const lines = [
-    '# OpenPrd Benchmark Registry',
+    '# Open VibeCoding Benchmark Registry',
     '',
     '## 规则',
     '',
-    '- 项目级 approved benchmark 优先于 OpenPrd 内置 Source Map。',
+    '- 项目级 approved benchmark 优先于 Open VibeCoding 内置 Source Map。',
     '- `inbox/` 里的 candidate 只表示待确认线索，不表示长期最佳实践。',
     '- 被采纳信源先累计证据，达到阈值后只推荐 approve，不自动晋级。',
     '- 每次只挑 1-3 个高相关来源；来源目录不是事实来源。',

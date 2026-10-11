@@ -1,4 +1,0 @@
-interface:
-  display_name: "OpenPrd 音频证据"
-  short_description: "基于真实音轨、ASR 时间轴和前后复测完成音频优化验证"
-  default_prompt: "使用 $openprd-audio-evidence 为这项音频或字幕任务制定证据计划，并在优化前后验证最终媒体。"

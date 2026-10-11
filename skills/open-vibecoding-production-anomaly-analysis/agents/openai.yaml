@@ -1,0 +1,3 @@
+interface:
+  display_name: "【测试】分析线上异常与修复效果"
+  short_description: "查询已有监控或日志，分析异常影响、版本变化及修复后的复发情况。"

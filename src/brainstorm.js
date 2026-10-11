@@ -9,10 +9,10 @@
  * 写入 brainstorm.html、brainstorm.json、data.md、capture-patch.json，并返回结构化结果。
  *
  * 定位
- * 位于脑暴模式应用层，负责把 OpenPrd 现有资源组织成可评审的脑暴工作台。
+ * 位于脑暴模式应用层，负责把 Open VibeCoding 现有资源组织成可评审的脑暴工作台。
  *
  * 依赖
- * 依赖 benchmark、knowledge、workspace-core 和 brainstorm-artifacts；由 openprd CLI 作为命令入口调用。
+ * 依赖 benchmark、knowledge、workspace-core 和 brainstorm-artifacts；由 open-vibecoding CLI 作为命令入口调用。
  *
  * 维护规则
  * 修改脑暴状态结构或 artifact 路径时，必须同步维护 CLI、presentation 工具、测试和 docs/basic。
@@ -25,9 +25,9 @@ import { renderBrainstormArtifact, renderBrainstormMarkdown, renderBrainstormPat
 import { openArtifactInBrowser, artifactBundlePaths, writeHtmlArtifact } from './html-artifacts.js';
 import { exists, readJson, writeJson, writeText } from './fs-utils.js';
 import { timestamp } from './time.js';
-import { appendProgress, appendWorkflowEvent, buildWorkflowTaskGraph, loadWorkspace, persistWorkspaceCurrentState } from './workspace-core.js';
+import { appendWorkflowEvent, loadWorkspace } from './workspace-core.js';
 
-const WORKSPACE_SCAN_IGNORE = new Set(['.git', '.openprd', 'node_modules', '.DS_Store']);
+const WORKSPACE_SCAN_IGNORE = new Set(['.git', '.open-vibecoding', 'node_modules', '.DS_Store']);
 
 function normalizedText(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -554,7 +554,7 @@ function buildBrainstormReport({ currentState, benchmark, knowledge, workspaceSc
 export async function loadBrainstormState(projectRoot) {
   const ws = await loadWorkspace(projectRoot);
   if (!(await exists(ws.paths.activeBrainstormState))) {
-    throw new Error(`未找到脑暴状态文件: ${ws.paths.activeBrainstormState}。先运行 openprd brainstorm .`);
+    throw new Error(`未找到脑暴状态文件: ${ws.paths.activeBrainstormState}。先运行 open-vibecoding brainstorm .`);
   }
   const record = await readJson(ws.paths.activeBrainstormState);
   return { ws, record };
@@ -718,19 +718,6 @@ export async function brainstormWorkspace(projectRoot, options = {}) {
   };
 
   const rendered = await renderBrainstormWorkspaceArtifacts(projectRoot, record, { open: options.open || !options.json });
-  currentState.brainstormMeta = {
-    generatedAt,
-    artifactId,
-    digest,
-    topic,
-    htmlPath: toRelativeProjectPath(projectRoot, rendered.htmlPath),
-    markdownPath: toRelativeProjectPath(projectRoot, rendered.markdownPath),
-    patchPath: toRelativeProjectPath(projectRoot, rendered.patchPath),
-    statePath: toRelativeProjectPath(projectRoot, rendered.statePath),
-    recommendedDirection: record.summary.recommendedDirection,
-  };
-  const storedCurrentState = await persistWorkspaceCurrentState(ws, currentState);
-  await writeJson(ws.paths.taskGraph, buildWorkflowTaskGraph(storedCurrentState));
   await appendWorkflowEvent(ws, 'brainstorm_generated', {
     artifactId,
     digest,
@@ -738,14 +725,9 @@ export async function brainstormWorkspace(projectRoot, options = {}) {
     markdownPath: rendered.markdownPath,
     patchPath: rendered.patchPath,
   });
-  await appendProgress(ws, [
-    `已生成脑暴工作台: ${toRelativeProjectPath(projectRoot, rendered.htmlPath)}。`,
-    `当前建议方向: ${record.summary.recommendedDirection}。`,
-  ]);
 
   return {
     ...rendered,
-    currentState: storedCurrentState,
   };
 }
 

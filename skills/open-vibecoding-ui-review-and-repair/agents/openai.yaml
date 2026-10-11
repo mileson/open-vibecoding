@@ -1,0 +1,3 @@
+interface:
+  display_name: "【测试】检查界面、修复并反复验证"
+  short_description: "组合独立评审、代码修复与多轮复查，说明已解决和剩余的问题。"

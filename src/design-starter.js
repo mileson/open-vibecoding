@@ -1,15 +1,15 @@
 /*
  * 核心功能
- * 把 OpenPrd 内置前端模板落成当前项目的真实入口文件，并在需要时顺手写实 active design contracts、替换模板占位文案。
+ * 把 Open VibeCoding 内置前端模板落成当前项目的真实入口文件，并在需要时顺手写实 active design contracts、替换模板占位文案。
  *
  * 输入
  * 接收项目根目录、starter 标识、输出文件路径、是否允许覆盖，以及可选的 brief / title / sections / 无依赖判断。
  *
  * 输出
- * 复制 `.openprd/design/templates/` 下的模板到目标文件，并返回模板来源、输出路径、推荐默认组合，以及是否同步写实 active design contracts。
+ * 复制 `.open-vibecoding/design/templates/` 下的模板到目标文件，并返回模板来源、输出路径、推荐默认组合，以及是否同步写实 active design contracts。
  *
  * 定位
- * 位于前端实现准备层，承接 `.openprd/design/active/*` 合同与“起第一版骨架”之间最容易卡住的那一跳。
+ * 位于前端实现准备层，承接 `.open-vibecoding/design/active/*` 合同与“起第一版骨架”之间最容易卡住的那一跳。
  *
  * 依赖
  * 依赖 workspace-core 读取工作区路径与记录事件，依赖 fs-utils 做模板读取和写入。
@@ -26,7 +26,7 @@ import {
   loadThemeConfig,
   sourceStarterImages,
 } from './design-starter-support.js';
-import { appendProgress, appendWorkflowEvent, loadWorkspace } from './workspace-core.js';
+import { appendWorkflowEvent, loadWorkspace } from './workspace-core.js';
 import { exists, readText, writeText } from './fs-utils.js';
 
 const STARTER_CATALOG = [
@@ -555,8 +555,8 @@ function buildBasicDocMap(projectRoot, starter, context, relativeOutputPath) {
 
 - \`${relativeOutputPath}\`: 当前项目唯一页面入口，包含结构、样式和轻量交互。
 - \`docs/basic/\`: 项目基础事实文档，记录结构、流程、产品边界、技术栈与前端约束。
-- \`.openprd/design/active/\`: 本次页面实现使用的设计合同，包括事实、素材、方向与选中方案。
-- \`.openprd/\`: OpenPrd 工作区元数据、校验规则、模板与质量报告。
+- \`.open-vibecoding/design/active/\`: 本次页面实现使用的设计合同，包括事实、素材、方向与选中方案。
+- \`.open-vibecoding/\`: Open VibeCoding 工作区元数据、校验规则、模板与质量报告。
 - \`AGENTS.md\`: 当前仓库的执行入口约束。
 
 ## 文件组织规则
@@ -633,8 +633,8 @@ function buildBasicDocMap(projectRoot, starter, context, relativeOutputPath) {
 - 把最后一批必要的查事实、查图、读模板动作放在口头宣布之前做完；一旦已经说“开始覆盖入口文件”或“开始整页重写”，下一步必须是对 \`${relativeOutputPath}\` 或 sibling draft 的实际写入，不要继续只读扫描、压图或停在口头承诺；必要时 hook 会把这类非写入动作挡回去。
 - 主要区块固定为: ${sections.join('、')}。
 - 当前视觉方向锁定为 \`${context.defaults.lens ?? starter.id}\`，主题采用 \`${context.defaults.theme ?? 'starter-default'}\`，页面骨架采用 \`${context.defaults.layout ?? 'starter-layout'}\`。
-- 当前审美主张和记忆点记录在 \`.openprd/design/active/selected-direction.md\`；后续样式细化必须保住这个气质，而不是回到通用模板。
-- 进入样式细化前，用 \`.openprd/design/anti-slop.md\` 排除默认紫白渐变、通用字体栈、白底卡片堆叠和无语境装饰。
+- 当前审美主张和记忆点记录在 \`.open-vibecoding/design/active/selected-direction.md\`；后续样式细化必须保住这个气质，而不是回到通用模板。
+- 进入样式细化前，用 \`.open-vibecoding/design/anti-slop.md\` 排除默认紫白渐变、通用字体栈、白底卡片堆叠和无语境装饰。
 - 优先使用稳定的信息层级、卡片、标签、导航锚点和纯文字表达；不通过花哨装饰替代真实结构。
 
 ## 交互规范
@@ -663,7 +663,7 @@ function buildBasicDocMap(projectRoot, starter, context, relativeOutputPath) {
 ## CLI 接入面
 
 - 业务功能层面不提供 CLI。
-- 研发层面使用 OpenPrd 工具链辅助初始化、设计合同、标准校验和项目管理；当前最相关的入口包括 \`openprd design-starter\`、\`openprd standards . --verify\` 与 \`openprd run . --verify\`。
+- 研发层面使用 Open VibeCoding 工具链辅助初始化、设计合同、标准校验和项目管理；当前最相关的入口包括 \`open-vibecoding design-starter\`、\`open-vibecoding standards . --verify\` 与 \`open-vibecoding run . --verify\`。
 
 ## API 接入面
 
@@ -690,14 +690,14 @@ function buildBasicDocMap(projectRoot, starter, context, relativeOutputPath) {
 ## 核心依赖
 
 - 无业务第三方依赖。
-- 研发辅助依赖为 OpenPrd 工作区与其内置设计模板、标准校验和质量检查能力。
+- 研发辅助依赖为 Open VibeCoding 工作区与其内置设计模板、标准校验和质量检查能力。
 
 ## 工具链
 
-- \`openprd design-starter . --starter ${starter.id} --out ${relativeOutputPath}\`: 生成首版页面、设计合同与基础文档。
-- \`openprd standards . --verify\`: 校验 \`docs/basic/\`、文件说明书和文件夹 README。
-- \`openprd run . --verify\`: 汇总当前任务与工作区验证状态。
-- \`openprd run . --verify\`: 直接汇总任务与结构验证状态，不生成额外 eval 报告。
+- \`open-vibecoding design-starter . --starter ${starter.id} --out ${relativeOutputPath}\`: 生成首版页面、设计合同与基础文档。
+- \`open-vibecoding standards . --verify\`: 校验 \`docs/basic/\`、文件说明书和文件夹 README。
+- \`open-vibecoding run . --verify\`: 汇总当前任务与工作区验证状态。
+- \`open-vibecoding run . --verify\`: 直接汇总任务与结构验证状态，不生成额外 eval 报告。
 
 ## 维护规则
 
@@ -737,7 +737,7 @@ function buildRootFolderManual(starter, context, relativeOutputPath) {
 
 ## 核心功能
 
-当前根目录承载一个可直接打开的 ${context.displayTitle} 原型，以及支撑该页面交付的基础文档和 OpenPrd 工作区元数据。
+当前根目录承载一个可直接打开的 ${context.displayTitle} 原型，以及支撑该页面交付的基础文档和 Open VibeCoding 工作区元数据。
 
 ## 输入
 
@@ -759,7 +759,7 @@ function buildRootFolderManual(starter, context, relativeOutputPath) {
 
 - \`${relativeOutputPath}\`
 - \`docs/basic/\`
-- \`.openprd/\`
+- \`.open-vibecoding/\`
 - \`AGENTS.md\`
 
 ## 维护规则
@@ -1141,7 +1141,7 @@ export async function designStarterWorkspace(projectRoot, options = {}) {
       templatePath,
       availableStarters: buildAvailableStarters(),
       errors: [
-        `Missing starter template: ${templatePath}. Run openprd update . first.`,
+        `Missing starter template: ${templatePath}. Run open-vibecoding update . first.`,
       ],
     };
   }
@@ -1229,13 +1229,6 @@ export async function designStarterWorkspace(projectRoot, options = {}) {
     fetchedImageCount: context?.imageBundle?.assets?.length ?? 0,
     imageQuery: context?.imageBundle?.query ?? null,
   });
-  await appendProgress(ws, [
-    `已从 ${starter.file} 创建第一版页面骨架。`,
-    `输出: ${relativeOutputPath}。`,
-    hydrated ? '已同步写实 active design contracts 并替换模板占位文案。' : null,
-    context?.imageBundle?.succeeded ? `已自动补齐 ${context.imageBundle.assets.length} 张真实图片。` : null,
-    basicsResult?.updatedDocs?.length ? '已同步补齐 docs/basic、文件说明书和根目录 README。' : null,
-  ].filter(Boolean));
 
   return {
     ok: true,

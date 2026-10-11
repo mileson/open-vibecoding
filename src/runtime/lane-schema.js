@@ -37,14 +37,14 @@ function isoTime(value = Date.now()) {
     if (!Number.isNaN(parsed.valueOf())) return parsed.toISOString();
   }
   const numeric = value instanceof Date ? value.valueOf() : Number(value);
-  if (!Number.isFinite(numeric)) throw new TypeError('OpenPrd runtime clock must return a Date, ISO string, or epoch milliseconds.');
+  if (!Number.isFinite(numeric)) throw new TypeError('Open VibeCoding runtime clock must return a Date, ISO string, or epoch milliseconds.');
   return new Date(numeric).toISOString();
 }
 
 export function normalizeRuntimeId(value, label = 'id') {
   const normalized = String(value ?? '').trim();
   if (!ID_PATTERN.test(normalized) || ['__proto__', 'prototype', 'constructor'].includes(normalized)) {
-    throw new TypeError(`OpenPrd ${label} must match ${ID_PATTERN} and cannot use a reserved object key.`);
+    throw new TypeError(`Open VibeCoding ${label} must match ${ID_PATTERN} and cannot use a reserved object key.`);
   }
   return normalized;
 }
@@ -54,7 +54,7 @@ function normalizeTaskInput(value, taskIdHint, now) {
   const taskId = normalizeRuntimeId(source.taskId ?? source.id ?? taskIdHint, 'taskId');
   const status = source.status ?? 'pending';
   if (!TASK_STATUSES.includes(status) || status === 'claimed') {
-    throw new TypeError(`OpenPrd task ${taskId} must start as pending, completed, failed, or cancelled.`);
+    throw new TypeError(`Open VibeCoding task ${taskId} must start as pending, completed, failed, or cancelled.`);
   }
   return {
     taskId,
@@ -91,11 +91,11 @@ export function createLaneState(input, clockValue = Date.now()) {
   const tasks = {};
   for (const [taskIdHint, taskInput] of taskEntries(source.tasks)) {
     const task = normalizeTaskInput(taskInput, taskIdHint, now);
-    if (Object.hasOwn(tasks, task.taskId)) throw new TypeError(`Duplicate OpenPrd taskId: ${task.taskId}`);
+    if (Object.hasOwn(tasks, task.taskId)) throw new TypeError(`Duplicate Open VibeCoding taskId: ${task.taskId}`);
     tasks[task.taskId] = task;
   }
   const status = source.status ?? 'active';
-  if (!LANE_STATUSES.includes(status)) throw new TypeError(`Unsupported OpenPrd lane status: ${status}`);
+  if (!LANE_STATUSES.includes(status)) throw new TypeError(`Unsupported Open VibeCoding lane status: ${status}`);
   return {
     schemaVersion: LANE_SCHEMA_VERSION,
     laneId,
@@ -111,28 +111,28 @@ export function createLaneState(input, clockValue = Date.now()) {
 
 export function assertLaneState(value, expectedLaneId = null) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new TypeError('OpenPrd lane state must be a JSON object.');
+    throw new TypeError('Open VibeCoding lane state must be a JSON object.');
   }
   if (value.schemaVersion !== LANE_SCHEMA_VERSION) {
-    throw new TypeError(`Unsupported OpenPrd lane schemaVersion: ${value.schemaVersion}`);
+    throw new TypeError(`Unsupported Open VibeCoding lane schemaVersion: ${value.schemaVersion}`);
   }
   const laneId = normalizeRuntimeId(value.laneId, 'laneId');
   if (expectedLaneId !== null && laneId !== normalizeRuntimeId(expectedLaneId, 'laneId')) {
-    throw new TypeError(`OpenPrd lane file contains ${laneId}, expected ${expectedLaneId}.`);
+    throw new TypeError(`Open VibeCoding lane file contains ${laneId}, expected ${expectedLaneId}.`);
   }
   if (!Number.isSafeInteger(value.revision) || value.revision < 0) {
-    throw new TypeError(`OpenPrd lane ${laneId} has an invalid revision.`);
+    throw new TypeError(`Open VibeCoding lane ${laneId} has an invalid revision.`);
   }
   if (!value.tasks || typeof value.tasks !== 'object' || Array.isArray(value.tasks)) {
-    throw new TypeError(`OpenPrd lane ${laneId} must contain a task object.`);
+    throw new TypeError(`Open VibeCoding lane ${laneId} must contain a task object.`);
   }
   for (const [taskId, task] of Object.entries(value.tasks)) {
     normalizeRuntimeId(taskId, 'taskId');
     if (!task || task.taskId !== taskId || !TASK_STATUSES.includes(task.status)) {
-      throw new TypeError(`OpenPrd lane ${laneId} contains an invalid task ${taskId}.`);
+      throw new TypeError(`Open VibeCoding lane ${laneId} contains an invalid task ${taskId}.`);
     }
     if (!Number.isSafeInteger(task.revision) || task.revision < 0) {
-      throw new TypeError(`OpenPrd task ${taskId} has an invalid revision.`);
+      throw new TypeError(`Open VibeCoding task ${taskId} has an invalid revision.`);
     }
   }
   return value;

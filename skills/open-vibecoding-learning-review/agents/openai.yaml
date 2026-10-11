@@ -1,0 +1,4 @@
+interface:
+  display_name: "【增强】整理图文学习材料"
+  short_description: "将复杂主题整理成章节、案例与图文讲解，按需提供可阅读的学习材料。"
+  default_prompt: "Use $open-vibecoding-learning-review to design or generate Open VibeCoding learning-review packages, visual explainer cards, evidence manifests, and HTML ebook-reader artifacts."

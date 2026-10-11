@@ -1,6 +1,6 @@
 /*
  * Core purpose
- * Provide the OpenPrd local canvas service and conversation-bound storage.
+ * Provide the Open VibeCoding local canvas service and conversation-bound storage.
  *
  * Inputs
  * Receives a project root plus optional CLI flags such as --thread,
@@ -8,7 +8,7 @@
  * --open-target, and --dry-run.
  *
  * Outputs
- * Creates `.openprd/harness/canvas-sessions/<session-key>/`, serves a local
+ * Creates `.open-vibecoding/harness/canvas-sessions/<session-key>/`, serves a local
  * Excalidraw browser app, persists scene state, and accepts agent image/card
  * operations for that specific conversation binding.
  *
@@ -77,7 +77,7 @@ const DEFAULT_PORT = 0;
 const DEFAULT_DAEMON_PORT = 4767;
 const BODY_LIMIT_BYTES = 35 * 1024 * 1024;
 const DAEMON_READY_TIMEOUT_MS = 7000;
-const CLI_BIN_PATH = cjoin(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'openprd.js');
+const CLI_BIN_PATH = cjoin(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'open-vibecoding.js');
 const CANVAS_OPEN_TARGETS = new Set(['auto', 'system', 'codex-browser']);
 function jsonResponse(res, statusCode, payload) {
   res.writeHead(statusCode, {
@@ -117,7 +117,7 @@ async function readRequestJson(req, limitBytes = BODY_LIMIT_BYTES) {
 }
 
 function downloadsDir(env = process.env) {
-  return env.OPENPRD_DOWNLOADS_DIR || path.join(os.homedir(), 'Downloads');
+  return env.OPEN_VIBECODING_DOWNLOADS_DIR || path.join(os.homedir(), 'Downloads');
 }
 
 function clipboardCommandCandidates(platform = process.platform) {
@@ -193,7 +193,7 @@ async function materializeExport(session, input) {
   };
 }
 
-function safeDownloadFileName(value, fallback = `openprd-canvas-${Date.now()}.excalidraw`) {
+function safeDownloadFileName(value, fallback = `open-vibecoding-canvas-${Date.now()}.excalidraw`) {
   const requestedName = String(value ?? fallback).trim() || fallback;
   const baseName = path.basename(requestedName);
   if (baseName !== requestedName || baseName.includes('/') || baseName.includes('\\') || baseName.includes('..')) {
@@ -258,7 +258,7 @@ async function materializeDownloadImage(session, input) {
   const targetDir = downloadsDir();
   await fs.mkdir(targetDir, { recursive: true });
   const extension = path.extname(sourcePath) || extensionFromMime(input.mimeType || mimeFromPath(sourcePath), '.png');
-  const fallback = `openprd-canvas-image-${Date.now()}${extension}`;
+  const fallback = `open-vibecoding-canvas-image-${Date.now()}${extension}`;
   const requestedName = safeDownloadFileName(input.filename || input.fileName, fallback);
   const fileName = path.extname(requestedName) ? requestedName : `${requestedName}${extension}`;
   const filePath = path.join(targetDir, fileName);
@@ -355,13 +355,13 @@ async function serveStaticFile(res, filePath) {
 }
 
 async function buildReviewDirectionsPayload(projectRoot) {
-  const versionIndexPath = cjoin(projectRoot, '.openprd', 'state', 'version-index.json');
+  const versionIndexPath = cjoin(projectRoot, '.open-vibecoding', 'state', 'version-index.json');
   const versionIndex = await readJson(versionIndexPath).catch(() => []);
   const latestVersionId = Array.isArray(versionIndex) ? versionIndex.at(-1)?.versionId : null;
   if (!latestVersionId) {
     return { ok: false, reason: 'no-version', directions: [] };
   }
-  const snapshot = await readJson(cjoin(projectRoot, '.openprd', 'state', 'versions', `${latestVersionId}.json`)).catch(() => null);
+  const snapshot = await readJson(cjoin(projectRoot, '.open-vibecoding', 'state', 'versions', `${latestVersionId}.json`)).catch(() => null);
   const block = snapshot?.reviewPresentation?.designDirections;
   const rawDirections = Array.isArray(block?.directions) ? block.directions : [];
   if (rawDirections.length === 0) {
@@ -401,7 +401,7 @@ async function buildReviewDirectionsPayload(projectRoot) {
     ok: directions.length > 0,
     versionId: latestVersionId,
     title: snapshot?.title || '',
-    selectedDirectionId: (await readJson(cjoin(projectRoot, '.openprd', 'state', 'current.json')).catch(() => null))?.reviewStatus?.designDirection?.id
+    selectedDirectionId: (await readJson(cjoin(projectRoot, '.open-vibecoding', 'state', 'current.json')).catch(() => null))?.reviewStatus?.designDirection?.id
       || null,
     directions,
   };
@@ -563,7 +563,7 @@ async function handleCanvasRequest(session, req, res) {
       sourcePath: asset.sourcePath,
       sourceUrl: asset.sourceUrl,
       mimeType: asset.mimeType,
-      fileId: `openprd-${asset.digest}`,
+      fileId: `open-vibecoding-${asset.digest}`,
     });
     jsonResponse(res, 200, {
       ok: true,
@@ -766,7 +766,7 @@ async function handleCanvasRequest(session, req, res) {
 }
 
 function normalizeCanvasOpenTarget(value, env = process.env) {
-  const requested = firstPresent(value, env.OPENPRD_CANVAS_OPEN_TARGET, env.OPENPRD_OPEN_TARGET, 'auto');
+  const requested = firstPresent(value, env.OPEN_VIBECODING_CANVAS_OPEN_TARGET, env.OPEN_VIBECODING_OPEN_TARGET, 'auto');
   const normalized = String(requested).trim().toLowerCase();
   if (!CANVAS_OPEN_TARGETS.has(normalized)) {
     throw new Error(`Invalid canvas open target: ${requested}. Expected auto, system, or codex-browser.`);
@@ -1055,7 +1055,7 @@ async function startCanvasDaemon(projectRoot, session, options = {}) {
     stdio: ['ignore', logHandle.fd, logHandle.fd],
     env: {
       ...process.env,
-      OPENPRD_CANVAS_DAEMON: '1',
+      OPEN_VIBECODING_CANVAS_DAEMON: '1',
     },
   });
   await logHandle.close().catch(() => {});
@@ -1214,7 +1214,7 @@ async function canvasWorkspace(projectRoot, options = {}) {
   const actualPort = typeof address === 'object' && address ? address.port : port;
   const url = canvasUrl(actualHost, actualPort);
   await writeServerMetadata(session, {
-    mode: process.env.OPENPRD_CANVAS_DAEMON === '1' ? 'daemon-child' : 'foreground',
+    mode: process.env.OPEN_VIBECODING_CANVAS_DAEMON === '1' ? 'daemon-child' : 'foreground',
     pid: process.pid,
     url,
     host: actualHost,

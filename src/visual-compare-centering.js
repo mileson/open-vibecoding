@@ -273,7 +273,7 @@ async function extractCenteringTargetPanel(inputPath, box, outputWidth, sourceOr
   };
 }
 
-async function analyzeCenteringTarget(sourcePath, box, payload, locale = OPENPRD_FALLBACK_LOCALE) {
+async function analyzeCenteringTarget(sourcePath, box, payload, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   const raw = await loadCenteringRaw(sourcePath, box);
   const subject = normalizeCenteringSubject(payload);
@@ -394,7 +394,7 @@ async function analyzeCenteringTarget(sourcePath, box, payload, locale = OPENPRD
   };
 }
 
-function centeringOverlaySvg(panel, analysis, locale = OPENPRD_FALLBACK_LOCALE) {
+function centeringOverlaySvg(panel, analysis, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   const scaleX = panel.width / analysis.canvas.width;
   const scaleY = panel.height / analysis.canvas.height;
@@ -437,7 +437,7 @@ function centeringOverlaySvg(panel, analysis, locale = OPENPRD_FALLBACK_LOCALE) 
 </svg>`);
 }
 
-async function createCenteringOverlayPanel(targetPanel, analysis, locale = OPENPRD_FALLBACK_LOCALE) {
+async function createCenteringOverlayPanel(targetPanel, analysis, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const overlay = centeringOverlaySvg(targetPanel, analysis, locale);
   const input = await sharp(targetPanel.input)
     .composite([{ input: overlay, left: 0, top: 0 }])

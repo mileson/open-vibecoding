@@ -4,7 +4,7 @@ import sharp from 'sharp';
 import { VISUAL_REVIEW_SCHEMA } from './quality-visual-review.js';
 import { compactTimestamp, timestamp } from './time.js';
 import {
-  OPENPRD_FALLBACK_LOCALE,
+  OPEN_VIBECODING_FALLBACK_LOCALE,
   detectPrimaryLanguage,
   isChineseLocale,
   isEnglishHeavyText,
@@ -560,7 +560,7 @@ async function renderVerificationBoard(projectRoot, board, options = {}) {
   };
 }
 
-function normalizeAlignmentGroups(payload, locale = OPENPRD_FALLBACK_LOCALE) {
+function normalizeAlignmentGroups(payload, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   const groupEntries = normalizeAlignmentGroupEntries(payload);
   const defaultThreshold = payload.thresholdPx ?? payload.threshold ?? 2;
@@ -630,7 +630,7 @@ function normalizeAlignmentLevel(value) {
   return null;
 }
 
-function alignmentLevelLabel(level, locale = OPENPRD_FALLBACK_LOCALE) {
+function alignmentLevelLabel(level, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   if (level === 'container') {
     return copy.alignmentContainerLevel;
@@ -659,7 +659,7 @@ function summarizeAlignmentScope(groups) {
   };
 }
 
-function normalizeAlignmentMetrics(metrics, threshold, locale = OPENPRD_FALLBACK_LOCALE) {
+function normalizeAlignmentMetrics(metrics, threshold, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   if (!Array.isArray(metrics)) {
     return normalizeMetricList(metrics, locale);
@@ -702,7 +702,7 @@ function normalizeAlignmentMetrics(metrics, threshold, locale = OPENPRD_FALLBACK
     .filter((metric) => metric.value.trim());
 }
 
-function normalizeAlignmentGuides(payload, locale = OPENPRD_FALLBACK_LOCALE) {
+function normalizeAlignmentGuides(payload, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   const rawGuides = Array.isArray(payload.guides)
     ? payload.guides
@@ -716,7 +716,7 @@ function normalizeAlignmentGuides(payload, locale = OPENPRD_FALLBACK_LOCALE) {
     }));
 }
 
-function normalizeAlignmentBoxes(payload, locale = OPENPRD_FALLBACK_LOCALE) {
+function normalizeAlignmentBoxes(payload, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   const rawBoxes = Array.isArray(payload.boxes)
     ? payload.boxes
@@ -764,7 +764,7 @@ function resolveGuidePosition(guide, axis, original) {
   return Math.round(value);
 }
 
-function alignmentGuideOverlaySvg(panel, payload, locale = OPENPRD_FALLBACK_LOCALE) {
+function alignmentGuideOverlaySvg(panel, payload, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const guides = normalizeAlignmentGuides(payload, locale);
   const boxes = normalizeAlignmentBoxes(payload, locale);
   const guideSvg = guides.map((guide, index) => {
@@ -810,7 +810,7 @@ function alignmentGuideOverlaySvg(panel, payload, locale = OPENPRD_FALLBACK_LOCA
 </svg>`);
 }
 
-async function createAlignmentOverlayPanel(basePanel, payload, locale = OPENPRD_FALLBACK_LOCALE) {
+async function createAlignmentOverlayPanel(basePanel, payload, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const overlay = alignmentGuideOverlaySvg(basePanel, payload, locale);
   const input = await sharp(basePanel.input)
     .composite([{ input: overlay, left: 0, top: 0 }])

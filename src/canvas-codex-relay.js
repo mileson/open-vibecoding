@@ -57,8 +57,8 @@ function escapeCodexDelegationXml(value) {
 }
 
 function buildCodexDelegationText(sourceThreadId, inputText) {
-  const sourceId = trimString(sourceThreadId || 'openprd-canvas', 200);
-  const text = trimString(inputText || 'Please continue from this OpenPrd Canvas handoff.');
+  const sourceId = trimString(sourceThreadId || 'open-vibecoding-canvas', 200);
+  const text = trimString(inputText || 'Please continue from this Open VibeCoding Canvas handoff.');
   return [
     '<codex_delegation>',
     `  <source_thread_id>${escapeCodexDelegationXml(sourceId)}</source_thread_id>`,
@@ -68,14 +68,14 @@ function buildCodexDelegationText(sourceThreadId, inputText) {
 }
 
 function relayTimeoutMs(env = process.env) {
-  return parsePositiveInteger(env.OPENPRD_CANVAS_CODEX_RELAY_TIMEOUT_MS, CODEX_APP_SERVER_RELAY_TIMEOUT_MS);
+  return parsePositiveInteger(env.OPEN_VIBECODING_CANVAS_CODEX_RELAY_TIMEOUT_MS, CODEX_APP_SERVER_RELAY_TIMEOUT_MS);
 }
 
 function relayStartWaitMs(options = {}, env = process.env) {
   if (options.relayWaitMs != null) {
     return parsePositiveInteger(options.relayWaitMs, 0);
   }
-  return parsePositiveInteger(env.OPENPRD_CANVAS_CODEX_RELAY_START_WAIT_MS, CODEX_APP_SERVER_RELAY_START_WAIT_MS);
+  return parsePositiveInteger(env.OPEN_VIBECODING_CANVAS_CODEX_RELAY_START_WAIT_MS, CODEX_APP_SERVER_RELAY_START_WAIT_MS);
 }
 
 async function sleep(ms) {
@@ -122,8 +122,8 @@ function relayStatusSummary(statusDoc) {
 }
 
 async function resolveCodexAppServerBin(env = process.env) {
-  if (env.OPENPRD_CODEX_APP_SERVER_BIN) {
-    return env.OPENPRD_CODEX_APP_SERVER_BIN;
+  if (env.OPEN_VIBECODING_CODEX_APP_SERVER_BIN) {
+    return env.OPEN_VIBECODING_CODEX_APP_SERVER_BIN;
   }
   if (process.platform === 'darwin' && await exists(CODEX_APP_BUNDLE_BIN_PATH)) {
     return CODEX_APP_BUNDLE_BIN_PATH;
@@ -135,7 +135,7 @@ function codexRelaySkipReason(session, op, options = {}, env = process.env) {
   if (options.relay === false || options.disableRelay === true) {
     return 'disabled-by-request';
   }
-  if (env.OPENPRD_CANVAS_CODEX_RELAY === '0') {
+  if (env.OPEN_VIBECODING_CANVAS_CODEX_RELAY === '0') {
     return 'disabled-by-env';
   }
   if (String(op.target ?? '').toLowerCase() !== 'codex') {
@@ -149,9 +149,9 @@ function codexRelaySkipReason(session, op, options = {}, env = process.env) {
 
 function buildCodexRelayInput(session, op) {
   const input = [];
-  const text = trimString(op.promptText || op.instruction || 'Please continue from this OpenPrd Canvas handoff.');
+  const text = trimString(op.promptText || op.instruction || 'Please continue from this Open VibeCoding Canvas handoff.');
   if (text.trim()) {
-    const sourceThreadId = session.binding?.id || op.binding?.id || op.threadId || 'openprd-canvas';
+    const sourceThreadId = session.binding?.id || op.binding?.id || op.threadId || 'open-vibecoding-canvas';
     input.push({ type: 'text', text: buildCodexDelegationText(sourceThreadId, text) });
   }
   const exportPath = String(op.exportPath ?? '').trim();
@@ -162,8 +162,8 @@ function buildCodexRelayInput(session, op) {
 }
 
 function buildCodexAgentBridgePrompt(session, op) {
-  const text = trimString(op.promptText || op.instruction || 'Please continue from this OpenPrd Canvas handoff.');
-  const sourceThreadId = session.binding?.id || op.binding?.id || op.threadId || 'openprd-canvas';
+  const text = trimString(op.promptText || op.instruction || 'Please continue from this Open VibeCoding Canvas handoff.');
+  const sourceThreadId = session.binding?.id || op.binding?.id || op.threadId || 'open-vibecoding-canvas';
   return buildCodexDelegationText(sourceThreadId, text);
 }
 
@@ -386,7 +386,7 @@ async function queueCodexThreadRelay(session, op, options = {}, env = process.en
     threadId: session.binding.id,
   });
 
-  if (options.relayDryRun || env.OPENPRD_CANVAS_CODEX_RELAY_DRY_RUN === '1') {
+  if (options.relayDryRun || env.OPEN_VIBECODING_CANVAS_CODEX_RELAY_DRY_RUN === '1') {
     return {
       ...base,
       ...relayStatusSummary({ status: 'queued' }),

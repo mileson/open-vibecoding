@@ -1,0 +1,4 @@
+interface:
+  display_name: "Open VibeCoding Benchmark Router"
+  short_description: "Route Open VibeCoding benchmark, deep-review-lane, and icon resource requests to the right evidence"
+  default_prompt: "Use $open-vibecoding-benchmark-router to choose benchmark sources and route best-practice, PR-review-harness, or icon-resource research before changing Open VibeCoding."

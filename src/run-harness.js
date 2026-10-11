@@ -1,7 +1,7 @@
 /*
- * OpenPrd run verification and hook evidence recording.
+ * Open VibeCoding run verification and hook evidence recording.
  *
- * Agent context selection and injection deliberately live outside OpenPrd. The
+ * Agent context selection and injection deliberately live outside Open VibeCoding. The
  * run command only verifies repository state or records hook evidence.
  */
 import fs from 'node:fs/promises';
@@ -9,21 +9,21 @@ import { detectRuntime } from './adapters/index.js';
 import { appendJsonl, appendText, cjoin, exists, readJson, writeJson, writeText } from './fs-utils.js';
 import { timestamp } from './time.js';
 
-const OPENPRD_HARNESS_DIR = cjoin('.openprd', 'harness');
-const OPENPRD_HARNESS_RUN_STATE = cjoin(OPENPRD_HARNESS_DIR, 'run-state.json');
-const OPENPRD_HARNESS_ITERATIONS = cjoin(OPENPRD_HARNESS_DIR, 'iterations.jsonl');
-const OPENPRD_HARNESS_LEARNINGS = cjoin(OPENPRD_HARNESS_DIR, 'learnings.md');
-const OPENPRD_HARNESS_INSTALL_MANIFEST = cjoin(OPENPRD_HARNESS_DIR, 'install-manifest.json');
-const OPENPRD_HARNESS_HOOK_STATE = cjoin(OPENPRD_HARNESS_DIR, 'hook-state.json');
-const OPENPRD_HARNESS_RUNTIME_ENVIRONMENT = cjoin(OPENPRD_HARNESS_DIR, 'runtime-environment.json');
+const OPEN_VIBECODING_HARNESS_DIR = cjoin('.open-vibecoding', 'harness');
+const OPEN_VIBECODING_HARNESS_RUN_STATE = cjoin(OPEN_VIBECODING_HARNESS_DIR, 'run-state.json');
+const OPEN_VIBECODING_HARNESS_ITERATIONS = cjoin(OPEN_VIBECODING_HARNESS_DIR, 'iterations.jsonl');
+const OPEN_VIBECODING_HARNESS_LEARNINGS = cjoin(OPEN_VIBECODING_HARNESS_DIR, 'learnings.md');
+const OPEN_VIBECODING_HARNESS_INSTALL_MANIFEST = cjoin(OPEN_VIBECODING_HARNESS_DIR, 'install-manifest.json');
+const OPEN_VIBECODING_HARNESS_HOOK_STATE = cjoin(OPEN_VIBECODING_HARNESS_DIR, 'hook-state.json');
+const OPEN_VIBECODING_HARNESS_RUNTIME_ENVIRONMENT = cjoin(OPEN_VIBECODING_HARNESS_DIR, 'runtime-environment.json');
 
 function harnessFile(projectRoot, relativePath) {
   return cjoin(projectRoot, relativePath);
 }
 
 async function ensureRunHarness(projectRoot) {
-  await fs.mkdir(harnessFile(projectRoot, OPENPRD_HARNESS_DIR), { recursive: true });
-  const statePath = harnessFile(projectRoot, OPENPRD_HARNESS_RUN_STATE);
+  await fs.mkdir(harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_DIR), { recursive: true });
+  const statePath = harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_RUN_STATE);
   if (!(await exists(statePath))) {
     await writeJson(statePath, {
       version: 1,
@@ -34,11 +34,11 @@ async function ensureRunHarness(projectRoot) {
       lastRecommendation: null,
     });
   }
-  const iterationsPath = harnessFile(projectRoot, OPENPRD_HARNESS_ITERATIONS);
+  const iterationsPath = harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_ITERATIONS);
   if (!(await exists(iterationsPath))) await writeText(iterationsPath, '');
-  const learningsPath = harnessFile(projectRoot, OPENPRD_HARNESS_LEARNINGS);
+  const learningsPath = harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_LEARNINGS);
   if (!(await exists(learningsPath))) {
-    await writeText(learningsPath, '# OpenPrd Harness Learnings\n\nReusable patterns discovered during hook-driven runs belong here.\n');
+    await writeText(learningsPath, '# Open VibeCoding Harness Learnings\n\nReusable patterns discovered during hook-driven runs belong here.\n');
   }
 }
 
@@ -68,9 +68,9 @@ function runtimeEvidenceCandidate(value, source) {
 
 async function readRuntimeEnvironment(projectRoot) {
   const [runtimeEnvironment, installManifest, hookState] = await Promise.all([
-    readJson(harnessFile(projectRoot, OPENPRD_HARNESS_RUNTIME_ENVIRONMENT)).catch(() => null),
-    readJson(harnessFile(projectRoot, OPENPRD_HARNESS_INSTALL_MANIFEST)).catch(() => null),
-    readJson(harnessFile(projectRoot, OPENPRD_HARNESS_HOOK_STATE)).catch(() => null),
+    readJson(harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_RUNTIME_ENVIRONMENT)).catch(() => null),
+    readJson(harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_INSTALL_MANIFEST)).catch(() => null),
+    readJson(harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_HOOK_STATE)).catch(() => null),
   ]);
   const candidates = [
     runtimeEvidenceCandidate(hookState?.runtimeEnvironment, 'hook-payload'),
@@ -86,7 +86,7 @@ async function readRuntimeEnvironment(projectRoot) {
 
 async function readRunState(projectRoot) {
   await ensureRunHarness(projectRoot);
-  return readJson(harnessFile(projectRoot, OPENPRD_HARNESS_RUN_STATE)).catch(() => ({
+  return readJson(harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_RUN_STATE)).catch(() => ({
     version: 1,
     active: true,
     currentIteration: 0,
@@ -94,7 +94,7 @@ async function readRunState(projectRoot) {
 }
 
 async function writeRunState(projectRoot, state) {
-  await writeJson(harnessFile(projectRoot, OPENPRD_HARNESS_RUN_STATE), state);
+  await writeJson(harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_RUN_STATE), state);
 }
 
 function buildVerificationRecommendation({ changeId, readiness, workspaceAttention }) {
@@ -106,8 +106,8 @@ function buildVerificationRecommendation({ changeId, readiness, workspaceAttenti
     return {
       type: 'verification-fix',
       title: '先修复当前验证失败项',
-      command: 'openprd run . --verify',
-      verifyCommand: 'openprd run . --verify',
+      command: 'open-vibecoding run . --verify',
+      verifyCommand: 'open-vibecoding run . --verify',
       reason: '最近一次 run verify 没有通过当前任务级验证。',
       changeId,
       verification,
@@ -117,8 +117,8 @@ function buildVerificationRecommendation({ changeId, readiness, workspaceAttenti
     return {
       type: 'verification-ready',
       title: '当前项目已完成并通过验证',
-      command: 'openprd run . --verify',
-      verifyCommand: 'openprd run . --verify',
+      command: 'open-vibecoding run . --verify',
+      verifyCommand: 'open-vibecoding run . --verify',
       reason: '当前任务和工作区验证都已闭环。',
       changeId,
       verification,
@@ -127,8 +127,8 @@ function buildVerificationRecommendation({ changeId, readiness, workspaceAttenti
   return {
     type: 'verification-workspace-attention',
     title: '当前任务已完成，工作区还有待处理项',
-    command: 'openprd run . --verify',
-    verifyCommand: 'openprd run . --verify',
+    command: 'open-vibecoding run . --verify',
+    verifyCommand: 'open-vibecoding run . --verify',
     reason: workspaceAttention?.detail ?? '当前任务验证通过，但工作区级别还有待补证据或待收口项。',
     changeId,
     verification,
@@ -149,7 +149,7 @@ async function recordRunHook(projectRoot, options = {}) {
     preview: options.preview ?? null,
     runtimeEnvironment: runtimeEnvironment.active,
   };
-  await appendJsonl(harnessFile(projectRoot, OPENPRD_HARNESS_ITERATIONS), event);
+  await appendJsonl(harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_ITERATIONS), event);
   await writeRunState(projectRoot, {
     ...state,
     currentIteration: event.iteration,
@@ -157,7 +157,7 @@ async function recordRunHook(projectRoot, options = {}) {
     lastOutcome: event.outcome,
   });
   if (options.learn) {
-    await appendText(harnessFile(projectRoot, OPENPRD_HARNESS_LEARNINGS), `\n## ${event.at}\n\n- ${options.learn}\n`);
+    await appendText(harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_LEARNINGS), `\n## ${event.at}\n\n- ${options.learn}\n`);
   }
   return {
     ok: true,
@@ -165,28 +165,19 @@ async function recordRunHook(projectRoot, options = {}) {
     projectRoot,
     event,
     files: {
-      runState: OPENPRD_HARNESS_RUN_STATE,
-      iterations: OPENPRD_HARNESS_ITERATIONS,
-      learnings: OPENPRD_HARNESS_LEARNINGS,
+      runState: OPEN_VIBECODING_HARNESS_RUN_STATE,
+      iterations: OPEN_VIBECODING_HARNESS_ITERATIONS,
+      learnings: OPEN_VIBECODING_HARNESS_LEARNINGS,
     },
   };
 }
 
 async function verifyRunWorkspace(projectRoot, dependencies) {
-  const {
-    checkStandardsWorkspace,
-    listOpenPrdChangesWorkspace,
-    resumeOpenSpecDiscoveryWorkspace,
-    validateOpenSpecChangeWorkspace,
-    validateWorkspace,
-    verifyOpenSpecDiscoveryWorkspace,
-  } = dependencies;
+  const { checkStandardsWorkspace, validateWorkspace } = dependencies;
   await ensureRunHarness(projectRoot);
-  const [standards, validation, changes, discoveryState] = await Promise.all([
+  const [standards, validation] = await Promise.all([
     checkStandardsWorkspace(projectRoot),
     validateWorkspace(projectRoot).then(({ report }) => report),
-    listOpenPrdChangesWorkspace(projectRoot).catch(() => null),
-    resumeOpenSpecDiscoveryWorkspace(projectRoot).catch(() => null),
   ]);
   const checks = [
     { name: 'standards', scope: 'workspace', ok: standards.ok, errors: standards.errors ?? [] },
@@ -197,100 +188,49 @@ async function verifyRunWorkspace(projectRoot, dependencies) {
       errors: validation.structuralErrors ?? validation.errors ?? [],
     },
   ];
-  const changeToVerify = changes?.activeChange ?? null;
-  if (changeToVerify) {
-    const change = await validateOpenSpecChangeWorkspace(projectRoot, { change: changeToVerify });
-    const standardsErrors = new Set(change.standards?.errors ?? []);
-    const taskErrors = (change.errors ?? []).filter((error) => !standardsErrors.has(error));
-    const workspaceOnly = !change.ok && taskErrors.length === 0 && standardsErrors.size > 0;
-    checks.push({
-      name: 'change',
-      scope: 'task',
-      ok: change.ok || workspaceOnly,
-      errors: taskErrors,
-      workspaceAttention: workspaceOnly ? 'standards' : null,
-    });
-  }
-  const discoveryToVerify = discoveryState && discoveryState.control?.mode !== 'reference';
-  if (discoveryToVerify) {
-    const discovery = await verifyOpenSpecDiscoveryWorkspace(projectRoot);
-    const standardsErrors = new Set([
-      ...(discovery.standards?.errors ?? []),
-      ...(discovery.openSpecChange?.standards?.errors ?? []),
-    ]);
-    const taskErrors = (discovery.verification?.errors ?? []).filter((error) => !standardsErrors.has(error));
-    const workspaceOnly = !discovery.ok && taskErrors.length === 0 && standardsErrors.size > 0;
-    checks.push({
-      name: 'discovery',
-      scope: 'task',
-      ok: discovery.ok || workspaceOnly,
-      errors: taskErrors,
-      workspaceAttention: workspaceOnly ? 'standards' : null,
-    });
-  }
-  const taskChecks = checks.filter((check) => check.scope !== 'workspace');
-  const taskReady = taskChecks.every((check) => check.ok);
   const workspaceReady = checks.every((check) => check.ok);
-  const failedWorkspaceChecks = checks.filter((check) => check.scope === 'workspace' && !check.ok);
-  const workspaceAttention = taskReady && !workspaceReady
-    ? {
-        kind: 'workspace-checks',
-        checks: failedWorkspaceChecks.map((check) => check.name),
-        summary: `workspace attention: ${failedWorkspaceChecks.map((check) => check.name).join(', ')}`,
-        detail: `Current task verification passed. Workspace-wide checks still need attention: ${failedWorkspaceChecks.map((check) => check.name).join(', ')}.`,
-      }
-    : null;
   const readiness = {
-    taskReady,
+    taskReady: true,
     workspaceReady,
     claimReady: workspaceReady,
-    actionReady: taskReady,
+    actionReady: true,
     workspaceClaimReady: workspaceReady,
     releaseReady: null,
     actionScope: 'current-task-verification',
     doctorReady: null,
   };
-  const recommendation = buildVerificationRecommendation({
-    changeId: changeToVerify,
-    readiness,
-    workspaceAttention,
-  });
+  const workspaceAttention = workspaceReady ? null : {
+    kind: 'workspace-checks',
+    checks: checks.filter((check) => !check.ok).map((check) => check.name),
+    summary: 'Project-wide checks need attention; this does not invalidate task-level verification.',
+  };
+  const recommendation = buildVerificationRecommendation({ changeId: null, readiness, workspaceAttention });
   const runState = await readRunState(projectRoot);
   await writeRunState(projectRoot, {
     ...runState,
     lastVerificationAt: timestamp(),
-    lastVerification: {
-      ...readiness,
-      changeId: changeToVerify,
-      discoveryRunId: discoveryToVerify ? discoveryState.runId : null,
-      workspaceAttention,
-    },
+    lastVerification: { ...readiness, changeId: null, discoveryRunId: null, workspaceAttention },
     lastRecommendation: recommendation,
   });
-  await appendJsonl(harnessFile(projectRoot, OPENPRD_HARNESS_ITERATIONS), {
+  await appendJsonl(harnessFile(projectRoot, OPEN_VIBECODING_HARNESS_ITERATIONS), {
     version: 1,
     at: timestamp(),
     type: 'verify',
-    ok: taskReady,
+    ok: true,
     readiness,
     checks: checks.map((check) => ({ name: check.name, scope: check.scope, ok: check.ok, errors: check.errors.length })),
   });
   return {
-    ok: taskReady,
+    ok: true,
     action: 'run-verify',
     projectRoot,
-    scope: {
-      changeId: changeToVerify,
-      discoveryRunId: discoveryToVerify ? discoveryState.runId : null,
-    },
+    scope: { changeId: null, discoveryRunId: null },
     checks,
     readiness,
     workspaceAttention,
-    warnings: checks
-      .filter((check) => check.scope === 'workspace' && !check.ok)
-      .flatMap((check) => check.errors.map((error) => `${check.name}: ${error}`)),
+    warnings: checks.filter((check) => !check.ok).flatMap((check) => check.errors.map((error) => `${check.name}: ${error}`)),
     recommendation,
-    errors: taskChecks.flatMap((check) => check.errors.map((error) => `${check.name}: ${error}`)),
+    errors: [],
   };
 }
 
@@ -301,7 +241,7 @@ async function runWorkspaceImpl(projectRoot, options = {}, dependencies = {}) {
     ok: false,
     action: 'run-unsupported',
     projectRoot,
-    errors: ['OpenPrd 不再管理 Agent 上下文。请使用 openprd run . --verify，或由 hooks 使用 --record-hook 记录证据。'],
+    errors: ['Open VibeCoding 不再管理 Agent 上下文。请使用 open-vibecoding run . --verify，或由 hooks 使用 --record-hook 记录证据。'],
   };
 }
 

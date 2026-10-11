@@ -2,7 +2,7 @@
 
 ## 核心功能
 
-为同一 OpenPrd 项目中的多 Agent、多线程和多工作树提供可持久化、可并发控制的 Lane/Task 运行时。
+为同一 Open VibeCoding 项目中的多 Agent、多线程和多工作树提供可持久化、可并发控制的 Lane/Task 运行时。
 
 ## 输入
 
@@ -14,7 +14,7 @@
 
 ## 定位
 
-本目录是 OpenPrd 项目控制面的独立运行时内核；当前不直接接管 CLI、loop、session 或平台 Adapter。
+本目录是 Open VibeCoding 项目控制面的独立运行时内核；当前不直接接管 CLI、loop、session 或平台 Adapter。
 
 ## 依赖
 

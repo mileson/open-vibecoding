@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, test } from 'node:test';
 
-import { initWorkspace } from '../src/openprd.js';
+import { initWorkspace } from '../src/open-vibecoding.js';
 
 import {
   makeCodexHookProject,
@@ -17,23 +17,23 @@ import {
   writeCodexTranscript,
 } from './helpers/requirement-gate-helpers.js';
 
-process.env.OPENPRD_HOME = path.join(os.tmpdir(), 'openprd-test-home-requirement-gate-safety');
+process.env.OPEN_VIBECODING_HOME = path.join(os.tmpdir(), 'open-vibecoding-test-home-requirement-gate-safety');
 
 describe('Codex hook safety and design gates', () => {
   test('Codex hook keeps skill visualization advisory without blocking edits', async () => {
     const { project } = await makeCodexHookProject();
 
     const skillPrompt = runCodexHook(project, 'UserPromptSubmit', {
-      prompt: '先分析一下并准备修改 skills/openprd-shared/SKILL.md 和 AGENTS.md，优化这个 skill workflow。',
+      prompt: '先分析一下并准备修改 skills/open-vibecoding-shared/SKILL.md 和 AGENTS.md，优化这个 skill workflow。',
     });
     assert.equal(skillPrompt.continue, true);
     assert.equal(skillPrompt.hookSpecificOutput, undefined);
-    const skillGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'skill-visualization-gate.json'), 'utf8'));
+    const skillGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'skill-visualization-gate.json'), 'utf8'));
     assert.equal(skillGate.active, true);
 
     const blockedSkillPatch = runCodexHook(project, 'PreToolUse', {
       tool_name: 'apply_patch',
-      tool_input: '*** Begin Patch\n*** Update File: skills/openprd-shared/SKILL.md\n@@\n+- pending edit\n*** End Patch',
+      tool_input: '*** Begin Patch\n*** Update File: skills/open-vibecoding-shared/SKILL.md\n@@\n+- pending edit\n*** End Patch',
     });
     assert.equal(blockedSkillPatch.decision, undefined);
     assert.equal(blockedSkillPatch.continue, true);
@@ -43,13 +43,13 @@ describe('Codex hook safety and design gates', () => {
       prompt: '确认执行',
     });
     assert.equal(confirmed.continue, true);
-    const confirmedGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'skill-visualization-gate.json'), 'utf8'));
+    const confirmedGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'skill-visualization-gate.json'), 'utf8'));
     assert.equal(confirmedGate.active, false);
     assert.equal(confirmedGate.status, 'user-confirmed-after-visualization');
 
     const allowedSkillPatch = runCodexHook(project, 'PreToolUse', {
       tool_name: 'apply_patch',
-      tool_input: '*** Begin Patch\n*** Update File: skills/openprd-shared/SKILL.md\n@@\n+- confirmed edit\n*** End Patch',
+      tool_input: '*** Begin Patch\n*** Update File: skills/open-vibecoding-shared/SKILL.md\n@@\n+- confirmed edit\n*** End Patch',
     });
     assert.equal(allowedSkillPatch.continue, true);
   });
@@ -62,7 +62,7 @@ describe('Codex hook safety and design gates', () => {
     });
     assert.equal(repoPrompt.continue, true);
     assert.equal(repoPrompt.hookSpecificOutput, undefined);
-    let researchGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'research-gate.json'), 'utf8'));
+    let researchGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'research-gate.json'), 'utf8'));
     assert.equal(researchGate.kind, 'deepwiki');
     assert.equal(researchGate.active, true);
 
@@ -83,7 +83,7 @@ describe('Codex hook safety and design gates', () => {
       tool_name: 'deepwiki__ask_question',
       tool_input: { question: 'What are the main subsystems?' },
     });
-    researchGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'research-gate.json'), 'utf8'));
+    researchGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'research-gate.json'), 'utf8'));
     assert.equal(researchGate.active, false);
     assert.equal(researchGate.status, 'evidence-collected');
 
@@ -92,7 +92,7 @@ describe('Codex hook safety and design gates', () => {
     });
     assert.equal(contextPrompt.continue, true);
     assert.equal(contextPrompt.hookSpecificOutput, undefined);
-    researchGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'research-gate.json'), 'utf8'));
+    researchGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'research-gate.json'), 'utf8'));
     assert.equal(researchGate.kind, 'context7');
     assert.equal(researchGate.active, true);
 
@@ -113,7 +113,7 @@ describe('Codex hook safety and design gates', () => {
       tool_name: 'context7__query_docs',
       tool_input: { question: 'How do I configure migration steps?' },
     });
-    researchGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'research-gate.json'), 'utf8'));
+    researchGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'research-gate.json'), 'utf8'));
     assert.equal(researchGate.active, false);
     assert.equal(researchGate.status, 'evidence-collected');
   });
@@ -126,7 +126,7 @@ describe('Codex hook safety and design gates', () => {
     });
     assert.equal(frontendPrompt.continue, true);
 
-    await fs.writeFile(path.join(project, '.openprd', 'harness', 'requirement-gate.json'), JSON.stringify({
+    await fs.writeFile(path.join(project, '.open-vibecoding', 'harness', 'requirement-gate.json'), JSON.stringify({
       version: 1,
       active: false,
       status: 'not-required',
@@ -150,7 +150,7 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(blockedPatchPayload.continue, true);
     assert.ok(JSON.stringify(blockedPatchPayload).includes('design attention'));
 
-    const activeDir = path.join(project, '.openprd', 'design', 'active');
+    const activeDir = path.join(project, '.open-vibecoding', 'design', 'active');
     await fs.writeFile(path.join(activeDir, 'facts-sheet.md'), '# Facts\n\n- 开放时间：10:00-17:00\n- 中文语音导览：7 GBP\n- 会员优先：已知用户输入\n');
     await fs.writeFile(path.join(activeDir, 'asset-spec.md'), '# Assets\n\n- 品牌资产：暂无官方素材，先用文字与中性色块表达\n');
     await fs.writeFile(path.join(activeDir, 'image-preflight.md'), '# Image preflight\n\n- 真实馆藏图片：当前缺失\n- 降级方案：先用明确的馆藏卡片占位并标记待替换\n');
@@ -182,7 +182,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '请直接实现一个西双版纳雨林观鸟导览首页，不要停下来问问题。',
     });
 
-    await fs.writeFile(path.join(project, '.openprd', 'harness', 'requirement-gate.json'), JSON.stringify({
+    await fs.writeFile(path.join(project, '.open-vibecoding', 'harness', 'requirement-gate.json'), JSON.stringify({
       version: 1,
       active: false,
       status: 'not-required',
@@ -227,7 +227,7 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(allowedWrite.decision, undefined);
     assert.equal(allowedWrite.continue, true);
 
-    const armedGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'patch-mode-gate.json'), 'utf8'));
+    const armedGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'patch-mode-gate.json'), 'utf8'));
     assert.equal(armedGate.active, true);
     assert.equal(armedGate.status, 'write-attempted');
 
@@ -245,7 +245,7 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(releasedRead.decision, undefined);
     assert.equal(releasedRead.continue, true);
 
-    const closedGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'patch-mode-gate.json'), 'utf8'));
+    const closedGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'patch-mode-gate.json'), 'utf8'));
     assert.equal(closedGate.active, false);
     assert.equal(closedGate.status, 'write-observed');
   });
@@ -259,7 +259,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '请直接实现一个西双版纳雨林观鸟导览首页，不要停下来问问题。',
     });
 
-    await fs.writeFile(path.join(project, '.openprd', 'harness', 'requirement-gate.json'), JSON.stringify({
+    await fs.writeFile(path.join(project, '.open-vibecoding', 'harness', 'requirement-gate.json'), JSON.stringify({
       version: 1,
       active: false,
       status: 'not-required',
@@ -284,13 +284,13 @@ describe('Codex hook safety and design gates', () => {
       session_id: sessionId,
       tool_name: 'Bash',
       tool_input: {
-        command: "sed -n '1,80p' .openprd/design/active/facts-sheet.md",
+        command: "sed -n '1,80p' .open-vibecoding/design/active/facts-sheet.md",
       },
     });
     assert.equal(secondFocus.decision, undefined);
     assert.equal(secondFocus.continue, true);
 
-    const gateAfterFocus = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'patch-mode-gate.json'), 'utf8'));
+    const gateAfterFocus = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'patch-mode-gate.json'), 'utf8'));
     assert.equal(gateAfterFocus.active, true);
     assert.equal(gateAfterFocus.phase, 'handoff');
     assert.equal(gateAfterFocus.status, 'handoff-awaiting-entry-write');
@@ -323,7 +323,7 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(allowedWrite.decision, undefined);
     assert.equal(allowedWrite.continue, true);
 
-    const armedGate = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'patch-mode-gate.json'), 'utf8'));
+    const armedGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'patch-mode-gate.json'), 'utf8'));
     assert.equal(armedGate.active, true);
     assert.equal(armedGate.status, 'write-attempted');
   });
@@ -337,7 +337,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '请直接实现一个西双版纳雨林观鸟导览首页，不要停下来问问题。',
     });
 
-    await fs.writeFile(path.join(project, '.openprd', 'harness', 'requirement-gate.json'), JSON.stringify({
+    await fs.writeFile(path.join(project, '.open-vibecoding', 'harness', 'requirement-gate.json'), JSON.stringify({
       version: 1,
       active: false,
       status: 'not-required',
@@ -357,7 +357,7 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(focusRead.decision, undefined);
     assert.equal(focusRead.continue, true);
 
-    const gateAfterFocus = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'patch-mode-gate.json'), 'utf8'));
+    const gateAfterFocus = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'patch-mode-gate.json'), 'utf8'));
     assert.equal(gateAfterFocus.active, true);
     assert.equal(gateAfterFocus.phase, 'handoff');
     assert.equal(gateAfterFocus.status, 'handoff-focus-read');
@@ -373,7 +373,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '请直接实现一个西双版纳雨林观鸟导览首页，不要停下来问问题。',
     });
 
-    await fs.writeFile(path.join(project, '.openprd', 'harness', 'requirement-gate.json'), JSON.stringify({
+    await fs.writeFile(path.join(project, '.open-vibecoding', 'harness', 'requirement-gate.json'), JSON.stringify({
       version: 1,
       active: false,
       status: 'not-required',
@@ -392,7 +392,7 @@ describe('Codex hook safety and design gates', () => {
     assert.equal(focusRead.decision, undefined);
     assert.equal(focusRead.continue, true);
 
-    const gateAfterFocus = JSON.parse(await fs.readFile(path.join(project, '.openprd', 'harness', 'patch-mode-gate.json'), 'utf8'));
+    const gateAfterFocus = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'patch-mode-gate.json'), 'utf8'));
     assert.equal(gateAfterFocus.active, true);
     assert.equal(gateAfterFocus.phase, 'handoff');
     assert.equal(gateAfterFocus.status, 'handoff-focus-read');
@@ -408,7 +408,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '请直接实现一个西双版纳雨林观鸟导览首页，不要停下来问问题。',
     });
 
-    await fs.writeFile(path.join(project, '.openprd', 'harness', 'requirement-gate.json'), JSON.stringify({
+    await fs.writeFile(path.join(project, '.open-vibecoding', 'harness', 'requirement-gate.json'), JSON.stringify({
       version: 1,
       active: false,
       status: 'not-required',
@@ -450,7 +450,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '请直接实现一个西双版纳雨林观鸟导览首页，不要停下来问问题。',
     });
 
-    await fs.writeFile(path.join(project, '.openprd', 'harness', 'requirement-gate.json'), JSON.stringify({
+    await fs.writeFile(path.join(project, '.open-vibecoding', 'harness', 'requirement-gate.json'), JSON.stringify({
       version: 1,
       active: false,
       status: 'not-required',
@@ -574,9 +574,9 @@ describe('Codex hook safety and design gates', () => {
     const boardSignal = runCodexHook(project, 'PostToolUse', {
       tool_name: 'Bash',
       tool_input: {
-        cmd: 'openprd visual-compare . --board verification-board.json --json',
+        cmd: 'open-vibecoding visual-compare . --board verification-board.json --json',
       },
-      tool_response: '{"mode":"verification-board","outputPath":".openprd/harness/visual-reviews/visual-verification-board-test.jpg"}',
+      tool_response: '{"mode":"verification-board","outputPath":".open-vibecoding/harness/visual-reviews/visual-verification-board-test.jpg"}',
     });
     assert.deepEqual(boardSignal, { continue: true });
 
@@ -588,12 +588,12 @@ describe('Codex hook safety and design gates', () => {
     );
   });
 
-  test('Stop hook reminds about project-level closeout when final verification artifacts are missing', async () => {
+  test('Stop hook reminds about risk-based verification without requiring old artifacts', async () => {
     const project = await makeTempProject();
     await initWorkspace(project, { templatePack: 'consumer' });
     await fs.mkdir(path.join(project, 'src'), { recursive: true });
     await fs.writeFile(path.join(project, 'src', 'closeout.js'), 'export const closeout = true;\n');
-    await fs.writeFile(path.join(project, '.openprd', 'harness', 'turn-state.json'), `${JSON.stringify({
+    await fs.writeFile(path.join(project, '.open-vibecoding', 'harness', 'turn-state.json'), `${JSON.stringify({
       version: 1,
       prompt: '继续把这轮实现完整收口。',
       touchedFiles: ['src/closeout.js'],
@@ -608,22 +608,22 @@ describe('Codex hook safety and design gates', () => {
       ],
     }, null, 2)}\n`);
 
-    const stop = spawnSync(process.execPath, [path.join(project, '.codex', 'hooks', 'openprd-hook.mjs'), 'Stop'], {
+    const stop = spawnSync(process.execPath, [path.join(project, '.codex', 'hooks', 'open-vibecoding-hook.mjs'), 'Stop'], {
       cwd: project,
       input: JSON.stringify({ cwd: project, hook_event_name: 'Stop' }),
       encoding: 'utf8',
       env: {
         ...process.env,
-        OPENPRD_CLI: path.resolve('openprd/bin/openprd.js'),
+        OPEN_VIBECODING_CLI: path.resolve('open-vibecoding/bin/open-vibecoding.js'),
       },
     });
     assert.equal(stop.status, 0);
     const payload = JSON.parse(stop.stdout);
     const context = payload.hookSpecificOutput.additionalContext;
-    assert.match(context, /项目级收口证据还没补齐/);
-    assert.doesNotMatch(context, /openprd quality \. --verify/);
-    assert.match(context, /openprd run \. --verify/);
-    assert.match(context, /Markdown \/ HTML 测试报告/);
+    assert.match(context, /按本次风险运行足够的测试/);
+    assert.doesNotMatch(context, /open-vibecoding quality \. --verify/);
+    assert.doesNotMatch(context, /open-vibecoding run \. --verify/);
+    assert.match(context, /不要求固定的 run、PRD/);
   });
 
   test('Codex hook reserves blockHook for the raw vault safety boundary only', async () => {

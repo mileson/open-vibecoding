@@ -25,7 +25,7 @@ class RevisionConflictError extends Error {
   constructor(streamId, expectedRevision, actualRevision) {
     super(`Revision conflict for ${streamId}: expected ${expectedRevision}, found ${actualRevision}`);
     this.name = 'RevisionConflictError';
-    this.code = 'OPENPRD_LEDGER_REVISION_CONFLICT';
+    this.code = 'OPEN_VIBECODING_LEDGER_REVISION_CONFLICT';
     this.streamId = streamId;
     this.expectedRevision = expectedRevision;
     this.actualRevision = actualRevision;
@@ -36,7 +36,7 @@ class IdempotencyConflictError extends Error {
   constructor(idempotencyKey, existingEventId) {
     super(`Idempotency key ${idempotencyKey} was already used by ${existingEventId} with different content`);
     this.name = 'IdempotencyConflictError';
-    this.code = 'OPENPRD_LEDGER_IDEMPOTENCY_CONFLICT';
+    this.code = 'OPEN_VIBECODING_LEDGER_IDEMPOTENCY_CONFLICT';
     this.idempotencyKey = idempotencyKey;
     this.existingEventId = existingEventId;
   }
@@ -65,7 +65,7 @@ function normalizeProjectionName(name) {
 }
 
 function ledgerPaths(projectRoot) {
-  const root = path.join(path.resolve(projectRoot), '.openprd', 'ledger');
+  const root = path.join(path.resolve(projectRoot), '.open-vibecoding', 'ledger');
   return {
     root,
     events: path.join(root, 'events.jsonl'),
@@ -425,7 +425,7 @@ function openProjectLedger(projectRoot, options = {}) {
     const projection = await readJsonIfExists(filePath, null);
     if (projection === null) {
       const error = new Error(`Projection ${name} does not exist at ${filePath}`);
-      error.code = 'OPENPRD_PROJECTION_NOT_FOUND';
+      error.code = 'OPEN_VIBECODING_PROJECTION_NOT_FOUND';
       throw error;
     }
     return projection;

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Open VibeCoding Shared"
+  short_description: "Shared rules for Open VibeCoding agent workflows"
+  default_prompt: "Use $open-vibecoding-shared to follow the shared guardrails for operating an Open VibeCoding workspace."

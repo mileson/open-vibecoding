@@ -1,0 +1,4 @@
+interface:
+  display_name: "Open VibeCoding Harness"
+  short_description: "Choose Open VibeCoding capabilities by task context"
+  default_prompt: "Use $open-vibecoding-harness for contextual product, interaction, development, testing, and Vibe Coding guidance."

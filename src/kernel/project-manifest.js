@@ -30,9 +30,9 @@ const CURRENT_FORMATS = Object.freeze({
 
 class ProjectManifestValidationError extends Error {
   constructor(errors) {
-    super(`Invalid OpenPrd project manifest: ${errors.map((item) => `${item.path} ${item.message}`).join('; ')}`);
+    super(`Invalid Open VibeCoding project manifest: ${errors.map((item) => `${item.path} ${item.message}`).join('; ')}`);
     this.name = 'ProjectManifestValidationError';
-    this.code = 'OPENPRD_INVALID_PROJECT_MANIFEST';
+    this.code = 'OPEN_VIBECODING_INVALID_PROJECT_MANIFEST';
     this.errors = errors;
   }
 }
@@ -57,7 +57,7 @@ function positiveVersion(value) {
 }
 
 function projectManifestPath(projectRoot) {
-  return path.join(path.resolve(projectRoot), '.openprd', 'manifest.json');
+  return path.join(path.resolve(projectRoot), '.open-vibecoding', 'manifest.json');
 }
 
 function validateProjectManifest(manifest) {
@@ -109,21 +109,21 @@ function assertProjectManifestCompatible(manifest, options = {}) {
 
   if (manifest.schemaVersion > supportedManifestVersion) {
     throw new ManifestCompatibilityError(
-      'OPENPRD_MANIFEST_TOO_NEW',
-      `Manifest schema ${manifest.schemaVersion} requires a newer OpenPrd reader`,
+      'OPEN_VIBECODING_MANIFEST_TOO_NEW',
+      `Manifest schema ${manifest.schemaVersion} requires a newer Open VibeCoding reader`,
       { requiredVersion: manifest.schemaVersion, supportedVersion: supportedManifestVersion },
     );
   }
   if (manifest.compatibility.minimumReaderVersion > readerVersion) {
     throw new ManifestCompatibilityError(
-      'OPENPRD_READER_TOO_OLD',
+      'OPEN_VIBECODING_READER_TOO_OLD',
       `Project requires reader ${manifest.compatibility.minimumReaderVersion}, current reader is ${readerVersion}`,
       { requiredVersion: manifest.compatibility.minimumReaderVersion, supportedVersion: readerVersion },
     );
   }
   if (mode === 'write' && manifest.compatibility.minimumWriterVersion > writerVersion) {
     throw new ManifestCompatibilityError(
-      'OPENPRD_WRITER_TOO_OLD',
+      'OPEN_VIBECODING_WRITER_TOO_OLD',
       `Project requires writer ${manifest.compatibility.minimumWriterVersion}, current writer is ${writerVersion}`,
       { requiredVersion: manifest.compatibility.minimumWriterVersion, supportedVersion: writerVersion },
     );
@@ -133,7 +133,7 @@ function assertProjectManifestCompatible(manifest, options = {}) {
     const supportedVersion = supportedFormats[format];
     if (!positiveVersion(supportedVersion) || requiredVersion > supportedVersion) {
       throw new ManifestCompatibilityError(
-        'OPENPRD_FORMAT_TOO_NEW',
+        'OPEN_VIBECODING_FORMAT_TOO_NEW',
         `Project format ${format}@${requiredVersion} is newer than supported ${supportedVersion ?? 0}`,
         { format, requiredVersion, supportedVersion: supportedVersion ?? 0 },
       );
@@ -173,8 +173,8 @@ async function readProjectManifest(projectRoot, options = {}) {
   const manifestPath = projectManifestPath(projectRoot);
   const manifest = await readJsonIfExists(manifestPath, null);
   if (manifest === null) {
-    const error = new Error(`OpenPrd project manifest does not exist at ${manifestPath}`);
-    error.code = 'OPENPRD_MANIFEST_NOT_FOUND';
+    const error = new Error(`Open VibeCoding project manifest does not exist at ${manifestPath}`);
+    error.code = 'OPEN_VIBECODING_MANIFEST_NOT_FOUND';
     throw error;
   }
   return withoutRetiredFormats(assertProjectManifestCompatible(manifest, options));

@@ -1,6 +1,6 @@
 /*
  * Core purpose
- * React CanvasApp component and boot logic for the `openprd canvas` app.
+ * React CanvasApp component and boot logic for the `open-vibecoding canvas` app.
  *
  * Positioning
  * Raw inline <script type="module"> payload (part 2 of 2), extracted from
@@ -123,7 +123,7 @@ export const CANVAS_APP_CLIENT_APP = `
                     savedAt: new Date().toISOString(),
                   }),
                 }).catch((error) => {
-                  console.warn("OpenPrd canvas background migration failed", error);
+                  console.warn("Open VibeCoding canvas background migration failed", error);
                 });
               }
             }
@@ -217,7 +217,7 @@ export const CANVAS_APP_CLIENT_APP = `
               });
               previews[item.id] = canvas.toDataURL("image/png");
             } catch (error) {
-              console.warn("OpenPrd canvas library preview failed", error);
+              console.warn("Open VibeCoding canvas library preview failed", error);
             }
           }
           if (!cancelled) {
@@ -277,7 +277,7 @@ export const CANVAS_APP_CLIENT_APP = `
         const nextItems = Array.isArray(items) ? items : [];
         setLibraryItems(nextItems);
         persistLibraryItems(nextItems).catch((error) => {
-          console.warn("OpenPrd canvas library save failed", error);
+          console.warn("Open VibeCoding canvas library save failed", error);
         });
       }
 
@@ -294,7 +294,7 @@ export const CANVAS_APP_CLIENT_APP = `
             body: JSON.stringify(downloadFileName ? { filename: downloadFileName } : { path: targetPath }),
           });
         } catch (error) {
-          console.warn("OpenPrd canvas open folder failed", error);
+          console.warn("Open VibeCoding canvas open folder failed", error);
           setActionStatus((current) => ({
             type: "error",
             message: t.openFolderFailed,
@@ -316,7 +316,7 @@ export const CANVAS_APP_CLIENT_APP = `
             downloadFileName: result.filename,
           });
         } catch (error) {
-          console.warn("OpenPrd canvas save-as failed", error);
+          console.warn("Open VibeCoding canvas save-as failed", error);
           setActionStatus({ type: "error", message: t.saveFailed });
         }
       }
@@ -336,7 +336,7 @@ export const CANVAS_APP_CLIENT_APP = `
             openPath: exportData.exportPath || "",
           });
         } catch (error) {
-          console.warn("OpenPrd canvas image export failed", error);
+          console.warn("Open VibeCoding canvas image export failed", error);
           setActionStatus({ type: "error", message: error?.code === "empty-scene" ? t.emptySceneExportBody : t.exportFailed });
         } finally {
           setIsExporting(false);
@@ -350,7 +350,7 @@ export const CANVAS_APP_CLIENT_APP = `
         setIsDownloadingSelection(true);
         setActionStatus({ type: "busy", message: t.downloadingSelectedImage });
         try {
-          const filename = createExportFilename("openprd-selected-image");
+          const filename = createExportFilename("open-vibecoding-selected-image");
           const exported = await exportCanvasElements({
             requireSelection: true,
             intent: "download-selected-image",
@@ -372,7 +372,7 @@ export const CANVAS_APP_CLIENT_APP = `
             downloadFileName: fileName,
           });
         } catch (error) {
-          console.warn("OpenPrd canvas selected image download failed", error);
+          console.warn("Open VibeCoding canvas selected image download failed", error);
           setActionStatus({ type: "error", message: t.downloadSelectedImageFailed });
         } finally {
           setIsDownloadingSelection(false);
@@ -463,7 +463,7 @@ export const CANVAS_APP_CLIENT_APP = `
           let relayTimedOut = false;
           const relay = await withTimeout(recordCodexHandoff(composer.exported, promptText, locale, instruction, annotationContext), codexRelayUiTimeoutMs).catch((error) => {
             relayTimedOut = error?.message === "timeout";
-            console.warn("OpenPrd canvas handoff record failed", error);
+            console.warn("Open VibeCoding canvas handoff record failed", error);
             return null;
           });
           const copied = await withTimeout(copyTextToClipboard(promptText), 1800).catch(() => false);
@@ -532,7 +532,7 @@ export const CANVAS_APP_CLIENT_APP = `
           let relayTimedOut = false;
           const relay = await withTimeout(recordCodexImageRequestHandoff(promptText, locale, instruction, imageComposer.template, created), codexRelayUiTimeoutMs).catch((error) => {
             relayTimedOut = error?.message === "timeout";
-            console.warn("OpenPrd canvas image handoff record failed", error);
+            console.warn("Open VibeCoding canvas image handoff record failed", error);
             return null;
           });
           const copied = await withTimeout(copyTextToClipboard(promptText), 1800).catch(() => false);
@@ -545,7 +545,7 @@ export const CANVAS_APP_CLIENT_APP = `
           });
           setImageComposer(null);
         } catch (error) {
-          console.warn("OpenPrd canvas image request failed", error);
+          console.warn("Open VibeCoding canvas image request failed", error);
           setImageComposer((current) => current ? {
             ...current,
             status: "ready",
@@ -577,14 +577,14 @@ export const CANVAS_APP_CLIENT_APP = `
       return h("div", { className: "shell" },
         h("header", { className: "topbar" },
           h("div", { className: "brand" },
-            h("strong", null, "OpenPrd Canvas"),
+            h("strong", null, "Open VibeCoding Canvas"),
             h("span", null, t.appSubtitle),
           ),
           h("div", { className: "actions" },
             h("select", {
               className: "language-select",
               "aria-label": t.languageLabel,
-              "data-testid": "openprd-canvas-locale",
+              "data-testid": "open-vibecoding-canvas-locale",
               value: locale,
               onChange: changeLocale,
             },
@@ -601,7 +601,7 @@ export const CANVAS_APP_CLIENT_APP = `
                 window.__openprdExcalidrawAPI = api;
               },
               initialData,
-              name: "OpenPrd Canvas",
+              name: "Open VibeCoding Canvas",
               langCode: locale,
               UIOptions: {
                 canvasActions: {
@@ -622,25 +622,25 @@ export const CANVAS_APP_CLIENT_APP = `
               },
               onLibraryChange: handleLibraryChange,
             }),
-            selectedCount > 0 && h("div", { className: "selection-sendbar", "data-testid": "openprd-canvas-selection-sendbar" },
+            selectedCount > 0 && h("div", { className: "selection-sendbar", "data-testid": "open-vibecoding-canvas-selection-sendbar" },
               h("strong", null, formatMessage(t.selectedCount, { count: selectedCount })),
               selectedImageCount > 0 && h("button", {
                 className: "text-button subtle-button",
                 disabled: isDownloadingSelection || isSending,
                 onClick: downloadSelectedImage,
-                "data-testid": "openprd-canvas-download-image",
+                "data-testid": "open-vibecoding-canvas-download-image",
               }, toolIcon("export"), h("span", null, isDownloadingSelection ? t.downloadingSelectedImage : t.downloadSelectedImage)),
               h("button", {
                 className: "text-button primary-button",
                 disabled: isSending,
                 onClick: prepareSelectionForCodex,
-                "data-testid": "openprd-canvas-send-codex",
+                "data-testid": "open-vibecoding-canvas-send-codex",
               }, toolIcon("send"), h("span", null, isSending ? t.sendingToCodex : t.sendToCodex)),
             ),
-            composer && h("div", { className: "composer-backdrop", "data-testid": "openprd-canvas-composer" },
-              h("section", { className: "composer-modal", role: "dialog", "aria-modal": "true", "aria-labelledby": "openprd-canvas-composer-title" },
+            composer && h("div", { className: "composer-backdrop", "data-testid": "open-vibecoding-canvas-composer" },
+              h("section", { className: "composer-modal", role: "dialog", "aria-modal": "true", "aria-labelledby": "open-vibecoding-canvas-composer-title" },
                 h("div", { className: "composer-header" },
-                  h("h2", { id: "openprd-canvas-composer-title" }, composer.title || t.composerTitle),
+                  h("h2", { id: "open-vibecoding-canvas-composer-title" }, composer.title || t.composerTitle),
                   h("button", { className: "text-button", onClick: () => setComposer(null) }, h("span", null, t.dismiss)),
                 ),
                 h("div", { className: "composer-body" },
@@ -656,7 +656,7 @@ export const CANVAS_APP_CLIENT_APP = `
                       placeholder: t.instructionPlaceholder,
                       disabled: isSending || composer.status === "sent",
                       onChange: updateComposerInstruction,
-                      "data-testid": "openprd-canvas-composer-prompt",
+                      "data-testid": "open-vibecoding-canvas-composer-prompt",
                     }),
                   ),
                   composer.body && h("p", { className: "composer-status" }, composer.body),
@@ -668,15 +668,15 @@ export const CANVAS_APP_CLIENT_APP = `
                     className: "text-button primary-button",
                     disabled: isSending || composer.status === "sent",
                     onClick: sendComposerToCodex,
-                    "data-testid": "openprd-canvas-composer-submit",
+                    "data-testid": "open-vibecoding-canvas-composer-submit",
                   }, toolIcon("send"), h("span", null, isSending || composer.status === "sending" ? t.sendingToCodex : t.sendToCodex)),
                 ),
               ),
             ),
-            imageComposer && h("div", { className: "composer-backdrop", "data-testid": "openprd-canvas-image-composer" },
-              h("section", { className: "composer-modal", role: "dialog", "aria-modal": "true", "aria-labelledby": "openprd-canvas-image-composer-title" },
+            imageComposer && h("div", { className: "composer-backdrop", "data-testid": "open-vibecoding-canvas-image-composer" },
+              h("section", { className: "composer-modal", role: "dialog", "aria-modal": "true", "aria-labelledby": "open-vibecoding-canvas-image-composer-title" },
                 h("div", { className: "composer-header" },
-                  h("h2", { id: "openprd-canvas-image-composer-title" }, t.aiImageComposerTitle),
+                  h("h2", { id: "open-vibecoding-canvas-image-composer-title" }, t.aiImageComposerTitle),
                   h("button", { className: "text-button", onClick: () => setImageComposer(null), disabled: isRequestingImage }, h("span", null, t.dismiss)),
                 ),
                 h("div", { className: "composer-body" },
@@ -694,7 +694,7 @@ export const CANVAS_APP_CLIENT_APP = `
                     placeholder: t.aiImageInstructionPlaceholder,
                     disabled: isRequestingImage,
                     onChange: updateImageComposerInstruction,
-                    "data-testid": "openprd-canvas-image-prompt",
+                    "data-testid": "open-vibecoding-canvas-image-prompt",
                   }),
                   imageComposer.error && h("p", { className: "composer-error" }, imageComposer.error),
                 ),
@@ -704,14 +704,14 @@ export const CANVAS_APP_CLIENT_APP = `
                     className: "text-button primary-button",
                     disabled: isRequestingImage,
                     onClick: submitImageTemplateRequest,
-                    "data-testid": "openprd-canvas-create-ai-image",
+                    "data-testid": "open-vibecoding-canvas-create-ai-image",
                   }, toolIcon("send"), h("span", null, isRequestingImage ? t.sendingToCodex : t.createAiImageCard)),
                 ),
               ),
             ),
           ),
           h("aside", { className: "rail" },
-            h("section", { className: "thread-summary", "data-testid": "openprd-canvas-thread-summary" },
+            h("section", { className: "thread-summary", "data-testid": "open-vibecoding-canvas-thread-summary" },
               h("p", { className: "thread-title" }, conversationTitle(t)),
               h("div", { className: "thread-id-row" },
                 h("p", { className: "thread-id" }, conversationId()),
@@ -721,27 +721,31 @@ export const CANVAS_APP_CLIENT_APP = `
                   title: t.copyThreadPrompt,
                   "aria-label": t.copyThreadPrompt,
                   onClick: copyThreadPrompt,
-                  "data-testid": "openprd-canvas-copy-thread",
+                  "data-testid": "open-vibecoding-canvas-copy-thread",
                 }, toolIcon("copy")),
               ),
             ),
-            h("section", { className: "rail-actions", "data-testid": "openprd-canvas-rail-actions" },
-              h("div", { className: "rail-action-group", "data-testid": "openprd-canvas-review-board" },
+            h("section", { className: "rail-actions", "data-testid": "open-vibecoding-canvas-rail-actions" },
+              h("div", { className: "rail-action-group", "data-testid": "open-vibecoding-canvas-review-board" },
                 h("p", { className: "rail-heading" }, t.reviewBoardTitle),
-                guide && h("div", { className: "guide-strip", "data-testid": "openprd-canvas-guide" },
-                  h("strong", null, formatMessage(t.reviewGuideStage, {
-                    index: guide.currentStage.index,
-                    total: guide.totalStages,
-                    title: guide.currentStage.title,
-                  })),
-                  guide.nextAction && h("span", null, formatMessage(t.reviewGuideNext, { action: guide.nextAction })),
+                guide && h("div", { className: "guide-strip", "data-testid": "open-vibecoding-canvas-guide" },
+                  h("strong", null, guide.mode === "contextual"
+                    ? t.reviewGuideContextual
+                    : formatMessage(t.reviewGuideStage, {
+                      index: guide.currentStage.index,
+                      total: guide.totalStages,
+                      title: guide.currentStage.title,
+                    })),
+                  guide.mode === "contextual"
+                    ? h("span", null, t.reviewGuideContextualHint)
+                    : guide.nextAction && h("span", null, formatMessage(t.reviewGuideNext, { action: guide.nextAction })),
                 ),
                 h("button", {
                   className: "rail-action-button",
                   title: t.importReviewDirections,
                   disabled: isImportingDirections,
                   onClick: handleImportReviewDirections,
-                  "data-testid": "openprd-canvas-import-directions",
+                  "data-testid": "open-vibecoding-canvas-import-directions",
                 }, toolIcon("export"), h("span", null, isImportingDirections ? t.importingReviewDirections : t.importReviewDirections)),
               ),
               h("div", { className: "rail-action-group" },
@@ -751,44 +755,44 @@ export const CANVAS_APP_CLIENT_APP = `
                     className: "rail-action-button",
                     title: t.saveCanvas,
                     onClick: handleSaveCanvas,
-                    "data-testid": "openprd-canvas-save",
+                    "data-testid": "open-vibecoding-canvas-save",
                   }, toolIcon("save"), h("span", null, t.saveCanvas)),
                   h("button", {
                     className: "rail-action-button",
                     title: t.exportImage,
                     disabled: isExporting,
                     onClick: handleExportImage,
-                    "data-testid": "openprd-canvas-export-image",
+                    "data-testid": "open-vibecoding-canvas-export-image",
                   }, toolIcon("export"), h("span", null, isExporting ? t.exportingImage : t.exportImage)),
                   h("button", {
                     className: "rail-action-button danger",
                     title: t.resetCanvas,
                     onClick: resetCanvas,
-                    "data-testid": "openprd-canvas-reset",
+                    "data-testid": "open-vibecoding-canvas-reset",
                   }, toolIcon("reset"), h("span", null, t.resetCanvas)),
                 ),
                 actionStatus && h("div", {
                   className: "action-status" + (actionStatus.type === "error" ? " error" : "") + (actionStatus.type === "busy" ? " busy" : ""),
-                  "data-testid": "openprd-canvas-action-status",
+                  "data-testid": "open-vibecoding-canvas-action-status",
                 },
                   h("span", null, actionStatus.message),
                   (actionStatus.openPath || actionStatus.downloadFileName) && h("button", {
                     className: "status-folder-button",
                     disabled: isOpeningFolder,
                     onClick: () => openContainingFolder(actionStatus),
-                    "data-testid": "openprd-canvas-open-folder",
+                    "data-testid": "open-vibecoding-canvas-open-folder",
                   }, isOpeningFolder ? t.openingFolder : t.openContainingFolder),
                 ),
               ),
               h("div", { className: "rail-action-group" },
                 h("p", { className: "rail-heading" }, t.aiImageTemplatesTitle),
-                h("div", { className: "template-grid", "data-testid": "openprd-canvas-ai-templates" },
+                h("div", { className: "template-grid", "data-testid": "open-vibecoding-canvas-ai-templates" },
                   aiTemplates.map((template) => h("button", {
                     key: template.id,
                     className: "template-tile",
                     title: template.title + " " + template.label,
                     onClick: () => openImageTemplate(template),
-                    "data-testid": "openprd-canvas-ai-template-" + template.id,
+                    "data-testid": "open-vibecoding-canvas-ai-template-" + template.id,
                   },
                     h("span", {
                       className: "template-preview",
@@ -802,13 +806,13 @@ export const CANVAS_APP_CLIENT_APP = `
               ),
               h("div", { className: "rail-action-group" },
                 h("p", { className: "rail-heading" }, t.personalLibraryTitle),
-                h("div", { className: "library-grid", "data-testid": "openprd-canvas-personal-library" },
+                h("div", { className: "library-grid", "data-testid": "open-vibecoding-canvas-personal-library" },
                   libraryItems.map((item, index) => h("button", {
                     key: item.id || index,
                     className: "library-tile",
                     title: libraryItemName(item, index),
                     onClick: () => insertLibraryItem(item),
-                    "data-testid": "openprd-canvas-library-item",
+                    "data-testid": "open-vibecoding-canvas-library-item",
                   },
                     h("span", { className: "library-item-preview", "aria-hidden": "true" },
                       libraryPreviews[item.id]
@@ -821,7 +825,7 @@ export const CANVAS_APP_CLIENT_APP = `
                     className: "library-tile",
                     title: t.blankCard,
                     onClick: () => addBlankCard(t.placeholderText),
-                    "data-testid": "openprd-canvas-blank-card",
+                    "data-testid": "open-vibecoding-canvas-blank-card",
                   },
                     h("span", { className: "library-card-preview", "aria-hidden": "true" }),
                     h("span", null, t.blankCard),

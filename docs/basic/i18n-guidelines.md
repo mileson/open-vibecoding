@@ -6,9 +6,9 @@
 
 ## 核心原则
 
-1. **文案不硬编码**：用户可见字符串必须走 i18n 框架，不得直接写死在源码里
-2. **默认语言为中文**：`sourceLanguage` / 基准语言默认简体中文（zh-Hans / zh-CN）
-3. **至少支持英文扩展**：首版至少预留英文（en）翻译路径，即使暂不翻译也要把 key 结构建好
+1. **文案可本地化**：用户可见文案使用项目支持的本地化机制；SwiftUI 可提取字面量也是有效方式
+2. **源语言遵循项目**：保持已声明的 `sourceLanguage` / 基准语言，不统一改为中文
+3. **语言范围遵循产品**：同步已有支持语言，新增语种按产品目标决定，不虚构已完成译文
 4. **翻译文件与代码分离**：翻译资源集中管理，不分散在各个组件/页面里
 5. **意译优先**：英文翻译使用 native speaker 地道表达，不直译
 6. **按载体压缩**：按钮、Tab、菜单和短标签按目标语言的软件产品习惯写成紧凑 UI 文案，不照搬源语言句式
@@ -35,7 +35,7 @@
 
 ## 用户可配置
 
-项目级 i18n 配置文件：`.openprd/i18n-config.json`
+项目级 i18n 配置文件：`.open-vibecoding/i18n-config.json`。以下为中文/英文项目示例，沿用实际项目语言与配置，不要求新建配置文件。
 
 ```json
 {
@@ -63,7 +63,9 @@
 
 ### 推荐方案：String Catalog (.xcstrings)
 
-Xcode 15+ 原生支持的 String Catalog 是 iOS 多语言的现代最佳实践，替代了旧的 `.strings` / `.stringsdict` 文件。
+条件允许时优先采用 Xcode 15+ 的 String Catalog 管理源资源。采用 catalog 与采用新 Swift API 是两项判断：前者会编译成运行时 `.strings` / `.stringsdict`，不因此要求提高最低系统版本；后者按本地 SDK availability 和项目部署版本核实。工具链/CI、第三方资源或兼容条件不足时保留有依据的旧路径。
+
+完整的实施与迁移方法由独立能力 [iOS 多语言最佳实践](../../skills/open-vibecoding-ios-localization/SKILL.md) 维护；[Apple 官方介绍](https://developer.apple.com/videos/play/wwdc2023/10155/) 支持多个 catalog 和逐步迁移。资源目录与表的组织遵循当前项目，不强制扁平合并主表。
 
 ### 文件结构
 
@@ -71,11 +73,9 @@ Xcode 15+ 原生支持的 String Catalog 是 iOS 多语言的现代最佳实践�
 YourApp/
 ├── Resources/
 │   └── Localization/
-│       └── Localizable.xcstrings    # 唯一的翻译文件
-├── Utilities/
-│   └── LocalizationManager.swift    # 语言切换管理器
-└── Extensions/
-    └── String+Localized.swift       # 便捷扩展
+│       ├── Localizable.xcstrings    # 默认表
+│       └── Module.xcstrings         # 按实际模块需要拆表
+└── ...                             # 按 target/bundle 保留资源归属
 ```
 
 ### .xcstrings 文件格式
@@ -136,58 +136,30 @@ YourApp/
 ### 代码使用方式
 
 ```swift
-// String 扩展（推荐）
-extension String {
-    var localized: String {
-        NSLocalizedString(self, comment: "")
-    }
+// SwiftUI：保留可提取的本地化字面量
+Text("Settings")
+Button("Save") { /* action */ }
 
-    func localized(with args: CVarArg...) -> String {
-        String(format: NSLocalizedString(self, comment: ""), arguments: args)
-    }
-}
+// 需要普通 String 时，先核实 API 与部署版本适用
+let message = String(localized: "Saved")
 
-// 使用
-Text("settings.title".localized)
-Button("camera.button.capture".localized) { ... }
-
-// 带参数
-Text("profile.welcome".localized(with: userName))
-// key: "profile.welcome" → value: "欢迎，%@"
-
-// 模块化：不同 table
-"key".localized(tableName: "ModuleLocalizable")
-
-// App Intents
-LocalizedStringResource("intent.title")
+// 需要传递本地化资源时，同样先核实 availability
+let title = LocalizedStringResource("Settings")
 ```
 
-### 语言切换管理器
+以上是以英文源文本为例的 API 用法，不要求变更项目源语言或现有 key。使用稳定 key 时保留对应源值、注释及 table/bundle；动态构造的 key 不能假定自动提取。
 
-```swift
-class LocalizationManager: ObservableObject {
-    static let shared = LocalizationManager()
+### 语言切换与兼容
 
-    @AppStorage("app_language") var currentLanguage: String = "zh-Hans" {
-        didSet { objectWillChange.send() }
-    }
-
-    var availableLanguages: [(code: String, name: String)] {
-        [
-            ("zh-Hans", "简体中文"),
-            ("en", "English"),
-        ]
-    }
-}
-```
+语言切换沿用项目已经验证的 locale、bundle 与 UI 更新机制；仅保存一个 AppStorage 值并不会证明资源查找已经切换。既有 `.localized` 或 `NSLocalizedString` 可因动态语言、旧系统、Objective-C 或第三方 bundle 需要而保留，不作为新 SwiftUI 实现的统一默认模板。资源迁移不自动授权全项目调用侧重写。
 
 ### 检查清单
 
-- [ ] 所有用户可见文案使用 `.localized` 或 `LocalizedStringResource`
-- [ ] `.xcstrings` 文件中 `sourceLanguage` 设为 `zh-Hans`
-- [ ] 每个 key 至少有 `zh-Hans` 和 `en` 两个翻译
-- [ ] 按钮、标签、提示分别使用对应的 key 前缀
-- [ ] 带参数的文案使用 `%@` / `%d` 占位符
+- [ ] 本地化字面量、资源类型或兼容查找与当前工具链和部署版本匹配
+- [ ] 源语言和已有支持语言保持正确，译文缺口单独说明
+- [ ] 迁移保留各表 key 语义、注释、参数、复数与变体，不能覆盖同名冲突
+- [ ] target/bundle 引用与构建产物正确；编译后的 `.strings` 不是残留源码
+- [ ] 语言切换、fallback 及真实控件的文案布局已按所需范围验证
 - [ ] 不要把协议匹配字符串、正则、调试日志做 i18n
 
 ---
@@ -758,7 +730,7 @@ export default defineNuxtConfig({
 3. **新增页面/功能**：包含用户可见文案的新功能模块
 
 检查流程：
-1. 读取 `.openprd/i18n-config.json` 获取项目配置
+1. 读取 `.open-vibecoding/i18n-config.json` 获取项目配置
 2. 如果 `enforceOnDevCheck` 为 true，检查本次改动是否包含硬编码文案
 3. 发现硬编码文案时提醒用户，并主动帮助提取为 i18n key
 4. 默认按 `defaultLanguage` 写入基准翻译，按 `supportedLanguages` 补齐其余翻译

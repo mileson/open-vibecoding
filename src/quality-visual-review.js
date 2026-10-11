@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { cjoin, readJson } from './fs-utils.js';
 
-const VISUAL_REVIEW_DIR = cjoin('.openprd', 'harness', 'visual-reviews');
+const VISUAL_REVIEW_DIR = cjoin('.open-vibecoding', 'harness', 'visual-reviews');
 const VISUAL_REVIEW_SCHEMA = 'openprd.visual-review.v1';
 const VISUAL_REVIEW_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 

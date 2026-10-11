@@ -9,7 +9,7 @@
  * 返回动作词、短摘要、详细说明，以及 commit / handoff / review 可复用的格式化结果。
  *
  * 定位
- * 位于 OpenPrd 用户可见变化表达层，连接 loop、handoff 和 review 文案约定。
+ * 位于 Open VibeCoding 用户可见变化表达层，连接 loop、handoff 和 review 文案约定。
  *
  * 依赖
  * 仅依赖基础字符串处理，不依赖 workspace 或渲染上下文。

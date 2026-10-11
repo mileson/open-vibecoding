@@ -1,0 +1,3 @@
+interface:
+  display_name: "【研发】实现功能并验证结果"
+  short_description: "根据明确目标自主拆解并完成开发，运行相关验证检查实际结果。"

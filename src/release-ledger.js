@@ -6,10 +6,10 @@
  * 接收项目根目录、版本号、变化说明、tag 同步结果等项目级 release 信息。
  *
  * 输出
- * 读写 `.openprd/state/release-ledger.json`，并返回 handoff、status、commit 可复用的结构化版本摘要。
+ * 读写 `.open-vibecoding/state/release-ledger.json`，并返回 handoff、status、commit 可复用的结构化版本摘要。
  *
  * 定位
- * 位于 OpenPrd 的项目发布事实层，刻意与内部 PRD `v000x` 快照版本分离。
+ * 位于 Open VibeCoding 的项目发布事实层，刻意与内部 PRD `v000x` 快照版本分离。
  *
  * 依赖
  * 依赖 fs-utils、change-summary 和基础时间工具，不依赖 workspace workflow。
@@ -49,7 +49,7 @@ function buildSemverHint(version) {
   return {
     matchesSemver: false,
     normalizedVersion: normalized,
-    warning: `当前项目版本 ${normalized} 未匹配 x.y.z 形式；OpenPrd 仍会保留它，但不会把 semver 当成强校验。`,
+    warning: `当前项目版本 ${normalized} 未匹配 x.y.z 形式；Open VibeCoding 仍会保留它，但不会把 semver 当成强校验。`,
   };
 }
 
@@ -165,7 +165,7 @@ export function normalizeReleaseLedger(raw) {
 }
 
 export function releaseLedgerPath(projectRoot) {
-  return cjoin(projectRoot, '.openprd', 'state', 'release-ledger.json');
+  return cjoin(projectRoot, '.open-vibecoding', 'state', 'release-ledger.json');
 }
 
 export async function loadReleaseLedger(projectRoot) {

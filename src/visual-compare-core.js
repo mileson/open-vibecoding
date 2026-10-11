@@ -7,7 +7,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { compactTimestamp } from './time.js';
 import {
-  OPENPRD_FALLBACK_LOCALE,
+  OPEN_VIBECODING_FALLBACK_LOCALE,
   detectPrimaryLanguage,
   isChineseLocale,
   isEnglishHeavyText,
@@ -465,7 +465,7 @@ export function defaultOutputPath(projectRoot, format, mode) {
   const prefix = MODE_PREFIX[mode] ?? 'visual-compare';
   return path.join(
     projectRoot,
-    '.openprd',
+    '.open-vibecoding',
     'harness',
     'visual-reviews',
     `${prefix}-${compactTimestamp()}.${outputExtension(format)}`,
@@ -695,7 +695,7 @@ export function sectionHeaderSvg(width, index, label, reason = '') {
   };
 }
 
-export function metricsSvg(width, metrics = [], notes = null, locale = OPENPRD_FALLBACK_LOCALE) {
+export function metricsSvg(width, metrics = [], notes = null, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   const contentWidth = Math.max(Number(width) || 0, 1);
   const lines = [];
@@ -942,7 +942,7 @@ export function normalizeImageSpec(projectRoot, value, fallbackLabel) {
   throw new Error('Board image spec must be a path string or an object with { path, label? }.');
 }
 
-export function normalizeMetricList(metrics, locale = OPENPRD_FALLBACK_LOCALE) {
+export function normalizeMetricList(metrics, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   if (!metrics) {
     return [];
@@ -969,7 +969,7 @@ export function normalizeMetricList(metrics, locale = OPENPRD_FALLBACK_LOCALE) {
   return [];
 }
 
-export function normalizeMediaList(projectRoot, media, locale = OPENPRD_FALLBACK_LOCALE) {
+export function normalizeMediaList(projectRoot, media, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   if (!Array.isArray(media)) {
     return [];
@@ -993,7 +993,7 @@ export function normalizeMediaList(projectRoot, media, locale = OPENPRD_FALLBACK
     });
 }
 
-export function normalizeVerificationItems(projectRoot, payload, locale = OPENPRD_FALLBACK_LOCALE) {
+export function normalizeVerificationItems(projectRoot, payload, locale = OPEN_VIBECODING_FALLBACK_LOCALE) {
   const copy = visualCopyForLocale(locale);
   let rawItems = Array.isArray(payload.items) ? payload.items : [];
   if (rawItems.length === 0 && Array.isArray(payload.screenshots)) {

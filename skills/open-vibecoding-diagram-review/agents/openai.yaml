@@ -1,0 +1,4 @@
+interface:
+  display_name: "【增强】用图讲清架构与业务流程"
+  short_description: "用结构图或流程图解释复杂关系，帮助理解边界、依赖与业务步骤。"
+  default_prompt: "Use $open-vibecoding-diagram-review to generate a diagram artifact, self-review it, and preserve unresolved items as readiness attention without creating a user confirmation pause."

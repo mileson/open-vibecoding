@@ -31,7 +31,7 @@ function growthCandidateApplyModeLabel(candidate) {
 
 function growthCandidateScopeLabel(scope) {
   if (scope === 'user-local') return '当前用户本地偏好';
-  if (scope === 'openprd-core') return 'OpenPrd 核心规则';
+  if (scope === 'open-vibecoding-core') return 'Open VibeCoding 核心规则';
   return '项目共享规则';
 }
 
@@ -55,8 +55,8 @@ function describeGrowthCandidateImpact(candidate) {
   if (candidate.type === 'user-preference') {
     return `会把偏好 ${candidate.key} 写入当前用户本地配置，不进入项目共享规则。`;
   }
-  if (candidate.scope === 'openprd-core') {
-    return '采纳后会进入 OpenPrd 核心规则，请确认是否值得作为跨项目默认行为。';
+  if (candidate.scope === 'open-vibecoding-core') {
+    return '采纳后会进入 Open VibeCoding 核心规则，请确认是否值得作为跨项目默认行为。';
   }
   return `采纳后会写入${growthCandidateScopeLabel(candidate.scope)}，请确认这是否是你想要固化的范围。`;
 }
@@ -117,13 +117,13 @@ function printGrowthResult(result, json) {
   }
 
   if (result.action === 'growth-init') {
-    console.log('OpenPrd growth: 已初始化');
+    console.log('Open VibeCoding growth: 已初始化');
     console.log(`候选队列: ${result.files.candidates}`);
     printGrowthLedger(result.ledger);
     return;
   }
 
-  console.log(`OpenPrd growth: ${result.ok ? '完成' : '失败'}`);
+  console.log(`Open VibeCoding growth: ${result.ok ? '完成' : '失败'}`);
   if (result.summary) {
     console.log(`候选: ${result.summary.pending} 待确认，${result.summary.applied} 已应用，${result.summary.rejected} 已拒绝。`);
   }
@@ -152,8 +152,8 @@ function printGrowthResult(result, json) {
       console.log(`    - ${formatGrowthSuggestedPatch(candidate.suggestedPatch)}`);
     }
     if (candidate.status === 'pending') {
-      console.log(`  收工复盘采纳命令: openprd grow . --apply --id ${candidate.id}`);
-      console.log(`  拒绝命令: openprd grow . --reject --id ${candidate.id}`);
+      console.log(`  收工复盘采纳命令: open-vibecoding grow . --apply --id ${candidate.id}`);
+      console.log(`  拒绝命令: open-vibecoding grow . --reject --id ${candidate.id}`);
     }
   }
   for (const change of result.changed ?? []) {

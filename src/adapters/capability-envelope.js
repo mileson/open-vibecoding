@@ -45,7 +45,7 @@ const BASE_CAPABILITIES = Object.freeze({
 function normalizeClient(value) {
   const client = String(value ?? '').trim().toLowerCase();
   if (!Object.prototype.hasOwnProperty.call(BASE_CAPABILITIES, client)) {
-    throw new Error(`Unsupported OpenPrd adapter client: ${value}`);
+    throw new Error(`Unsupported Open VibeCoding adapter client: ${value}`);
   }
   return client;
 }

@@ -33,7 +33,7 @@ async function gateWorkspace(projectRoot, options = {}) {
       ok: false,
       action: `gate-${action}`,
       projectRoot: path.resolve(projectRoot),
-      error: { code: error?.code ?? 'OPENPRD_GATE_ERROR', message: error instanceof Error ? error.message : String(error) },
+      error: { code: error?.code ?? 'OPEN_VIBECODING_GATE_ERROR', message: error instanceof Error ? error.message : String(error) },
     };
   }
 }

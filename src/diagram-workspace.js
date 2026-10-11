@@ -1,9 +1,30 @@
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { buildPrdSnapshot, formatVersionId } from './prd-core.js';
 import { buildDiagramArtifact, renderDiagramArtifactFromModel, renderDiagramMermaidFromModel, validateDiagramContract, validateDiagramLanguage } from './diagram-core.js';
 import { exists, readJson, writeJson, writeText } from './fs-utils.js';
-import { appendDecision, appendProgress, appendWorkflowEvent, loadLatestVersionSnapshot, loadWorkspace, readVersionIndex, resolveActiveTemplatePack, resolveCurrentProductType } from './workspace-core.js';
+import { appendWorkflowEvent, loadLatestVersionSnapshot, loadWorkspace } from './workspace-core.js';
+
+function diagramContextFromInput(projectRoot, contract) {
+  const empty = [];
+  return {
+    title: contract.title ?? path.basename(projectRoot),
+    owner: contract.metadata?.owner ?? '未指定',
+    versionId: null,
+    productType: contract.metadata?.productType ?? null,
+    sections: {
+      meta: { title: contract.title ?? path.basename(projectRoot) },
+      problem: { problemStatement: null },
+      users: { primaryUsers: empty, stakeholders: empty },
+      goals: { goals: empty, successMetrics: empty, acceptanceGoals: empty },
+      scope: { inScope: empty, outOfScope: empty },
+      scenarios: { primaryFlows: empty, edgeCases: empty, failureModes: empty },
+      requirements: { functional: empty, nonFunctional: empty },
+      constraints: { dependencies: empty, technical: empty, compliance: empty },
+      risks: { assumptions: empty, openQuestions: empty },
+      handoff: { targetSystem: null },
+    },
+  };
+}
 
 async function openInBrowser(filePath) {
   const platform = process.platform;
@@ -159,9 +180,6 @@ async function diagramWorkspace(projectRoot, options = {}) {
       htmlPath,
       mermaidPath,
     });
-    await appendDecision(ws, [
-      `Marked ${label} diagram as ${options.mark}.`,
-    ]);
     if (options.open) {
       await openInBrowser(htmlPath);
     }
@@ -179,19 +197,6 @@ async function diagramWorkspace(projectRoot, options = {}) {
     };
   }
 
-  const versionIndex = await readVersionIndex(ws);
-  const latestVersion = versionIndex.length > 0 ? await loadLatestVersionSnapshot(ws) : null;
-  const snapshot = latestVersion?.snapshot ?? buildPrdSnapshot(ws, {
-    ...ws.data.currentState,
-    versionNumber: ws.data.currentState?.prdVersion ?? (versionIndex.at(-1)?.versionNumber ?? 0),
-    versionId: ws.data.currentState?.prdVersion > 0
-      ? formatVersionId(ws.data.currentState.prdVersion)
-      : (versionIndex.at(-1)?.versionId ?? 'v0000'),
-    productType: resolveCurrentProductType(ws),
-    templatePack: resolveActiveTemplatePack(ws),
-    status: ws.data.currentState?.status ?? 'draft',
-  });
-
   const contract = options.input
     ? await readJson(path.resolve(options.input))
     : null;
@@ -204,6 +209,11 @@ async function diagramWorkspace(projectRoot, options = {}) {
       throw new Error(`Invalid ${type} diagram contract:\n- ${validation.errors.join('\n- ')}`);
     }
   }
+  const latestVersion = await loadLatestVersionSnapshot(ws);
+  if (!contract && !latestVersion) {
+    throw new Error('A diagram needs an explicit --input contract or an existing historical snapshot.');
+  }
+  const snapshot = latestVersion?.snapshot ?? diagramContextFromInput(ws.projectRoot, contract);
   const artifact = buildDiagramArtifact(snapshot, { type, contract });
   if (options.mark) {
     artifact.model.metadata = {
@@ -229,18 +239,6 @@ async function diagramWorkspace(projectRoot, options = {}) {
     htmlPath,
     mermaidPath,
   });
-  await appendProgress(ws, [
-    `已为 ${snapshot.title} 生成 ${label} 图表产物。`,
-    `HTML: ${htmlPath}`,
-    `Mermaid: ${mermaidPath}`,
-    ...(options.input ? [`Input contract: ${path.resolve(options.input)}`] : []),
-  ]);
-  await appendDecision(ws, [
-    `已为 ${snapshot.title} 创建 ${label} 图表评审产物。`,
-    type === 'product-flow'
-      ? '请在需求定稿前使用该产物确认步骤、决策点和恢复路径。'
-      : '请在需求定稿前使用该产物确认组件、边界和缺失系统。',
-  ]);
 
   if (options.open) {
     await openInBrowser(htmlPath);

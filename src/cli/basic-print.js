@@ -1,9 +1,9 @@
 /*
  * 核心功能
- * 渲染 OpenPrd 基础工作流与初始化相关命令的人类可读输出或 JSON 输出。
+ * 渲染工作区初始化、状态、学习和项目版本相关输出。
  *
  * 输入
- * 接收 validate、status、classify、clarify、capture、interview、playground、learning、init 等结果对象。
+ * 接收 validate、status、learning、init、release 等结果对象。
  *
  * 输出
  * 向终端输出结构化摘要，或在 `--json` 模式下直出 JSON。
@@ -15,7 +15,7 @@
  * 仅依赖终端输出和 result 字段契约，不承担业务写入或子进程执行。
  *
  * 维护规则
- * 新增基础工作流结果字段时同步更新文本输出与 JSON 可读性，保持对外提示风格一致。
+ * 输出保持用户可读；不重新引入旧版 PRD 工作流提示。
  */
 import { formatProductTypeDisplay, formatTemplatePackDisplay } from '../product-type-copy.js';
 import { printOptionalCapabilitySuggestions } from './shared-print.js';
@@ -31,7 +31,7 @@ function printValidation(report, json) {
   }
 
   if (report.valid) {
-    console.log('OpenPrd 校验通过');
+    console.log('Open VibeCoding 校验通过');
     if (report.warnings.length > 0) {
       console.log('警告:');
       for (const warning of report.warnings) {
@@ -41,7 +41,7 @@ function printValidation(report, json) {
     return;
   }
 
-  console.log('OpenPrd 校验失败');
+  console.log('Open VibeCoding 校验失败');
   for (const error of report.errors) {
     console.log(`- ${error}`);
   }
@@ -54,7 +54,6 @@ function printValidation(report, json) {
 }
 
 function printStatus(ws, report, guidance, json) {
-  const versionIndex = Array.isArray(ws.data.versionIndex) ? ws.data.versionIndex : [];
   const learningReview = ws.data.config?.learningReview ?? null;
   const projectRelease = ws.data.releaseLedger ?? null;
   const currentRelease = projectRelease?.currentVersion
@@ -63,16 +62,11 @@ function printStatus(ws, report, guidance, json) {
   const summary = {
     projectRoot: ws.projectRoot,
     workspaceRoot: ws.workspaceRoot,
-    schema: ws.data.schema?.name ?? null,
     templatePack: resolveActiveTemplatePack(ws),
     productTypes: ws.data.config?.supportedProductTypes ?? [],
-    prdVersion: ws.data.currentState?.prdVersion ?? 0,
-    latestVersionId: ws.data.currentState?.latestVersionId ?? versionIndex.at(-1)?.versionId ?? null,
-    versionCount: versionIndex.length,
     valid: report.valid,
     errors: report.errors,
     warnings: report.warnings,
-    activeEngagementStatus: ws.data.currentState?.status ?? 'unknown',
     scenario: guidance?.clarification?.scenario?.label ?? null,
     userParticipationMode: guidance?.clarification?.scenario?.userParticipation ?? null,
     currentStage: guidance?.gates?.currentStage ?? guidance?.gates?.currentGate ?? null,
@@ -95,12 +89,8 @@ function printStatus(ws, report, guidance, json) {
   }
 
   console.log(`工作区: ${summary.workspaceRoot}`);
-  console.log(`Schema: ${summary.schema}`);
   console.log(`场景模板: ${formatTemplatePackDisplay(summary.templatePack, { fallback: '待确认' })}`);
   console.log(`支持的产品场景: ${summary.productTypes.length > 0 ? summary.productTypes.map((type) => formatProductTypeDisplay(type, { fallback: type })).join(' / ') : '待确认'}`);
-  console.log(`PRD 版本: ${summary.prdVersion}`);
-  console.log(`最新版本: ${summary.latestVersionId ?? '无'}`);
-  console.log(`版本数量: ${summary.versionCount}`);
   if (summary.projectRelease?.enabled) {
     console.log(`项目版本: ${summary.projectRelease.currentVersion ?? '未设置'}`);
     if (summary.projectRelease.currentStatus) {
@@ -108,7 +98,6 @@ function printStatus(ws, report, guidance, json) {
     }
     console.log(`版本条目数: ${summary.projectRelease.itemCount}`);
   }
-  console.log(`状态: ${summary.activeEngagementStatus}`);
   if (summary.scenario) {
     console.log(`场景: ${summary.scenario}`);
   }
@@ -152,14 +141,14 @@ function printReleaseResult(result, json) {
   }
 
   if (!result.ok) {
-    console.log('OpenPrd release: 失败');
+    console.log('Open VibeCoding release: 失败');
     for (const error of result.errors ?? []) {
       console.log(`- ${error}`);
     }
     return;
   }
 
-  console.log(`OpenPrd release: ${result.changed ? '已更新' : '当前状态'}`);
+  console.log(`Open VibeCoding release: ${result.changed ? '已更新' : '当前状态'}`);
   console.log(`版本账本: ${result.releaseLedgerPath}`);
   console.log(`已启用: ${result.summary.enabled ? '是' : '否'}`);
   console.log(`当前项目版本: ${result.summary.currentVersion ?? '未设置'}`);
@@ -185,110 +174,10 @@ function printReleaseResult(result, json) {
   }
 }
 
-function printClassifyResult(result, json) {
-  if (json) {
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
 
-  console.log(`已锁定产品场景: ${formatProductTypeDisplay(result.currentState.productType, { fallback: '待确认' })}`);
-  console.log(`场景模板: ${formatTemplatePackDisplay(result.currentState.templatePack, { fallback: '待确认' })}`);
-}
 
-function printClarifyResult(result, json) {
-  if (json) {
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
 
-  const projectFraming = result.intakeReflection?.projectContext?.projectFraming ?? null;
 
-  console.log(`需求补充建议: ${result.ws.workspaceRoot}`);
-  console.log(`场景: ${result.clarification.scenario.label}`);
-  console.log(`用户参与: ${result.clarification.scenario.userParticipation}`);
-  console.log(`待补基础字段: ${result.clarification.missingRequiredFields}`);
-  console.log(`高价值待澄清点: ${result.clarification.mustAskUser.length}`);
-  if (result.clarifyPresentation) {
-    console.log(`澄清呈现: ${result.clarifyPresentation.label}`);
-    console.log(`呈现原因: ${result.clarifyPresentation.reason}`);
-  }
-  console.log('建议优先补充（不阻断）:');
-  for (const item of result.clarification.mustAskUser) {
-    console.log(`- ${item.prompt}`);
-  }
-  if (projectFraming) {
-    console.log('首轮项目画像:');
-    console.log(`- 适用对象: ${projectFraming.audience}`);
-    console.log(`- 产品形态: ${projectFraming.productShape}`);
-    console.log(`- 第一版先做: ${projectFraming.firstSlice}`);
-    console.log(`- 暂不处理: ${projectFraming.nonGoals}`);
-    console.log(`- 不能破坏: ${projectFraming.guardrails}`);
-    console.log(`- 技术落点: ${projectFraming.architectureSignals}`);
-    if (projectFraming.riskProbeSummary !== '当前没有明显命中额外风险探针。') {
-      console.log(`- 风险探针: ${projectFraming.riskProbeSummary}`);
-    }
-  }
-  if (result.inlineClarification) {
-    console.log('对话内澄清提纲:');
-    for (const line of result.inlineClarification.lines) {
-      console.log(line);
-    }
-    console.log('无需打开 HTML；请用简短摘要说明项目画像、目标、范围、非目标、验收方式和当前可逆假设，用户后续可直接覆盖，不形成确认停顿。');
-  }
-  if (result.clarification.canInferLater.length > 0) {
-    console.log('之后可以再补充或细化:');
-    for (const item of result.clarification.canInferLater.slice(0, 5)) {
-      console.log(`- ${item.prompt}`);
-    }
-  }
-}
-
-function printCaptureResult(result, json) {
-  if (json) {
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
-
-  if (result.applied?.length > 1) {
-    console.log(`已捕获 ${result.applied.length} 个字段`);
-    for (const item of result.applied) {
-      console.log(`- ${item.field} (${item.source}): ${JSON.stringify(item.value)}`);
-    }
-  } else {
-    console.log(`已捕获 ${result.field}`);
-    console.log(`状态 key: ${result.stateKey}`);
-    console.log(`来源: ${result.source}`);
-    console.log(`值: ${JSON.stringify(result.value)}`);
-  }
-  if (result.artifactMarkdown) {
-    console.log(`来源 artifact markdown: ${result.artifactMarkdown}`);
-  }
-  console.log(`剩余缺失必填字段: ${result.analysis.missingRequiredFields}`);
-}
-
-function printInterviewResult(result, json) {
-  if (json) {
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
-
-  console.log(`访谈模式: ${result.productType ?? '未分类'}`);
-  console.log(`来源文件: ${result.sourceFiles.join(', ')}`);
-  console.log(result.transcript);
-}
-
-function printPlaygroundResult(result, json) {
-  if (json) {
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
-
-  console.log(`已生成 Playground: ${result.snapshot.title}`);
-  console.log(`HTML: ${result.htmlPath}`);
-  console.log(`Markdown 数据源: ${result.markdownPath}`);
-  console.log(`捕获补丁: ${result.patchPath}`);
-  console.log(`已打开: ${result.opened ? '是' : '否'}`);
-}
 
 function printLearningResult(result, json) {
   if (json) {
@@ -336,7 +225,7 @@ function printInitResult(result, json) {
     return;
   }
 
-  console.log(`已初始化 OpenPrd 工作区: ${result.ws.workspaceRoot}`);
+  console.log(`已初始化 Open VibeCoding 工作区: ${result.ws.workspaceRoot}`);
   console.log(`场景模板: ${formatTemplatePackDisplay(result.currentState.templatePack, { fallback: '待确认' })}`);
   if (result.templatePackGuidance?.message) {
     console.log(`场景确认: ${result.templatePackGuidance.message}`);
@@ -357,11 +246,6 @@ function printInitResult(result, json) {
 export {
   printValidation,
   printStatus,
-  printClassifyResult,
-  printClarifyResult,
-  printCaptureResult,
-  printInterviewResult,
-  printPlaygroundResult,
   printLearningResult,
   printInitResult,
   printReleaseResult,

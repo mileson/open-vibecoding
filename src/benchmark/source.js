@@ -218,7 +218,7 @@ function inferScenarios(text) {
   };
 
   if (/(openprd|openspec|superpowers|prd|product requirements?)/i.test(normalized)) {
-    add('openprd-product');
+    add('open-vibecoding-product');
   }
   if (/(cli|doctor|dry-run|command discoverability|developer experience|dx)/i.test(normalized)) {
     add('cli-tooling');
@@ -250,8 +250,8 @@ function inferScenarios(text) {
 function inferTriggerWhen(scenarios) {
   const lines = [];
   for (const scenario of scenarios) {
-    if (scenario === 'openprd-product') {
-      lines.push('设计 OpenPrd / PRD 工作流、需求入口、状态承接或生成规则');
+    if (scenario === 'open-vibecoding-product') {
+      lines.push('设计 Open VibeCoding / PRD 工作流、需求入口、状态承接或生成规则');
     }
     if (scenario === 'cli-tooling') {
       lines.push('设计 CLI 命令、doctor、dry-run、错误提示、确认流程或可发现性');
@@ -283,7 +283,7 @@ function inferTriggerWhen(scenarios) {
 
 function inferNotFor(scenarios) {
   const exclusions = [];
-  if (!scenarios.includes('openprd-product')) {
+  if (!scenarios.includes('open-vibecoding-product')) {
     exclusions.push('普通 PRD / 产品流程设计');
   }
   if (!scenarios.includes('cli-tooling')) {
@@ -379,7 +379,7 @@ function computePromotionState(source, threshold = source?.promotion?.threshold,
     windowDays: normalizedWindowDays,
     recentAdoptedCount,
     recommended,
-    approveCommand: recommended ? `openprd benchmark approve ${normalizedSource.id}` : null,
+    approveCommand: recommended ? `open-vibecoding benchmark approve ${normalizedSource.id}` : null,
   };
 }
 

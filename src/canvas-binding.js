@@ -5,10 +5,10 @@
  *
  * Inputs
  * Project root plus CLI/env binding hints (--thread/--session/--workspace),
- * with fallback to .openprd/harness/runtime-environment.json evidence.
+ * with fallback to .open-vibecoding/harness/runtime-environment.json evidence.
  *
  * Outputs
- * ensureCanvasSession() creates .openprd/harness/canvas-sessions/<key>/ with
+ * ensureCanvasSession() creates .open-vibecoding/harness/canvas-sessions/<key>/ with
  * session.json, scene.json, ops.json, and library.json scaffolding.
  *
  * Positioning
@@ -29,7 +29,7 @@ import {
 const CANVAS_SCHEMA_VERSION = 1;
 
 async function readRuntimeEnvironment(projectRoot) {
-  const runtimePath = cjoin(projectRoot, '.openprd', 'harness', 'runtime-environment.json');
+  const runtimePath = cjoin(projectRoot, '.open-vibecoding', 'harness', 'runtime-environment.json');
   if (!(await exists(runtimePath))) {
     return { path: runtimePath, data: null };
   }
@@ -215,8 +215,8 @@ async function resolveCanvasSessionBinding(projectRoot, options = {}, env = proc
   }
 
   const envThread = firstPresent(
-    env.OPENPRD_THREAD_ID,
-    env.OPENPRD_CONVERSATION_ID,
+    env.OPEN_VIBECODING_THREAD_ID,
+    env.OPEN_VIBECODING_CONVERSATION_ID,
     env.CODEX_THREAD_ID,
     env.CODEX_CONVERSATION_ID,
     env.CLAUDE_THREAD_ID,
@@ -224,8 +224,8 @@ async function resolveCanvasSessionBinding(projectRoot, options = {}, env = proc
   );
   if (envThread) {
     const title = normalizeBindingTitle(
-      env.OPENPRD_THREAD_TITLE,
-      env.OPENPRD_CONVERSATION_TITLE,
+      env.OPEN_VIBECODING_THREAD_TITLE,
+      env.OPEN_VIBECODING_CONVERSATION_TITLE,
       env.CODEX_THREAD_TITLE,
       env.CODEX_CONVERSATION_TITLE,
       env.CLAUDE_THREAD_TITLE,
@@ -246,7 +246,7 @@ async function resolveCanvasSessionBinding(projectRoot, options = {}, env = proc
   }
 
   const envSession = firstPresent(
-    env.OPENPRD_SESSION_ID,
+    env.OPEN_VIBECODING_SESSION_ID,
     env.CODEX_SESSION_ID,
     env.CLAUDE_SESSION_ID,
     env.CLAUDE_CODE_SESSION_ID,
@@ -255,8 +255,8 @@ async function resolveCanvasSessionBinding(projectRoot, options = {}, env = proc
   );
   if (envSession) {
     const title = normalizeBindingTitle(
-      env.OPENPRD_SESSION_TITLE,
-      env.OPENPRD_CONVERSATION_TITLE,
+      env.OPEN_VIBECODING_SESSION_TITLE,
+      env.OPEN_VIBECODING_CONVERSATION_TITLE,
       env.CODEX_SESSION_TITLE,
       env.CODEX_CONVERSATION_TITLE,
       env.CLAUDE_SESSION_TITLE,
@@ -311,7 +311,7 @@ async function resolveCanvasSessionBinding(projectRoot, options = {}, env = proc
 }
 
 function buildCanvasSessionPaths(projectRoot, binding) {
-  const sessionDir = cjoin(projectRoot, '.openprd', 'harness', 'canvas-sessions', binding.sessionKey);
+  const sessionDir = cjoin(projectRoot, '.open-vibecoding', 'harness', 'canvas-sessions', binding.sessionKey);
   return {
     sessionDir,
     sessionFile: cjoin(sessionDir, 'session.json'),

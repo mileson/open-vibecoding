@@ -1,0 +1,3 @@
+interface:
+  display_name: "【交互】实现设计稿并对比效果"
+  short_description: "把设计落实到真实界面，用截图对比检查还原、对齐与视觉一致性。"

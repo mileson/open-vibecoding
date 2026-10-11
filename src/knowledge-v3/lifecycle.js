@@ -26,7 +26,7 @@ class KnowledgeLifecycleError extends Error {
   constructor(message, details = {}) {
     super(message);
     this.name = 'KnowledgeLifecycleError';
-    this.code = 'OPENPRD_KNOWLEDGE_LIFECYCLE_INVALID';
+    this.code = 'OPEN_VIBECODING_KNOWLEDGE_LIFECYCLE_INVALID';
     Object.assign(this, details);
   }
 }

@@ -4,9 +4,8 @@ import path from 'node:path';
 import { appendText, exists, readJson, readText, readYaml, writeJson, writeText, writeYaml } from './fs-utils.js';
 import { openArtifactInBrowser, writeHtmlArtifact } from './html-artifacts.js';
 import { learningPackagePaths, renderLearningArtifact } from './learning-html-artifact.js';
-import { buildPrdSnapshot, formatVersionId } from './prd-core.js';
 import { compactTimestamp, timestamp } from './time.js';
-import { loadLatestVersionSnapshot, loadWorkspace, readVersionIndex, resolveActiveTemplatePack, resolveCurrentProductType } from './workspace-core.js';
+import { loadLatestVersionSnapshot, loadWorkspace } from './workspace-core.js';
 
 const LEARNING_REVIEW_SCHEMA_VERSION = 1;
 const LEARNING_AGENT_CONTEXT_SCHEMA = 'openprd.learning-agent-context.v1';
@@ -104,7 +103,7 @@ const STYLE_PROMPT_PACKS = {
           '不要把 evidenceIds 当正文主角；证据应该支撑判断，而不是淹没判断。',
         ],
         systemPrompt: [
-          '你是 OpenPrd 复盘学习包的教学型写作 Agent。',
+          '你是 Open VibeCoding 复盘学习包的教学型写作 Agent。',
           '你的目标是帮助读者学会产品设计思路、架构思路、关键原理和判断方法，而不是罗列技术点或文件清单。',
           '正文优先回答五件事：解决什么问题、为什么这样设计、这样设计换来了什么、付出了什么、何时适用或不适用。',
           '如果目标读者偏产品、运营或非技术读者，优先补充“一眼看懂”的 visualExplainer，用具体场景和生活化比喻降低理解门槛。',
@@ -172,7 +171,7 @@ const STYLE_PROMPT_PACKS = {
           '不要牺牲路径、文件、命令和验证结果的可追溯性。',
         ],
         systemPrompt: [
-          '你是 OpenPrd 复盘学习书的风格迁移 Agent。',
+          '你是 Open VibeCoding 复盘学习书的风格迁移 Agent。',
           '你的任务不是虚构故事，而是根据 agent-context 和 evidence-manifest 写出仙侠修行札记。',
           '事实层必须完全来自证据清单；风格层只能改变表达、结构节奏和意象。',
         ].join('\n'),
@@ -194,7 +193,7 @@ const STYLE_PROMPT_PACKS = {
         ].join('\n'),
         proseRewritePrompt: [
           '围绕“做了什么/为什么/如何验证”写成“立基/观脉/破境/传功/归元”的阅读路径。',
-          '每段至少保留一个明确事实锚点，例如 `.openprd/`、docs/basic、loop finish、reader.html、证据清单。',
+          '每段至少保留一个明确事实锚点，例如 `.open-vibecoding/`、docs/basic、loop finish、reader.html、证据清单。',
           '不要改写文件名、命令名、schema、packageId 和 source id。',
         ].join('\n'),
         evidenceBindingPrompt: [
@@ -265,7 +264,7 @@ function inferGenreId(topic, snapshot) {
 }
 
 function inferTopic(snapshot, options = {}) {
-  return String(options.topic ?? snapshot?.title ?? snapshot?.problemStatement ?? snapshot?.owner ?? 'OpenPrd 复盘学习').trim();
+  return String(options.topic ?? snapshot?.title ?? snapshot?.problemStatement ?? snapshot?.owner ?? 'Open VibeCoding 复盘学习').trim();
 }
 
 function ensureChapterLabels(genre) {
@@ -386,7 +385,7 @@ async function persistLearningConfig(ws, learningReview, options = {}) {
 }
 
 async function findLatestLoopReport(projectRoot) {
-  const reportsDir = path.join(projectRoot, '.openprd', 'harness', 'test-reports');
+  const reportsDir = path.join(projectRoot, '.open-vibecoding', 'harness', 'test-reports');
   const entries = await fs.readdir(reportsDir, { withFileTypes: true }).catch(() => []);
   const files = [];
   for (const entry of entries) {
@@ -622,7 +621,7 @@ async function buildEvidenceManifest(ws, snapshot, options = {}) {
   ];
 
   if (changeId) {
-    const changeRoot = path.join(ws.projectRoot, '.openprd', 'changes', changeId);
+    const changeRoot = path.join(ws.projectRoot, '.open-vibecoding', 'changes', changeId);
     candidateDefs.push(
       makeEvidenceCandidate({
         id: 'change-proposal',
@@ -658,7 +657,7 @@ async function buildEvidenceManifest(ws, snapshot, options = {}) {
     makeEvidenceCandidate({
       id: 'loop-feature-list',
       title: 'Loop feature list',
-      path: path.join(ws.projectRoot, '.openprd', 'harness', 'feature-list.json'),
+      path: path.join(ws.projectRoot, '.open-vibecoding', 'harness', 'feature-list.json'),
       kind: 'json',
       groups: ['loop'],
       summary: (value) => `任务总数: ${Array.isArray(value?.tasks) ? value.tasks.length : 0} · 当前 change: ${value?.changeId ?? 'unknown'}`,
@@ -667,7 +666,7 @@ async function buildEvidenceManifest(ws, snapshot, options = {}) {
     makeEvidenceCandidate({
       id: 'loop-state',
       title: 'Loop state',
-      path: path.join(ws.projectRoot, '.openprd', 'harness', 'loop-state.json'),
+      path: path.join(ws.projectRoot, '.open-vibecoding', 'harness', 'loop-state.json'),
       kind: 'json',
       groups: ['loop'],
       summary: (value) => `Loop 状态: ${value?.status ?? value?.phase ?? 'unknown'}`,
@@ -746,7 +745,7 @@ async function buildEvidenceManifest(ws, snapshot, options = {}) {
   if (!sourceIds.includes('latest-loop-report') && !sourceIds.includes('task-test-report') && scope === 'loop') {
     gaps.push({
       id: 'missing-loop-report',
-      description: '当前 sourceScope=loop，但未找到可复用的 `.openprd/harness/test-reports/*.md` 回归报告。',
+      description: '当前 sourceScope=loop，但未找到可复用的 `.open-vibecoding/harness/test-reports/*.md` 回归报告。',
       severity: 'medium',
     });
   }
@@ -824,7 +823,7 @@ function buildStyleTransferReport(stylePromptPack, chapters) {
     qualityChecks: [
       '风格迁移后仍保留每章 evidenceIds。',
       '目录最多三层，适合展开和收起。',
-      '正文保留 `.openprd/`、docs/basic、loop、reader.html 或证据清单等事实锚点。',
+      '正文保留 `.open-vibecoding/`、docs/basic、loop、reader.html 或证据清单等事实锚点。',
       'visualExplainer 只能帮助理解，不能替代证据链或虚构不存在的截图/场景。',
       '右侧证据面板不再参与阅读主界面，证据改为归档和章节内轻量锚点。',
     ],
@@ -944,7 +943,7 @@ function buildAgentContext({ packageId, topic, genre, stylePromptPack, trigger, 
     },
     stylePromptEngineering,
     outputContract: buildOutputContractSpec(),
-    renderCommand: `openprd learn . --content-json ${packagePaths.contentJson} --open`,
+    renderCommand: `open-vibecoding learn . --content-json ${packagePaths.contentJson} --open`,
   };
 }
 
@@ -953,7 +952,7 @@ function renderAgentPromptMarkdown(agentContext) {
     `- ${source.id}: ${source.title} (${source.relativePath ?? '无路径'})`
   ));
   return [
-    '# OpenPrd 复盘学习包 Agent 写作提示',
+    '# Open VibeCoding 复盘学习包 Agent 写作提示',
     '',
     `学习包: ${agentContext.packageId}`,
     `主题: ${agentContext.topic}`,
@@ -1123,7 +1122,7 @@ function validateInternetProductDirection(raw, errors) {
   if (!includesAnySignal(narrative, INTERNET_PRODUCT_DIRECTION_SIGNALS.tradeoff)) {
     errors.push('internet-product 复盘必须写出取舍、代价、边界或适用条件，而不是只给实现清单。');
   }
-  const manualSignals = (narrative.match(/(?:\.openprd\/|docs\/basic\/|[A-Za-z0-9._-]+\.(?:md|json|js|ts|tsx|jsx|html|css))/g) ?? []).length;
+  const manualSignals = (narrative.match(/(?:\.open-vibecoding\/|docs\/basic\/|[A-Za-z0-9._-]+\.(?:md|json|js|ts|tsx|jsx|html|css))/g) ?? []).length;
   const conceptSignals = Object.values(INTERNET_PRODUCT_DIRECTION_SIGNALS)
     .flat()
     .filter((signal, index, list) => list.indexOf(signal) === index)
@@ -1321,7 +1320,7 @@ function renderLearningMarkdown({ content, evidenceManifest }) {
     '## 证据包结构',
     '',
     '```text',
-    `.openprd/learning/archive/${content.packageId}/`,
+    `.open-vibecoding/learning/archive/${content.packageId}/`,
     '  assets/',
     '  learning-package.json',
     '  learning-content.json',
@@ -1460,19 +1459,8 @@ async function generateLearningReviewWorkspace(projectRoot, options = {}) {
     };
   }
 
-  const versionIndex = await readVersionIndex(ws);
-  const currentState = ws.data.currentState ?? {};
   const latestVersion = await loadLatestVersionSnapshot(ws);
-  const snapshot = latestVersion?.snapshot ?? buildPrdSnapshot(ws, {
-    ...currentState,
-    versionNumber: currentState.prdVersion ?? (versionIndex.at(-1)?.versionNumber ?? 0),
-    versionId: currentState.prdVersion > 0
-      ? formatVersionId(currentState.prdVersion)
-      : (versionIndex.at(-1)?.versionId ?? 'v0000'),
-    productType: resolveCurrentProductType(ws),
-    templatePack: resolveActiveTemplatePack(ws),
-    status: currentState.status ?? 'draft',
-  });
+  const snapshot = latestVersion?.snapshot ?? { title: path.basename(ws.projectRoot) };
 
   const topic = inferTopic(snapshot, options);
   const genreId = normalizeGenreId(options.genre ?? settings.defaultGenre ?? inferGenreId(topic, snapshot));
@@ -1528,7 +1516,7 @@ async function generateLearningReviewWorkspace(projectRoot, options = {}) {
     version: LEARNING_REVIEW_SCHEMA_VERSION,
     generatedAt: content.generatedAt,
     packageId,
-    title: content.title || 'OpenPrd 复盘学习包',
+    title: content.title || 'Open VibeCoding 复盘学习包',
     topic,
     genreId: genre.id,
     genreLabel: genre.label,

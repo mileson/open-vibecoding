@@ -1,0 +1,20 @@
+{
+  "schema": "openprd.project-manifest",
+  "schemaVersion": 1,
+  "projectId": "project_46ae1f6e-057d-43b8-8d6e-60e07c062949",
+  "createdAt": "2026-10-05T15:37:30.679Z",
+  "compatibility": {
+    "minimumReaderVersion": 1,
+    "minimumWriterVersion": 1
+  },
+  "formats": {
+    "eventEnvelope": 1,
+    "ledger": 1,
+    "projection": 1,
+    "taskRuntime": 1,
+    "scopedGate": 1,
+    "reviewModel": 1,
+    "knowledge": 3,
+    "adapter": 1
+  }
+}

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { cjoin, exists, readJson } from './fs-utils.js';
 import { buildCodeExtensionCandidate, observeGrowthWorkspace } from './growth.js';
 
-const DEVELOPMENT_STANDARDS_CONFIG = cjoin('.openprd', 'standards', 'config.json');
+const DEVELOPMENT_STANDARDS_CONFIG = cjoin('.open-vibecoding', 'standards', 'config.json');
 const DEV_CHECK_WRAPUP_COPY_SCRIPT = fileURLToPath(new URL('../scripts/dev-check-wrapup-copy.mjs', import.meta.url));
 const DEV_CHECK_WRAPUP_FIELDS_AUTO = ['源文件规模', '优化原因', '本次处理结果', '后续建议'];
 const DEV_CHECK_WRAPUP_FIELDS_RECOMMEND = ['规模信号', '预警原因', '本次处理结果', '后续建议'];
@@ -38,7 +38,7 @@ const CODE_FILE_EXTENSIONS = new Set([
 ]);
 const EXEMPT_PATH_SEGMENTS = new Set([
   '.git',
-  '.openprd',
+  '.open-vibecoding',
   '.openspec',
   'node_modules',
   'vendor',
@@ -84,9 +84,9 @@ const UI_FILE_EXTENSIONS = new Set([
   '.wxml',
   '.wxss',
 ]);
-const VISUAL_REVIEWS_DIR = cjoin('.openprd', 'harness', 'visual-reviews');
+const VISUAL_REVIEWS_DIR = cjoin('.open-vibecoding', 'harness', 'visual-reviews');
 const VISUAL_EVIDENCE_FRESH_MS = 24 * 60 * 60 * 1000;
-const I18N_CONFIG_PATH = cjoin('.openprd', 'i18n-config.json');
+const I18N_CONFIG_PATH = cjoin('.open-vibecoding', 'i18n-config.json');
 const I18N_TEXT_FILE_EXTENSIONS = new Set([
   '.html', '.jsx', '.swift', '.tsx', '.vue', '.wxml', '.svelte',
   '.kt', '.java', '.dart', '.xml',
@@ -416,8 +416,8 @@ function buildDevCheckWrapUp(files, lineConfig = {}) {
     }));
   const markdownTable = renderMarkdownTable(columns, rows);
   const switchHint = autoMode
-    ? '当前启用主动结构优化建议；它不会强制扩大任务范围。可用 `openprd dev-check . --auto-refactor off` 切回普通建议。'
-    : '当前为普通建议模式。仅当用户希望在同一任务内主动做结构优化时，才使用 `openprd dev-check . --auto-refactor on`。';
+    ? '当前启用主动结构优化建议；它不会强制扩大任务范围。可用 `open-vibecoding dev-check . --auto-refactor off` 切回普通建议。'
+    : '当前为普通建议模式。仅当用户希望在同一任务内主动做结构优化时，才使用 `open-vibecoding dev-check . --auto-refactor on`。';
   return {
     required: false,
     recommended: rows.length > 0,
@@ -464,11 +464,11 @@ async function buildVisualEvidenceReminder(projectRoot, files) {
       ? '本轮触达界面文件，但最近 24 小时没有任何拼图证据板产出；用户可见变化需要视觉证据，不能只靠构建通过或单张截图。'
       : '本轮触达界面文件，最近已有拼图证据板产出；确认它覆盖了本轮改动，并把证据图嵌入对话流。',
     suggestedCommands: [
-      'openprd visual-compare . --before <改前截图> --after <改后截图>',
-      'openprd visual-compare . --reference <参考图> --actual <实现截图> --reference-box <x,y,w,h> --actual-box <x,y,w,h> --presentation local-first（局部改动主证据）',
-      'openprd visual-compare . --board <alignment-board.json>（同构列表/卡片/网格/表格对齐，含容器轨道与内容槽位）',
+      'open-vibecoding visual-compare . --before <改前截图> --after <改后截图>',
+      'open-vibecoding visual-compare . --reference <参考图> --actual <实现截图> --reference-box <x,y,w,h> --actual-box <x,y,w,h> --presentation local-first（局部改动主证据）',
+      'open-vibecoding visual-compare . --board <alignment-board.json>（同构列表/卡片/网格/表格对齐，含容器轨道与内容槽位）',
       '网格与基线只进入 alignment-board；普通结果画布不得自动叠加',
-      'openprd visual-compare . --board <centering-board.json>（单素材内部居中/视觉重心）',
+      'open-vibecoding visual-compare . --board <centering-board.json>（单素材内部居中/视觉重心）',
     ],
     chatEmbedHint: '生成后把证据图用 `![视觉证据](<输出路径>)` 直接嵌入最终回复，让用户在对话流里看到对齐效果。',
   };
@@ -499,7 +499,7 @@ async function buildI18nReminder(projectRoot, files) {
     configExists: config !== null,
     reason: config
       ? `本轮触达 ${textFiles.length} 个可能包含用户文案的文件；请检查新增/修改的文案是否已使用 i18n 框架，基准语言 ${defaultLang}，需支持 ${supported.join(', ')}。${copyGuideline}`
-      : `本轮触达 ${textFiles.length} 个可能包含用户文案的文件，但项目尚未配置 .openprd/i18n-config.json。如需启用多语言检查，可运行 openprd i18n-init . 或手动创建配置文件。${copyGuideline}`,
+      : `本轮触达 ${textFiles.length} 个可能包含用户文案的文件，但项目尚未配置 .open-vibecoding/i18n-config.json。如需启用多语言检查，可运行 open-vibecoding i18n-init . 或手动创建配置文件。${copyGuideline}`,
     copyGuideline,
     guideline: 'docs/basic/i18n-guidelines.md',
   };
@@ -567,7 +567,7 @@ async function analyzeDevelopmentFile(projectRoot, targetPath, lineConfig) {
   const nextAction = growthObservation?.autoApplied
     ? `${baseAction} 另外：已自动补齐 ${growthCandidate.key} 代码文件识别规则，后续同类文件会直接纳入 dev-check。`
     : growthCandidate
-    ? `${baseAction} 另外：该扩展名尚未固化为代码文件识别规则，先按代码候选处理；本轮收工复盘时运行 openprd grow . --review 集中确认。`
+    ? `${baseAction} 另外：该扩展名尚未固化为代码文件识别规则，先按代码候选处理；本轮收工复盘时运行 open-vibecoding grow . --review 集中确认。`
     : baseAction;
 
   return {
@@ -599,7 +599,7 @@ export async function checkDevelopmentStandardsWorkspace(projectRoot, options = 
   const targets = Array.isArray(options.files) ? options.files.filter(Boolean) : [];
   const errors = [];
   if (targets.length === 0) {
-    errors.push('No files provided. Usage: openprd dev-check [project] <file...>');
+    errors.push('No files provided. Usage: open-vibecoding dev-check [project] <file...>');
   }
 
   const config = await readDevelopmentConfig(projectRoot);

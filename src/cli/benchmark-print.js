@@ -24,7 +24,7 @@ function printBenchmarkResult(result, json) {
   }
 
   if (result.action === 'benchmark-add') {
-    console.log(`OpenPrd benchmark add: ${result.ok ? '已加入 candidate' : '失败'}`);
+    console.log(`Open VibeCoding benchmark add: ${result.ok ? '已加入 candidate' : '失败'}`);
     if (result.source) {
       console.log(`ID: ${result.source.id}`);
       console.log(`标题: ${result.source.title}`);
@@ -38,7 +38,7 @@ function printBenchmarkResult(result, json) {
   }
 
   if (result.action === 'benchmark-observe') {
-    console.log(`OpenPrd benchmark observe: ${result.created ? '已创建 candidate' : '已更新 candidate'}`);
+    console.log(`Open VibeCoding benchmark observe: ${result.created ? '已创建 candidate' : '已更新 candidate'}`);
     console.log(`ID: ${result.source.id}`);
     console.log(`标题: ${result.source.title}`);
     console.log(`来源: ${result.source.url ?? result.source.path ?? 'unknown'}`);
@@ -52,7 +52,7 @@ function printBenchmarkResult(result, json) {
   }
 
   if (result.action === 'benchmark-approve') {
-    console.log('OpenPrd benchmark approve: 已加入 approved registry');
+    console.log('Open VibeCoding benchmark approve: 已加入 approved registry');
     console.log(`ID: ${result.source.id}`);
     console.log(`标题: ${result.source.title}`);
     console.log(`已批准来源: ${result.counts.approved}`);
@@ -61,7 +61,7 @@ function printBenchmarkResult(result, json) {
   }
 
   if (result.action === 'benchmark-verify') {
-    console.log(`OpenPrd benchmark verify: ${result.ok ? '通过' : '失败'}`);
+    console.log(`Open VibeCoding benchmark verify: ${result.ok ? '通过' : '失败'}`);
     for (const check of result.checks) {
       console.log(`- ${check.ok ? '通过' : '失败'}: ${check.id}`);
       for (const issue of check.issues) {
@@ -71,7 +71,7 @@ function printBenchmarkResult(result, json) {
     return;
   }
 
-  console.log(`OpenPrd benchmark list: approved ${result.counts.approved}, candidate ${result.counts.candidates}`);
+  console.log(`Open VibeCoding benchmark list: approved ${result.counts.approved}, candidate ${result.counts.candidates}`);
   for (const source of result.approved) {
     console.log(`- approved ${source.id}: ${source.title}`);
   }

@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for considering a contribution to OpenPrd.
+Thanks for considering a contribution to Open VibeCoding.
 
 ## Development Setup
 
@@ -11,7 +11,7 @@ npm test
 
 ## Core Principles
 
-- Keep OpenPrd lightweight and avoid premature workflow complexity.
+- Keep Open VibeCoding lightweight and avoid premature workflow complexity.
 - Prefer clarification, review gates, and durable artifacts over hidden assumptions.
 - Keep agent-facing behavior in `skills/` and repository-level guidance in `AGENTS.md`.
 - Avoid inventing commands or expanding the workflow unless a real usage pattern justifies it.
@@ -27,4 +27,4 @@ Please make sure:
 
 ## Scope Guidance
 
-OpenPrd is a PRD harness, not a full project management platform. Contributions that add heavy orchestration or premature complexity may be declined even if technically correct.
+Open VibeCoding is a PRD harness, not a full project management platform. Contributions that add heavy orchestration or premature complexity may be declined even if technically correct.

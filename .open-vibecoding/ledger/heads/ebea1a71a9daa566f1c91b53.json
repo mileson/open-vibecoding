@@ -1,0 +1,10 @@
+{
+  "schema": "openprd.stream-head",
+  "version": 1,
+  "projectId": "project_46ae1f6e-057d-43b8-8d6e-60e07c062949",
+  "streamId": "workflow:workspace",
+  "revision": 1,
+  "lastEventId": "evt_07a57afa28d5e841ea39ec50194f277f",
+  "ledgerPosition": 1,
+  "updatedAt": "2026-10-05T15:37:31.225Z"
+}

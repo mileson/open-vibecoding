@@ -167,7 +167,7 @@ export function inferTestStrategyForTask(task = {}) {
       layers: ['manual'],
       size: 'manual',
       scope: 'governance',
-      evidencePlan: task.verify ?? task.metadata?.verify ?? 'openprd change . --validate --change <change-id>',
+      evidencePlan: task.verify ?? task.metadata?.verify ?? 'open-vibecoding change . --validate --change <change-id>',
       upgradeReason: '治理任务以结构校验、评审确认和变更状态证据为主',
       inferred: true,
     };
@@ -178,7 +178,7 @@ export function inferTestStrategyForTask(task = {}) {
       layers: ['manual'],
       size: 'manual',
       scope: 'docs',
-      evidencePlan: task.verify ?? task.metadata?.verify ?? 'openprd standards . --verify',
+      evidencePlan: task.verify ?? task.metadata?.verify ?? 'open-vibecoding standards . --verify',
       upgradeReason: '文档任务以标准校验和人工审查证据为主',
       inferred: true,
     };
@@ -427,13 +427,7 @@ export function summarizeTaskTestStrategies(tasks = []) {
   }
 
   const total = taskStrategies.length;
-  const e2eLike = (layerCounts.e2e ?? 0) + (layerCounts.visual ?? 0) + (layerCounts.weapp ?? 0);
-  const midLayer = (layerCounts.integration ?? 0) + (layerCounts.smoke ?? 0) + (layerCounts.security ?? 0);
-  const unitLayer = layerCounts.unit ?? 0;
   const warnings = [];
-  if (total > 0 && e2eLike > 0 && unitLayer === 0 && midLayer === 0) {
-    warnings.push('检测到端到端/视觉/小程序证据，但缺少单元或集成层承接，存在倒金字塔风险。');
-  }
   if (total > 0 && explicit === 0) {
     warnings.push('当前任务尚未显式声明测试策略，quality 将使用风险推导结果。');
   }
@@ -455,10 +449,10 @@ export function summarizeTaskTestStrategies(tasks = []) {
     tasks: taskStrategies,
     warnings,
     recommendations: [
-      '小范围逻辑优先使用单元测试，触达 CLI/API/Agent 契约时升级到集成或契约验证。',
-      '触达用户主路径、页面、小程序、发布或跨系统链路时，保留端到端、截图或运行态证据。',
+      '涉及用户操作时，以测试用户从真实入口完成受影响路径并检查最终结果；可安全使用 Computer Use 时优先亲自操作，网页重复回归可使用 Playwright。',
+      '环节衔接、典型历史样本和关键局部规则按风险补测；真实业务场景不等于默认操作生产环境，模拟响应不能证明真实链路已通过。',
       '触达真实音频、ASR/转写或语音派生字幕时，保留修改前基线、最终媒体复测和 openprd.media-evidence.v1；纯字幕文案或 UI 可记录豁免。',
-      '70/20/10 只作为健康形状参考，不作为硬性比例门禁；实际以风险和本次证据为准。',
+      '不按固定测试比例或数量评价质量；区分实际通过、失败、模拟覆盖和未验证项，不删除已有有效测试。',
     ],
   };
 }
