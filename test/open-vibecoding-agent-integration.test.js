@@ -822,9 +822,11 @@ test('generated skills keep legacy records read-only across adapters', async () 
   const project = await makeTempProject();
   await setupAgentIntegrationWorkspace(project, { tools: 'all' });
   for (const skillId of ['open-vibecoding-router', 'open-vibecoding-requirement-intake', 'open-vibecoding-shared', 'open-vibecoding-harness']) {
-    const codex = await fs.readFile(path.join(project, '.codex', 'skills', skillId, 'SKILL.md'), 'utf8');
+    const codex = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', skillId, 'SKILL.md'), 'utf8');
     const claude = await fs.readFile(path.join(project, '.claude', 'skills', skillId, 'SKILL.md'), 'utf8');
-    const strip = (text) => text.replace(/<!-- OPEN_VIBECODING:GENERATED\n[^]*?-->\n?/g, '').trim();
+    const strip = (text) => text.replace(/<!-- OPEN_VIBECODING:GENERATED\n[^]*?-->\n?/g, '')
+      .replace(/^user-invocable: false\n/gm, '')
+      .replaceAll('.claude/skills/', '.open-vibecoding/harness/internal-skills/').trim();
     assert.equal(strip(codex), strip(claude));
     assert.ok(!codex.includes('由 Agent 在后台维护 PRD/review/change/tasks'));
   }

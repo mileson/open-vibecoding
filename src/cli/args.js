@@ -677,6 +677,7 @@ function usage() {
     '  open-vibecoding knowledge <candidates|reject|archive|restore> [path-or-id] [--status <pending-review|all|rejected|archived|promoted|merged>] [--id <candidate-id>] [--reason <text>] [--json]',
     '  open-vibecoding icon-cutout --source <image> --out <new.png> [--key-color <#RRGGBB>] [--tolerance <0..255>] [--feather <0..255>]  # 本地透明化；JSON 输出',
     '  open-vibecoding visual-prepare [path] --reference <effect-image> ((--grid <columns>x<rows>) | (--boxes <plan.json>)) [--include <csv>] [--id <reference-set-id>] [--title <text>] [--out <dir>] [--json]',
+    '  open-vibecoding design-review [path] --action <save|select> --json-file <plan.json>  # 原图、编号拼图、版本与明确选定的 final；JSON 输出',
     '  open-vibecoding visual-compare [path] ((--reference <effect-image> --actual <screenshot-image>) | (--before <before-screenshot> --after <after-screenshot>) | --board <board.json>) [--reference-box <x,y,w,h>] [--actual-box <x,y,w,h>] [--before-box <x,y,w,h>] [--after-box <x,y,w,h>] [--focus-label <text>] [--focus-reason <text>] [--presentation <local-first>] [--out <file.jpg>] [--format <jpg|png|webp>] [--quality <1..100>] [--max-panel-width <px>] [--locale <zh-CN|en>] [--json]',
     '    --board modes: focus-board, parallel-board, verification-board, alignment-board, centering-board',
     '  open-vibecoding design-starter [path] [--starter <content-home|product-launch|ops-dashboard>] [--out <index.html>] [--title <name>] [--brief <text>] [--sections <a|b|c>] [--no-external-facts] [--no-brand-assets] [--no-real-images] [--force] [--json]',

@@ -28,6 +28,7 @@ CLI 只提供确定性工具和非阻断检查；Agent 负责理解目标、拆�
 | `src/agent-integration.js`、`src/agent-canonical-content.js` | Codex、Claude、Cursor 的 Skill、命令与 hook 引导生成 |
 | `src/benchmark.js`、`src/brainstorm.js` | 参考源治理与按需产品探索 |
 | `src/design-starter.js`、`src/visual-prepare.js`、`src/visual-compare.js` | 设计起步、参考图预处理及实现对比 |
+| `src/design-review.js` | 原图按字节保存、编号拼图、递增评审版本与用户明确选定的 final；资产存放项目根目录 `design/`，不增加用户入口或流程文档 |
 | `src/icon-cutout.js` | 复用 sharp 的本地图标 alpha 保留、指定色键去除和像素检查；`icon-cutout --source --out [--key-color --tolerance --feather]` 返回 JSON，保护源文件和已有输出 |
 | `src/run-harness.js`、`src/dev-standards.js`、`src/quality.js` | 验证摘要、源码标准与专项质量诊断 |
 | `src/runtime/`、`src/kernel/` | 可选任务运行态、幂等记录与并发控制 |

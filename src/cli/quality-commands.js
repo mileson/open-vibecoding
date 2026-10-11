@@ -39,6 +39,7 @@ import {
 import { designStarterWorkspace } from '../design-starter.js';
 import { visualCompareWorkspace } from '../visual-compare.js';
 import { visualPrepareWorkspace } from '../visual-prepare.js';
+import { designReviewWorkspace } from '../design-review.js';
 import {
   printDesignStarterResult,
   printDevelopmentStandardsResult,
@@ -64,6 +65,11 @@ function standardsHasStructuralFailure(result) {
 }
 
 export async function runQualityCommand(command, { projectPath, flags, positionals }) {
+  if (command === 'design-review') {
+    const result = await designReviewWorkspace(projectPath, { action: flags.runtimeAction, jsonFile: flags.jsonFile });
+    console.log(JSON.stringify(result, null, 2));
+    return result.ok ? 0 : 1;
+  }
   if (command === 'standards') {
     const result = flags.init
       ? await initStandardsWorkspace(projectPath, { force: flags.force })

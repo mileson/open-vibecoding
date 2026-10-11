@@ -421,6 +421,7 @@ export function renderCommandCatalog() {
     '- `open-vibecoding guide .`：查看非线性的场景指引。',
     '- `open-vibecoding benchmark ...`：按需收集和核验外部证据。',
     '- `open-vibecoding visual-prepare ...` / `visual-compare ...`：保留视觉参照和实现对比。',
+    '- `open-vibecoding design-review . --action <save|select> --json-file <plan.json>`：在 design/<scene>/vNNN 保存原图与编号拼图；仅按用户明确选择标记原图 final。合同见视觉方向评审 Skill 的 references/design-review.md。',
     '- `open-vibecoding icon-cutout --source <image> --out <new.png> [--key-color "#RRGGBB"] [--tolerance 30] [--feather 35]`：本地图标透明化；无色键时保留现有 alpha；JSON 返回像素检查，仍需视觉验收。',
     '- `open-vibecoding dev-check . <file...>`：查看本轮代码规模与质量提醒。',
     '- `open-vibecoding doctor .`：诊断工具安装与生成配置。',

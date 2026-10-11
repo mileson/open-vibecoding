@@ -36,7 +36,7 @@ const BUILTIN_DOMAINS = [
     id: 'interaction',
     title: '交互设计',
     responsibility: '信息架构、用户流程、系统状态、界面与感知设计、原型评审',
-    existingCommands: ['diagram', 'design-starter', 'visual-prepare', 'visual-compare', 'canvas'],
+    existingCommands: ['diagram', 'design-starter', 'design-review', 'visual-prepare', 'visual-compare', 'canvas'],
   },
   {
     id: 'development',
@@ -134,7 +134,7 @@ const BUILTIN_SCENARIOS = [
     domains: ['interaction'],
     accepts: ['用户任务', '现有界面或设计简报', '视觉约束'],
     produces: ['有实质差异的候选方向', '选定方向或可逆默认方向', '参考图证据'],
-    tools: ['visual-prepare', 'visual-compare'],
+    tools: ['design-review', 'visual-prepare', 'visual-compare'],
   },
   {
     id: 'visual-implementation',
