@@ -55,6 +55,6 @@ Inputs are single-frame PNG, JPEG, or WebP, limited to 16M pixels and 64 MiB; ou
 
 Originals, grids, and crops share the same privacy boundary and are not automatically uploaded. Before sharing, confirm authorization and redact sensitive material; derive later versions from the same verified safe source.
 
-## Concept illustration
+## Show the actual result
 
-The homepage concept image was generated with Codex's built-in image generation. It explains localization, annotation, and verification, separately from the actual CLI examples above, and is not accuracy evidence. The [generation prompt](./assets/open-vibecoding-visual-assistance-concept.prompt.txt) is included. No personal accounts or private project screenshots are used in the published images.
+Every interface visual review ends with actual screenshots embedded in the final reply. When an approved reference exists, show it alongside the implementation. Without a reference, show the final running interface. Include context and detail for small changes and corresponding screenshots for meaningful states. If capture is unavailable, state that visual verification remains incomplete.

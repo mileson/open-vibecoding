@@ -126,6 +126,7 @@ const BUILTIN_SCENARIOS = [
     domains: ['interaction', 'product', 'testing'],
     accepts: ['用户任务', '页面或原型', '交互流程', '参考图'],
     produces: ['交互问题与层次定位', '状态与流程改进', '验证计划'],
+    uses: ['visual-evidence-delivery'],
   },
   {
     id: 'visual-direction-review',
@@ -144,7 +145,7 @@ const BUILTIN_SCENARIOS = [
     accepts: ['选定方向或参考图', '现有界面和代码'],
     produces: ['实际界面实现', '必要的视觉对比证据'],
     tools: ['design-starter', 'visual-prepare', 'visual-compare'],
-    uses: ['visual-localization', 'image-annotation'],
+    uses: ['visual-localization', 'image-annotation', 'visual-evidence-delivery'],
   },
   {
     id: 'feature-implementation',
@@ -153,7 +154,7 @@ const BUILTIN_SCENARIOS = [
     domains: ['development'],
     accepts: ['明确的用户目标', '现有代码与约束'],
     produces: ['可运行的变更', '与风险相称的验证结果'],
-    uses: ['diagnostic-readiness', 'visual-localization', 'image-annotation'],
+    uses: ['diagnostic-readiness', 'visual-localization', 'image-annotation', 'visual-evidence-delivery'],
     tools: ['dev-check'],
   },
   {
@@ -207,7 +208,7 @@ const BUILTIN_SCENARIOS = [
     domains: ['testing'],
     accepts: ['用户目标', '实现结果', '测试策略'],
     produces: ['实际通过或失败证据', '未验证风险与复测建议'],
-    uses: ['diagnostic-readiness', 'visual-localization', 'image-annotation'],
+    uses: ['diagnostic-readiness', 'visual-localization', 'image-annotation', 'visual-evidence-delivery'],
     tools: ['run', 'validate', 'visual-compare'],
   },
   {
@@ -217,6 +218,7 @@ const BUILTIN_SCENARIOS = [
     domains: ['testing', 'interaction'],
     accepts: ['可运行的目标界面', '用户任务与审查范围', '可用的 Computer Use 与独立 subagent'],
     produces: ['真实操作后的问题与复现证据', '交互覆盖和未验证范围'],
+    uses: ['visual-evidence-delivery'],
   },
   {
     id: 'ui-review-and-repair',
@@ -225,7 +227,7 @@ const BUILTIN_SCENARIOS = [
     domains: ['testing', 'development'],
     accepts: ['检查并修复界面的目标', '可运行界面与代码', '迭代范围及预算'],
     produces: ['独立 reviewer 复测过的修复', '剩余问题与覆盖缺口'],
-    uses: ['ui-interaction-review', 'debugging'],
+    uses: ['ui-interaction-review', 'debugging', 'visual-evidence-delivery'],
   },
   {
     id: 'tool-selection',
@@ -241,6 +243,12 @@ const BUILTIN_SCENARIOS = [
     domains: ['vibe-enhancement', 'testing'],
     accepts: ['真实媒体与质量声明', 'ASR 或语音字幕任务'],
     produces: ['修改前基线与最终媒体对比', '证据支持的结论与未知项'],
+  },
+  {
+    id: 'visual-evidence-delivery', title: '视觉结果截图交付', skill: 'open-vibecoding-visual-evidence-delivery',
+    domains: ['vibe-enhancement'],
+    accepts: ['界面视觉审查或修改结果', '本轮实际运行截图', '已有确认参考（如有）'],
+    produces: ['最终回复可见的实际界面截图', '参考与实现的可比较双图或明确的视觉未验证边界'],
   },
   {
     id: 'visual-localization', title: '视觉精确定位', skill: 'open-vibecoding-visual-localization',

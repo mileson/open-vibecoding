@@ -19,6 +19,7 @@ description: Open VibeCoding 入口路由。按用户目标组合五个执行能
 | 希望独立 reviewer 亲自操作界面发现问题；希望同时修复并让 reviewer 多轮复查 | `$open-vibecoding-ui-interaction-review`、`$open-vibecoding-ui-review-and-repair` |
 | 选择工具；空间化协作；复用已验证经验 | `$open-vibecoding-tool-selection`、`$open-vibecoding-canvas-collaboration`、`$open-vibecoding-experience-reuse` |
 | 看图时需要准确定位、对齐或局部调整；需要圈出问题或说明操作位置 | 内部能力 `$open-vibecoding-visual-localization`、`$open-vibecoding-image-annotation`；精确定位主动用红色坐标网格，普通图意理解不机械生成 |
+| 界面视觉审查、修改或复查结束，要向用户展示最终效果 | 内部 `$open-vibecoding-visual-evidence-delivery`；最终回复展示实际截图，有确认参考时展示双图，无参考时也展示实际界面 |
 | 主动取得匹配产品调性的成套图标；寻找现成素材、设计 SVG 或生成独立位图 | `$open-vibecoding-icon-system`，按需组合 `$open-vibecoding-icon-source`、`$open-vibecoding-icon-svg`、`$open-vibecoding-icon-image`、`$open-vibecoding-icon-cutout` |
 | 用真实媒体验证声学质量、ASR 或语音字幕结果 | `$open-vibecoding-audio-evidence`，归属增强域并供研发与测试复用 |
 | 根据项目条件选择成熟的现代实现或迁移方式 | `$open-vibecoding-best-practices`；Apple 多语言实现按需用 `$open-vibecoding-ios-localization` |

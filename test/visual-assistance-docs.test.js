@@ -9,7 +9,7 @@ import { imageAnnotate, visualGrid } from '../src/visual-assistance.js';
 
 const root = new URL('../', import.meta.url).pathname;
 test('public documentation links resolve without private workstation paths', async () => {
-  for (const file of ['README.md', 'README_EN.md', 'docs/visual-assistance.md', 'docs/visual-assistance.en.md']) {
+  for (const file of ['README.md', 'README_EN.md', 'docs/visual-assistance.md', 'docs/visual-assistance.en.md', 'docs/capability-gallery.md']) {
     const text = await fs.readFile(path.join(root, file), 'utf8');
     assert.ok(!text.includes('/Users/'));
     for (const match of text.matchAll(/\]\((\.\.?\/[^)]+)\)/g)) await fs.access(path.resolve(root, path.dirname(file), match[1].split('#')[0]));

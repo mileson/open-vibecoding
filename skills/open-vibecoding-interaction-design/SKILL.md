@@ -15,6 +15,7 @@ description: 当用户要求设计、评审或改进产品交互、用户流程�
 4. 明确界面与信息框架：重要信息先后顺序、控件选择、标签、可发现性和决策点。检查用户是否能看懂每个选择，并知道自己是否走在正确方向。
 5. 大界面仍需比较方案时调用 `$open-vibecoding-visual-direction-review`；已选方向或参考图进入实现时调用 `$open-vibecoding-frontend-design`。已有截图时先继承现有视觉 DNA，原型与实际产品分别验收。
 6. 用 `$open-vibecoding-test-strategy` 选择可用性任务观察、状态覆盖、视觉比对、可访问性和真实运行态验证。用户说“看起来不错”不等于能完成任务。
+7. 审查或调整实际界面视觉时，按 `$open-vibecoding-visual-evidence-delivery` 在最终回复展示本轮实际截图；有确认参考时一起展示。尚未实现的方案按方案交付，不伪称为实际运行结果。
 
 ## 最小交接
 

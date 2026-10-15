@@ -59,8 +59,8 @@ test('capability catalog keeps five execution domains plus cross-cutting best pr
 
 test('review repair composes independent capabilities and validates extension graphs', () => {
   const catalog = buildCapabilityCatalog();
-  assert.deepEqual(getCapability(catalog, 'ui-review-and-repair').uses, ['ui-interaction-review', 'debugging']);
-  assert.equal(getCapability(catalog, 'ui-interaction-review').uses, undefined);
+  assert.deepEqual(getCapability(catalog, 'ui-review-and-repair').uses, ['ui-interaction-review', 'debugging', 'visual-evidence-delivery']);
+  assert.deepEqual(getCapability(catalog, 'ui-interaction-review').uses, ['visual-evidence-delivery']);
   const scene = (id, uses) => ({
     id, title: id, skill: `example-${id}`, domains: ['testing'],
     accepts: ['目标'], produces: ['结果'], uses,
@@ -223,7 +223,7 @@ test('capabilities CLI exposes registered scenes and structured not-found errors
 
   const composite = spawnSync(process.execPath, [CLI, 'capabilities', 'get', 'ui-review-and-repair'], { encoding: 'utf8' });
   assert.equal(composite.status, 0, composite.stderr);
-  assert.deepEqual(JSON.parse(composite.stdout).capability.uses, ['ui-interaction-review', 'debugging']);
+  assert.deepEqual(JSON.parse(composite.stdout).capability.uses, ['ui-interaction-review', 'debugging', 'visual-evidence-delivery']);
 
   const contract = spawnSync(process.execPath, [CLI, 'capabilities', 'contract'], { encoding: 'utf8' });
   assert.equal(contract.status, 0, contract.stderr);

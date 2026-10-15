@@ -11,6 +11,7 @@ description: 当用户目标已明确并要求实现新功能或调整现有行�
 - 技术方案存在新旧选择时，按需用 `$open-vibecoding-best-practices` 检查当前项目条件；新增代码优先适用的现代做法，旧接口保留需有具体兼容理由。Apple 多语言实现调用独立实践条目，不照搬历史 wrapper。
 - 同时考虑正常路径、权限或输入边界、失败恢复和已有兼容行为。真正会改变产品结果的未知项才向用户提问。
 - UI 交互先用 `$open-vibecoding-interaction-design` 明确行为；界面视觉按需用 `$open-vibecoding-frontend-design`。
+- 涉及界面视觉的实现或审查，收口落实 `$open-vibecoding-visual-evidence-delivery`，主动展示实际截图；有确认参考时展示双图，不能只报告测试通过。
 - 实现后用 `$open-vibecoding-test-strategy` 选择足够验证，运行相关检查并报告真实结果。`dev-check` 只给维护提醒，不是开工门禁。
 - 涉及故障修复、性能优化或本次实现暴露出的诊断盲区时，主动读取 `$open-vibecoding-diagnostic-readiness`；按需补强日志与测量并验证能取得，不将每次功能改动升级成观测平台建设。
 

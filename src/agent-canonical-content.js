@@ -22,6 +22,7 @@ export const CANONICAL_SKILLS = [
   { id: 'open-vibecoding-icon-cutout', sourceSkill: 'open-vibecoding-icon-cutout' },
   { id: 'open-vibecoding-visual-localization', sourceSkill: 'open-vibecoding-visual-localization' },
   { id: 'open-vibecoding-image-annotation', sourceSkill: 'open-vibecoding-image-annotation' },
+  { id: 'open-vibecoding-visual-evidence-delivery', sourceSkill: 'open-vibecoding-visual-evidence-delivery' },
   { id: 'open-vibecoding-best-practices', sourceSkill: 'open-vibecoding-best-practices' },
   { id: 'open-vibecoding-diagnostic-readiness', sourceSkill: 'open-vibecoding-diagnostic-readiness' },
   { id: 'open-vibecoding-ios-localization', sourceSkill: 'open-vibecoding-ios-localization' },

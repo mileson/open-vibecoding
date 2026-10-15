@@ -28,7 +28,7 @@ export const USER_SKILL_PRESENTATION = Object.freeze(Object.fromEntries(entries.
 const INTERNAL_SKILLS = new Set(['router', 'shared', 'harness', 'requirement-intake',
   'benchmark-router', 'test-strategy', 'audio-evidence', 'icon-source', 'icon-svg',
   'icon-image', 'icon-cutout', 'best-practices', 'tool-selection', 'experience-reuse',
-  'quality', 'standards', 'discovery-loop', 'diagnostic-readiness', 'visual-localization', 'image-annotation'].map((id) => `open-vibecoding-${id}`));
+  'quality', 'standards', 'discovery-loop', 'diagnostic-readiness', 'visual-localization', 'image-annotation', 'visual-evidence-delivery'].map((id) => `open-vibecoding-${id}`));
 
 export function skillPresentation(id) {
   const entry = USER_SKILL_PRESENTATION[id];

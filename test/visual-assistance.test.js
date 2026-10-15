@@ -106,19 +106,25 @@ test('CLI reads plans, exposes source-pixel mapping and reports failures without
   await assert.rejects(fs.access(badOut));
 });
 
-test('both skills install internally and remain discoverable from their consumers', async t => {
+test('visual helpers install internally and remain discoverable from their consumers', async t => {
   const f = await fixture(t);
   await fs.writeFile(path.join(f.dir, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n');
   const result = await setupOpenPrdAgentIntegration(f.dir, { tools: 'codex,claude,cursor', enableUserCodexConfig: false, openprdHome: path.join(f.dir, 'registry') });
   assert.equal(result.ok, true);
   const catalog = buildCapabilityCatalog();
-  for (const id of ['visual-localization', 'image-annotation']) {
+  for (const id of ['visual-localization', 'image-annotation', 'visual-evidence-delivery']) {
     const skill = `open-vibecoding-${id}`;
     assert.equal(getCapability(catalog, id).userFacing, false);
-    await fs.access(path.join(f.dir, installedSkillPath(skill)));
+    const source = await fs.readFile(new URL(`../skills/${skill}/SKILL.md`, import.meta.url), 'utf8');
+    const installed = await fs.readFile(path.join(f.dir, installedSkillPath(skill)), 'utf8');
+    assert.ok(installed.includes(source.replace(/^---\n[\s\S]*?\n---\n/, '').trim()));
     assert.ok(!(await fs.readdir(path.join(f.dir, '.codex/skills'))).includes(skill));
     await fs.access(path.join(f.dir, '.claude/skills', skill, 'SKILL.md'));
   }
   assert.ok(getCapability(catalog, 'visual-implementation').uses.includes('visual-localization'));
   assert.ok(getCapability(catalog, 'acceptance-verification').uses.includes('image-annotation'));
+  for (const id of ['interaction-review', 'visual-implementation', 'feature-implementation', 'acceptance-verification', 'ui-interaction-review', 'ui-review-and-repair']) {
+    assert.ok(getCapability(catalog, id).uses.includes('visual-evidence-delivery'));
+  }
+  assert.ok((await fs.readFile(path.join(f.dir, 'AGENTS.md'), 'utf8')).includes(installedSkillPath('open-vibecoding-visual-evidence-delivery')));
 });

@@ -21,9 +21,7 @@ Each scenario is an independent child capability. The orchestration layer compos
 
 Moving a button from a screenshot, aligning cards, or highlighting an issue requires a clear relationship between image pixels, preview scale, and crop origins. Open VibeCoding provides two independent internal capabilities for visual localization and image annotation. Design, development, and testing scenarios can reuse them while users simply describe the intended result.
 
-![Open VibeCoding visual assistance concept](./docs/assets/open-vibecoding-visual-assistance-concept.png)
-
-*Generated with Codex's built-in image generation. This is a concept illustration, not a tool screenshot or an accuracy benchmark.*
+![Open VibeCoding visual assistance](./docs/assets/open-vibecoding-visual-assistance-concept.png)
 
 | Situation | Method |
 | --- | --- |
@@ -43,6 +41,8 @@ See the [use cases, reproducible example, and limitations](./docs/visual-assista
 
 ## Principles
 
+- Interface visual reviews require actual screenshots embedded in the final reply: reference and implementation when an approved reference exists, or the final running interface otherwise.
+- Browse the [capability gallery](./docs/capability-gallery.md) for scenario-based examples of icons, design review, acceptance, audio, and diagnostics.
 - The agent owns its reasoning, plan, and execution. The toolkit provides reminders and composable deterministic actions.
 - It does not automatically generate requirements, PRDs, reviews, changes, or task files for workflow bookkeeping.
 - Code is the default implementation documentation. Documents, design artifacts, and review pages remain valid user-requested deliverables.
