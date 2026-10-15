@@ -6,7 +6,7 @@
 
 ## 入口与目录
 
-`bin/open-vibecoding.js` 是正式 CLI，`bin/open-vibecoding.js` 是兼容入口；两者进入 `src/open-vibecoding.js`。`src/cli/args.js` 解析命令与参数，`src/cli/print.js` 汇总终端输出。`src/capability-catalog.js` 声明五个执行域、横向最佳实践、独立场景合同和只读项目扩展清单加载；`skills/open-vibecoding-router/SKILL.md` 引导 Agent 按意图与证据选用能力，不使用固定关键词匹配。
+`bin/open-vibecoding.js` 是正式 CLI，进入 `src/open-vibecoding.js`。`src/cli/args.js` 解析命令与参数，`src/cli/print.js` 汇总终端输出。`src/capability-catalog.js` 声明五个执行域、横向最佳实践、独立场景合同和只读项目扩展清单加载；`skills/open-vibecoding-router/SKILL.md` 引导 Agent 按意图与证据选用能力，不使用固定关键词匹配。
 
 ## 服务边界
 
@@ -14,7 +14,7 @@ CLI 只提供确定性工具和非阻断检查；Agent 负责理解目标、拆�
 
 ## CLI 接入面
 
-正式入口为 `open-vibecoding`；`openprd` 是兼容别名。现行命令以 `--help` 与生成的 command catalog 为准，历史 `history/diff/changes/specs/tasks` 只读。
+正式入口为 `open-vibecoding`，不再安装 `openprd` 别名。现行命令以 `--help` 与生成的 command catalog 为准，历史 `history/diff/changes/specs/tasks` 只读。
 
 ## API 接入面
 
@@ -30,6 +30,7 @@ CLI 只提供确定性工具和非阻断检查；Agent 负责理解目标、拆�
 | `src/design-starter.js`、`src/visual-prepare.js`、`src/visual-compare.js` | 设计起步、参考图预处理及实现对比 |
 | `src/design-review.js` | 原图按字节保存、编号拼图、递增评审版本与用户明确选定的 final；资产存放项目根目录 `design/`，不增加用户入口或流程文档 |
 | `src/icon-cutout.js` | 复用 sharp 的本地图标 alpha 保留、指定色键去除和像素检查；`icon-cutout --source --out [--key-color --tolerance --feather]` 返回 JSON，保护源文件和已有输出 |
+| `src/visual-assistance.js` | `visual-grid --source --out [--step --json-file]` 生成红色坐标网格并按显式缩放/裁切映射目标；`image-annotate --source --out --json-file` 绘制完整目标框与避让标签。复用 sharp，绑定源尺寸/哈希、保护原图与已有输出，返回待视觉复核结果。两个独立内部 Skill 由设计、研发与测试按场景复用 |
 | `src/run-harness.js`、`src/dev-standards.js`、`src/quality.js` | 验证摘要、源码标准与专项质量诊断 |
 | `src/runtime/`、`src/kernel/` | 可选任务运行态、幂等记录与并发控制 |
 | `src/canvas-workspace.js`、`src/learning-review.js`、`src/knowledge.js` | 画布、学习包与知识复用 |

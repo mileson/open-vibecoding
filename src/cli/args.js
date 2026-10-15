@@ -24,10 +24,10 @@ function parseCommandArgs(argv) {
 
   while (args.length > 0) {
     const arg = args.shift();
-    if (['--key-color', '--tolerance', '--feather'].includes(arg)) {
+    if (['--key-color', '--tolerance', '--feather', '--step'].includes(arg)) {
       const value = args.shift();
       if (!value || value.startsWith('--')) throw new Error(`${arg} requires a value`);
-      const key = { '--key-color': 'keyColor', '--tolerance': 'tolerance', '--feather': 'feather' }[arg];
+      const key = { '--key-color': 'keyColor', '--tolerance': 'tolerance', '--feather': 'feather', '--step': 'step' }[arg];
       flags[key] = value;
       continue;
     }
@@ -676,6 +676,8 @@ function usage() {
     '  open-vibecoding quality [path] [--init|--verify|--learn [--review] --from <legacy-report-or-diagnostics-or-turn-state>] [--fail-on-violation] [--force] [--json]',
     '  open-vibecoding knowledge <candidates|reject|archive|restore> [path-or-id] [--status <pending-review|all|rejected|archived|promoted|merged>] [--id <candidate-id>] [--reason <text>] [--json]',
     '  open-vibecoding icon-cutout --source <image> --out <new.png> [--key-color <#RRGGBB>] [--tolerance <0..255>] [--feather <0..255>]  # 本地透明化；JSON 输出',
+    '  open-vibecoding visual-grid --source <image> --out <new.png> [--step 100] [--json-file <mapping.json>]  # 坐标网格与显式缩放/裁切换算',
+    '  open-vibecoding image-annotate --source <image> --out <new.png> --json-file <plan.json>  # 目标框与避让标签；需看图复核',
     '  open-vibecoding visual-prepare [path] --reference <effect-image> ((--grid <columns>x<rows>) | (--boxes <plan.json>)) [--include <csv>] [--id <reference-set-id>] [--title <text>] [--out <dir>] [--json]',
     '  open-vibecoding design-review [path] --action <save|select> --json-file <plan.json>  # 原图、编号拼图、版本与明确选定的 final；JSON 输出',
     '  open-vibecoding visual-compare [path] ((--reference <effect-image> --actual <screenshot-image>) | (--before <before-screenshot> --after <after-screenshot>) | --board <board.json>) [--reference-box <x,y,w,h>] [--actual-box <x,y,w,h>] [--before-box <x,y,w,h>] [--after-box <x,y,w,h>] [--focus-label <text>] [--focus-reason <text>] [--presentation <local-first>] [--out <file.jpg>] [--format <jpg|png|webp>] [--quality <1..100>] [--max-panel-width <px>] [--locale <zh-CN|en>] [--json]',

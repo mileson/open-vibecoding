@@ -54,7 +54,7 @@ const BUILTIN_DOMAINS = [
     id: 'vibe-enhancement',
     title: 'Vibe Coding 增强',
     responsibility: 'Agent、工具、上下文、画布与经验的按需增强',
-    existingCommands: ['canvas', 'grow', 'doctor', 'icon-cutout'],
+    existingCommands: ['canvas', 'grow', 'doctor', 'icon-cutout', 'visual-grid', 'image-annotate'],
   },
   {
     id: 'best-practices',
@@ -144,6 +144,7 @@ const BUILTIN_SCENARIOS = [
     accepts: ['选定方向或参考图', '现有界面和代码'],
     produces: ['实际界面实现', '必要的视觉对比证据'],
     tools: ['design-starter', 'visual-prepare', 'visual-compare'],
+    uses: ['visual-localization', 'image-annotation'],
   },
   {
     id: 'feature-implementation',
@@ -152,7 +153,7 @@ const BUILTIN_SCENARIOS = [
     domains: ['development'],
     accepts: ['明确的用户目标', '现有代码与约束'],
     produces: ['可运行的变更', '与风险相称的验证结果'],
-    uses: ['diagnostic-readiness'],
+    uses: ['diagnostic-readiness', 'visual-localization', 'image-annotation'],
     tools: ['dev-check'],
   },
   {
@@ -206,7 +207,7 @@ const BUILTIN_SCENARIOS = [
     domains: ['testing'],
     accepts: ['用户目标', '实现结果', '测试策略'],
     produces: ['实际通过或失败证据', '未验证风险与复测建议'],
-    uses: ['diagnostic-readiness'],
+    uses: ['diagnostic-readiness', 'visual-localization', 'image-annotation'],
     tools: ['run', 'validate', 'visual-compare'],
   },
   {
@@ -240,6 +241,20 @@ const BUILTIN_SCENARIOS = [
     domains: ['vibe-enhancement', 'testing'],
     accepts: ['真实媒体与质量声明', 'ASR 或语音字幕任务'],
     produces: ['修改前基线与最终媒体对比', '证据支持的结论与未知项'],
+  },
+  {
+    id: 'visual-localization', title: '视觉精确定位', skill: 'open-vibecoding-visual-localization',
+    domains: ['vibe-enhancement'],
+    accepts: ['需要准确定位的图片目标', '原始图片与已确认的显示/裁切关系'],
+    produces: ['辅助坐标网格', '原图像素目标与定位不确定项'],
+    tools: ['visual-grid'],
+  },
+  {
+    id: 'image-annotation', title: '图片框选与说明标注', skill: 'open-vibecoding-image-annotation',
+    domains: ['vibe-enhancement'],
+    accepts: ['需要指明的目标与用户动作', '原图、保护区域与交付尺寸'],
+    produces: ['不覆盖原图的标注副本', '实际框位与待视觉复核结果'],
+    uses: ['visual-localization'], tools: ['image-annotate'],
   },
   {
     id: 'icon-system', title: '图标获取与风格统筹', skill: 'open-vibecoding-icon-system',

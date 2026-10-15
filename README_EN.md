@@ -12,10 +12,34 @@ Open VibeCoding equips agents with product, interaction design, development, tes
 | Interaction design | Shape information architecture, journeys, states, visual directions, and implementation comparisons |
 | Development | Let the agent plan and implement; use the CLI for deterministic tools and runtime support |
 | Testing | Select risk-appropriate verification and retain necessary evidence |
-| Vibe Coding enhancement | Route skills and compose client adapters, canvas tools, references, and reusable knowledge |
+| Vibe Coding enhancement | Precise visual localization, image annotation, icons, audio evidence, canvas collaboration, tool selection, and reusable knowledge |
 | Best practices (cross-cutting) | Choose verified modern approaches within project constraints; the first independent topic is iOS localization with String Catalogs |
 
 Each scenario is an independent child capability. The orchestration layer composes them by user intent and evidence, not fixed keyword matching. Simple tasks may need only one; complex tasks can move between domains. `skills/open-vibecoding-router/SKILL.md` is the agent entry point, and `open-vibecoding capabilities list|get|contract` exposes the machine-readable catalog. Projects can add scenarios through an optional `open-vibecoding.capabilities.json` and matching repo-local skills.
+
+## Help agents locate and annotate visual targets
+
+Moving a button from a screenshot, aligning cards, or highlighting an issue requires a clear relationship between image pixels, preview scale, and crop origins. Open VibeCoding provides two independent internal capabilities for visual localization and image annotation. Design, development, and testing scenarios can reuse them while users simply describe the intended result.
+
+![Open VibeCoding visual assistance concept](./docs/assets/open-vibecoding-visual-assistance-concept.png)
+
+*Generated with Codex's built-in image generation. This is a concept illustration, not a tool screenshot or an accuracy benchmark.*
+
+| Situation | Method |
+| --- | --- |
+| Adjust spacing, insert content, or locate a small target | Use a red pixel grid and close-up inspection; verify scale, crop, and origin before acting |
+| Highlight an issue or explain an action | Frame the complete target, place a short label, and check protected text, neighboring controls, and canvas bounds |
+| Verify a change | Inspect the clean result and relevant details; geometry checks do not replace visual review |
+
+These are actual built-in tool outputs from one synthetic test image. They contain no real account or business data; the Chinese labels are part of the fixture.
+
+| Coordinate guide | Grid-free annotation |
+| --- | --- |
+| ![Red pixel coordinate grid](./docs/assets/open-vibecoding-visual-grid.png) | ![The download button is framed without including its neighbor](./docs/assets/open-vibecoding-visual-annotated.png) |
+
+Grids are used when accurate position matters, not for every image-understanding task. Originals and existing outputs are protected. Unclear mappings, stale source bindings, and unsafe label layouts require correction. The tools cannot guarantee model judgment or turn image pixels directly into screen clicks or CSS coordinates.
+
+See the [use cases, reproducible example, and limitations](./docs/visual-assistance.en.md). Both capabilities are internal agent helpers, with no extra user-facing entry point or dependency on a personal screenshot-annotation Skill.
 
 ## Principles
 

@@ -71,6 +71,7 @@ import { gateWorkspace } from './gates/workspace.js';
 import { printGateResult } from './cli/gate-print.js';
 import { CAPABILITY_HANDOFF_CONTRACT, getCapability, loadProjectCapabilityCatalog } from './capability-catalog.js';
 import { iconCutout } from './icon-cutout.js';
+import { visualGrid, imageAnnotate } from './visual-assistance.js';
 
 function buildInitTemplatePackGuidance(templatePack, options = {}) {
   const label = formatTemplatePackDisplay(templatePack, { fallback: '通用产品或工程场景' });
@@ -472,6 +473,14 @@ export async function main(argv = process.argv.slice(2)) {
   const projectPath = path.resolve(flags.path ?? positionals[0] ?? process.cwd());
 
   try {
+    if (command === 'visual-grid' || command === 'image-annotate') {
+      const plan = flags.jsonFile ? JSON.parse(await fs.readFile(path.resolve(flags.jsonFile), 'utf8')) : undefined;
+      const result = await (command === 'visual-grid' ? visualGrid : imageAnnotate)({
+        source: flags.source, out: flags.out, step: flags.step === undefined ? 100 : Number(flags.step), plan,
+      });
+      console.log(JSON.stringify(result, null, 2));
+      return 0;
+    }
     if (command === 'icon-cutout') {
       const result = await iconCutout({ source: flags.source, out: flags.out,
         keyColor: flags.keyColor, tolerance: flags.tolerance === undefined ? undefined : Number(flags.tolerance),

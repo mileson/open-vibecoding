@@ -509,6 +509,7 @@ function agentContractBody(tools = OPEN_VIBECODING_AGENT_TOOLS) {
     '- 研发复杂度提醒用 `$open-vibecoding-requirement-intake`，验证策略用 `$open-vibecoding-test-strategy`；需要外部事实时用 `$open-vibecoding-benchmark-router`。',
     `- 故障修复或性能优化主动检查复发时的诊断盲区；方法见内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-diagnostic-readiness') : tools.includes('claude') ? installedSkillPath('open-vibecoding-diagnostic-readiness', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-diagnostic-readiness', 'SKILL.md')}\`。现有证据够用则复用，不机械加日志；测试读回验证，不自动开启长期监控。`,
     '- 音频与语音证据用 `$open-vibecoding-audio-evidence`；图标主动获取与统一风格用 `$open-vibecoding-icon-system`。两者归属增强能力，按需由研发、交互与测试复用。',
+    `- 图片或界面需要精确定位、对齐、添加或局部调整时，主动读取内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-visual-localization') : tools.includes('claude') ? installedSkillPath('open-vibecoding-visual-localization', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-visual-localization', 'SKILL.md')}\`，用红色坐标网格与局部放大核对，并区分图片、预览与屏幕坐标；需要圈选说明时组合图片标注能力。普通看图不强制网格，最终检查无网格结果。`,
     '- 横向最佳实践用 `$open-vibecoding-best-practices` 按项目条件选择；iOS 多语言用 `$open-vibecoding-ios-localization`，资源格式与调用 API 分别判断兼容性。',
     '- `$open-vibecoding-shared` 提供安全、语言、浏览器、小程序与文案规则；`$open-vibecoding-harness` 提供按需工具说明。用户需要 HTML 评审时，读取 harness 的 `references/review-handoff.md`，统一复制当前评审结果、左侧图标与反馈状态，并采用结论先行和业务案例；普通任务不因此生成评审页面。',
     '',
