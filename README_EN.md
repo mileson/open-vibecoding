@@ -42,7 +42,7 @@ See the [use cases, reproducible example, and limitations](./docs/visual-assista
 ## Principles
 
 - Interface visual reviews require actual screenshots embedded in the final reply: reference and implementation when an approved reference exists, or the final running interface otherwise.
-- Browse the [capability gallery](./docs/capability-gallery.md) for scenario-based examples of icons, design review, acceptance, audio, and diagnostics.
+- Browse the [capability gallery](./docs/capability-gallery.en.md) for scenario-based examples of icons, design review, acceptance, audio, and diagnostics.
 - The agent owns its reasoning, plan, and execution. The toolkit provides reminders and composable deterministic actions.
 - It does not automatically generate requirements, PRDs, reviews, changes, or task files for workflow bookkeeping.
 - Code is the default implementation documentation. Documents, design artifacts, and review pages remain valid user-requested deliverables.

@@ -21,7 +21,7 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 
 让 Agent 按截图调整按钮位置、对齐卡片，或圈出需要修改的内容时，缩放和裁切关系不明确容易带来偏移。Open VibeCoding 将视觉定位与图片标注拆成两个内部子能力，供设计、研发和测试按场景复用，用户直接描述想改什么即可。
 
-![Open VibeCoding 视觉辅助](./docs/assets/open-vibecoding-visual-assistance-concept.png)
+![Open VibeCoding 视觉辅助](./docs/assets/gallery/zh-CN/visual-assistance.png)
 
 | 场景 | Agent 使用的方法 |
 | --- | --- |
