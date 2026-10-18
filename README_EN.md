@@ -4,6 +4,10 @@
 
 Open VibeCoding equips agents with product, interaction design, development, testing, and Vibe Coding enhancement capabilities. Users describe their goal directly; the agent selects and combines relevant capabilities without a mandatory sequence.
 
+[Capabilities](#readme-section-1) · [Local usage](#readme-section-2) · [Help agents locate and annotate visual targets](#readme-section-3)
+
+<a id="readme-section-1"></a>
+
 ## Capabilities
 
 | Domain | Purpose |
@@ -16,6 +20,23 @@ Open VibeCoding equips agents with product, interaction design, development, tes
 | Best practices (cross-cutting) | Choose verified modern approaches within project constraints; the first independent topic is iOS localization with String Catalogs |
 
 Each scenario is an independent child capability. The orchestration layer composes them by user intent and evidence, not fixed keyword matching. Simple tasks may need only one; complex tasks can move between domains. `skills/open-vibecoding-router/SKILL.md` is the agent entry point, and `open-vibecoding capabilities list|get|contract` exposes the machine-readable catalog. Projects can add scenarios through an optional `open-vibecoding.capabilities.json` and matching repo-local skills.
+
+<a id="readme-section-2"></a>
+
+## Local usage
+
+```bash
+open-vibecoding init .
+open-vibecoding capabilities list
+open-vibecoding doctor .
+open-vibecoding run . --verify
+```
+
+The executable is `open-vibecoding`, workspace data lives in `.open-vibecoding/`, and scene skills use `open-vibecoding-*`. Legacy entry points are no longer installed. Without a global installation, use the local Node CLI entry recorded in the project's `AGENTS.md`. Old generation and advancement commands are removed; legacy records can be archived separately rather than reused as initialization input. See `open-vibecoding --help` for available commands.
+
+See the [architecture](./docs/basic/open-vibecoding-architecture.md), [application flow](./docs/basic/app-flow.md), and [backend structure](./docs/basic/backend-structure.md).
+
+<a id="readme-section-3"></a>
 
 ## Help agents locate and annotate visual targets
 
@@ -39,6 +60,8 @@ Grids are used when accurate position matters, not for every image-understanding
 
 See the [use cases, reproducible example, and limitations](./docs/visual-assistance.en.md). Both capabilities are internal agent helpers, with no extra user-facing entry point or dependency on a personal screenshot-annotation Skill.
 
+<a id="readme-section-4"></a>
+
 ## Principles
 
 - Interface visual reviews require actual screenshots embedded in the final reply: reference and implementation when an approved reference exists, or the final running interface otherwise.
@@ -49,15 +72,22 @@ See the [use cases, reproducible example, and limitations](./docs/visual-assista
 - Preserve evidence that cannot be reliably reconstructed from code, such as visual references and comparisons, risk verification, and external action read-backs.
 - Existing `.open-vibecoding/` PRDs, changes, specs, and tasks remain read-only historical records; they are not backfilled or rewritten.
 
-## Local usage
+<a id="readme-section-5"></a>
 
-```bash
-open-vibecoding init .
-open-vibecoding capabilities list
-open-vibecoding doctor .
-open-vibecoding run . --verify
-```
+## Repository map
 
-The executable is `open-vibecoding`, workspace data lives in `.open-vibecoding/`, and scene skills use `open-vibecoding-*`. Legacy entry points are no longer installed. Without a global installation, use the local Node CLI entry recorded in the project's `AGENTS.md`. Old generation and advancement commands are removed; legacy records can be archived separately rather than reused as initialization input. See `open-vibecoding --help` for available commands.
+| Entry | Contents |
+| --- | --- |
+| [`docs/`](docs/) | Project documentation and references |
+| [`package.json`](package.json) | Dependencies and development scripts |
+| [`scripts/`](scripts/) | Development and maintenance scripts |
+| [`skills/`](skills/) | Agent skill modules |
+| [`src/`](src/) | Application and service implementation |
+| [`test/`](test/) | Automated tests |
 
-See the [architecture](./docs/basic/open-vibecoding-architecture.md), [application flow](./docs/basic/app-flow.md), and [backend structure](./docs/basic/backend-structure.md).
+<a id="readme-section-6"></a>
+
+## Further reading
+
+- [Contributing](CONTRIBUTING.md)
+- [Security reporting](SECURITY.md)
