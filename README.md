@@ -4,6 +4,10 @@
 
 Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe Coding 增强能力。用户直接描述目标；Agent 根据代码、会话与必要证据判断该用哪些能力。它不要求固定的起手命令，也不把五个领域排成必须依次完成的流程。
 
+[能力结构](#readme-section-1) · [本地使用](#readme-section-2) · [让 Agent 看准位置、圈清问题](#readme-section-3) · [仓库导航](#readme-section-6)
+
+<a id="readme-section-1"></a>
+
 ## 能力结构
 
 | 领域 | 主要用途 |
@@ -16,6 +20,23 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 | 最佳实践（横向板块） | 根据项目条件选择成熟现代方案；首个独立主题为 iOS String Catalog 多语言 |
 
 每个场景是独立子能力，统筹层按用户意图组合它们，不靠固定关键词匹配。小任务可以只用一项；复杂任务可在领域之间往返。`skills/open-vibecoding-router/SKILL.md` 是 Agent 的入口，`open-vibecoding capabilities list|get|contract` 提供机器可读的能力目录。项目可用 `open-vibecoding.capabilities.json` 和对应的 repo-local Skill 增量扩展。
+
+<a id="readme-section-2"></a>
+
+## 本地使用
+
+```bash
+open-vibecoding init .
+open-vibecoding capabilities list
+open-vibecoding doctor .
+open-vibecoding run . --verify
+```
+
+可执行命令统一为 `open-vibecoding`，工作区路径为 `.open-vibecoding/`，场景 Skill 使用 `open-vibecoding-*`。不再安装旧名称入口。未安装全局命令时，可使用项目 `AGENTS.md` 中的本地 Node CLI 入口。旧版生成与推进命令已移除；已有历史记录可单独归档，不作为新版初始化输入。具体子命令以 `open-vibecoding --help` 为准。
+
+架构与兼容边界见 [Open VibeCoding 架构](./docs/basic/open-vibecoding-architecture.md)，开发验证见 [应用流程](./docs/basic/app-flow.md) 和 [后端结构](./docs/basic/backend-structure.md)。
+
+<a id="readme-section-3"></a>
 
 ## 让 Agent 看准位置、圈清问题
 
@@ -39,6 +60,8 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 
 查看[使用场景、可复现样例与工具边界](./docs/visual-assistance.md)。两个能力均为 Agent 内部工具，不新增用户必选命令，也不依赖个人电脑上的截图标注 Skill。
 
+<a id="readme-section-4"></a>
+
 ## 工作原则
 
 - 界面视觉审查要求在最终回复展示实际截图：有确认参考时对比参考与实现，没有参考时展示最终实际界面。
@@ -49,15 +72,22 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 - 视觉参照及实现对比、风险验证结果、外部动作读回等无法从代码可靠重建的证据按需保留。
 - 已有 `.open-vibecoding/` 历史 PRD、change、spec 和 tasks 保持只读，不迁移、回填或改写。
 
-## 本地使用
+<a id="readme-section-5"></a>
 
-```bash
-open-vibecoding init .
-open-vibecoding capabilities list
-open-vibecoding doctor .
-open-vibecoding run . --verify
-```
+## 进一步阅读
 
-可执行命令统一为 `open-vibecoding`，工作区路径为 `.open-vibecoding/`，场景 Skill 使用 `open-vibecoding-*`。不再安装旧名称入口。未安装全局命令时，可使用项目 `AGENTS.md` 中的本地 Node CLI 入口。旧版生成与推进命令已移除；已有历史记录可单独归档，不作为新版初始化输入。具体子命令以 `open-vibecoding --help` 为准。
+- [贡献指南](CONTRIBUTING.md)
+- [安全反馈](SECURITY.md)
 
-架构与兼容边界见 [Open VibeCoding 架构](./docs/basic/open-vibecoding-architecture.md)，开发验证见 [应用流程](./docs/basic/app-flow.md) 和 [后端结构](./docs/basic/backend-structure.md)。
+<a id="readme-section-6"></a>
+
+## 仓库导航
+
+| 入口 | 内容 |
+| --- | --- |
+| [`docs/`](docs/) | 项目说明与参考文档 |
+| [`package.json`](package.json) | 依赖、开发与验证命令 |
+| [`scripts/`](scripts/) | 开发与维护脚本 |
+| [`skills/`](skills/) | Agent 技能模块 |
+| [`src/`](src/) | 应用或服务实现 |
+| [`test/`](test/) | 自动化测试 |
