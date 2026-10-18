@@ -1,6 +1,6 @@
 # Open VibeCoding
 
-简体中文 | [English](./README_EN.md)
+
 
 Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe Coding 增强能力。用户直接描述目标；Agent 根据代码、会话与必要证据判断该用哪些能力。它不要求固定的起手命令，也不把五个领域排成必须依次完成的流程。
 
