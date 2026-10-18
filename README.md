@@ -1,14 +1,37 @@
-# Open VibeCoding
+<a id="open-vibecoding"></a>
 
+<div align="center">
 
+# Open VibeCoding · Agent 协作能力框架
+
+**按任务组合产品、设计、研发与测试能力。**
+
+产品判断 · 交互设计 · 研发测试 · 视觉辅助
+
+[![中文说明](https://img.shields.io/badge/%E8%AF%B4%E6%98%8E-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-059669)](#readme-detail-audience)
+[![项目类型](https://img.shields.io/badge/%E9%A1%B9%E7%9B%AE-Skill-6366f1)](#readme-detail-audience)
+
+[✅ 适用场景](#readme-detail-audience) · [🧩 模块速查](#readme-detail-18) · [📁 能力结构](#readme-detail-8) · [📖 本地使用](#readme-detail-10) · [🤖 让 Agent 看准位置、圈清问题](#readme-detail-12) · [💡 工作原则](#readme-detail-14)
+
+</div>
+
+---
 
 Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe Coding 增强能力。用户直接描述目标；Agent 根据代码、会话与必要证据判断该用哪些能力。它不要求固定的起手命令，也不把五个领域排成必须依次完成的流程。
 
-[能力结构](#readme-section-1) · [本地使用](#readme-section-2) · [让 Agent 看准位置、圈清问题](#readme-section-3) · [仓库导航](#readme-section-6)
+<a id="readme-detail-audience"></a>
+
+## ✅ 适用场景
+
+适合希望增强 Agent 项目协作能力的开发者。
 
 <a id="readme-section-1"></a>
 
-## 能力结构
+<a id="能力结构"></a>
+
+<a id="readme-detail-8"></a>
+
+## 📁 能力结构
 
 | 领域 | 主要用途 |
 | --- | --- |
@@ -23,7 +46,11 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 
 <a id="readme-section-2"></a>
 
-## 本地使用
+<a id="本地使用"></a>
+
+<a id="readme-detail-10"></a>
+
+## 📖 本地使用
 
 ```bash
 open-vibecoding init .
@@ -38,7 +65,11 @@ open-vibecoding run . --verify
 
 <a id="readme-section-3"></a>
 
-## 让 Agent 看准位置、圈清问题
+<a id="让-agent-看准位置圈清问题"></a>
+
+<a id="readme-detail-12"></a>
+
+## 🤖 让 Agent 看准位置、圈清问题
 
 让 Agent 按截图调整按钮位置、对齐卡片，或圈出需要修改的内容时，缩放和裁切关系不明确容易带来偏移。Open VibeCoding 将视觉定位与图片标注拆成两个内部子能力，供设计、研发和测试按场景复用，用户直接描述想改什么即可。
 
@@ -62,7 +93,11 @@ open-vibecoding run . --verify
 
 <a id="readme-section-4"></a>
 
-## 工作原则
+<a id="工作原则"></a>
+
+<a id="readme-detail-14"></a>
+
+## 💡 工作原则
 
 - 界面视觉审查要求在最终回复展示实际截图：有确认参考时对比参考与实现，没有参考时展示最终实际界面。
 - 查看[能力画册](./docs/capability-gallery.md)，按业务场景了解图标、设计评审、真实验收与诊断等增强方法。
@@ -74,20 +109,30 @@ open-vibecoding run . --verify
 
 <a id="readme-section-5"></a>
 
-## 进一步阅读
+<a id="进一步阅读"></a>
+
+<a id="readme-detail-16"></a>
+
+## 📚 进一步阅读
 
 - [贡献指南](CONTRIBUTING.md)
 - [安全反馈](SECURITY.md)
 
 <a id="readme-section-6"></a>
 
-## 仓库导航
+<a id="仓库导航"></a>
 
-| 入口 | 内容 |
-| --- | --- |
-| [`docs/`](docs/) | 项目说明与参考文档 |
-| [`package.json`](package.json) | 依赖、开发与验证命令 |
-| [`scripts/`](scripts/) | 开发与维护脚本 |
-| [`skills/`](skills/) | Agent 技能模块 |
-| [`src/`](src/) | 应用或服务实现 |
-| [`test/`](test/) | 自动化测试 |
+<a id="readme-detail-18"></a>
+
+## 🧩 模块速查
+
+按要处理的工作选择入口，先看模块职责，再进入对应文件或目录。
+
+| 模块入口 | 负责什么 | 什么时候看 |
+| --- | --- | --- |
+| [`docs/`](docs/) | 项目说明与参考文档 | 查阅运行、设计与维护约定 |
+| [`package.json`](package.json) | 依赖、开发与验证命令 | 核对依赖、工程目标与现有命令 |
+| [`scripts/`](scripts/) | 开发与维护脚本 | 查找构建、验证或维护的现有命令 |
+| [`skills/`](skills/) | Agent 技能模块 | 查找具体场景对应的技能入口 |
+| [`src/`](src/) | 应用或服务实现 | 定位应用界面与业务实现 |
+| [`test/`](test/) | 自动化测试 | 为修改选择对应的回归检查 |
