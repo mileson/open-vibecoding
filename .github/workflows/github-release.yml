@@ -38,8 +38,8 @@ jobs:
             TAG='${{ github.ref_name }}'
           fi
           VERSION="${TAG#v}"
-          TITLE="OpenPrd ${VERSION}"
-          NOTES_FILE="$RUNNER_TEMP/openprd-github-release-notes.md"
+          TITLE="Open VibeCoding ${VERSION}"
+          NOTES_FILE="$RUNNER_TEMP/open-vibecoding-github-release-notes.md"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "title=$TITLE" >> "$GITHUB_OUTPUT"
@@ -48,11 +48,15 @@ jobs:
       - name: Render release notes
         shell: bash
         run: |
-          node scripts/openprd-github-release-notes.mjs . \
+          if [ -f "docs/releases/${{ steps.release.outputs.version }}.md" ]; then
+            cp "docs/releases/${{ steps.release.outputs.version }}.md" "${{ steps.release.outputs.notes_file }}"
+          else
+          node scripts/open-vibecoding-github-release-notes.mjs . \
             --version "${{ steps.release.outputs.version }}" \
             --tag "${{ steps.release.outputs.tag }}" \
             --title "${{ steps.release.outputs.title }}" \
             --out "${{ steps.release.outputs.notes_file }}"
+          fi
 
       - name: Create or update GitHub Release
         env:

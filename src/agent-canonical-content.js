@@ -2,6 +2,8 @@
 // rendered command catalog. Split from agent-integration.js to keep install/update
 // orchestration separate from long-form guidance copy.
 export const CANONICAL_SKILLS = [
+  { id: 'open-vibecoding-public-content-boundary', sourceSkill: 'open-vibecoding-public-content-boundary' },
+  { id: 'open-vibecoding-design-context', sourceSkill: 'open-vibecoding-design-context' },
   {
     id: 'open-vibecoding-router',
     sourceSkill: 'open-vibecoding-router',
@@ -25,6 +27,12 @@ export const CANONICAL_SKILLS = [
   { id: 'open-vibecoding-visual-evidence-delivery', sourceSkill: 'open-vibecoding-visual-evidence-delivery' },
   { id: 'open-vibecoding-best-practices', sourceSkill: 'open-vibecoding-best-practices' },
   { id: 'open-vibecoding-diagnostic-readiness', sourceSkill: 'open-vibecoding-diagnostic-readiness' },
+  { id: 'open-vibecoding-resource-entitlement-design', sourceSkill: 'open-vibecoding-resource-entitlement-design' },
+  { id: 'open-vibecoding-resource-efficiency', sourceSkill: 'open-vibecoding-resource-efficiency' },
+  { id: 'open-vibecoding-code-quality', sourceSkill: 'open-vibecoding-code-quality' },
+  { id: 'open-vibecoding-code-complexity-review', sourceSkill: 'open-vibecoding-code-complexity-review' },
+  { id: 'open-vibecoding-code-duplication-review', sourceSkill: 'open-vibecoding-code-duplication-review' },
+  { id: 'open-vibecoding-test-strength-review', sourceSkill: 'open-vibecoding-test-strength-review' },
   { id: 'open-vibecoding-ios-localization', sourceSkill: 'open-vibecoding-ios-localization' },
   { id: 'open-vibecoding-product-data-analysis', sourceSkill: 'open-vibecoding-product-data-analysis' },
   { id: 'open-vibecoding-production-anomaly-analysis', sourceSkill: 'open-vibecoding-production-anomaly-analysis' },
@@ -46,6 +54,12 @@ export const CANONICAL_SKILLS = [
     id: 'open-vibecoding-competitor-analysis',
     sourceSkill: 'open-vibecoding-competitor-analysis',
   },
+  {
+    id: 'open-vibecoding-competitor-growth-analysis',
+    sourceSkill: 'open-vibecoding-competitor-growth-analysis',
+  },
+  { id: 'open-vibecoding-competitor-tracking', sourceSkill: 'open-vibecoding-competitor-tracking' },
+  { id: 'open-vibecoding-competitive-evidence', sourceSkill: 'open-vibecoding-competitive-evidence' },
   {
     id: 'open-vibecoding-product-document',
     sourceSkill: 'open-vibecoding-product-document',

@@ -1,12 +1,14 @@
 // Presentation is separate from routing: these labels never match user prompts.
 const entries = [
+  ['competitor-growth-analysis', '【产品】分析竞品增长与获客方式', '结合市场数据、推广活动与实际体验，核验竞品增长原因和可借鉴条件。'],
+  ['competitor-tracking', '【产品】跟踪竞品重要变化', '按项目关注清单比较功能、价格与市场变化，说明影响及尚未核验的内容。'],
   ['product-diagnosis', '【产品】找出问题与改进方向', '结合用户反馈、页面与数据定位问题，判断下一步该改善什么。'],
   ['product-research', '【产品】调研用户需求与市场机会', '交叉核验用户反馈与市场资料，研究痛点、替代方案和验证机会。'],
   ['competitor-analysis', '【产品】对比竞品与可借鉴做法', '通过实际体验与资料核验，对比竞品差异，找出适合借鉴的做法。'],
   ['product-data-analysis', '【产品】分析功能使用与用户变化', '查询真实使用数据，区分访问与自动化流量，辅助判断功能去留。'],
   ['product-document', '【产品】编写产品说明与需求文档', '需要文档交付时，依据产品事实讲清目标、功能范围与关键规则。'],
   ['interaction-design', '【交互】优化用户流程与操作体验', '检查实际页面的入口、步骤与状态反馈，让用户更容易完成任务。'],
-  ['visual-direction-review', '【交互】生成三种界面方向供评审', '用原生生图探索三种不同布局与体验，直观比较后选择设计方向。'],
+  ['visual-direction-review', '【交互】生成界面效果图供评审', '先查看项目风格，再生成单张效果图或比较不同设计方向。'],
   ['frontend-design', '【交互】实现设计稿并对比效果', '把设计落实到真实界面，用截图对比检查还原、对齐与视觉一致性。'],
   ['feature-implementation', '【研发】实现功能并验证结果', '根据明确目标自主拆解并完成开发，运行相关验证检查实际结果。'],
   ['debugging', '【研发】定位故障，按需修复', '结合复现、日志和代码确认原因，明确要求修复时修改并回归验证。'],
@@ -25,10 +27,11 @@ const entries = [
 export const USER_SKILL_PRESENTATION = Object.freeze(Object.fromEntries(entries.map(
   ([id, displayName, description]) => [`open-vibecoding-${id}`, { displayName, description }],
 )));
-const INTERNAL_SKILLS = new Set(['router', 'shared', 'harness', 'requirement-intake',
+const INTERNAL_SKILLS = new Set(['public-content-boundary', 'design-context', 'competitive-evidence', 'router', 'shared', 'harness', 'requirement-intake',
+  'code-quality', 'code-complexity-review', 'code-duplication-review', 'test-strength-review',
   'benchmark-router', 'test-strategy', 'audio-evidence', 'icon-source', 'icon-svg',
   'icon-image', 'icon-cutout', 'best-practices', 'tool-selection', 'experience-reuse',
-  'quality', 'standards', 'discovery-loop', 'diagnostic-readiness', 'visual-localization', 'image-annotation', 'visual-evidence-delivery'].map((id) => `open-vibecoding-${id}`));
+  'quality', 'standards', 'discovery-loop', 'diagnostic-readiness', 'resource-entitlement-design', 'resource-efficiency', 'visual-localization', 'image-annotation', 'visual-evidence-delivery'].map((id) => `open-vibecoding-${id}`));
 
 export function skillPresentation(id) {
   const entry = USER_SKILL_PRESENTATION[id];

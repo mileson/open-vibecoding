@@ -145,7 +145,7 @@ test('benchmark add/list/approve/verify and update generated benchmark guidance'
   assert.ok(indexMd.includes(addResult.source.id));
 
   await updateAgentIntegrationWorkspace(project, { tools: 'codex' });
-  const generatedBenchmarkSkill = await fs.readFile(path.join(project, '.codex', 'skills', 'open-vibecoding-benchmark-router', 'SKILL.md'), 'utf8');
+  const generatedBenchmarkSkill = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-benchmark-router', 'SKILL.md'), 'utf8');
   assert.ok(generatedBenchmarkSkill.includes('## Project Benchmark Registry'));
   assert.ok(generatedBenchmarkSkill.includes(addResult.source.id));
   assert.ok(generatedBenchmarkSkill.includes(addResult.source.repo));
@@ -153,8 +153,8 @@ test('benchmark add/list/approve/verify and update generated benchmark guidance'
   assert.ok(generatedBenchmarkSkill.includes('merge recommendation'));
   assert.ok(generatedBenchmarkSkill.includes('change lifecycle'));
   assert.ok(generatedBenchmarkSkill.includes('mandatory skill routing'));
-  assert.ok(generatedBenchmarkSkill.includes('Phosphor Icons'));
-  assert.ok(generatedBenchmarkSkill.includes('React Icons'));
+  const iconSource = await fs.readFile(path.join(project, '.open-vibecoding/harness/internal-skills/open-vibecoding-icon-source/references/sources.md'), 'utf8');
+  assert.match(iconSource, /Phosphor/);
 });
 
 test('benchmark verify catches duplicates, unreachable sources and overbroad triggers', async () => {

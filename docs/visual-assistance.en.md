@@ -1,6 +1,6 @@
 # Visual localization and image annotation
 
-[简体中文](./visual-assistance.md) · [Home](../README_EN.md)
+[简体中文](./visual-assistance.md) · [Home](../README.md)
 
 When a user asks an agent to align a button with a field or highlight an issue in a screenshot, the target and coordinate system must be clear. Grids help observation, explicit mappings connect a preview to its original, and deterministic annotation draws the result. Visual inspection is still required.
 

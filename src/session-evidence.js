@@ -47,7 +47,7 @@ const GENERIC_FRAMEWORK_TERMS = new Set([
   'harness',
   'instruction',
   'instructions',
-  'open-vibecoding',
+  'open vibecoding',
   'schema',
   'skill',
   'skills',

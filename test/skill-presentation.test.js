@@ -18,7 +18,7 @@ test('user menu shows business scenes while internal audio, router and resources
     await fs.writeFile(path.join(old, 'user-note.txt'), 'preserved');
     const result = await setupOpenPrdAgentIntegration(root, options);
     assert.equal(result.ok, true, JSON.stringify(result.doctor.checks.filter(x => !x.ok)));
-    assert.equal(result.manifest.skillEntries.filter(x => x.userFacing).length, 20);
+    assert.deepEqual(result.manifest.skillEntries.filter(x => x.userFacing).map(x => x.id).sort(), Object.keys(USER_SKILL_PRESENTATION).sort());
     const native = await fs.readdir(path.join(root, '.codex/skills'));
     assert.deepEqual(native.sort(), Object.keys(USER_SKILL_PRESENTATION).sort());
     for (const id of ['open-vibecoding-router', 'open-vibecoding-audio-evidence', 'open-vibecoding-diagnostic-readiness']) {

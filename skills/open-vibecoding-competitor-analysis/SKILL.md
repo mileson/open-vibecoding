@@ -5,6 +5,8 @@ description: 当用户要求竞品分析、替代方案比较或借鉴某产品�
 
 # 竞品分析
 
+涉及增长、获客与付费原因时按需组合 `$open-vibecoding-competitor-growth-analysis`；跨次比较变化用 `$open-vibecoding-competitor-tracking`；获取市场、渠道或体验资料可复用内部 `$open-vibecoding-competitive-evidence`。这些按任务意图选择，不是固定阶段。
+
 先明确要支持的产品决策，再选可比对象：直接竞品、间接替代和用户自己的手工流程可以同台比较，但必须注明类别。不要为凑数量扩大样本。
 
 1. 用相同任务和条件观察各方案的入口、关键路径、状态反馈、失败恢复、成本与限制；区分实测、官方声明、第三方评价和推断。

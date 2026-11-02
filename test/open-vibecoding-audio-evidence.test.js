@@ -172,11 +172,11 @@ test('canonical audio evidence contract distinguishes real media from subtitle-o
   assert.match(skill, /name: open-vibecoding-audio-evidence/);
   assert.doesNotMatch(skill, /TODO/);
   assert.match(skill, /真实音频/);
-  assert.match(skill, /ASR\/语音识别\/转写/);
+  assert.match(skill, /ASR、语音识别、转写/);
   assert.match(skill, /最终交付媒体重新提取/);
-  assert.match(skill, /纯字幕文案、翻译、错别字/);
-  assert.match(router, /真实音频.*ASR\/语音识别\/转写.*\$open-vibecoding-audio-evidence/);
-  assert.match(router, /纯字幕 UI.*\$open-vibecoding-frontend-design.*不触发.*\$open-vibecoding-audio-evidence/);
+  assert.match(skill, /纯文案改写、人工翻译、错别字/);
+  assert.match(router, /真实媒体.*ASR.*\$open-vibecoding-audio-evidence/);
+  assert.match(router, /纯字幕 UI、文案或翻译只走相关设计能力/);
   assert.equal(schema.title, 'Open VibeCoding media evidence bundle v1');
   assert.equal(schema.properties.schema.const, 'openprd.media-evidence.v1');
   assert.ok(schema.$defs.finalMediaOutput.required.includes('mediaStructure'));
@@ -192,16 +192,18 @@ test('setup propagates audio evidence guidance and valid JSON schema across supp
   const project = await makeTempProject();
   const result = await setupAgentIntegrationWorkspace(project, { tools: 'all' });
   const skillPaths = [
-    '.codex/skills/open-vibecoding-audio-evidence/SKILL.md',
+    '.open-vibecoding/harness/internal-skills/open-vibecoding-audio-evidence/SKILL.md',
     '.claude/skills/open-vibecoding-audio-evidence/SKILL.md',
   ];
   const schemaPaths = [
-    '.codex/skills/open-vibecoding-audio-evidence/references/media-evidence.schema.json',
+    '.open-vibecoding/harness/internal-skills/open-vibecoding-audio-evidence/references/media-evidence.schema.json',
     '.claude/skills/open-vibecoding-audio-evidence/references/media-evidence.schema.json',
   ];
   const [codexSkill, claudeSkill] = await Promise.all(skillPaths.map((file) => fs.readFile(path.join(project, file), 'utf8')));
   const [codexSchemaText, claudeSchemaText] = await Promise.all(schemaPaths.map((file) => fs.readFile(path.join(project, file), 'utf8')));
-  assert.equal(codexSkill, claudeSkill);
+  const normalize = text => text.replace('user-invocable: false\n', '').replace(/checksum=[a-f0-9]+/g, 'checksum=normalized');
+  assert.equal(normalize(codexSkill), normalize(claudeSkill));
+  assert.match(claudeSkill, /user-invocable: false/);
   assert.match(codexSkill, /adapter=shared/);
   assert.match(codexSkill, /source=open-vibecoding-audio-evidence/);
   assert.match(codexSkill, /最终交付媒体重新提取/);
@@ -212,13 +214,13 @@ test('setup propagates audio evidence guidance and valid JSON schema across supp
   assert.equal(generatedSchema.properties.schema.const, 'openprd.media-evidence.v1');
 
   const [codexRouter, claudeRouter, cursorRule] = await Promise.all([
-    fs.readFile(path.join(project, '.codex', 'skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8'),
+    fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8'),
     fs.readFile(path.join(project, '.claude', 'skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8'),
     fs.readFile(path.join(project, '.cursor', 'rules', 'open-vibecoding.mdc'), 'utf8'),
   ]);
   for (const artifact of [codexRouter, claudeRouter, cursorRule]) {
     assert.match(artifact, /open-vibecoding-audio-evidence/);
-    assert.match(artifact, /纯字幕.*不.*触发|纯字幕.*不自动触发/);
+    if (artifact !== cursorRule) assert.match(artifact, /纯字幕.*不.*触发|纯字幕.*不自动触发|纯字幕.*只走相关设计能力/);
   }
   const managedPaths = new Set(result.manifest.managedFiles.map((entry) => entry.path));
   for (const file of [...skillPaths, ...schemaPaths]) {

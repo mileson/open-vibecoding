@@ -5,19 +5,25 @@ description: Open VibeCoding 入口路由。按用户目标组合五个执行能
 
 # Open VibeCoding Router
 
-用户直接描述目标；Agent 从当前会话、项目代码和必要证据判断用户想解决的问题及当前决策，再选择一个或多个子能力。不要写固定关键词表、正则命中器或强制阶段序列。`open-vibecoding capabilities list|get|contract` 仅供 Agent 发现能力，不要求用户先选 `/from-idea` 等入口。
+用户直接描述目标；Agent 从当前会话、项目代码和必要证据判断用户想解决的问题及当前决策，再选择一个或多个子能力。不要写固定关键词表、正则命中器或跨能力域的强制阶段序列。已授权代码变更在研发域内采用实现行为、整理质量、工程收尾三个阶段，方法由内部代码质量能力维护。`open-vibecoding capabilities list|get|contract` 仅供 Agent 发现能力，不要求用户先选 `/from-idea` 等入口。
 
 | 当前需要作出的判断或完成的工作 | 独立子能力 |
 |---|---|
+| 解释竞品在特定市场为何增长、如何获客与促成付费；按关注清单比较跨次变化 | `$open-vibecoding-competitor-growth-analysis`、`$open-vibecoding-competitor-tracking`，按需复用内部 `$open-vibecoding-competitive-evidence`；持续跟踪须授权并使用宿主调度，不自动创建任务 |
 | 定位产品问题属于哪一层；了解用户与市场；对比替代方案；明确要求文档交付 | `$open-vibecoding-product-diagnosis`、`$open-vibecoding-product-research`、`$open-vibecoding-competitor-analysis`、`$open-vibecoding-product-document` |
 | 根据真实使用数据解释转化、留存或功能使用变化，判断下一步优化 | `$open-vibecoding-product-data-analysis`，属于产品分析，不替代用户与市场调研 |
 | 判断上线后的崩溃和错误影响、版本变化，复查修复后是否再发生 | `$open-vibecoding-production-anomaly-analysis`，属于线上质量分析，不自动修复或启动监控 |
-| 设计任务流程与状态；比较大界面方向；按参考实施并视觉验收 | `$open-vibecoding-interaction-design`、`$open-vibecoding-visual-direction-review`、`$open-vibecoding-frontend-design` |
+| 设计任务流程与状态；生成单张界面效果图或比较多个方向（包括仅生图、不写代码）；按参考实施并视觉验收 | `$open-vibecoding-interaction-design`、`$open-vibecoding-visual-direction-review`、`$open-vibecoding-frontend-design` |
+| 为已有产品设计新界面、弹窗、组件或效果图，需要融入项目原有风格 | 内部 `$open-vibecoding-design-context`；主动查看目标界面和样式组件，把实际参考带入生成，交付前自查，不等用户提醒 |
+| 生成或修改用户会看到的界面、效果图、文案与导出内容 | 内部 `$open-vibecoding-public-content-boundary`；隔离制作过程与内部规则，生成前约束、交付前查看实际结果，保留必要业务反馈 |
 | 实现明确目标；定位并修复故障；在保持行为下改善结构 | `$open-vibecoding-feature-implementation`、`$open-vibecoding-debugging`、`$open-vibecoding-refactoring` |
+| 已授权代码变更需要把功能做对、整理代码质量并完成工程收尾 | 内部 `$open-vibecoding-code-quality`；独立组合 `$open-vibecoding-code-complexity-review`、`$open-vibecoding-code-duplication-review`、`$open-vibecoding-test-strength-review`，不要求用户主动调用或逐步留痕 |
+| 功能会消耗有限资源或改变使用权益，需要兼顾消费、恢复、运营与用户反馈 | 内部 `$open-vibecoding-resource-entitlement-design`，研发主责，产品、交互与测试按需复用；不默认收费或新建后台 |
 | 修复故障或优化性能时，让再次发生的问题仍可继续深入定位 | `$open-vibecoding-diagnostic-readiness`，内部研发能力；主动评估盲区，按需补强并验证诊断证据，不自动开启监控 |
 | 从测试用户的真实入口验证业务结果，选择可用操作工具；实际验收与回归 | `$open-vibecoding-test-strategy`、`$open-vibecoding-acceptance-verification` |
 | 希望独立 reviewer 亲自操作界面发现问题；希望同时修复并让 reviewer 多轮复查 | `$open-vibecoding-ui-interaction-review`、`$open-vibecoding-ui-review-and-repair` |
 | 选择工具；空间化协作；复用已验证经验 | `$open-vibecoding-tool-selection`、`$open-vibecoding-canvas-collaboration`、`$open-vibecoding-experience-reuse` |
+| 实现、构建、测试或部署会占用环境与存储，需要减少重复实例、控制缓存或处理闲置产物 | 内部 `$open-vibecoding-resource-efficiency`；按实际约束选择最小足够方案，核对依赖与权限后收尾，不默认堆积冗余或清空缓存 |
 | 看图时需要准确定位、对齐或局部调整；需要圈出问题或说明操作位置 | 内部能力 `$open-vibecoding-visual-localization`、`$open-vibecoding-image-annotation`；精确定位主动用红色坐标网格，普通图意理解不机械生成 |
 | 界面视觉审查、修改或复查结束，要向用户展示最终效果 | 内部 `$open-vibecoding-visual-evidence-delivery`；最终回复展示实际截图，有确认参考时展示双图，无参考时也展示实际界面 |
 | 主动取得匹配产品调性的成套图标；寻找现成素材、设计 SVG 或生成独立位图 | `$open-vibecoding-icon-system`，按需组合 `$open-vibecoding-icon-source`、`$open-vibecoding-icon-svg`、`$open-vibecoding-icon-image`、`$open-vibecoding-icon-cutout` |

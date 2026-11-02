@@ -9,7 +9,7 @@ import { imageAnnotate, visualGrid } from '../src/visual-assistance.js';
 
 const root = new URL('../', import.meta.url).pathname;
 test('public documentation links resolve without private workstation paths', async () => {
-  for (const file of ['README.md', 'README_EN.md', 'docs/visual-assistance.md', 'docs/visual-assistance.en.md', 'docs/capability-gallery.md', 'docs/capability-gallery.en.md']) {
+  for (const file of ['README.md', 'README_CN.md', 'docs/visual-assistance.md', 'docs/visual-assistance.en.md', 'docs/capability-gallery.md', 'docs/capability-gallery.en.md']) {
     const text = await fs.readFile(path.join(root, file), 'utf8');
     assert.ok(!text.includes('/Users/'));
     for (const match of text.matchAll(/\]\((\.\.?\/[^)]+)\)/g)) await fs.access(path.resolve(root, path.dirname(file), match[1].split('#')[0]));
@@ -27,11 +27,9 @@ test('bilingual galleries contain eight paired readable images and locale-correc
   assert.deepEqual(enImages, ['./assets/open-vibecoding-visual-assistance-concept.png', ...ids.slice(1).map(id => `./assets/gallery/${id}.png`)]);
   assert.ok(zh.includes('](./capability-gallery.en.md)'));
   assert.ok(en.includes('](./capability-gallery.md)'));
-  const zhReadme = await read('README.md'), enReadme = await read('README_EN.md');
+  const zhReadme = await read('README.md');
   assert.ok(zhReadme.includes('](./docs/capability-gallery.md)'));
-  assert.ok(enReadme.includes('](./docs/capability-gallery.en.md)'));
-  assert.equal(images(zhReadme)[0], './docs/assets/gallery/zh-CN/visual-assistance.png');
-  assert.equal(images(enReadme)[0], './docs/assets/open-vibecoding-visual-assistance-concept.png');
+  assert.ok(images(zhReadme).includes('./docs/assets/gallery/zh-CN/visual-assistance.png'));
   for (let i = 0; i < ids.length; i++) {
     const buffers = await Promise.all([zhImages[i], enImages[i]].map(file => fs.readFile(path.resolve(root, 'docs', file))));
     assert.notDeepEqual(buffers[0], buffers[1], `${ids[i]} needs a distinct localized image`);

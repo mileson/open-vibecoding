@@ -27,7 +27,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '先分析一下并准备修改 skills/open-vibecoding-shared/SKILL.md 和 AGENTS.md，优化这个 skill workflow。',
     });
     assert.equal(skillPrompt.continue, true);
-    assert.equal(skillPrompt.hookSpecificOutput, undefined);
+    assert.match(skillPrompt.hookSpecificOutput?.additionalContext, /open-vibecoding-router/);
     const skillGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'skill-visualization-gate.json'), 'utf8'));
     assert.equal(skillGate.active, true);
 
@@ -61,7 +61,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '请参考 github.com/vercel/next.js 这个公开仓库的整体架构，对标下我们的 CLI 设计，然后直接修改实现。',
     });
     assert.equal(repoPrompt.continue, true);
-    assert.equal(repoPrompt.hookSpecificOutput, undefined);
+    assert.match(repoPrompt.hookSpecificOutput?.additionalContext, /open-vibecoding-router/);
     let researchGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'research-gate.json'), 'utf8'));
     assert.equal(researchGate.kind, 'deepwiki');
     assert.equal(researchGate.active, true);
@@ -91,7 +91,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '这个第三方 SDK 和 CLI 的配置、限制和迁移路径需要确认一下，然后直接改我们的集成实现。',
     });
     assert.equal(contextPrompt.continue, true);
-    assert.equal(contextPrompt.hookSpecificOutput, undefined);
+    assert.match(contextPrompt.hookSpecificOutput?.additionalContext, /open-vibecoding-router/);
     researchGate = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'research-gate.json'), 'utf8'));
     assert.equal(researchGate.kind, 'context7');
     assert.equal(researchGate.active, true);
@@ -485,7 +485,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '这个任务需要 API key 和 token，先帮我拿一下凭证。',
     });
     assert.equal(credentialPrompt.continue, true);
-    assert.equal(credentialPrompt.hookSpecificOutput, undefined);
+    assert.match(credentialPrompt.hookSpecificOutput?.additionalContext, /open-vibecoding-router/);
 
     const blockedVaultRead = runCodexHook(project, 'PreToolUse', {
       tool_name: 'Bash',
@@ -498,7 +498,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '请用 Computer Use 打开浏览器页面并点击提交订单按钮。',
     });
     assert.equal(browserPrompt.continue, true);
-    assert.equal(browserPrompt.hookSpecificOutput, undefined);
+    assert.match(browserPrompt.hookSpecificOutput?.additionalContext, /open-vibecoding-router/);
 
     const browserReminder = runCodexHook(project, 'PreToolUse', {
       tool_name: 'computer_click',
@@ -511,13 +511,13 @@ describe('Codex hook safety and design gates', () => {
       prompt: '把这个错误文案改成普通用户能看懂的，并同步检查 i18n。',
     });
     assert.equal(copyPrompt.continue, true);
-    assert.equal(copyPrompt.hookSpecificOutput, undefined);
+    assert.match(copyPrompt.hookSpecificOutput?.additionalContext, /open-vibecoding-router/);
 
     const weappPrompt = runCodexHook(project, 'UserPromptSubmit', {
       prompt: '微信小程序这个页面按钮点了没反应，直接帮我修一下并验证。',
     });
     assert.equal(weappPrompt.continue, true);
-    assert.equal(weappPrompt.hookSpecificOutput, undefined);
+    assert.match(weappPrompt.hookSpecificOutput?.additionalContext, /open-vibecoding-router/);
     const weappPatch = runCodexHook(project, 'PreToolUse', {
       tool_name: 'apply_patch',
       tool_input: '*** Begin Patch\n*** Update File: miniprogram/pages/index.js\n@@\n+// fix tap handler\n*** End Patch',
@@ -531,7 +531,7 @@ describe('Codex hook safety and design gates', () => {
       prompt: '把微信小程序首页按钮文案改短一点。',
     });
     assert.equal(weappCopyPrompt.continue, true);
-    assert.equal(weappCopyPrompt.hookSpecificOutput, undefined);
+    assert.match(weappCopyPrompt.hookSpecificOutput?.additionalContext, /open-vibecoding-router/);
     const copyStopReminder = runCodexHook(project, 'Stop', {});
     assert.equal(copyStopReminder.continue, true);
     assert.equal(copyStopReminder.hookSpecificOutput?.additionalContext?.includes('小程序运行态验证仍未完成') ?? false, false);

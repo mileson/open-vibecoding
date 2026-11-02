@@ -14,13 +14,14 @@ test('run CLI no longer exposes context-management flags', () => {
   assert.equal('hookInject' in parsed.flags, false);
 });
 
-test('UserPromptSubmit records the prompt without injecting Agent context', async () => {
+test('UserPromptSubmit records the prompt with a lightweight scenario reminder, not a context capsule', async () => {
   const { project } = await makeCodexHookProject();
   const payload = runCodexHook(project, 'UserPromptSubmit', {
     prompt: '继续实现当前任务，并处理发布。',
   });
   assert.equal(payload.continue, true);
-  assert.equal(payload.hookSpecificOutput?.additionalContext, undefined);
+  assert.match(payload.hookSpecificOutput?.additionalContext, /open-vibecoding-router/);
+  assert.doesNotMatch(payload.hookSpecificOutput?.additionalContext, /ContextCapsule|--hook-inject/);
   const events = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'events.jsonl'), 'utf8');
   assert.match(events, /prompt-observed/);
   assert.doesNotMatch(events, /context-injected/);

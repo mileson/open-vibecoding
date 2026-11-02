@@ -5,6 +5,8 @@ description: 当用户希望从实际使用中发现界面遗漏、难用之处�
 
 # 界面交互 Review
 
+涉及用户可见内容时，落实内部 `$open-vibecoding-public-content-boundary`：把制作过程、开发规则和实现解释隔离在成品之外；生成前区分可见文案与工作指令，交付前检查实际结果。保留必要业务反馈，用户明确要求时才在指定文档解释内部过程。
+
 这是测试域的独立审查子能力。按用户希望检查实际体验的意图选用；方案尚未实现时，交给 `$open-vibecoding-interaction-design`。本场景让 reviewer 发现并说明问题，用户要求同时修复时由 `$open-vibecoding-ui-review-and-repair` 组合调度。
 
 复用 `$open-vibecoding-test-strategy` 的“真实用户操作优先验证”：按测试用户的真实目标检查最终业务结果，而不只是遍历按钮。普通验收可以由当前 Agent 完成；本能力只在需要独立 reviewer 时组合。若改用 Playwright 等自动化，应按普通验收说明方式和范围，不宣称已完成本能力要求的 Computer Use Review。
