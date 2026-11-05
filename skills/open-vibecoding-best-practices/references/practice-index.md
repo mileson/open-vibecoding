@@ -5,6 +5,7 @@
 | 用户面临的情况 | 可以复用的方法 | 方法维护位置 |
 | --- | --- | --- |
 | AI 实现虽然能运行，但重复、复杂度和测试盲区不断增加 | 三阶段完成代码变更，组合 Crapper、Dryer、Mutator；工具资产保留在对应项目 | open-vibecoding-code-quality 及三个独立检查能力 |
+| 界面显得杂乱，或精修时容易只换皮肤、牺牲可读性与业务含义 | 按任务整理视觉层级、对齐、空间、字体、色彩与图标，用实际尺寸和状态验证 | open-vibecoding-visual-refinement |
 | 新界面方向未确定 | 基于同一现有截图比较三种有实质差异的方向 | open-vibecoding-visual-direction-review |
 | 实现与参考图不一致 | 对照真实截图，检查视觉差异而非只看构建结果 | open-vibecoding-frontend-design |
 | 卡片不整齐、图标显得偏心 | 检查同类内容槽位对齐和素材视觉重心 | open-vibecoding-frontend-design、open-vibecoding-icon-system |

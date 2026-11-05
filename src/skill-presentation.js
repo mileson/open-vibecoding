@@ -27,7 +27,7 @@ const entries = [
 export const USER_SKILL_PRESENTATION = Object.freeze(Object.fromEntries(entries.map(
   ([id, displayName, description]) => [`open-vibecoding-${id}`, { displayName, description }],
 )));
-const INTERNAL_SKILLS = new Set(['public-content-boundary', 'design-context', 'competitive-evidence', 'router', 'shared', 'harness', 'requirement-intake',
+const INTERNAL_SKILLS = new Set(['visual-refinement', 'public-content-boundary', 'design-context', 'competitive-evidence', 'router', 'shared', 'harness', 'requirement-intake',
   'code-quality', 'code-complexity-review', 'code-duplication-review', 'test-strength-review',
   'benchmark-router', 'test-strategy', 'audio-evidence', 'icon-source', 'icon-svg',
   'icon-image', 'icon-cutout', 'best-practices', 'tool-selection', 'experience-reuse',

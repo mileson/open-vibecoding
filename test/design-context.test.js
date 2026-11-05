@@ -47,12 +47,35 @@ test('project update preserves full skill discovery descriptions separately from
   for (const adapter of ['codex', 'claude']) {
     const file = path.join(root, installedSkillPath('open-vibecoding-public-content-boundary', adapter));
     assert.equal(metadata(await fs.readFile(file, 'utf8')).name, 'open-vibecoding-public-content-boundary');
+    const refinement = 'open-vibecoding-visual-refinement';
+    const refinementPath = installedSkillPath(refinement, adapter);
+    const content = await fs.readFile(path.join(root, refinementPath), 'utf8');
+    assert.equal(metadata(content).name, refinement);
+    if (adapter === 'claude') assert.equal(metadata(content)['user-invocable'], false);
+    const examples = path.join(root, path.dirname(refinementPath), 'references/scenarios.md');
+    assert.ok((await fs.readFile(examples, 'utf8')).includes('订单列表'));
+    for (const caller of ['interaction-design', 'frontend-design', 'visual-direction-review', 'ui-interaction-review', 'router']) {
+      const body = await fs.readFile(path.join(root, installedSkillPath(`open-vibecoding-${caller}`, adapter)), 'utf8');
+      assert.ok(body.includes(caller === 'router' ? refinementPath : `$${refinement}`), `${adapter}: ${caller} resolves internal refinement`);
+    }
   }
+  await assert.rejects(fs.access(path.join(root, '.codex/skills/open-vibecoding-visual-refinement')));
+  assert.ok((await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')).includes(installedSkillPath('open-vibecoding-visual-refinement')));
   await assert.rejects(fs.access(path.join(root, '.codex/skills/open-vibecoding-public-content-boundary')));
   const menu = parse(await fs.readFile(path.join(root, '.codex/skills', name, 'agents/openai.yaml'), 'utf8'));
   assert.equal(menu.interface.short_description, USER_SKILL_PRESENTATION[name].description);
   assert.ok((await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')).startsWith('# Keep project guidance\n'));
   await assert.rejects(fs.access(path.join(root, '.codex/skills', skill)));
+});
+
+test('visual refinement is an internal interaction capability composed by design and review', () => {
+  const catalog = buildCapabilityCatalog();
+  const capability = getCapability(catalog, 'visual-refinement');
+  assert.equal(capability.userFacing, false);
+  assert.deepEqual(capability.domains, ['interaction']);
+  for (const id of ['interaction-review', 'visual-direction-review', 'visual-implementation', 'ui-interaction-review']) {
+    assert.ok(getCapability(catalog, id).uses.includes('visual-refinement'), id);
+  }
 });
 
 

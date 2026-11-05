@@ -2,6 +2,7 @@
 // rendered command catalog. Split from agent-integration.js to keep install/update
 // orchestration separate from long-form guidance copy.
 export const CANONICAL_SKILLS = [
+  { id: 'open-vibecoding-visual-refinement', sourceSkill: 'open-vibecoding-visual-refinement' },
   { id: 'open-vibecoding-public-content-boundary', sourceSkill: 'open-vibecoding-public-content-boundary' },
   { id: 'open-vibecoding-design-context', sourceSkill: 'open-vibecoding-design-context' },
   {

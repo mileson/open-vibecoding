@@ -15,6 +15,7 @@ description: Open VibeCoding 入口路由。按用户目标组合五个执行能
 | 判断上线后的崩溃和错误影响、版本变化，复查修复后是否再发生 | `$open-vibecoding-production-anomaly-analysis`，属于线上质量分析，不自动修复或启动监控 |
 | 设计任务流程与状态；生成单张界面效果图或比较多个方向（包括仅生图、不写代码）；按参考实施并视觉验收 | `$open-vibecoding-interaction-design`、`$open-vibecoding-visual-direction-review`、`$open-vibecoding-frontend-design` |
 | 为已有产品设计新界面、弹窗、组件或效果图，需要融入项目原有风格 | 内部 `$open-vibecoding-design-context`；主动查看目标界面和样式组件，把实际参考带入生成，交付前自查，不等用户提醒 |
+| 界面或效果图显得杂乱、层级不清，或需要判断视觉调整是否帮助用户理解与操作 | 内部 `$open-vibecoding-visual-refinement`；继承项目风格，按问题整理层级、对齐、空间、字体、色彩与图标，核对业务含义和实际结果 |
 | 生成或修改用户会看到的界面、效果图、文案与导出内容 | 内部 `$open-vibecoding-public-content-boundary`；隔离制作过程与内部规则，生成前约束、交付前查看实际结果，保留必要业务反馈 |
 | 实现明确目标；定位并修复故障；在保持行为下改善结构 | `$open-vibecoding-feature-implementation`、`$open-vibecoding-debugging`、`$open-vibecoding-refactoring` |
 | 已授权代码变更需要把功能做对、整理代码质量并完成工程收尾 | 内部 `$open-vibecoding-code-quality`；独立组合 `$open-vibecoding-code-complexity-review`、`$open-vibecoding-code-duplication-review`、`$open-vibecoding-test-strength-review`，不要求用户主动调用或逐步留痕 |

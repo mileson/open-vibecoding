@@ -166,13 +166,22 @@ const BUILTIN_SCENARIOS = [
     produces: ['已核实的继承项与允许变化项', '用于生成和复核的参考', '证据缺口'],
   },
   {
+    id: 'visual-refinement',
+    title: '视觉层级与精修',
+    skill: 'open-vibecoding-visual-refinement',
+    domains: ['interaction'],
+    accepts: ['用户任务与项目设计语言', '效果图或实际界面', '允许调整的范围'],
+    produces: ['有业务理由的视觉改进', '实际尺寸与状态核对', '主观建议及未验证范围'],
+    uses: ['design-context', 'public-content-boundary', 'icon-system', 'visual-localization', 'visual-evidence-delivery'],
+  },
+  {
     id: 'interaction-review',
     title: '交互评审',
     skill: 'open-vibecoding-interaction-design',
     domains: ['interaction', 'product', 'testing'],
     accepts: ['用户任务', '页面或原型', '交互流程', '参考图'],
     produces: ['交互问题与层次定位', '状态与流程改进', '验证计划'],
-    uses: ['public-content-boundary', 'design-context', 'visual-evidence-delivery', 'resource-entitlement-design'],
+    uses: ['visual-refinement', 'public-content-boundary', 'design-context', 'visual-evidence-delivery', 'resource-entitlement-design'],
   },
   {
     id: 'visual-direction-review',
@@ -182,7 +191,7 @@ const BUILTIN_SCENARIOS = [
     accepts: ['用户任务', '现有界面或设计简报', '视觉约束'],
     produces: ['有实质差异的候选方向', '选定方向或可逆默认方向', '参考图证据'],
     tools: ['design-review', 'visual-prepare', 'visual-compare'],
-    uses: ['public-content-boundary', 'design-context'],
+    uses: ['visual-refinement', 'public-content-boundary', 'design-context'],
   },
   {
     id: 'visual-implementation',
@@ -192,7 +201,7 @@ const BUILTIN_SCENARIOS = [
     accepts: ['选定方向或参考图', '现有界面和代码'],
     produces: ['实际界面实现', '必要的视觉对比证据'],
     tools: ['design-starter', 'visual-prepare', 'visual-compare'],
-    uses: ['public-content-boundary', 'design-context', 'visual-localization', 'image-annotation', 'visual-evidence-delivery'],
+    uses: ['visual-refinement', 'public-content-boundary', 'design-context', 'visual-localization', 'image-annotation', 'visual-evidence-delivery'],
   },
   {
     id: 'feature-implementation',
@@ -315,7 +324,7 @@ const BUILTIN_SCENARIOS = [
     domains: ['testing', 'interaction'],
     accepts: ['可运行的目标界面', '用户任务与审查范围', '可用的 Computer Use 与独立 subagent'],
     produces: ['真实操作后的问题与复现证据', '交互覆盖和未验证范围'],
-    uses: ['public-content-boundary', 'visual-evidence-delivery'],
+    uses: ['visual-refinement', 'public-content-boundary', 'visual-evidence-delivery'],
   },
   {
     id: 'ui-review-and-repair',
