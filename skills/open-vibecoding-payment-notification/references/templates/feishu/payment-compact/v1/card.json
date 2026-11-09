@@ -1,0 +1,227 @@
+{
+  "schema": "2.0",
+  "config": {
+    "update_multi": true,
+    "width_mode": "compact",
+    "summary": {
+      "content": "{{product_name}}收到一笔 {{amount_display}} 的新收款"
+    },
+    "style": {
+      "color": {
+        "cus-0": {
+          "light_mode": "rgba(0,0,0,1)",
+          "dark_mode": "rgba(245,245,245,1)"
+        }
+      }
+    }
+  },
+  "header": {
+    "template": "green",
+    "title": {
+      "tag": "plain_text",
+      "content": "💰 收款通知"
+    }
+  },
+  "body": {
+    "direction": "vertical",
+    "vertical_spacing": "12px",
+    "padding": "20px 20px 16px 20px",
+    "elements": [
+      {
+        "tag": "markdown",
+        "content": "<font color='grey'>收款金额</font>",
+        "text_align": "center",
+        "text_size": "normal"
+      },
+      {
+        "tag": "markdown",
+        "content": "**<font color='cus-0'>{{amount_display}}</font>**",
+        "text_align": "center",
+        "text_size": "heading-0",
+        "margin": "4px 0px 20px 0px"
+      },
+      {
+        "tag": "column_set",
+        "flex_mode": "none",
+        "horizontal_spacing": "12px",
+        "columns": [
+          {
+            "tag": "column",
+            "width": "auto",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "<font color='grey'>商品名称：</font>"
+              }
+            ]
+          },
+          {
+            "tag": "column",
+            "width": "weighted",
+            "weight": 1,
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**{{purchased_item}}**",
+                "text_align": "left"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "column_set",
+        "flex_mode": "none",
+        "horizontal_spacing": "12px",
+        "columns": [
+          {
+            "tag": "column",
+            "width": "auto",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "<font color='grey'>订单单号：</font>"
+              }
+            ]
+          },
+          {
+            "tag": "column",
+            "width": "weighted",
+            "weight": 1,
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "[{{order_no}}]({{order_detail_url}})",
+                "text_align": "left"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "column_set",
+        "flex_mode": "none",
+        "horizontal_spacing": "12px",
+        "columns": [
+          {
+            "tag": "column",
+            "width": "auto",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "<font color='grey'>支付方式：</font>"
+              }
+            ]
+          },
+          {
+            "tag": "column",
+            "width": "weighted",
+            "weight": 1,
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "{{payment_method}}",
+                "text_align": "left"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "column_set",
+        "flex_mode": "none",
+        "horizontal_spacing": "12px",
+        "columns": [
+          {
+            "tag": "column",
+            "width": "auto",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "<font color='grey'>{{payment_time_label}}：</font>"
+              }
+            ]
+          },
+          {
+            "tag": "column",
+            "width": "weighted",
+            "weight": 1,
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "{{payment_time_display}}",
+                "text_align": "left"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "hr",
+        "margin": "4px 0px 0px 0px"
+      },
+      {
+        "tag": "column_set",
+        "flex_mode": "none",
+        "horizontal_spacing": "8px",
+        "vertical_align": "center",
+        "columns": [
+          {
+            "tag": "column",
+            "width": "auto",
+            "vertical_align": "center",
+            "elements": [
+              {
+                "tag": "img",
+                "img_key": "{{logo_img_key}}",
+                "alt": {
+                  "tag": "plain_text",
+                  "content": "{{product_name}} Logo"
+                },
+                "scale_type": "crop_center",
+                "size": "24px 24px",
+                "corner_radius": "50%",
+                "preview": false
+              }
+            ]
+          },
+          {
+            "tag": "column",
+            "width": "weighted",
+            "weight": 1,
+            "vertical_align": "center",
+            "elements": [
+              {
+                "tag": "markdown",
+                "content": "**{{product_name}}**"
+              }
+            ]
+          },
+          {
+            "tag": "column",
+            "width": "auto",
+            "vertical_align": "center",
+            "elements": [
+              {
+                "tag": "button",
+                "text": {
+                  "tag": "plain_text",
+                  "content": "查看详情  ›"
+                },
+                "type": "primary_text",
+                "size": "medium",
+                "width": "default",
+                "behaviors": [
+                  {
+                    "type": "open_url",
+                    "default_url": "{{order_list_url}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

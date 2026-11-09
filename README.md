@@ -40,7 +40,7 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 | 研发 | Agent 自主拆解和实现；CLI 提供确定性工具与运行态支持 |
 | 测试 | 按风险选取最小足够验证，保留真正需要的证据 |
 | Vibe Coding 增强 | 视觉精确定位与图片标注、图标获取、音频证据、画布、工具选择与经验复用 |
-| 最佳实践（横向板块） | 根据项目条件选择成熟现代方案；首个独立主题为 iOS String Catalog 多语言 |
+| 最佳实践（横向板块） | 根据项目条件选择适用实践；包括 iOS 多语言、收款通知与可选卡片模板 |
 
 每个场景是独立子能力，统筹层按用户意图组合它们，不靠固定关键词匹配。小任务可以只用一项；复杂任务可在领域之间往返。`skills/open-vibecoding-router/SKILL.md` 是 Agent 的入口，`open-vibecoding capabilities list|get|contract` 提供机器可读的能力目录。项目可用 `open-vibecoding.capabilities.json` 和对应的 repo-local Skill 增量扩展。
 
@@ -80,6 +80,12 @@ open-vibecoding run . --verify
 后台显得杂乱时，Agent 会结合用户任务，检查信息层级、对齐、间距、字体、色彩、图标与表面，说明每项调整改善了什么。已有产品继续沿用自己的设计语言，局部调整保持原范围；图表的数据含义、文字可读性和操作能力一起核对。
 
 [视觉层级与精修](skills/open-vibecoding-visual-refinement/SKILL.md) 是交互设计模块的内部能力，供效果图生成、界面实现和评审共同复用，不增加用户起手指令。具体用法见[场景案例](skills/open-vibecoding-visual-refinement/references/scenarios.md)。
+
+## 按项目选择收款通知模板
+
+支付成功后需要通知团队时，Agent 可以复用[收款通知规范与可选模板](skills/open-vibecoding-payment-notification/SKILL.md)。先查看项目已有支付与通知机制，再让用户选择采用[紧凑绿色飞书收款卡](skills/open-vibecoding-payment-notification/references/templates/feishu/payment-compact/v1/README.md)、调整后采用或保留现有样式。
+
+选定模板后复制到目标项目，按项目币种、语言、时区和品牌配置。CLI 用于辅助接入与核验，上线后的发送由业务项目负责。公共工具只提供轻量规范和模板，不包含个人应用、群、凭证或财务运行服务；更新公共模板不会覆盖项目已定制的业务副本。
 
 ## 成品只讲用户需要的内容
 

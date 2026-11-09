@@ -1,0 +1,84 @@
+{
+  "contract_version": 1,
+  "fields": {
+    "product_name": {
+      "description": "正式产品名称",
+      "type": "string",
+      "required": true,
+      "usage": "text",
+      "handling": "按使用位置分别处理：摘要及 alt 是普通文字，正文为 Markdown"
+    },
+    "purchased_item": {
+      "description": "购买商品或权益",
+      "type": "string",
+      "required": true,
+      "usage": "markdown_text",
+      "handling": "转义 Markdown 语法，保留真实文案"
+    },
+    "amount_display": {
+      "description": "按原币种精度格式化的金额",
+      "type": "string",
+      "required": true,
+      "usage": "markdown_text",
+      "handling": "不自行换汇；币种符号有歧义时包含币种代码；摘要使用普通文字值"
+    },
+    "order_no": {
+      "description": "完整商户订单号",
+      "type": "string",
+      "required": true,
+      "usage": "markdown_link_label",
+      "handling": "转义链接文字但不截断可见订单标识"
+    },
+    "payment_method": {
+      "description": "用户可读的支付方式",
+      "type": "string",
+      "required": true,
+      "usage": "markdown_text",
+      "handling": "按项目语言展示"
+    },
+    "payment_time_label": {
+      "description": "支付时间或支付确认时间",
+      "type": "string",
+      "required": true,
+      "usage": "markdown_text",
+      "handling": "根据权威时间来源命名，不用发送时间冒充支付时间"
+    },
+    "payment_time_display": {
+      "description": "按目标时区与语言格式化的时间",
+      "type": "string",
+      "required": true,
+      "usage": "markdown_text",
+      "handling": "没有权威时间时展示未记录，不造时间"
+    },
+    "logo_img_key": {
+      "description": "正式产品 Logo 的图片标识",
+      "type": "string",
+      "required": true,
+      "usage": "image_key",
+      "handling": "由发送应用上传取得，不在此保存真实配置"
+    },
+    "order_detail_url": {
+      "description": "单笔订单后台详情链接",
+      "type": "string",
+      "required": true,
+      "usage": "https_url",
+      "handling": "校验协议、允许的后台来源和订单路径；编码标识；保留页面鉴权；不包含登录凭证"
+    },
+    "order_list_url": {
+      "description": "该产品订单列表链接",
+      "type": "string",
+      "required": true,
+      "usage": "https_url",
+      "handling": "独立于单笔详情路径，不含凭证且保留页面鉴权"
+    }
+  },
+  "project_settings": [
+    "currency and precision",
+    "locale",
+    "timezone",
+    "application identity",
+    "recipient",
+    "credential reference"
+  ],
+  "rendering": "Parse JSON, remove installer root $comment, replace placeholders once in string leaves with context-appropriate values. Never substitute into raw JSON text or interpret inserted values again."
+}

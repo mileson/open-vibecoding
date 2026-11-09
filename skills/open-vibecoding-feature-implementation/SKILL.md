@@ -19,4 +19,6 @@ description: 当用户目标已明确并要求实现新功能或调整现有行�
 - 实现后用 `$open-vibecoding-test-strategy` 选择足够验证，运行相关检查并报告真实结果。`dev-check` 只给维护提醒，不是开工门禁。
 - 涉及故障修复、性能优化或本次实现暴露出的诊断盲区时，主动读取 `$open-vibecoding-diagnostic-readiness`；按需补强日志与测量并验证能取得，不将每次功能改动升级成观测平台建设。
 
+涉及收款后的业务通知时，按实际目标复用内部 `$open-vibecoding-payment-notification`，先查看现有支付与通知机制，再提供可选卡片模板；模板采用不自动授权配置凭证、发送消息或启用生产通知。
+
 默认以代码表达实现；仅在用户要求或活文档因改动失真时同步文档。诊断故障而未获修复授权时应停在根因说明，交给 `$open-vibecoding-debugging`。

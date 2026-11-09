@@ -70,7 +70,14 @@ const BUILTIN_SCENARIOS = [
     domains: ['best-practices', 'vibe-enhancement'],
     accepts: ['当前项目平台与工具链', '本次实现或迁移目标', '兼容约束与现有实现'],
     produces: ['有依据的适用实践', '条件不足时的兼容路径及验证重点'],
-    uses: ['resource-entitlement-design', 'resource-efficiency', 'code-quality'],
+    uses: ['payment-notification', 'resource-entitlement-design', 'resource-efficiency', 'code-quality'],
+  },
+  {
+    id: 'payment-notification', title: '收款通知规范与可选模板', skill: 'open-vibecoding-payment-notification',
+    domains: ['best-practices', 'development', 'interaction', 'testing'],
+    accepts: ['项目支付与通知机制', '用户选择的卡片样式和目标项目', '可用通道与授权范围'],
+    produces: ['适用的通知规范与可选模板', '项目采用与定制边界', '接入验证结果和缺口'],
+    uses: ['tool-selection', 'resource-entitlement-design', 'diagnostic-readiness', 'public-content-boundary', 'visual-evidence-delivery'],
   },
   {
     id: 'ios-localization', title: 'iOS 多语言最佳实践', skill: 'open-vibecoding-ios-localization',

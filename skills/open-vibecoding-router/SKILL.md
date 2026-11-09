@@ -29,6 +29,7 @@ description: Open VibeCoding 入口路由。按用户目标组合五个执行能
 | 界面视觉审查、修改或复查结束，要向用户展示最终效果 | 内部 `$open-vibecoding-visual-evidence-delivery`；最终回复展示实际截图，有确认参考时展示双图，无参考时也展示实际界面 |
 | 主动取得匹配产品调性的成套图标；寻找现成素材、设计 SVG 或生成独立位图 | `$open-vibecoding-icon-system`，按需组合 `$open-vibecoding-icon-source`、`$open-vibecoding-icon-svg`、`$open-vibecoding-icon-image`、`$open-vibecoding-icon-cutout` |
 | 用真实媒体验证声学质量、ASR 或语音字幕结果 | `$open-vibecoding-audio-evidence`，归属增强域并供研发与测试复用 |
+| 希望收款后获得业务通知，或选择可复制的飞书收款卡片 | 内部 `$open-vibecoding-payment-notification`；先复用项目现有通道，提供可选模板与可靠发送规范，选定后复制到目标项目；不自动启用或发送 |
 | 根据项目条件选择成熟的现代实现或迁移方式 | `$open-vibecoding-best-practices`；Apple 多语言实现按需用 `$open-vibecoding-ios-localization` |
 
 先判断当前任务需要哪些能力，不要求五域全部经过。表格描述意图边界，不是触发词表；单个场景的详细做法只在其 Skill 内。项目增量场景可通过 `open-vibecoding.capabilities.json` 注册，仍由 Agent 语义选择。具体 CLI 在 `.open-vibecoding/harness/command-catalog.md`；共用安全、文案与浏览器规则在 `$open-vibecoding-shared`，工作原则在 `$open-vibecoding-harness`。

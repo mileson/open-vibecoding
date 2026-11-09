@@ -1,0 +1,14 @@
+{
+  "id": "feishu-payment-compact",
+  "version": "1.0.0",
+  "channel": "feishu",
+  "event": "confirmed-payment",
+  "title": "紧凑绿色收款卡",
+  "cardSchema": "2.0",
+  "card": "card.json",
+  "fields": "fields.json",
+  "guide": "README.md",
+  "defaultLocale": "zh-CN",
+  "adoption": "opt-in-copy",
+  "runtimeDependencies": []
+}
