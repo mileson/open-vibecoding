@@ -33,13 +33,16 @@ case "${E2E_ENGINE:?Set the E2E runner engine}" in
     runtime="$(xcrun simctl list runtimes -j | jq -er '
       [.runtimes[] | select(.isAvailable and (.identifier | contains(".iOS-")))]
       | sort_by(.version | split(".") | map(tonumber)) | last | .identifier // empty')"
-    device_type="$(xcrun simctl list devices available -j | jq -er --arg runtime "$runtime" '
-      .devices[$runtime] | map(select(.deviceTypeIdentifier | startswith("com.apple.CoreSimulator.SimDeviceType.iPhone-")))
-      | first | .deviceTypeIdentifier // empty')"
-    PHOTO_SIM_UDID="$(xcrun simctl create "Open VibeCoding E2E · ${device_type##*.}" "$device_type" "$runtime")"
+    PHOTO_SIM_UDID="$(xcrun simctl list devices available -j | jq -er --arg runtime "$runtime" '
+      .devices[$runtime] | map(select(.state == "Shutdown" and
+        (.deviceTypeIdentifier | startswith("com.apple.CoreSimulator.SimDeviceType.iPhone-"))))
+      | first | .udid // empty')"
     export PHOTO_SIM_UDID
     printf 'PHOTO_SIM_UDID=%s\nPHOTO_CI_SIM_UDID=%s\n' "$PHOTO_SIM_UDID" "$PHOTO_SIM_UDID" >> "$GITHUB_ENV"
-    xcrun simctl bootstatus "$PHOTO_SIM_UDID" -b
+    printf 'Boot hosted iOS simulator %s (%s)\n' "$PHOTO_SIM_UDID" "$runtime"
+    xcrun simctl boot "$PHOTO_SIM_UDID"
+    xcrun simctl bootstatus "$PHOTO_SIM_UDID"
+    echo 'Build and install photo-selection app.'
     bash "$fixture/ios/prepare.sh" "$RUNNER_TEMP/ovc-photo-selection"
     ;;
   *)
