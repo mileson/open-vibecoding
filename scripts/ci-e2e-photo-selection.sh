@@ -30,9 +30,12 @@ case "${E2E_ENGINE:?Set the E2E runner engine}" in
       exit 2
     fi
 
-    runtime="$(xcrun simctl list runtimes -j | jq -er '
-      [.runtimes[] | select(.isAvailable and (.identifier | contains(".iOS-")))]
-      | sort_by(.version | split(".") | map(tonumber)) | last | .identifier // empty')"
+    export DEVELOPER_DIR=/Applications/Xcode_16.4.app/Contents/Developer
+    [[ -d "$DEVELOPER_DIR" ]]
+    printf 'DEVELOPER_DIR=%s\n' "$DEVELOPER_DIR" >> "$GITHUB_ENV"
+    runtime=com.apple.CoreSimulator.SimRuntime.iOS-18-5
+    echo 'Build photo-selection app before starting the simulator.'
+    bash "$fixture/ios/prepare.sh" "$RUNNER_TEMP/ovc-photo-selection" build
     PHOTO_SIM_UDID="$(xcrun simctl list devices available -j | jq -er --arg runtime "$runtime" '
       .devices[$runtime] | map(select(.state == "Shutdown" and
         (.deviceTypeIdentifier | startswith("com.apple.CoreSimulator.SimDeviceType.iPhone-"))))
@@ -42,8 +45,8 @@ case "${E2E_ENGINE:?Set the E2E runner engine}" in
     printf 'Boot hosted iOS simulator %s (%s)\n' "$PHOTO_SIM_UDID" "$runtime"
     xcrun simctl boot "$PHOTO_SIM_UDID"
     xcrun simctl bootstatus "$PHOTO_SIM_UDID"
-    echo 'Build and install photo-selection app.'
-    bash "$fixture/ios/prepare.sh" "$RUNNER_TEMP/ovc-photo-selection"
+    echo 'Install photo-selection app.'
+    xcrun simctl install "$PHOTO_SIM_UDID" "$RUNNER_TEMP/ovc-photo-selection/PhotoSelection.app"
     ;;
   *)
     echo "Unsupported E2E runner engine: $E2E_ENGINE" >&2
