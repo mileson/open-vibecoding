@@ -58,7 +58,7 @@ jobs:
     if: ${{ needs.selection.outputs.ios == 'true' }}
     uses: ./.github/workflows/e2e-run.yml
     with:
-      runner: macos-15
+      runner: macos-26
       engine: maestro
       manifest: docs/examples/photo-selection-e2e/manifest.json
       run-id: maestro-fixed
