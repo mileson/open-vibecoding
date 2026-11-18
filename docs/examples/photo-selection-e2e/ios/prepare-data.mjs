@@ -9,11 +9,12 @@ const run = promisify(execFile);
 const udid = process.env.PHOTO_SIM_UDID;
 if (!udid) throw new Error('PHOTO_SIM_UDID must identify the task-owned, booted simulator');
 const app = 'org.openvibecoding.PhotoSelection';
-const { stdout } = await run('xcrun', ['simctl', 'get_app_container', udid, app, 'data'], { timeout: 10_000 });
+const simulatorTimeoutMs = 60_000;
+const { stdout } = await run('xcrun', ['simctl', 'get_app_container', udid, app, 'data'], { timeout: simulatorTimeoutMs });
 const token = randomUUID();
 const receipt = path.join(stdout.trim(), 'Documents', 'ovc-data-' + token + '.json');
-await run('xcrun', ['simctl', 'launch', '--terminate-running-process', udid, app, '-photoDataProbe', token], { timeout: 15_000 });
-const deadline = Date.now() + 15_000;
+await run('xcrun', ['simctl', 'launch', '--terminate-running-process', udid, app, '-photoDataProbe', token], { timeout: simulatorTimeoutMs });
+const deadline = Date.now() + simulatorTimeoutMs;
 while (Date.now() < deadline) {
   try {
     await fs.copyFile(receipt, path.join(process.env.OVC_E2E_DATA_DIR, 'app-initial-state.json'));

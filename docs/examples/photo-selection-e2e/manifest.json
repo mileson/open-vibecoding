@@ -31,6 +31,7 @@
       ]
     },
     "ios-photo-selection": {
+      "timeoutMs": 240000,
       "label": "固定照片 P01–P10，打开选图时尚未选中照片",
       "prepare": "docs/examples/photo-selection-e2e/ios/prepare-data.mjs",
       "verify": "docs/examples/photo-selection-e2e/ios/verify-data.mjs",
