@@ -45,7 +45,7 @@ jobs:
     if: ${{ needs.selection.outputs.web == 'true' }}
     uses: ./.github/workflows/e2e-run.yml
     with:
-      runner: ubuntu-latest
+      runner: ubuntu-24.04
       engine: playwright
       manifest: docs/examples/photo-selection-e2e/manifest.json
       run-id: playwright-fixed
