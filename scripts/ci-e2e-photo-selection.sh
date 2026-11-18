@@ -14,7 +14,13 @@ fi
 case "${E2E_ENGINE:?Set the E2E runner engine}" in
   playwright)
     npm ci --prefix "$fixture/web"
-    npm exec --prefix "$fixture/web" -- playwright install --with-deps chromium
+    # GitHub's Ubuntu image already has Chrome and its system dependencies.
+    if [[ -n "${GITHUB_ENV:-}" ]] && chrome="$(command -v google-chrome)"; then
+      "$chrome" --version
+      printf 'PHOTO_CHROMIUM_EXECUTABLE=%s\n' "$chrome" >> "$GITHUB_ENV"
+    else
+      npm exec --prefix "$fixture/web" -- playwright install --with-deps --only-shell chromium
+    fi
     ;;
   maestro)
     : "${RUNNER_TEMP:?GitHub runner scratch directory required}" "${GITHUB_ENV:?Expected GitHub environment file}"
