@@ -65,7 +65,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - name: Prepare test environment
-        timeout-minutes: 5
+        timeout-minutes: 8
         id: setup
         continue-on-error: true
         shell: bash
