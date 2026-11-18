@@ -31,6 +31,7 @@ CLI 只提供确定性工具和非阻断检查；Agent 负责理解目标、拆�
 | `src/design-review.js` | 原图按字节保存、编号拼图、递增评审版本与用户明确选定的 final；资产存放项目根目录 `design/`，不增加用户入口或流程文档 |
 | `src/icon-cutout.js` | 复用 sharp 的本地图标 alpha 保留、指定色键去除和像素检查；`icon-cutout --source --out [--key-color --tolerance --feather]` 返回 JSON，保护源文件和已有输出 |
 | `src/visual-assistance.js` | `visual-grid --source --out [--step --json-file]` 生成红色坐标网格并按显式缩放/裁切映射目标；`image-annotate --source --out --json-file` 绘制完整目标框与避让标签。复用 sharp，绑定源尺寸/哈希、保护原图与已有输出，返回待视觉复核结果。两个独立内部 Skill 由设计、研发与测试按场景复用 |
+| `src/test-report.js` | `test-report render\|record` 校验用例与执行结果，复用文件锁和原子写入，从四份内置模板生成独立 HTML。输入 JSON 保存执行历史，HTML 可随时从 JSON 重建 |
 | `src/run-harness.js`、`src/dev-standards.js`、`src/quality.js` | 验证摘要、源码标准与专项质量诊断 |
 | `src/runtime/`、`src/kernel/` | 可选任务运行态、幂等记录与并发控制 |
 | `src/canvas-workspace.js`、`src/learning-review.js`、`src/knowledge.js` | 画布、学习包与知识复用 |

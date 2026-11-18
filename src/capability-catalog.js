@@ -322,6 +322,7 @@ const BUILTIN_SCENARIOS = [
     accepts: ['目标测试与执行环境', '可选的修复授权和范围'],
     produces: ['实际测试报告、失败归因和证据', '按需交付修复、复测和相关回归'],
     uses: ['unit-test-generation', 'debugging', 'code-quality', 'test-strategy', 'resource-efficiency'],
+    tools: ['test-report'],
   },
   {
     id: 'production-anomaly-analysis',

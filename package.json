@@ -1,6 +1,6 @@
 {
   "name": "open-vibecoding",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Open VibeCoding: product, interaction design, development, and testing workflow for agents",
   "type": "module",
   "license": "MIT",
@@ -19,6 +19,7 @@
     "CONTRIBUTING.md",
     "README_CN.md",
     "SECURITY.md",
+    "docs/test-report.md",
     "bin",
     "scripts",
     "src",

@@ -46,6 +46,8 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 
 单元测试可以直接说「给这个模块补单元测试」「跑现有测试，给我报告」或「跑测试，修复能稳定复现的问题并回归」。Agent 沿用项目的测试入口。修复报告包含修复前的失败、同用例复测和相关回归结果。 [生成单元测试](skills/open-vibecoding-unit-test-generation/SKILL.md) · [运行、报告与修复](skills/open-vibecoding-unit-test-run-and-repair/SKILL.md)
 
+用 `test-report` 将用例和执行结果生成独立 HTML。支持单元、组件、接口／集成与 UI／端到端四份模板。 [命令和 JSON 示例](docs/test-report.md)
+
 <a id="readme-section-2"></a>
 
 <a id="本地使用"></a>

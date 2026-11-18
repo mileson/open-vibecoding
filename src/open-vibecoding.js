@@ -72,6 +72,7 @@ import { printGateResult } from './cli/gate-print.js';
 import { CAPABILITY_HANDOFF_CONTRACT, getCapability, loadProjectCapabilityCatalog } from './capability-catalog.js';
 import { iconCutout } from './icon-cutout.js';
 import { visualGrid, imageAnnotate } from './visual-assistance.js';
+import { runTestReportCommand } from './cli/test-report-command.js';
 
 function buildInitTemplatePackGuidance(templatePack, options = {}) {
   const label = formatTemplatePackDisplay(templatePack, { fallback: '通用产品或工程场景' });
@@ -464,6 +465,8 @@ export async function main(argv = process.argv.slice(2)) {
     console.log(usage());
     return 0;
   }
+
+  if (command === 'test-report') return runTestReportCommand(rest);
 
   const { flags, positionals } = parseCommandArgs(rest);
   if (positionals.includes('--help') || positionals.includes('-h')) {

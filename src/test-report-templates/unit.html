@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>单元测试报告</title>
+<style>
+:root{--ink:#222;--muted:#666;--line:#ecebed;--paper:#fff;--wash:#faf9fa;--rose:#c71940;--rose-bg:#fff0f3;--green:#18623d;--green-bg:#edf8ef;--amber:#88570e;--amber-bg:#fff5e2}
+*{box-sizing:border-box}
+body{margin:0;color:var(--ink);background:var(--paper);font:15px/1.55 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:1200px;margin:auto;padding:42px 32px 56px}
+h1,h2,h3,p,dl,dd{margin:0}
+header{padding-bottom:23px;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:13px;color:#6b7280;font-weight:700}
+.environment{margin-top:4px}
+h1{font-size:clamp(28px,5vw,44px);line-height:1.18;letter-spacing:-.035em;margin:5px 0 10px}
+.meta,.source,dt{color:var(--muted);font-size:13px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:12px;margin:23px 0 27px}
+.metric,.case{border:1px solid var(--line);border-radius:14px}
+.metric{background:var(--wash);padding:13px 16px}
+.metric dd{font-size:29px;line-height:1.25;font-weight:750;font-variant-numeric:tabular-nums}
+.metric.passed dd{color:var(--green)}.metric.failed dd{color:var(--rose)}
+.section-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+h2{font-size:21px}
+.filters{display:flex;flex-wrap:wrap;gap:7px}
+button{font:inherit;font-size:13px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer}
+button[aria-pressed="true"]{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}
+button:focus-visible{outline:2px solid #1d4ed8;outline-offset:3px}
+summary:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
+.cases{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr));gap:12px;align-items:start}
+.case{min-width:0;padding:15px 16px;background:var(--paper)}
+.case[data-status="failed"]{border-color:#efc2cd}
+.case-head{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}
+.case h3{font-size:16px;line-height:1.4;overflow-wrap:anywhere}
+.source{margin:7px 0;overflow-wrap:anywhere}
+.badge{font-size:12px;font-weight:700;border-radius:99px;padding:2px 8px;white-space:nowrap;background:#f2f1f2;color:var(--muted)}
+.badge.passed{background:var(--green-bg);color:var(--green)}.badge.failed{background:var(--rose-bg);color:var(--rose)}
+.badge.blocked{background:var(--amber-bg);color:var(--amber)}
+.conditions{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:5px 8px;margin-top:10px}
+.conditions dd,.reason{font-size:13px;overflow-wrap:anywhere}
+.conditions dd{white-space:pre-wrap}
+.reason{background:var(--rose-bg);color:#8a1634;margin-top:9px;padding:8px 10px;border-radius:8px;white-space:pre-wrap}
+details{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;font-size:13px}
+summary{cursor:pointer;color:var(--muted)}
+.history{padding-left:20px;margin:7px 0 0}
+.history li+li{margin-top:7px}
+.history p{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:2px}
+#empty{display:grid;place-content:center;justify-items:center;gap:2px;min-height:218px;padding:20px;background:#f5f6f7;border-radius:14px;color:var(--muted);text-align:center}
+#empty img{display:block;width:126px;height:126px}
+[hidden]{display:none!important}
+@media(max-width:580px){main{padding:24px 16px 36px}.metrics{gap:7px;margin:17px 0 22px}.metric{padding:9px 11px}.metric dd{font-size:24px}}
+@media print{main{padding:0}.filters{display:none}.case{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">单元测试报告</p>
+    <h1 id="project">用例清单</h1>
+    <p class="meta" id="meta"></p>
+    <p class="meta environment">测试环境 · <span id="report-environment"></span></p>
+  </header>
+  <dl class="metrics" id="metrics" aria-label="用例汇总"></dl>
+  <section aria-labelledby="heading">
+    <div class="section-head">
+      <h2 id="heading">用例清单</h2>
+      <div class="filters" id="filters" aria-label="按状态筛选"></div>
+    </div>
+    <div id="cases" class="cases"></div>
+    <div id="empty" role="status" hidden>
+      <img src="empty-cases.webp" alt="" width="126" height="126">
+      <p>暂无用例</p>
+    </div>
+  </section>
+</main>
+<script id="report-data" type="application/json">{"project":"项目名称","meta":"","scope":"","cases":[]}</script>
+<script>
+const data = JSON.parse(document.getElementById('report-data').textContent)
+const states = {passed:'通过', failed:'失败', pending:'待测试', skipped:'跳过', cancelled:'取消', blocked:'阻塞'}
+const marks = {passed:'✓', failed:'×', pending:'○', skipped:'–', cancelled:'–', blocked:'!'}
+const element = (tag, text, className) => {
+  const node = document.createElement(tag)
+  if (text) node.textContent = text
+  if (className) node.className = className
+  return node
+}
+const statusOf = entry => Object.hasOwn(states, entry?.status) ? entry.status : 'pending'
+const badge = status => element('span', marks[status] + ' ' + states[status], 'badge ' + status)
+function environmentText(environment) {
+  if (typeof environment === 'string') return environment.trim()
+  if (!environment) return ''
+  const join = (...parts) => parts.filter(part => part?.trim()).map(part => part.trim()).join(' ')
+  return [environment.label, join(environment.deviceModel, environment.deviceType),
+    join(environment.os, environment.osVersion), environment.browser?.trim() ? join(environment.browser, environment.browserVersion) : "",
+    environment.location, environment.target, environment.notes].filter(part => part?.trim()).map(part => part.trim()).join(' · ')
+}
+function executionDetails(execution) {
+  return [
+    execution.version && '被测版本 · ' + execution.version,
+    execution.executedAt && '执行时间 · ' + execution.executedAt,
+    execution.durationMs !== undefined && '耗时 · ' + execution.durationMs + ' ms',
+    execution.command && '执行命令 · ' + execution.command,
+    execution.evidence && '证据 · ' + execution.evidence,
+  ].filter(Boolean)
+}
+function reportEnvironment(report) {
+  const fallback = environmentText(report.environment)
+  const observations = report.cases.flatMap(item =>
+    (item.runs || []).map(run => environmentText(run.environment ?? report.environment)))
+  const known = [...new Set(observations.filter(Boolean))]
+  if (known.length > 1) return '多个环境，详见用例的执行记录'
+  if (known.length === 1) return known[0] + (observations.includes('') ? ' · 部分执行未记录' : '')
+  return fallback || '未记录'
+}
+function caseConditions(item) {
+  const block = element('dl', '', 'conditions')
+  const fields = [['输入', item.input], ['预期输出', item.expected], ['断言', item.assertion]]
+  for (const [label, value] of fields) {
+    if (value) block.append(element('dt', label), element('dd', value))
+  }
+  return block
+}
+
+
+const counts = Object.fromEntries(Object.keys(states).map(status => [status, 0]))
+const cards = []
+const ids = new Set()
+document.title = data.project + ' · 单元测试报告'
+document.getElementById('project').textContent = data.project
+const dateLine = document.getElementById('meta')
+dateLine.textContent = (data.meta || '').split(' · ').filter(part => !/^Node(?:\.js)?\s+v?\d/i.test(part.trim())).join(' · ')
+dateLine.hidden = !dateLine.textContent
+document.getElementById('report-environment').textContent = reportEnvironment(data)
+
+for (const item of data.cases) {
+  if (!item.id || ids.has(item.id)) throw new Error('Each case needs a unique ID')
+  ids.add(item.id)
+  const runs = item.runs || []
+  const latest = runs.at(-1)
+  const status = statusOf(latest)
+  counts[status] += 1
+
+  const card = element('article', '', 'case')
+  card.dataset.status = status
+  card.dataset.caseId = item.id
+  const heading = element('div', '', 'case-head')
+  heading.append(element('h3', item.title), badge(status))
+  card.append(heading)
+  card.append(caseConditions(item))
+  if (status === 'failed' || status === 'blocked') {
+    card.append(element('p', '原因 · ' + (latest.reason || '待定位'), 'reason'))
+  }
+  if (runs.length || item.name || item.target) {
+    const details = element('details')
+    const history = element('ol', '', 'history')
+    details.append(element('summary', runs.length ? '执行记录（' + runs.length + '）' : '定位信息'))
+    if (item.name) details.append(element('p', (data.sourceLabel || '对应测试用例') + ' · ' + item.name, 'source'))
+    if (item.target) details.append(element('p', '被测代码 · ' + item.target, 'source'))
+    for (const run of runs) {
+      const line = element('li')
+      line.append(element('strong', (run.phase || '测试执行') + ' · ' + states[statusOf(run)]))
+      const runEnvironment = environmentText(run.environment ?? data.environment)
+      if (runEnvironment) line.append(element('p', '测试环境 · ' + runEnvironment))
+      for (const entry of executionDetails(run)) line.append(element('p', entry))
+      if (run.actual) line.append(element('p', '实际 · ' + run.actual))
+      if (run.reason) line.append(element('p', '原因 · ' + run.reason))
+      history.append(line)
+    }
+    if (runs.length) details.append(history)
+    card.append(details)
+  }
+  document.getElementById('cases').append(card)
+  cards.push(card)
+}
+
+const totals = [['total', '用例总数', cards.length], ...Object.entries(states).map(([key, label]) => [key, label, counts[key]])]
+for (const [key, label, value] of totals) {
+  if ((key === 'skipped' || key === 'cancelled' || key === 'blocked') && value === 0) continue
+  const metric = element('div', '', 'metric ' + key)
+  metric.append(element('dt', label), element('dd', String(value)))
+  document.getElementById('metrics').append(metric)
+}
+const filters = document.getElementById('filters')
+const empty = document.getElementById('empty')
+function filterCases(status) {
+  for (const card of cards) card.hidden = status !== 'all' && card.dataset.status !== status
+  for (const button of filters.children) button.setAttribute('aria-pressed', String(button.dataset.status === status))
+  empty.hidden = cards.some(card => !card.hidden)
+}
+for (const [key, label] of [['all','全部'], ...Object.entries(states)]) {
+  if ((key === 'skipped' || key === 'cancelled' || key === 'blocked') && !counts[key]) continue
+  const quantity = key === 'all' ? cards.length : counts[key]
+  const filter = element('button', label + '（' + quantity + '）')
+  filter.type = 'button'
+  filter.dataset.status = key
+  filter.addEventListener('click', () => filterCases(key))
+  filters.append(filter)
+}
+filterCases('all')
+</script>
+</body>
+</html>
