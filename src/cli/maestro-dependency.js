@@ -35,11 +35,20 @@ export async function checkIosDevice(id) {
   return { status: 'not_ready', id, message: simulator ? '指定的 iOS 模拟器尚未启动。' : '未找到指定的可用 iOS 模拟器。' };
 }
 
-async function verifyMaestro(command, source, root) {
-  const output = await execute(command, ['--version'], { ...probeOptions, cwd: root })
-    .then(({ stdout }) => stdout.trim()).catch(() => '');
-  const found = /^(?:Maestro\s+(?:CLI\s+)?)?v?(\d+)\.(\d+)\.(\d+)$/i.exec(output);
-  if (!found || Number(found[1]) !== 2 || Number(found[2]) < 12) return null;
+async function verifyMaestro(command, source, root, strict = false) {
+  const result = await execute(command, ['--version'], { ...probeOptions, timeout: 45_000, cwd: root })
+    .catch(error => {
+      if (!strict) return null;
+      const detail = error.killed ? '45 秒内未返回版本' : String(error.code ?? error.signal ?? '未知退出状态');
+      throw new Error('Maestro 版本命令未成功（' + detail + '）。');
+    });
+  const found = result?.stdout.split(/\r?\n/)
+    .map(line => /^(?:Maestro\s+(?:CLI\s+)?)?v?(\d+)\.(\d+)\.(\d+)$/i.exec(line.trim()))
+    .find(Boolean);
+  if (!found || Number(found[1]) !== 2 || Number(found[2]) < 12) {
+    if (strict) throw new Error('Maestro 发行包版本输出与预期不符。');
+    return null;
+  }
   return { command, args: [], source, version: found.slice(1).join('.') };
 }
 
@@ -70,7 +79,7 @@ async function installMaestro(root, cache) {
     }).catch(() => { throw new Error('无法下载 Maestro 官方发行包，请检查 curl 和网络后重试。'); });
     await execute('unzip', ['-q', archive, '-d', directory], { timeout: 20_000, maxBuffer: 512_000 })
       .catch(() => { throw new Error('无法解压 Maestro 发行包，请检查 unzip 和磁盘空间。'); });
-    const staged = await verifyMaestro(path.join(directory, 'maestro', 'bin', 'maestro'), 'managed', root);
+    const staged = await verifyMaestro(path.join(directory, 'maestro', 'bin', 'maestro'), 'managed', root, true);
     if (staged?.version !== version) throw new Error('Maestro 发行包未通过版本验证。');
     await fs.unlink(archive);
     await fs.rm(cache, { recursive: true, force: true });
