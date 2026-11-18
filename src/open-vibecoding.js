@@ -73,6 +73,7 @@ import { CAPABILITY_HANDOFF_CONTRACT, getCapability, loadProjectCapabilityCatalo
 import { iconCutout } from './icon-cutout.js';
 import { visualGrid, imageAnnotate } from './visual-assistance.js';
 import { runTestReportCommand } from './cli/test-report-command.js';
+import { runToolDependenciesCommand } from './cli/tool-dependencies-command.js';
 
 function buildInitTemplatePackGuidance(templatePack, options = {}) {
   const label = formatTemplatePackDisplay(templatePack, { fallback: '通用产品或工程场景' });
@@ -467,6 +468,7 @@ export async function main(argv = process.argv.slice(2)) {
   }
 
   if (command === 'test-report') return runTestReportCommand(rest);
+  if (command === 'tools') return runToolDependenciesCommand(rest);
 
   const { flags, positionals } = parseCommandArgs(rest);
   if (positionals.includes('--help') || positionals.includes('-h')) {

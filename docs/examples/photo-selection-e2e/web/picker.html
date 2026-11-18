@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>选图</title>
+<style>
+body{font:16px system-ui,sans-serif;margin:40px auto;max-width:580px;padding:0 20px}
+button{font:inherit;padding:8px 12px;cursor:pointer}button[aria-pressed=true]{outline:3px solid #1766c1}
+#photos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+figure{margin:0}img{width:100%;display:block;border-radius:5px}
+output{display:block;margin:10px 0;overflow-wrap:anywhere}
+</style>
+<h1 id="title">选择照片</h1>
+<main>
+  <button id="album">相册</button>
+  <button id="search">搜索入口</button>
+  <div id="photos"></div>
+  <output aria-label="已选数量" id="count"></output>
+  <output aria-label="已选照片" id="selection"></output>
+  <p id="notice" role="status"></p>
+  <button id="done">完成</button>
+</main>
+<section hidden id="result">
+  <output aria-label="收到的照片" id="received"></output>
+</section>
+<script>
+const byId = id => document.getElementById(id);
+const choices = Array.from({length: 10}, (_, index) => 'P' + String(index + 1).padStart(2, '0'));
+const defect = new URLSearchParams(location.search).get('variant') === 'defect';
+const selected = [];
+let searching = false;
+
+function render() {
+  byId('photos').replaceChildren(...(searching ? choices.slice(-1) : choices.slice(0, 9)).map((id, index) => {
+    const button = document.createElement('button');
+    const image = document.createElement('img');
+    image.src = '../assets/' + id + '.png';
+    image.alt = '';
+    button.append(image, id);
+    button.setAttribute('aria-pressed', String(selected.includes(id)));
+    button.addEventListener('click', () => toggle(id));
+    return button;
+  }));
+  byId('count').value = String(selected.length);
+  byId('selection').value = selected.join(' ');
+}
+
+function toggle(id) {
+  byId('notice').textContent = '';
+  const index = selected.indexOf(id);
+  if (index >= 0) selected.splice(index, 1);
+  else if (selected.length < 9) selected.push(id);
+  else if (defect && searching) selected.splice(0, 1, id);
+  else byId('notice').textContent = '最多选择 9 张照片';
+  render();
+}
+
+byId('album').onclick = () => { searching = false; render(); };
+byId('search').onclick = () => { searching = true; render(); };
+byId('done').onclick = () => complete([...selected]);
+function complete(ids) {
+  document.querySelector('main').hidden = true;
+  byId('title').textContent = '已选照片';
+  byId('result').hidden = false;
+  byId('received').value = ids.join(' ');
+}
+render();
+</script>

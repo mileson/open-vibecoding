@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>测试用例清单</title>
+<style>
+:root{--canvas:#f0f3f7;--paper:#fff;--ink:#172538;--muted:#47596d;--line:#dce3ec;--wash:#edf3fb;--blue:#185a9c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;overflow-wrap:anywhere}
+main{max-width:1100px;margin:auto;padding:clamp(12px,3vw,24px)}
+h1,h2,p,dl,dd{margin:0}
+.panel{border:1px solid var(--line);border-radius:14px;background:var(--paper);padding:16px 20px}
+header .label,.facts{font-size:13px;color:var(--muted)}
+header .label{font-weight:700;color:var(--blue)}
+h1{font-size:clamp(22px,4vw,32px);line-height:1.28;margin:4px 0 9px}
+.facts strong{margin-inline-end:6px;color:var(--ink)}
+.lead{margin-top:12px;padding:9px 12px;background:var(--wash);border-radius:8px;font-weight:650}
+.layout{margin-top:12px;display:grid;gap:12px}
+.layout.grouped{grid-template-columns:148px minmax(0,1fr);align-items:start}
+nav{position:sticky;top:12px;display:grid;gap:4px;font-size:14px}
+nav a{padding:5px 6px;border-radius:5px;color:var(--ink);text-decoration:none}
+nav a:hover{background:#f1f2f4}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+#groups{display:grid;gap:12px;min-width:0}
+h2{font-size:17px;margin-bottom:9px}
+section{scroll-margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:var(--wash);color:var(--muted)}
+tbody tr:last-child>*,tbody tr:nth-last-child(2):has(+ tr[hidden])>*{border-bottom:0}
+th[scope=row]{width:36%;font-weight:650}
+.priority{width:5em;white-space:nowrap;text-align:center;vertical-align:middle}
+.priority-badge{display:inline-block;min-width:2rem;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:650;line-height:1.5}
+.priority-badge[data-priority=high]{background:#fbe6e7;color:#9d2936}
+.priority-badge[data-priority=medium]{background:#fff1d5;color:#79500c}
+.priority-badge[data-priority=low]{background:#eef0f2;color:#4b5563}
+.meta{display:block;color:var(--muted);font-size:12px;font-weight:400;margin-top:3px}
+tr:target{background:#f5f9fd}
+.case-toggle{display:block;margin-top:5px;padding:0;border:0;background:transparent;color:var(--blue);font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+.case-toggle::before{content:"▸";margin-inline-end:4px}
+.case-toggle[aria-expanded="true"]::before{content:"▾"}
+.case-detail-cell{padding:10px 7px}
+.case-detail-card{padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#f5f7fa}
+.case-detail-field+.case-detail-field{margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+.case-detail-field dt{font-size:12px;font-weight:650;color:var(--muted)}
+.case-detail-field dd{margin-top:2px;white-space:pre-wrap}
+ol,ul{margin:0;padding-inline-start:1.35em}
+li+li{margin-top:3px}
+[hidden]{display:none!important}
+@media(max-width:650px){
+  .layout.grouped{grid-template-columns:minmax(0,1fr)}
+  nav.panel{display:flex;flex-wrap:wrap;position:static;padding-block:8px}
+  .panel{padding:12px}
+  th,td{padding:7px 5px}
+}
+</style>
+</head>
+<body>
+<main>
+  <header class="panel">
+    <p class="label">测试用例清单</p>
+    <h1 id="project"></h1>
+    <p class="facts"><strong>测试范围</strong><span id="scope"></span></p>
+    <p class="lead" id="summary"></p>
+  </header>
+  <div class="layout" id="layout">
+    <nav class="panel" id="navigation" aria-label="按测试层导航" hidden></nav>
+    <div id="groups"></div>
+  </div>
+</main>
+<script id="report-data" type="application/json">{}</script>
+<script>
+const data = JSON.parse(document.getElementById('report-data').textContent)
+const layers = {unit:'单元测试', component:'组件测试', api:'接口／集成测试', e2e:'端到端测试'}
+const priorities = {high:'高', medium:'中', low:'低'}
+
+function element(tag, text, className) {
+  const node = document.createElement(tag)
+  if (text !== undefined) node.textContent = text
+  if (className) node.className = className
+  return node
+}
+
+function list(tag, items) {
+  const node = element(tag)
+  node.append(...items.map(item => element('li', item)))
+  return node
+}
+
+function renderCase(entry) {
+  const row = element('tr')
+  row.id = 'case-' + entry.id
+  const title = element('th', entry.title)
+  title.scope = 'row'
+  const metadata = [entry.id, entry.feature, entry.target].filter(Boolean)
+  title.append(element('span', metadata.join(' · '), 'meta'))
+  const expected = element('td', entry.expected)
+  const detail = element('tr')
+  detail.id = 'case-detail-' + entry.id
+  detail.hidden = true
+  const cell = element('td', undefined, 'case-detail-cell')
+  cell.colSpan = 3
+  const fields = element('dl', undefined, 'case-detail-card')
+  for (const [label, value] of [
+    ['准备数据／初始状态', entry.input],
+    ['操作步骤', list('ol', entry.steps)],
+    ['关键断言', list('ul', entry.assertions)],
+  ]) {
+    const field = element('div', undefined, 'case-detail-field')
+    const content = element('dd')
+    content.append(value)
+    field.append(element('dt', label), content)
+    fields.append(field)
+  }
+  cell.append(fields)
+  detail.append(cell)
+  const toggle = element('button', '查看用例', 'case-toggle')
+  toggle.type = 'button'
+  toggle.setAttribute('aria-controls', detail.id)
+  toggle.setAttribute('aria-expanded', 'false')
+  toggle.addEventListener('click', () => {
+    detail.hidden = !detail.hidden
+    toggle.setAttribute('aria-expanded', String(!detail.hidden))
+    toggle.textContent = detail.hidden ? '查看用例' : '收起用例'
+  })
+  expected.append(toggle)
+  const priority = element('td', undefined, 'priority')
+  const badge = element('span', priorities[entry.priority], 'priority-badge')
+  badge.dataset.priority = entry.priority
+  priority.append(badge)
+  row.append(title, priority, expected)
+  return [row, detail]
+}
+
+for (const field of ['project', 'scope', 'summary']) {
+  document.getElementById(field).textContent = data[field]
+}
+document.title = data.project + ' · 测试用例清单'
+const navigation = document.getElementById('navigation')
+const groups = document.getElementById('groups')
+const activeLayers = Object.keys(layers).filter(layer => data.cases.some(entry => entry.layer === layer))
+if (activeLayers.length > 1) {
+  navigation.hidden = false
+  document.getElementById('layout').classList.add('grouped')
+}
+
+for (const layer of activeLayers) {
+  const section = element('section', undefined, 'panel')
+  section.id = 'layer-' + layer
+  const heading = element('h2', layers[layer])
+  heading.id = section.id + '-heading'
+  section.setAttribute('aria-labelledby', heading.id)
+  const table = element('table')
+  table.setAttribute('aria-labelledby', heading.id)
+  const headerRow = table.createTHead().insertRow()
+  for (const label of ['用例', '优先级', '预期结果']) {
+    const header = element('th', label, label === '优先级' ? 'priority' : undefined)
+    header.scope = 'col'
+    headerRow.append(header)
+  }
+  table.createTBody().append(...data.cases.filter(entry => entry.layer === layer).flatMap(renderCase))
+  section.append(heading, table)
+  groups.append(section)
+  if (!navigation.hidden) {
+    const link = element('a', layers[layer])
+    link.href = '#' + section.id
+    navigation.append(link)
+  }
+}
+</script>
+</body>
+</html>

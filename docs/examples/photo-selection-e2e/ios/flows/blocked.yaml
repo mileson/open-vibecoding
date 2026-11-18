@@ -1,0 +1,14 @@
+appId: org.openvibecoding.PhotoSelection
+name: blocked
+---
+- launchApp:
+    arguments:
+      photoVariant: "${PHOTO_VARIANT}"
+      photoCase: "blocked"
+- runFlow: ../fill.yaml
+- takeScreenshot: blocked
+- assertVisible:
+    id: limit-notice
+- assertNotVisible:
+    id: photo-P10
+    selected: true

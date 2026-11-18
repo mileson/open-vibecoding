@@ -1,0 +1,12 @@
+appId: org.openvibecoding.PhotoSelection
+name: selection
+---
+- launchApp:
+    arguments:
+      photoVariant: "${PHOTO_VARIANT}"
+      photoCase: "selection"
+- runFlow: ../fill.yaml
+- takeScreenshot: selection
+- assertVisible:
+    id: selected-ids
+    text: '^P01 P02 P03 P04 P05 P06 P07 P08 P09$'

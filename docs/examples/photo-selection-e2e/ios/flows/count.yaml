@@ -1,0 +1,10 @@
+appId: org.openvibecoding.PhotoSelection
+name: count
+---
+- launchApp:
+    arguments:
+      photoVariant: "${PHOTO_VARIANT}"
+      photoCase: "count"
+- runFlow: ../fill.yaml
+- takeScreenshot: count
+- assertVisible: 已选 9 张
