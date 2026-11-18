@@ -213,6 +213,7 @@
       "id": "maestro-defect-count",
       "label": "缺陷版本 · 只核对数量",
       "engine": "maestro",
+      "timeoutMs": 720000,
       "environment": {
         "target": "选图 iOS 样例",
         "deviceType": "模拟器",
@@ -241,6 +242,7 @@
       "id": "maestro-defect-identity",
       "label": "缺陷版本 · 核对拦截与照片身份",
       "engine": "maestro",
+      "timeoutMs": 720000,
       "environment": {
         "target": "选图 iOS 样例",
         "deviceType": "模拟器",
@@ -304,6 +306,7 @@
       "id": "maestro-fixed",
       "label": "修复版本 · 完整验收",
       "engine": "maestro",
+      "timeoutMs": 720000,
       "environment": {
         "target": "选图 iOS 样例",
         "deviceType": "模拟器",

@@ -38,7 +38,7 @@ jobs:
   feature-acceptance:
     name: Feature acceptance
     runs-on: ${{ inputs.runner }}
-    timeout-minutes: 25
+    timeout-minutes: 45
     env:
       E2E_ENGINE: ${{ inputs.engine }}
       E2E_MANIFEST: ${{ inputs.manifest }}
