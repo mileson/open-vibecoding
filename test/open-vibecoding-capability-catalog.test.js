@@ -79,6 +79,18 @@ test('review repair composes independent capabilities and validates extension gr
   assert.throws(() => buildCapabilityCatalog([{ scenarios: [scene('first', ['second']), scene('second', ['first'])] }]), /循环引用/);
 });
 
+test('unit test generation and execution are independently discoverable', () => {
+  const catalog = buildCapabilityCatalog();
+  const generation = getCapability(catalog, 'unit-test-generation');
+  const execution = getCapability(catalog, 'unit-test-run-and-repair');
+
+  assert.equal(generation.skill, 'open-vibecoding-unit-test-generation');
+  assert.equal(execution.skill, 'open-vibecoding-unit-test-run-and-repair');
+  assert.ok(!generation.uses.includes(execution.id));
+  assert.ok(execution.uses.includes(generation.id));
+  assert.ok(execution.uses.includes('debugging'));
+});
+
 test('each built-in scenario has a distinct, installable child skill', () => {
   const catalog = buildCapabilityCatalog();
   const ids = catalog.scenarios.map((scenario) => scenario.skill);
@@ -153,7 +165,8 @@ test('project contribution is discoverable by CLI without changing built-ins', a
     assert.equal(existsSync(path.join(root, '.codex', 'skills', 'example-content-audit', 'SKILL.md')), true);
     assert.equal(existsSync(path.join(root, '.claude', 'skills', 'example-content-audit', 'SKILL.md')), true);
     for (const tool of ['.codex', '.claude']) {
-      for (const skill of ['open-vibecoding-test-strategy', 'open-vibecoding-ui-interaction-review', 'open-vibecoding-ui-review-and-repair',
+      for (const skill of ['open-vibecoding-test-strategy', 'open-vibecoding-unit-test-generation', 'open-vibecoding-unit-test-run-and-repair',
+        'open-vibecoding-ui-interaction-review', 'open-vibecoding-ui-review-and-repair',
         'open-vibecoding-audio-evidence', 'open-vibecoding-audio-evidence', 'open-vibecoding-icon-system',
         'open-vibecoding-icon-source', 'open-vibecoding-icon-svg', 'open-vibecoding-icon-image', 'open-vibecoding-icon-cutout',
         'open-vibecoding-best-practices', 'open-vibecoding-ios-localization']) {

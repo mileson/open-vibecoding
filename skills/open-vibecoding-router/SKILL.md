@@ -22,6 +22,8 @@ description: Open VibeCoding 入口路由。按用户目标组合五个执行能
 | 功能会消耗有限资源或改变使用权益，需要兼顾消费、恢复、运营与用户反馈 | 内部 `$open-vibecoding-resource-entitlement-design`，研发主责，产品、交互与测试按需复用；不默认收费或新建后台 |
 | 修复故障或优化性能时，让再次发生的问题仍可继续深入定位 | `$open-vibecoding-diagnostic-readiness`，内部研发能力；主动评估盲区，按需补强并验证诊断证据，不自动开启监控 |
 | 从测试用户的真实入口验证业务结果，选择可用操作工具；实际验收与回归 | `$open-vibecoding-test-strategy`、`$open-vibecoding-acceptance-verification` |
+| 为目标模块补充单元测试 | `$open-vibecoding-unit-test-generation`。只补测试时交付用例和执行入口 |
+| 执行单元测试并报告；明确要求时修复可复现的问题 | `$open-vibecoding-unit-test-run-and-repair`。需要先补用例时组合生成能力 |
 | 希望独立 reviewer 亲自操作界面发现问题；希望同时修复并让 reviewer 多轮复查 | `$open-vibecoding-ui-interaction-review`、`$open-vibecoding-ui-review-and-repair` |
 | 选择工具；空间化协作；复用已验证经验 | `$open-vibecoding-tool-selection`、`$open-vibecoding-canvas-collaboration`、`$open-vibecoding-experience-reuse` |
 | 实现、构建、测试或部署会占用环境与存储，需要减少重复实例、控制缓存或处理闲置产物 | 内部 `$open-vibecoding-resource-efficiency`；按实际约束选择最小足够方案，核对依赖与权限后收尾，不默认堆积冗余或清空缓存 |

@@ -15,6 +15,8 @@ export const CANONICAL_SKILLS = [
     id: 'open-vibecoding-test-strategy',
     sourceSkill: 'open-vibecoding-test-strategy',
   },
+  { id: 'open-vibecoding-unit-test-generation', sourceSkill: 'open-vibecoding-unit-test-generation' },
+  { id: 'open-vibecoding-unit-test-run-and-repair', sourceSkill: 'open-vibecoding-unit-test-run-and-repair' },
   {
     id: 'open-vibecoding-audio-evidence', sourceSkill: 'open-vibecoding-audio-evidence',
     description: '音频与语音证据增强：为真实音频、声学质量、ASR 和语音派生字幕提供修改前基线与最终媒体复测，供研发和测试复用。',

@@ -44,6 +44,8 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 
 每个场景是独立子能力，统筹层按用户意图组合它们，不靠固定关键词匹配。小任务可以只用一项；复杂任务可在领域之间往返。`skills/open-vibecoding-router/SKILL.md` 是 Agent 的入口，`open-vibecoding capabilities list|get|contract` 提供机器可读的能力目录。项目可用 `open-vibecoding.capabilities.json` 和对应的 repo-local Skill 增量扩展。
 
+单元测试可以直接说「给这个模块补单元测试」「跑现有测试，给我报告」或「跑测试，修复能稳定复现的问题并回归」。Agent 沿用项目的测试入口。修复报告包含修复前的失败、同用例复测和相关回归结果。 [生成单元测试](skills/open-vibecoding-unit-test-generation/SKILL.md) · [运行、报告与修复](skills/open-vibecoding-unit-test-run-and-repair/SKILL.md)
+
 <a id="readme-section-2"></a>
 
 <a id="本地使用"></a>

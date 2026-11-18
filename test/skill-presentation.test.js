@@ -28,6 +28,8 @@ test('user menu shows business scenes while internal audio, router and resources
     assert.equal(await fs.readFile(path.join(root, path.dirname(installedSkillPath('open-vibecoding-audio-evidence')), 'user-note.txt'), 'utf8'), 'preserved');
     const router = await fs.readFile(path.join(root, installedSkillPath('open-vibecoding-router')), 'utf8');
     assert.ok(router.includes(installedSkillPath('open-vibecoding-audio-evidence')));
+    assert.ok(router.includes('open-vibecoding-unit-test-generation'));
+    assert.ok(router.includes('open-vibecoding-unit-test-run-and-repair'));
     for (const [id, info] of Object.entries(USER_SKILL_PRESENTATION)) {
       const yaml = await fs.readFile(path.join(root, '.codex/skills', id, 'agents/openai.yaml'), 'utf8');
       assert.ok(yaml.includes(JSON.stringify(info.displayName)));
