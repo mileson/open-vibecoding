@@ -65,7 +65,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - name: Prepare test environment
-        timeout-minutes: 8
+        timeout-minutes: 14
         id: setup
         continue-on-error: true
         shell: bash
@@ -132,7 +132,7 @@ jobs:
           printf 'Tested candidate: `%s` (`%s`)\n' "$GITHUB_SHA" "$GITHUB_REF" >> "$GITHUB_STEP_SUMMARY"
           cat "$report/eval.json" >> "$GITHUB_STEP_SUMMARY"
       - name: Release task resources
-        timeout-minutes: 1
+        timeout-minutes: 2
         if: ${{ always() && inputs.cleanup-script != '' }}
         shell: bash
         run: bash "$E2E_CLEANUP" cleanup
