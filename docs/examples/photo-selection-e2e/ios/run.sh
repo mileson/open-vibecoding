@@ -7,15 +7,21 @@ artifacts="$2"
 result="$3"
 observations="$4"
 shift 4
-if ! tools_json="$(node ../../../../bin/open-vibecoding.js tools ensure maestro --root ../../../.. --device "$PHOTO_SIM_UDID")"; then
-  printf '%s\n' "$tools_json" >&2
-  exit 2
+if [[ -n "${PHOTO_MAESTRO_EXECUTABLE:-}" ]]; then
+  maestro_bin="$PHOTO_MAESTRO_EXECUTABLE"
+  runner_version="${PHOTO_MAESTRO_VERSION:?Missing CI Maestro version}"
+  [[ -x "$maestro_bin" ]]
+else
+  if ! tools_json="$(node ../../../../bin/open-vibecoding.js tools ensure maestro --root ../../../.. --device "$PHOTO_SIM_UDID")"; then
+    printf '%s\n' "$tools_json" >&2
+    exit 2
+  fi
+  maestro_bin="$(node -p 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).installation.command' <<< "$tools_json")"
+  runner_version="$(node -p 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).installation.version' <<< "$tools_json")"
 fi
-maestro_bin="$(node -p 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).installation.command' <<< "$tools_json")"
 container="$(xcrun simctl get_app_container "$PHOTO_SIM_UDID" org.openvibecoding.PhotoSelection data)"
 device_inventory="$artifacts/device.json"
 xcrun simctl list devices booted -j > "$device_inventory"
-runner_version="$(node -p 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).installation.version' <<< "$tools_json")"
 files=()
 for check in "$@"; do
   case "$check" in count|blocked|selection|returned) ;; *) exit 2 ;; esac

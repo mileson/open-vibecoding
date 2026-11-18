@@ -24,7 +24,14 @@ case "${E2E_ENGINE:?Set the E2E runner engine}" in
     ;;
   maestro)
     : "${RUNNER_TEMP:?GitHub runner scratch directory required}" "${GITHUB_ENV:?Expected GitHub environment file}"
-    node bin/open-vibecoding.js tools ensure maestro
+    if ! tools_json="$(node bin/open-vibecoding.js tools ensure maestro)"; then
+      printf '%s\n' "$tools_json" >&2
+      exit 2
+    fi
+    maestro_path="$(jq -er '.installation.command' <<< "$tools_json")"
+    maestro_version="$(jq -er '.installation.version' <<< "$tools_json")"
+    [[ -x "$maestro_path" ]]
+    printf 'PHOTO_MAESTRO_EXECUTABLE=%s\nPHOTO_MAESTRO_VERSION=%s\n' "$maestro_path" "$maestro_version" >> "$GITHUB_ENV"
     if xcrun simctl list devices booted -j | jq -e '[.devices[][] | select(.state == "Booted")] | length > 0' >/dev/null; then
       echo 'Another simulator is already booted.'
       exit 2
