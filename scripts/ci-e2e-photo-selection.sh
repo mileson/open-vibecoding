@@ -31,6 +31,7 @@ case "${E2E_ENGINE:?Set the E2E runner engine}" in
     maestro_path="$(jq -er '.installation.command' <<< "$tools_json")"
     maestro_version="$(jq -er '.installation.version' <<< "$tools_json")"
     [[ -x "$maestro_path" ]]
+    printf 'MAESTRO_DRIVER_STARTUP_TIMEOUT=300000\n' >> "$GITHUB_ENV"
     printf 'PHOTO_MAESTRO_EXECUTABLE=%s\nPHOTO_MAESTRO_VERSION=%s\n' "$maestro_path" "$maestro_version" >> "$GITHUB_ENV"
     if xcrun simctl list devices booted -j | jq -e '[.devices[][] | select(.state == "Booted")] | length > 0' >/dev/null; then
       echo 'Another simulator is already booted.'
