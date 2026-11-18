@@ -38,6 +38,7 @@ private struct PhotoSelectionView: View {
                             }
                             .padding(4)
                             .background(ids.contains(id) ? Color.blue.opacity(0.2) : .clear)
+                            .contentShape(Rectangle())
                         }
                         .accessibilityIdentifier("photo-" + id)
                         .accessibilityAddTraits(ids.contains(id) ? .isSelected : [])
