@@ -1,0 +1,373 @@
+{
+  "schemaVersion": 1,
+  "project": "最多选 9 张照片",
+  "dataPreparations": {
+    "web-photo-selection": {
+      "label": "固定照片 P01–P10，打开选图时尚未选中照片",
+      "prepare": "docs/examples/photo-selection-e2e/web/prepare-data.mjs",
+      "verify": "docs/examples/photo-selection-e2e/web/verify-data.mjs",
+      "checks": [
+        {
+          "id": "photo-ids",
+          "title": "可读取的照片 ID",
+          "expected": [
+            "P01",
+            "P02",
+            "P03",
+            "P04",
+            "P05",
+            "P06",
+            "P07",
+            "P08",
+            "P09",
+            "P10"
+          ]
+        },
+        {
+          "id": "selected-ids",
+          "title": "初始已选 ID",
+          "expected": []
+        }
+      ]
+    },
+    "ios-photo-selection": {
+      "label": "固定照片 P01–P10，打开选图时尚未选中照片",
+      "prepare": "docs/examples/photo-selection-e2e/ios/prepare-data.mjs",
+      "verify": "docs/examples/photo-selection-e2e/ios/verify-data.mjs",
+      "checks": [
+        {
+          "id": "photo-ids",
+          "title": "可读取的照片 ID",
+          "expected": [
+            "P01",
+            "P02",
+            "P03",
+            "P04",
+            "P05",
+            "P06",
+            "P07",
+            "P08",
+            "P09",
+            "P10"
+          ]
+        },
+        {
+          "id": "selected-ids",
+          "title": "初始已选 ID",
+          "expected": []
+        }
+      ]
+    }
+  },
+  "runs": [
+    {
+      "id": "playwright-defect-count",
+      "label": "缺陷版本 · 只核对数量",
+      "engine": "playwright",
+      "environment": {
+        "target": "选图 Web 样例",
+        "deviceType": "电脑",
+        "browser": "Chromium",
+        "version": "缺陷版本"
+      },
+      "argv": [
+        "bash",
+        "docs/examples/photo-selection-e2e/web/run.sh",
+        "defect",
+        " (count)$",
+        "{artifacts}"
+      ],
+      "cases": [
+        {
+          "id": "count",
+          "title": "第 10 张操作后仍显示 9 张",
+          "expected": 9
+        }
+      ],
+      "dataPreparation": "web-photo-selection"
+    },
+    {
+      "id": "playwright-defect-identity",
+      "label": "缺陷版本 · 核对拦截与照片身份",
+      "engine": "playwright",
+      "environment": {
+        "target": "选图 Web 样例",
+        "deviceType": "电脑",
+        "browser": "Chromium",
+        "version": "缺陷版本"
+      },
+      "argv": [
+        "bash",
+        "docs/examples/photo-selection-e2e/web/run.sh",
+        "defect",
+        " (blocked|selection|returned)$",
+        "{artifacts}"
+      ],
+      "cases": [
+        {
+          "id": "blocked",
+          "title": "第 10 张被拦截",
+          "expected": {
+            "notice": true,
+            "tenthSelected": false
+          }
+        },
+        {
+          "id": "selection",
+          "title": "选中的 9 张照片身份不变",
+          "expected": [
+            "P01",
+            "P02",
+            "P03",
+            "P04",
+            "P05",
+            "P06",
+            "P07",
+            "P08",
+            "P09"
+          ]
+        },
+        {
+          "id": "returned",
+          "title": "发起页收到同一份照片名单",
+          "expected": [
+            "P01",
+            "P02",
+            "P03",
+            "P04",
+            "P05",
+            "P06",
+            "P07",
+            "P08",
+            "P09"
+          ]
+        }
+      ],
+      "dataPreparation": "web-photo-selection"
+    },
+    {
+      "id": "playwright-fixed",
+      "label": "修复版本 · 完整验收",
+      "engine": "playwright",
+      "environment": {
+        "target": "选图 Web 样例",
+        "deviceType": "电脑",
+        "browser": "Chromium",
+        "version": "修复版本"
+      },
+      "argv": [
+        "bash",
+        "docs/examples/photo-selection-e2e/web/run.sh",
+        "fixed",
+        " (count|blocked|selection|returned)$",
+        "{artifacts}"
+      ],
+      "cases": [
+        {
+          "id": "count",
+          "title": "第 10 张操作后仍显示 9 张",
+          "expected": 9
+        },
+        {
+          "id": "blocked",
+          "title": "第 10 张被拦截",
+          "expected": {
+            "notice": true,
+            "tenthSelected": false
+          }
+        },
+        {
+          "id": "selection",
+          "title": "选中的 9 张照片身份不变",
+          "expected": [
+            "P01",
+            "P02",
+            "P03",
+            "P04",
+            "P05",
+            "P06",
+            "P07",
+            "P08",
+            "P09"
+          ]
+        },
+        {
+          "id": "returned",
+          "title": "发起页收到同一份照片名单",
+          "expected": [
+            "P01",
+            "P02",
+            "P03",
+            "P04",
+            "P05",
+            "P06",
+            "P07",
+            "P08",
+            "P09"
+          ]
+        }
+      ],
+      "dataPreparation": "web-photo-selection"
+    },
+    {
+      "id": "maestro-defect-count",
+      "label": "缺陷版本 · 只核对数量",
+      "engine": "maestro",
+      "environment": {
+        "target": "选图 iOS 样例",
+        "deviceType": "模拟器",
+        "os": "iOS",
+        "version": "缺陷版本"
+      },
+      "argv": [
+        "bash",
+        "docs/examples/photo-selection-e2e/ios/run.sh",
+        "defect",
+        "{artifacts}",
+        "{result}",
+        "{observations}",
+        "count"
+      ],
+      "cases": [
+        {
+          "id": "count",
+          "title": "第 10 张操作后仍显示 9 张",
+          "expected": 9
+        }
+      ],
+      "dataPreparation": "ios-photo-selection"
+    },
+    {
+      "id": "maestro-defect-identity",
+      "label": "缺陷版本 · 核对拦截与照片身份",
+      "engine": "maestro",
+      "environment": {
+        "target": "选图 iOS 样例",
+        "deviceType": "模拟器",
+        "os": "iOS",
+        "version": "缺陷版本"
+      },
+      "argv": [
+        "bash",
+        "docs/examples/photo-selection-e2e/ios/run.sh",
+        "defect",
+        "{artifacts}",
+        "{result}",
+        "{observations}",
+        "blocked",
+        "selection",
+        "returned"
+      ],
+      "cases": [
+        {
+          "id": "blocked",
+          "title": "第 10 张被拦截",
+          "expected": {
+            "notice": true,
+            "tenthSelected": false
+          }
+        },
+        {
+          "id": "selection",
+          "title": "选中的 9 张照片身份不变",
+          "expected": [
+            "P01",
+            "P02",
+            "P03",
+            "P04",
+            "P05",
+            "P06",
+            "P07",
+            "P08",
+            "P09"
+          ]
+        },
+        {
+          "id": "returned",
+          "title": "发起页收到同一份照片名单",
+          "expected": [
+            "P01",
+            "P02",
+            "P03",
+            "P04",
+            "P05",
+            "P06",
+            "P07",
+            "P08",
+            "P09"
+          ]
+        }
+      ],
+      "dataPreparation": "ios-photo-selection"
+    },
+    {
+      "id": "maestro-fixed",
+      "label": "修复版本 · 完整验收",
+      "engine": "maestro",
+      "environment": {
+        "target": "选图 iOS 样例",
+        "deviceType": "模拟器",
+        "os": "iOS",
+        "version": "修复版本"
+      },
+      "argv": [
+        "bash",
+        "docs/examples/photo-selection-e2e/ios/run.sh",
+        "fixed",
+        "{artifacts}",
+        "{result}",
+        "{observations}",
+        "count",
+        "blocked",
+        "selection",
+        "returned"
+      ],
+      "cases": [
+        {
+          "id": "count",
+          "title": "第 10 张操作后仍显示 9 张",
+          "expected": 9
+        },
+        {
+          "id": "blocked",
+          "title": "第 10 张被拦截",
+          "expected": {
+            "notice": true,
+            "tenthSelected": false
+          }
+        },
+        {
+          "id": "selection",
+          "title": "选中的 9 张照片身份不变",
+          "expected": [
+            "P01",
+            "P02",
+            "P03",
+            "P04",
+            "P05",
+            "P06",
+            "P07",
+            "P08",
+            "P09"
+          ]
+        },
+        {
+          "id": "returned",
+          "title": "发起页收到同一份照片名单",
+          "expected": [
+            "P01",
+            "P02",
+            "P03",
+            "P04",
+            "P05",
+            "P06",
+            "P07",
+            "P08",
+            "P09"
+          ]
+        }
+      ],
+      "dataPreparation": "ios-photo-selection"
+    }
+  ]
+}

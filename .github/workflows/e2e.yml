@@ -1,0 +1,103 @@
+name: End-to-end regression
+
+on:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      full-regression:
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  selection:
+    name: Determine affected test targets
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.targets.outputs.web }}
+      ios: ${{ steps.targets.outputs.ios }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select regression targets
+        id: targets
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          FULL_REGRESSION: ${{ inputs.full-regression == true }}
+        shell: bash
+        run: |
+          mode="$GITHUB_EVENT_NAME"
+          if [[ "$FULL_REGRESSION" == true ]]; then mode=full; fi
+          bash scripts/ci-e2e-targets.sh "$mode" "$PR_BASE" "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+
+  web:
+    name: Web baseline
+    needs: selection
+    if: ${{ needs.selection.outputs.web == 'true' }}
+    uses: ./.github/workflows/e2e-run.yml
+    with:
+      runner: ubuntu-latest
+      engine: playwright
+      manifest: docs/examples/photo-selection-e2e/manifest.json
+      run-id: playwright-fixed
+      verify-photo-selection: true
+      setup-script: scripts/ci-e2e-photo-selection.sh
+
+  ios:
+    name: iOS baseline
+    needs: selection
+    if: ${{ needs.selection.outputs.ios == 'true' }}
+    uses: ./.github/workflows/e2e-run.yml
+    with:
+      runner: macos-15
+      engine: maestro
+      manifest: docs/examples/photo-selection-e2e/manifest.json
+      run-id: maestro-fixed
+      verify-photo-selection: true
+      setup-script: scripts/ci-e2e-photo-selection.sh
+      cleanup-script: scripts/ci-e2e-photo-selection.sh
+
+  required:
+    name: E2E Required
+    needs: [selection, web, ios]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    env:
+      SELECTION_RESULT: ${{ needs.selection.result }}
+      WEB_REQUIRED: ${{ needs.selection.outputs.web }}
+      IOS_REQUIRED: ${{ needs.selection.outputs.ios }}
+      WEB_RESULT: ${{ needs.web.result }}
+      IOS_RESULT: ${{ needs.ios.result }}
+    steps:
+      - name: Check selected functional baselines
+        shell: bash
+        run: |
+          if [[ "$SELECTION_RESULT" != success ]]; then
+            echo 'E2E target selection did not finish.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          failures=0
+          check_target() {
+            local target="$1" selected="$2" outcome="$3"
+            case "$selected:$outcome" in
+              true:success)
+                printf '%s · passed\n' "$target" >> "$GITHUB_STEP_SUMMARY" ;;
+              false:skipped)
+                printf '%s · not_run (no relevant changes)\n' "$target" >> "$GITHUB_STEP_SUMMARY" ;;
+              *)
+                printf '%s · required baseline incomplete (%s)\n' "$target" "$outcome" >> "$GITHUB_STEP_SUMMARY"
+                failures=$((failures + 1)) ;;
+            esac
+          }
+          check_target Web "$WEB_REQUIRED" "$WEB_RESULT"
+          check_target iOS "$IOS_REQUIRED" "$IOS_RESULT"
+          [[ "$failures" -eq 0 ]]

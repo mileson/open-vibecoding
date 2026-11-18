@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open VibeCoding E2E results",
+  "type": "object",
+  "required": ["schemaVersion", "project", "generatedAt", "runs"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "project": { "type": "string" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "runs": { "type": "array", "items": { "$ref": "#/$defs/run" } }
+  },
+  "$defs": {
+    "status": { "enum": ["passed", "passed_on_retry", "assertion_failed", "environment_error", "not_run"] },
+    "run": {
+      "type": "object",
+      "required": ["id", "label", "engine", "environment", "status", "evidence", "cases"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "engine": { "enum": ["playwright", "maestro"] },
+        "environment": {
+          "type": "object",
+          "required": ["target", "deviceType"],
+          "properties": {
+            "target": { "type": "string" },
+            "deviceType": { "type": "string" }
+          }
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "executedAt": { "type": "string", "format": "date-time" },
+        "durationMs": { "type": "number", "minimum": 0 },
+        "exitCode": { "type": ["integer", "null"] },
+        "error": { "type": "string" },
+        "dataPreparation": { "$ref": "#/$defs/dataPreparation" },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "cases": { "type": "array", "items": { "$ref": "#/$defs/case" } }
+      }
+    },
+    "dataPreparation": {
+      "type": "object",
+      "required": ["label", "status", "checks", "evidence"],
+      "properties": {
+        "label": { "type": "string" },
+        "status": { "enum": ["passed", "prepare_failed", "verify_failed"] },
+        "error": { "type": "string" },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "expected", "actual", "status"],
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "expected": {},
+              "actual": {},
+              "status": { "enum": ["passed", "mismatch", "missing"] }
+            }
+          }
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "required": ["id", "title", "expected", "actual", "status", "attempts"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "expected": {},
+        "actual": {},
+        "status": { "$ref": "#/$defs/status" },
+        "reason": { "type": "string" },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["status", "actual"],
+            "properties": {
+              "status": { "$ref": "#/$defs/status" },
+              "actual": {},
+              "reason": { "type": "string" },
+              "durationMs": { "type": ["number", "null"] },
+              "nativeStatus": { "type": "string" },
+              "environment": { "type": "object" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

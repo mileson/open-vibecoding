@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Maestro uses one XCTest relay on the explicitly selected simulator.
+if [[ "${1:-}" == "test-without-building" ]]; then
+  exec /usr/bin/xcodebuild "$@" -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1
+fi
+exec /usr/bin/xcodebuild "$@"

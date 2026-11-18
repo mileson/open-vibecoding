@@ -1,0 +1,25 @@
+appId: org.openvibecoding.PhotoSelection
+---
+- assertVisible: 已选 0 张
+- tapOn:
+    id: photo-P01
+- tapOn:
+    id: photo-P02
+- tapOn:
+    id: photo-P03
+- tapOn:
+    id: photo-P04
+- tapOn:
+    id: photo-P05
+- tapOn:
+    id: photo-P06
+- tapOn:
+    id: photo-P07
+- tapOn:
+    id: photo-P08
+- tapOn:
+    id: photo-P09
+- tapOn:
+    id: search
+- tapOn:
+    id: photo-P10

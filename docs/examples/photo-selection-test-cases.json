@@ -1,0 +1,86 @@
+{
+  "project": "相册选图最多 9 张",
+  "scope": "选图上限、相册切换到搜索，以及发起页收到的照片名单。",
+  "summary": "选满 9 张后，切到搜索也要拦住第 10 张。点完成，发起页应收到原来的 9 张。",
+  "cases": [
+    {
+      "id": "allow-ninth",
+      "feature": "选图上限",
+      "title": "已有 8 张时允许选第 9 张",
+      "layer": "unit",
+      "priority": "medium",
+      "target": "项目单测",
+      "input": "已选 P01–P08，待加入的照片是 P09。",
+      "steps": ["调用选图规则，尝试加入 P09。"],
+      "expected": "允许加入，名单为 P01–P09。",
+      "assertions": ["返回或状态表明加入成功。", "比较名单中的 9 个 ID，确认原 8 个保留且包含 P09。"]
+    },
+    {
+      "id": "reject-tenth",
+      "feature": "选图上限",
+      "title": "已有 9 张时拒绝第 10 张",
+      "layer": "unit",
+      "priority": "high",
+      "target": "项目单测",
+      "input": "已选 P01–P09，待加入的照片是 P10。",
+      "steps": ["调用选图规则，尝试加入 P10。"],
+      "expected": "拒绝加入，原名单保持。",
+      "assertions": ["核对加入操作被拒绝。", "比较变更前后的 ID 名单，确认 P01–P09 全部保留且没有 P10。"]
+    },
+    {
+      "id": "album-search-shared-selection",
+      "feature": "相册与搜索共享已选名单",
+      "title": "相册选满后，搜索沿用同一份名单",
+      "layer": "api",
+      "priority": "high",
+      "input": "初始已选为空。相册可选 P01–P09，搜索可找到 P10。两个入口接入同一个选图会话。",
+      "steps": [
+        "通过相册模块依次选中 P01–P09。",
+        "从搜索模块读取当前已选名单，再通过搜索模块尝试加入 P10。",
+        "再次从两个模块读取已选照片 ID。"
+      ],
+      "expected": "搜索能读到 P01–P09，拒绝加入 P10，两个入口的名单仍是 P01–P09。",
+      "assertions": [
+        "尝试超选前，搜索模块读到的名单与相册模块一致，均为 P01–P09。",
+        "搜索模块返回达到选图上限。",
+        "两个入口的名单仍为 P01–P09，逐项核对且不含 P10。"
+      ]
+    },
+    {
+      "id": "blocked",
+      "feature": "跨入口选图",
+      "title": "切到搜索后拦截第 10 张",
+      "layer": "e2e",
+      "priority": "high",
+      "target": "Playwright／Maestro",
+      "input": "从发起页打开相册，已选为空。相册有 P01–P09，搜索可找到 P10。",
+      "steps": ["在相册选 P01–P09。", "切到搜索，点击 P10。"],
+      "expected": "出现上限提示，P10 未选中。",
+      "assertions": ["搜索页显示最多选择 9 张的提示。", "P10 的选中状态保持为未选中。"]
+    },
+    {
+      "id": "selection",
+      "feature": "跨入口选图",
+      "title": "超选后保留原来的 9 张",
+      "layer": "e2e",
+      "priority": "high",
+      "target": "Playwright／Maestro",
+      "input": "从空选中状态开始，相册有 P01–P09，搜索可找到 P10。",
+      "steps": ["从相册选 P01–P09。", "切到搜索点 P10，读取当前已选名单。"],
+      "expected": "当前已选 ID 仍为 P01–P09。",
+      "assertions": ["比较尝试前后的已选 ID，确认没有少掉 P01，也没有混入 P10。"]
+    },
+    {
+      "id": "returned",
+      "feature": "返回选图结果",
+      "title": "完成后发起页收到原名单",
+      "layer": "e2e",
+      "priority": "high",
+      "target": "Playwright／Maestro",
+      "input": "从发起页打开相册，已选为空。相册有 P01–P09，搜索可找到 P10。",
+      "steps": ["从相册选 P01–P09。", "切到搜索点 P10。", "点完成，回到发起页。"],
+      "expected": "发起页收到 P01–P09。",
+      "assertions": ["在发起页读取实际收到的照片 ID，逐项比较 P01–P09。", "确认实际名单中没有 P10。"]
+    }
+  ]
+}
