@@ -2863,8 +2863,8 @@ function allowHook(additionalContext = null, outputEventName = eventName) {
 }
 
 function capabilityReminder(root) {
-  const router = path.join(root, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-router', 'SKILL.md');
-  if (!fs.existsSync(router)) return null;
+  const router = '.agents/internal-skills/open-vibecoding-router/SKILL.md';
+  if (!fs.existsSync(path.join(root, router))) return null;
   return [
     `Open VibeCoding 场景入口：${router}。`,
     '按本轮用户目标和已有证据选择相关子能力，读取后落实适用方法；已读且目标未变时复用上下文。由你自主选择与拆解，不按固定关键词派发，不要求五层全部经过。',

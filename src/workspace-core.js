@@ -356,7 +356,6 @@ async function ensureWorkspaceSkeleton(projectRoot, options = {}) {
   await fs.mkdir(cjoin(workspaceRoot, 'growth'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'incidents'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'patterns'), { recursive: true });
-  await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'skills'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'candidates'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'drafts'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'benchmarks', 'inbox'), { recursive: true });
@@ -683,7 +682,6 @@ async function migrateWorkspaceSkeleton(projectRoot, options = {}) {
   await fs.mkdir(cjoin(workspaceRoot, 'growth'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'incidents'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'patterns'), { recursive: true });
-  await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'skills'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'candidates'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'knowledge', 'drafts'), { recursive: true });
   await fs.mkdir(cjoin(workspaceRoot, 'benchmarks', 'inbox'), { recursive: true });
@@ -1147,7 +1145,7 @@ async function shouldIgnoreWorkspaceScenarioEntry(projectRoot, entry, managedPat
     return docsDirectoryIsOpenPrdBootstrap(projectRoot);
   }
 
-  if (['.codex', '.claude', '.cursor'].includes(entry.name)) {
+  if (['.agents', '.gemini', '.codex', '.claude', '.cursor'].includes(entry.name)) {
     return directoryContainsOnlyManagedBootstrap(projectRoot, entry.name, managedPaths);
   }
 

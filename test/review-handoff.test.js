@@ -118,15 +118,15 @@ test('invalid state does not copy, and an in-flight copy cannot be submitted twi
 test('installed internal harness carries runnable component and contract without exposing a new menu skill', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ovc-handoff-install-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
-  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n');
+  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n.open-vibecoding/quality/project-index.json\n.open-vibecoding/quality/project-index.json.lock\n');
   const result = await setupOpenPrdAgentIntegration(root, { tools: 'codex,claude,cursor', enableUserCodexConfig: false, openprdHome: path.join(root, 'registry') });
   assert.equal(result.ok, true);
   assert.ok((await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')).includes('references/review-handoff.md'));
-  for (const base of ['.open-vibecoding/harness/internal-skills', '.claude/skills']) {
+  for (const base of ['.agents/internal-skills']) {
     const installed = await fs.readFile(path.join(root, base, 'open-vibecoding-harness/references/review-handoff.html'), 'utf8');
     new vm.Script(installed.match(/<script>([\s\S]*?)<\/script>/)[1]);
     assert.ok(installed.includes('复制评审结果给 AI'));
     await fs.access(path.join(root, base, 'open-vibecoding-harness/references/review-handoff.md'));
   }
-  assert.equal((await fs.readdir(path.join(root, '.codex/skills'))).some((name) => name.includes('handoff')), false);
+  assert.equal((await fs.readdir(path.join(root, '.agents/skills'))).some((name) => name.includes('handoff')), false);
 });

@@ -72,6 +72,7 @@ import { printGateResult } from './cli/gate-print.js';
 import { CAPABILITY_HANDOFF_CONTRACT, getCapability, loadProjectCapabilityCatalog } from './capability-catalog.js';
 import { iconCutout } from './icon-cutout.js';
 import { visualGrid, imageAnnotate } from './visual-assistance.js';
+import { migrateProjectSkills } from './project-skill-layout.js';
 import { initProjectQuality, runProjectQualityCommand } from './project-quality.js';
 import { runTestReportCommand } from './cli/test-report-command.js';
 import { runToolDependenciesCommand } from './cli/tool-dependencies-command.js';
@@ -99,12 +100,14 @@ async function initWorkspace(projectRoot, options) {
   const standards = await initStandardsWorkspace(projectRoot, { force: Boolean(options.force) });
   const quality = await initQualityWorkspace(projectRoot, { force: Boolean(options.force) });
   const growth = await initGrowthWorkspace(projectRoot);
+  const skillMigration = await migrateProjectSkills(projectRoot);
   const projectQuality = await initProjectQuality(projectRoot);
   const agentIntegration = await setupOpenPrdAgentIntegration(projectRoot, {
     tools: options.tools ?? 'all',
     force: Boolean(options.force),
     action: 'init',
     projectQuality,
+    skillMigration,
     enableUserCodexConfig: Boolean(options.enableUserCodexConfig),
     codexHome: options.codexHome,
     cursorHome: options.cursorHome,

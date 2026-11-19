@@ -32,11 +32,10 @@ test('existing installations receive internal skill, examples and discoverable p
   const options = { tools: 'codex,claude,cursor', enableUserCodexConfig: false,
     openprdHome: path.join(root, 'registry') };
   await fs.writeFile(path.join(root, 'AGENTS.md'), '# Existing project guidance\n');
-  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n');
+  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n.open-vibecoding/quality/project-index.json\n.open-vibecoding/quality/project-index.json.lock\n');
   assert.equal((await setupOpenPrdAgentIntegration(root, options)).ok, true);
   // Model an installation from before this child capability existed.
   await fs.rm(path.join(root, path.dirname(installedSkillPath(skill))), { recursive: true });
-  await fs.rm(path.join(root, '.claude/skills', skill), { recursive: true });
   assert.equal((await updateOpenPrdAgentIntegration(root, options)).ok, true);
   const source = await fs.readFile(new URL(`../skills/${skill}/SKILL.md`, import.meta.url), 'utf8');
   const body = source.replace(/^---\n[\s\S]*?\n---\n/, '').trim();
@@ -47,11 +46,10 @@ test('existing installations receive internal skill, examples and discoverable p
     assert.ok(installed.includes(body), adapter);
     const installedExamples = await fs.readFile(path.join(root, path.dirname(entry), 'references/business-scenarios.md'), 'utf8');
     assert.equal(installedExamples.replace(/^<!--[\s\S]*?-->\s*/, '').trim(), examples.trim());
-    if (adapter === 'claude') assert.match(installed, /user-invocable: false/);
     const router = await fs.readFile(path.join(root, installedSkillPath('open-vibecoding-router', adapter)), 'utf8');
     assert.ok(router.includes(skill));
   }
-  await assert.rejects(fs.access(path.join(root, '.codex/skills', skill)));
+  await assert.rejects(fs.access(path.join(root, '.agents/skills', skill)));
   const agents = await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8');
   assert.ok(agents.startsWith('# Existing project guidance\n'));
   assert.ok(agents.includes(installedSkillPath(skill)));

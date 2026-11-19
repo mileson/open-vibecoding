@@ -152,9 +152,9 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.deepEqual(manifest.hooks.events, ['UserPromptSubmit', 'PreToolUse', 'Stop']);
     assert.ok(manifest.managedFiles.some((file) => file.path === '.codex/hooks/open-vibecoding-hook.mjs'));
     assert.ok(manifest.managedFiles.some((file) => file.path === '.open-vibecoding/harness/command-catalog.md'));
-    assert.ok(manifest.managedFiles.some((file) => file.path === '.codex/skills/open-vibecoding-frontend-design/SKILL.md'));
-    assert.ok(manifest.managedFiles.some((file) => file.path === '.codex/skills/open-vibecoding-product-diagnosis/SKILL.md'));
-    assert.ok(manifest.managedFiles.some((file) => file.path === '.codex/skills/open-vibecoding-interaction-design/SKILL.md'));
+    assert.ok(manifest.managedFiles.some((file) => file.path === '.agents/skills/open-vibecoding-frontend-design/SKILL.md'));
+    assert.ok(manifest.managedFiles.some((file) => file.path === '.agents/skills/open-vibecoding-product-diagnosis/SKILL.md'));
+    assert.ok(manifest.managedFiles.some((file) => file.path === '.agents/skills/open-vibecoding-interaction-design/SKILL.md'));
     assert.equal(manifest.hooks.runtimeEnvironment, '.open-vibecoding/harness/runtime-environment.json');
     assert.equal(manifest.runtimeDetection.version, 1);
     assert.equal(manifest.runtimeDetection.activeEvidencePriority[0].id, 'hook-session-payload');
@@ -184,15 +184,15 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(generatedAgents.includes('不要求生成 requirement、PRD、review.html、change 或 tasks'));
     assert.ok(generatedAgents.includes('open-vibecoding capabilities list'));
     assert.ok(generatedAgents.includes('不用固定关键词匹配'));
-    assert.ok((await fs.readFile(path.join(project, '.codex', 'skills', 'open-vibecoding-product-diagnosis', 'SKILL.md'), 'utf8')).includes('# 产品诊断'));
-    assert.ok((await fs.readFile(path.join(project, '.codex', 'skills', 'open-vibecoding-product-research', 'SKILL.md'), 'utf8')).includes('# 用户与市场调研'));
-    const generatedRouterSkill = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8');
+    assert.ok((await fs.readFile(path.join(project, '.agents', 'skills', 'open-vibecoding-product-diagnosis', 'SKILL.md'), 'utf8')).includes('# 产品诊断'));
+    assert.ok((await fs.readFile(path.join(project, '.agents', 'skills', 'open-vibecoding-product-research', 'SKILL.md'), 'utf8')).includes('# 用户与市场调研'));
+    const generatedRouterSkill = await fs.readFile(path.join(project, '.agents', 'internal-skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8');
     assert.ok(generatedRouterSkill.includes('不以 PRD、change、tasks 或 review.html 为默认产物'));
-    const generatedIntakeSkill = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-requirement-intake', 'SKILL.md'), 'utf8');
+    const generatedIntakeSkill = await fs.readFile(path.join(project, '.agents', 'internal-skills', 'open-vibecoding-requirement-intake', 'SKILL.md'), 'utf8');
     assert.ok(generatedIntakeSkill.includes('不运行 `capture -> classify -> synthesize -> review -> change -> tasks`'));
-    const generatedHarnessSkill = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-harness', 'SKILL.md'), 'utf8');
+    const generatedHarnessSkill = await fs.readFile(path.join(project, '.agents', 'internal-skills', 'open-vibecoding-harness', 'SKILL.md'), 'utf8');
     assert.ok(generatedHarnessSkill.includes('不要求固定起手指令或线性流程'));
-    const generatedTestSkill = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-test-strategy', 'SKILL.md'), 'utf8');
+    const generatedTestSkill = await fs.readFile(path.join(project, '.agents', 'internal-skills', 'open-vibecoding-test-strategy', 'SKILL.md'), 'utf8');
     assert.ok(generatedTestSkill.includes('不要求创建 tasks、evidence-plan、Markdown/HTML 测试报告'));
     const generatedHook = await fs.readFile(path.join(project, '.codex', 'hooks', 'open-vibecoding-hook.mjs'), 'utf8');
     assert.ok(generatedHook.includes('不再为每条 L2 提示创建 requirement 状态文件'));
@@ -310,7 +310,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     const sessionStartPayload = JSON.parse(sessionStartResult.stdout);
     assert.equal(sessionStartPayload.continue, true);
     assert.equal(sessionStartPayload.hookSpecificOutput.hookEventName, 'SessionStart');
-    assert.ok(sessionStartPayload.hookSpecificOutput.additionalContext.includes(path.join(project, '.open-vibecoding/harness/internal-skills/open-vibecoding-router/SKILL.md')));
+    assert.ok(sessionStartPayload.hookSpecificOutput.additionalContext.includes('.agents/internal-skills/open-vibecoding-router/SKILL.md'));
 
     for (const eventName of ['UserPromptSubmit']) {
       const eventResult = spawnSync(process.execPath, [path.join(project, '.codex', 'hooks', 'open-vibecoding-hook.mjs'), eventName], {
@@ -383,7 +383,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
     assert.ok(observedRuntimeEnvironment.active.observedCapabilities.includes('codex-hooks'));
     const hookState = JSON.parse(await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'hook-state.json'), 'utf8'));
     assert.equal(hookState.runtimeEnvironment.activeClient, 'codex');
-    await fs.appendFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-harness', 'SKILL.md'), '\nmanual drift\n');
+    await fs.appendFile(path.join(project, '.agents', 'internal-skills', 'open-vibecoding-harness', 'SKILL.md'), '\nmanual drift\n');
     const drifted = await doctorWorkspace(project, { tools: 'codex', enableUserCodexConfig: true, codexHome });
     assert.equal(drifted.ok, false);
     assert.ok(drifted.agentIntegration.drift.errors.some((error) => error.includes('checksum-drift')));
@@ -394,6 +394,7 @@ test('setup enables Codex hooks while preserving user hook groups', async () => 
       codexHome,
     });
     assert.equal(updated.ok, true);
+    assert.match(await fs.readFile(path.join(project, '.agents/internal-skills/open-vibecoding-harness/SKILL.md'), 'utf8'), /manual drift/);
     const repaired = await doctorWorkspace(project, { tools: 'codex', enableUserCodexConfig: true, codexHome });
     assert.equal(repaired.ok, true);
     assert.equal(repaired.agentIntegration.drift.ok, true);
@@ -581,41 +582,22 @@ test('doctor distinguishes unmanaged generated skill files from missing files', 
     codexHome,
   });
 
-  const skillPath = path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-requirement-intake', 'SKILL.md');
+  const skillPath = path.join(project, '.agents', 'internal-skills', 'open-vibecoding-requirement-intake', 'SKILL.md');
   await fs.writeFile(skillPath, '# Local custom intake skill\n');
 
   const doctor = await doctorWorkspace(project, { tools: 'codex', enableUserCodexConfig: true, codexHome });
   assert.equal(doctor.ok, false);
-  const check = doctor.agentIntegration.checks.find((item) => item.path === '.open-vibecoding/harness/internal-skills/open-vibecoding-requirement-intake/SKILL.md');
+  const check = doctor.agentIntegration.checks.find((item) => item.path === '.agents/internal-skills/open-vibecoding-requirement-intake/SKILL.md');
   assert.equal(check.ok, false);
-  assert.equal(check.reason, 'missing-generated-marker');
-  assert.ok(check.message.includes('lacks OPEN_VIBECODING:GENERATED'));
-  assert.ok(check.repairHint.includes('open-vibecoding update . --force'));
-  assert.ok(doctor.errors.some((error) => error.includes('missing-generated-marker') || error.includes('OPEN_VIBECODING:GENERATED')));
-
+  assert.equal(check.reason, 'check-failed');
+  assert.match(check.message, /invalid shared/);
   const update = await updateAgentIntegrationWorkspace(project, {
-    tools: 'codex',
-    enableUserCodexConfig: true,
-    codexHome,
+    tools: 'codex', enableUserCodexConfig: true, codexHome, force: true,
   });
   assert.equal(update.ok, false);
-  const skipped = update.changes.find((change) => change.path === '.open-vibecoding/harness/internal-skills/open-vibecoding-requirement-intake/SKILL.md');
-  assert.equal(skipped.status, 'skipped-user-file');
-  assert.equal(skipped.reason, 'missing-generated-marker');
-  assert.ok(skipped.repairHint.includes('open-vibecoding update . --force'));
+  const skipped = update.changes.find(change => change.path === '.agents/internal-skills/open-vibecoding-requirement-intake/SKILL.md');
+  assert.equal(skipped.status, 'preserved-custom-skill');
   assert.equal(await fs.readFile(skillPath, 'utf8'), '# Local custom intake skill\n');
-
-  const logs = [];
-  const originalLog = console.log;
-  console.log = (...args) => logs.push(args.join(' '));
-  try {
-    assert.equal(await main(['doctor', project, '--tools', 'codex']), 1);
-  } finally {
-    console.log = originalLog;
-  }
-  assert.ok(logs.some((line) => line.includes('未受管') && line.includes('.open-vibecoding/harness/internal-skills/open-vibecoding-requirement-intake/SKILL.md')));
-  assert.ok(logs.some((line) => line.includes('missing-generated-marker')));
-  assert.ok(logs.some((line) => line.includes('修复建议') && line.includes('open-vibecoding update . --force')));
 });
 
 test('setup strips legacy Codex hook feature flags and keeps other feature keys', async () => {
@@ -822,12 +804,9 @@ test('generated skills keep legacy records read-only across adapters', async () 
   const project = await makeTempProject();
   await setupAgentIntegrationWorkspace(project, { tools: 'all' });
   for (const skillId of ['open-vibecoding-router', 'open-vibecoding-requirement-intake', 'open-vibecoding-shared', 'open-vibecoding-harness']) {
-    const codex = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', skillId, 'SKILL.md'), 'utf8');
-    const claude = await fs.readFile(path.join(project, '.claude', 'skills', skillId, 'SKILL.md'), 'utf8');
-    const strip = (text) => text.replace(/<!-- OPEN_VIBECODING:GENERATED\n[^]*?-->\n?/g, '')
-      .replace(/^user-invocable: false\n/gm, '')
-      .replaceAll('.claude/skills/', '.open-vibecoding/harness/internal-skills/').trim();
-    assert.equal(strip(codex), strip(claude));
+    const codex = await fs.readFile(path.join(project, '.agents', 'internal-skills', skillId, 'SKILL.md'), 'utf8');
+    await assert.rejects(fs.access(path.join(project, '.claude', 'skills', skillId, 'SKILL.md')), { code: 'ENOENT' });
+    assert.match(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'), /@AGENTS\.md/);
     assert.ok(!codex.includes('由 Agent 在后台维护 PRD/review/change/tasks'));
   }
   const catalog = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'command-catalog.md'), 'utf8');
@@ -838,8 +817,8 @@ test('generated guidance leaves review artifact choice to the Agent', async () =
   const project = await makeTempProject();
   await setupAgentIntegrationWorkspace(project, { tools: 'all' });
   const agents = await fs.readFile(path.join(project, 'AGENTS.md'), 'utf8');
-  const router = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8');
-  const harness = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-harness', 'SKILL.md'), 'utf8');
+  const router = await fs.readFile(path.join(project, '.agents', 'internal-skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8');
+  const harness = await fs.readFile(path.join(project, '.agents', 'internal-skills', 'open-vibecoding-harness', 'SKILL.md'), 'utf8');
   assert.ok(agents.includes('普通任务不为留痕生成文件'));
   assert.ok(router.includes('用户明确要文档、设计稿或审查界面时再作为交付物制作'));
   assert.ok(harness.includes('普通任务不生成 `review.html`'));

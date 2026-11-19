@@ -23,7 +23,7 @@ test('update restores research capabilities for both adapters without replacing 
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ovc-research-test-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.writeFile(path.join(root, 'AGENTS.md'), '# Custom project guidance\n');
-  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n');
+  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n.open-vibecoding/quality/project-index.json\n.open-vibecoding/quality/project-index.json.lock\n');
   const options = { tools: 'codex,claude', enableUserCodexConfig: false, openprdHome: path.join(root, 'registry') };
   assert.equal((await setupOpenPrdAgentIntegration(root, options)).ok, true);
   const ids = ['competitor-growth-analysis', 'competitor-tracking', 'competitive-evidence'];
@@ -37,5 +37,5 @@ test('update restores research capabilities for both adapters without replacing 
       assert.ok((await fs.readFile(path.join(root, installedSkillPath(skill, adapter)), 'utf8')).includes(body));
     }
   }
-  await assert.rejects(fs.access(path.join(root, '.codex/skills/open-vibecoding-competitive-evidence')));
+  await assert.rejects(fs.access(path.join(root, '.agents/skills/open-vibecoding-competitive-evidence')));
 });

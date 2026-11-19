@@ -31,10 +31,9 @@ test('update restores the internal helper and its examples while preserving proj
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const options = { tools: 'codex,claude,cursor', enableUserCodexConfig: false, openprdHome: path.join(root, 'registry') };
   await fs.writeFile(path.join(root, 'AGENTS.md'), '# Project-specific guidance\n');
-  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n');
+  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n.open-vibecoding/quality/project-index.json\n.open-vibecoding/quality/project-index.json.lock\n');
   assert.equal((await setupOpenPrdAgentIntegration(root, options)).ok, true);
   await fs.rm(path.join(root, path.dirname(installedSkillPath(skill))), { recursive: true });
-  await fs.rm(path.join(root, '.claude/skills', skill), { recursive: true });
   assert.equal((await updateOpenPrdAgentIntegration(root, options)).ok, true);
   const body = (await fs.readFile(new URL(`../skills/${skill}/SKILL.md`, import.meta.url), 'utf8')).replace(/^---\n[\s\S]*?\n---\n/, '').trim();
   const examples = (await fs.readFile(new URL(`../skills/${skill}/references/business-scenarios.md`, import.meta.url), 'utf8')).trim();
@@ -42,13 +41,12 @@ test('update restores the internal helper and its examples while preserving proj
     const entry = installedSkillPath(skill, adapter);
     const installed = await fs.readFile(path.join(root, entry), 'utf8');
     assert.ok(installed.includes(body));
-    if (adapter === 'claude') assert.match(installed, /user-invocable: false/);
     const ref = await fs.readFile(path.join(root, path.dirname(entry), 'references/business-scenarios.md'), 'utf8');
     assert.equal(ref.replace(/^<!--[\s\S]*?-->\s*/, '').trim(), examples);
     const router = await fs.readFile(path.join(root, installedSkillPath('open-vibecoding-router', adapter)), 'utf8');
     assert.ok(router.includes(skill));
   }
-  await assert.rejects(fs.access(path.join(root, '.codex/skills', skill)));
+  await assert.rejects(fs.access(path.join(root, '.agents/skills', skill)));
   const agents = await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8');
   assert.ok(agents.startsWith('# Project-specific guidance\n'));
   assert.ok(agents.includes(installedSkillPath(skill)));

@@ -25,47 +25,44 @@ test('project update preserves full skill discovery descriptions separately from
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const options = { tools: 'codex,claude,cursor', enableUserCodexConfig: false, openprdHome: path.join(root, 'registry') };
   await fs.writeFile(path.join(root, 'AGENTS.md'), '# Keep project guidance\n');
-  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n');
+  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n.open-vibecoding/quality/project-index.json\n.open-vibecoding/quality/project-index.json.lock\n');
   assert.equal((await setupOpenPrdAgentIntegration(root, options)).ok, true);
+  for (const id of Object.keys(USER_SKILL_PRESENTATION)) {
+    const canonical = CANONICAL_SKILLS.find(skill => skill.id === id);
+    const source = await fs.readFile(new URL(`../skills/${id}/SKILL.md`, import.meta.url), 'utf8');
+    const installed = await fs.readFile(path.join(root, installedSkillPath(id)), 'utf8');
+    assert.equal(metadata(installed).description, canonical.sourceSkill ? metadata(source).description : canonical.description, id);
+  }
   const name = 'open-vibecoding-visual-direction-review';
   const file = path.join(root, installedSkillPath(name));
   const old = await fs.readFile(file, 'utf8');
-  await fs.writeFile(file, old.replace(/^description:.*$/m, `description: ${USER_SKILL_PRESENTATION[name].description}`));
+  const customized = old.replace(/^description:.*$/m, 'description: Local visual review guidance');
+  await fs.writeFile(file, customized);
   assert.equal((await updateOpenPrdAgentIntegration(root, options)).ok, true);
-  for (const adapter of ['codex', 'claude']) {
-    for (const name of Object.keys(USER_SKILL_PRESENTATION)) {
-      const source = await fs.readFile(new URL(`../skills/${name}/SKILL.md`, import.meta.url), 'utf8');
-      const installed = await fs.readFile(path.join(root, installedSkillPath(name, adapter)), 'utf8');
-      assert.equal(metadata(installed).description, CANONICAL_SKILLS.find(s => s.id === name).sourceSkill ? metadata(source).description : CANONICAL_SKILLS.find(s => s.id === name).description, name);
-    }
-    const body = await fs.readFile(path.join(root, installedSkillPath(skill, adapter)), 'utf8');
-    assert.equal(metadata(body).name, skill);
-    if (adapter === 'claude') assert.equal(metadata(body)['user-invocable'], false);
-    const router = await fs.readFile(path.join(root, installedSkillPath('open-vibecoding-router', adapter)), 'utf8');
-    assert.ok(router.includes(installedSkillPath(skill, adapter)));
+  assert.equal(await fs.readFile(file, 'utf8'), customized);
+  const body = await fs.readFile(path.join(root, installedSkillPath(skill)), 'utf8');
+  assert.equal(metadata(body).name, skill);
+  const router = await fs.readFile(path.join(root, installedSkillPath('open-vibecoding-router')), 'utf8');
+  assert.ok(router.includes(installedSkillPath(skill)));
+  const boundary = 'open-vibecoding-public-content-boundary';
+  assert.equal(metadata(await fs.readFile(path.join(root, installedSkillPath(boundary)), 'utf8')).name, boundary);
+  const refinement = 'open-vibecoding-visual-refinement';
+  const refinementPath = installedSkillPath(refinement);
+  const content = await fs.readFile(path.join(root, refinementPath), 'utf8');
+  assert.equal(metadata(content).name, refinement);
+  const examples = path.join(root, path.dirname(refinementPath), 'references/scenarios.md');
+  assert.ok((await fs.readFile(examples, 'utf8')).includes('订单列表'));
+  for (const caller of ['interaction-design', 'frontend-design', 'visual-direction-review', 'ui-interaction-review', 'router']) {
+    const callingSkill = await fs.readFile(path.join(root, installedSkillPath(`open-vibecoding-${caller}`)), 'utf8');
+    assert.ok(callingSkill.includes(caller === 'router' ? refinementPath : `$${refinement}`), caller);
   }
-  for (const adapter of ['codex', 'claude']) {
-    const file = path.join(root, installedSkillPath('open-vibecoding-public-content-boundary', adapter));
-    assert.equal(metadata(await fs.readFile(file, 'utf8')).name, 'open-vibecoding-public-content-boundary');
-    const refinement = 'open-vibecoding-visual-refinement';
-    const refinementPath = installedSkillPath(refinement, adapter);
-    const content = await fs.readFile(path.join(root, refinementPath), 'utf8');
-    assert.equal(metadata(content).name, refinement);
-    if (adapter === 'claude') assert.equal(metadata(content)['user-invocable'], false);
-    const examples = path.join(root, path.dirname(refinementPath), 'references/scenarios.md');
-    assert.ok((await fs.readFile(examples, 'utf8')).includes('订单列表'));
-    for (const caller of ['interaction-design', 'frontend-design', 'visual-direction-review', 'ui-interaction-review', 'router']) {
-      const body = await fs.readFile(path.join(root, installedSkillPath(`open-vibecoding-${caller}`, adapter)), 'utf8');
-      assert.ok(body.includes(caller === 'router' ? refinementPath : `$${refinement}`), `${adapter}: ${caller} resolves internal refinement`);
-    }
-  }
-  await assert.rejects(fs.access(path.join(root, '.codex/skills/open-vibecoding-visual-refinement')));
+  await assert.rejects(fs.access(path.join(root, '.agents/skills/open-vibecoding-visual-refinement')));
   assert.ok((await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')).includes(installedSkillPath('open-vibecoding-visual-refinement')));
-  await assert.rejects(fs.access(path.join(root, '.codex/skills/open-vibecoding-public-content-boundary')));
-  const menu = parse(await fs.readFile(path.join(root, '.codex/skills', name, 'agents/openai.yaml'), 'utf8'));
+  await assert.rejects(fs.access(path.join(root, '.agents/skills/open-vibecoding-public-content-boundary')));
+  const menu = parse(await fs.readFile(path.join(root, '.agents/skills', name, 'agents/openai.yaml'), 'utf8'));
   assert.equal(menu.interface.short_description, USER_SKILL_PRESENTATION[name].description);
   assert.ok((await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')).startsWith('# Keep project guidance\n'));
-  await assert.rejects(fs.access(path.join(root, '.codex/skills', skill)));
+  await assert.rejects(fs.access(path.join(root, '.agents/skills', skill)));
 });
 
 test('visual refinement is an internal interaction capability composed by design and review', () => {

@@ -1,3 +1,5 @@
+import { projectSkillPath, validSkillName } from './project-skill-layout.js';
+import { PROJECT_SKILLS_DIR } from './skill-presentation.js';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -14,7 +16,7 @@ import { timestamp } from './time.js';
 
 const KNOWLEDGE_DIR = cjoin('.open-vibecoding', 'knowledge');
 const KNOWLEDGE_INDEX = cjoin(KNOWLEDGE_DIR, 'index.json');
-const KNOWLEDGE_SKILLS_DIR = cjoin(KNOWLEDGE_DIR, 'skills');
+const KNOWLEDGE_SKILLS_DIR = PROJECT_SKILLS_DIR;
 const KNOWLEDGE_CANDIDATES_DIR = cjoin(KNOWLEDGE_DIR, 'candidates');
 const KNOWLEDGE_DRAFTS_DIR = cjoin(KNOWLEDGE_DIR, 'drafts');
 const KNOWLEDGE_ADOPTION_LOG = cjoin(KNOWLEDGE_DIR, 'adoption.jsonl');
@@ -357,7 +359,6 @@ function parseSkillMetadataFromText(markdown) {
 async function ensureKnowledgeWorkspace(projectRoot) {
   await fs.mkdir(knowledgePath(projectRoot, cjoin(KNOWLEDGE_DIR, 'incidents')), { recursive: true });
   await fs.mkdir(knowledgePath(projectRoot, cjoin(KNOWLEDGE_DIR, 'patterns')), { recursive: true });
-  await fs.mkdir(knowledgePath(projectRoot, KNOWLEDGE_SKILLS_DIR), { recursive: true });
   await fs.mkdir(knowledgePath(projectRoot, KNOWLEDGE_CANDIDATES_DIR), { recursive: true });
   await fs.mkdir(knowledgePath(projectRoot, KNOWLEDGE_DRAFTS_DIR), { recursive: true });
   const indexPath = knowledgePath(projectRoot, KNOWLEDGE_INDEX);
@@ -418,10 +419,11 @@ async function readCandidateSupportBundle(projectRoot, candidateId) {
 
 async function hydrateKnowledgeSkillEntry(projectRoot, entry, cache = new Map()) {
   const current = normalizeSkillIndexEntry(entry);
-  const skillPath = current.path
-    ? (path.isAbsolute(current.path) ? path.resolve(current.path) : knowledgePath(projectRoot, current.path))
-    : null;
+  const canonical = validSkillName(current.skillName) ? projectSkillPath(current.skillName) : null;
+  const skillPath = canonical && !current.migrationConflict && current.path === canonical
+    ? path.join(projectRoot, canonical) : null;
   const markdown = skillPath ? await fs.readFile(skillPath, 'utf8').catch(() => '') : '';
+  if (!markdown) return null;
   const parsedSkill = parseSkillMetadataFromText(markdown);
   const candidateIds = extractCandidateIds(current);
   const candidateBundles = [];
@@ -505,6 +507,7 @@ async function hydrateKnowledgeSkills(projectRoot, options = {}) {
   let changed = false;
   for (const skill of index.skills.map((entry) => normalizeSkillIndexEntry(entry))) {
     const hydrated = await hydrateKnowledgeSkillEntry(projectRoot, skill, cache);
+    if (!hydrated) continue;
     hydratedSkills.push(hydrated);
     if (serializeComparable(hydrated) !== serializeComparable(skill)) {
       changed = true;
@@ -513,7 +516,7 @@ async function hydrateKnowledgeSkills(projectRoot, options = {}) {
   if (changed && options.writeBack !== false) {
     await writeKnowledgeIndex(projectRoot, {
       ...index,
-      skills: hydratedSkills,
+      skills: index.skills.map(entry => hydratedSkills.find(item => item.skillName === entry.skillName) ?? entry),
     });
   }
   return {
@@ -865,7 +868,13 @@ function deriveKnowledgeNames(source, options = {}) {
     : `incident-${slugify(sourceRef, 'diagnostic')}`;
   const patternSeed = stablePattern ? deriveStablePatternKey(source) : sourceRef;
   const patternId = `${sourceKind}-${slugify(patternSeed, sourceKind)}`;
-  const skillName = `open-vibecoding-experience-${slugify(patternId)}`;
+  const prefix = 'open-vibecoding-experience-';
+  const proposedName = prefix + slugify(patternId);
+  const digest = crypto.createHash('sha256').update(patternId).digest('hex').slice(0, 10);
+  const asciiStem = patternId.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    .slice(0, 64 - prefix.length - digest.length - 1).replace(/-$/, '');
+  const skillName = validSkillName(proposedName) ? proposedName
+    : prefix + [asciiStem, digest].filter(Boolean).join('-');
   return { incidentId, patternId, skillName };
 }
 

@@ -1,3 +1,4 @@
+import { projectSkillPath, validSkillName, skillMetadata } from './project-skill-layout.js';
 /*
  * 核心功能
  * 声明统筹层、五个执行域、横向最佳实践与可组合场景，并校验增量注册。
@@ -584,9 +585,15 @@ export async function loadProjectCapabilityCatalog(projectRoot) {
   }
   const catalog = buildCapabilityCatalog([contribution]);
   for (const scenario of contribution.scenarios ?? []) {
-    const skillPath = path.join(root, 'skills', scenario.skill, 'SKILL.md');
-    if (!(await fs.stat(skillPath).catch(() => null))?.isFile()) {
-      throw new Error(`扩展场景 ${scenario.id} 缺少项目 Skill: skills/${scenario.skill}/SKILL.md`);
+    if (!validSkillName(scenario.skill)) throw new Error(`扩展场景 ${scenario.id} 的 Skill 名称不符合规范`);
+    const relative = projectSkillPath(scenario.skill);
+    const skillPath = path.join(root, relative);
+    if (!(await fs.lstat(skillPath).catch(() => null))?.isFile()) {
+      throw new Error(`扩展场景 ${scenario.id} 缺少项目 Skill: ${relative}`);
+    }
+    const metadata = skillMetadata(await fs.readFile(skillPath, 'utf8'));
+    if (metadata.name !== scenario.skill || typeof metadata.description !== 'string' || !metadata.description.trim()) {
+      throw new Error(`扩展场景 ${scenario.id} 的 Skill frontmatter 须匹配目录名并提供说明: ${relative}`);
     }
   }
   return catalog;

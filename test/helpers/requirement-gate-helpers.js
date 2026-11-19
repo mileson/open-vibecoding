@@ -99,7 +99,7 @@ export async function writeCodexTranscript(project, sessionId, assistantText) {
 }
 
 export async function seedProjectKnowledgeSkill(project, skillName = 'billing-trace-rollback') {
-  const skillDir = path.join(project, '.open-vibecoding', 'knowledge', 'skills', skillName);
+  const skillDir = path.join(project, '.agents', 'skills', skillName);
   const skillPath = path.join(skillDir, 'SKILL.md');
   await fs.mkdir(skillDir, { recursive: true });
   await fs.writeFile(skillPath, [
@@ -135,7 +135,7 @@ export async function seedProjectKnowledgeSkill(project, skillName = 'billing-tr
     skills: [
       {
         skillName,
-        path: skillPath,
+        path: path.relative(project, skillPath).split(path.sep).join('/'),
         sourceKind: 'manual',
         sourceRef: 'seeded-test-skill',
         touchedFiles: ['src/billing-api.js'],

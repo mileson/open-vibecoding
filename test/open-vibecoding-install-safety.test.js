@@ -59,7 +59,7 @@ test('managed writes block before following a symlinked ancestor', async () => {
   assert.equal((await fs.lstat(linkedSkill)).isSymbolicLink(), true);
 });
 
-test('materialize strategy snapshots a linked skill before updating the local copy', async () => {
+test('migration archives a legacy Skill link without writing into its target', async () => {
   const project = await makeProject('open-vibecoding-install-safety-materialize-');
   const canonical = await makePhysicalTemp('open-vibecoding-canonical-skill-');
   await fs.writeFile(path.join(canonical, 'SKILL.md'), 'canonical source\n', 'utf8');
@@ -75,26 +75,12 @@ test('materialize strategy snapshots a linked skill before updating the local co
     installSafetyBackupRoot: backupRoot,
   }));
 
-  assert.equal((await fs.lstat(linkedSkill)).isSymbolicLink(), false);
-  assert.equal((await fs.lstat(linkedSkill)).isDirectory(), true);
+  await assert.rejects(fs.lstat(linkedSkill), {code:'ENOENT'});
   assert.equal(await fs.readFile(path.join(canonical, 'SKILL.md'), 'utf8'), 'canonical source\n');
-  const localSkill = await fs.readFile(path.join(linkedSkill, 'SKILL.md'), 'utf8');
-  assert.match(localSkill, /OPEN_VIBECODING:GENERATED/);
-  assert.match(localSkill, /adapter=shared/);
-
-  const manifest = JSON.parse(await fs.readFile(
-    path.join(project, '.open-vibecoding', 'harness', 'install-manifest.json'),
-    'utf8',
-  ));
-  assert.equal(manifest.installSafety.symlinkStrategy, 'materialize');
-  assert.equal(manifest.installSafety.materializationCount, 1);
-  assert.equal(manifest.installSafety.materializations[0].path, '.claude/skills/open-vibecoding-router');
-  const backups = await fs.readdir(backupRoot);
-  assert.equal(backups.length, 1);
-  const metadata = JSON.parse(await fs.readFile(path.join(backupRoot, backups[0], 'metadata.json'), 'utf8'));
-  assert.equal(metadata.symlinkPath, linkedSkill);
-  assert.equal(await fs.readFile(path.join(backupRoot, backups[0], 'snapshot', 'SKILL.md'), 'utf8'), 'canonical source\n');
-  assert.equal(result.manifest.installSafety.materializationCount, 1);
+  const archived = result.changes.find(change => change.status === 'archived-legacy-skill-link');
+  assert.equal(await fs.readlink(path.join(project, archived.preservedAt)), canonical);
+  assert.match(await fs.readFile(path.join(project,'.agents/internal-skills/open-vibecoding-router/SKILL.md'),'utf8'), /adapter=shared/);
+  assert.equal(result.manifest.installSafety.materializationCount, 0);
 });
 
 test('user-scoped Codex config writes also block on symlinks', async () => {
@@ -128,16 +114,12 @@ test('shared methods are preserved while visibility and commands remain platform
   }));
 
   const codexSkill = await fs.readFile(
-    path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-router', 'SKILL.md'),
+    path.join(project, '.agents', 'internal-skills', 'open-vibecoding-router', 'SKILL.md'),
     'utf8',
   );
-  const claudeSkill = await fs.readFile(
-    path.join(project, '.claude', 'skills', 'open-vibecoding-router', 'SKILL.md'),
-    'utf8',
-  );
+  await assert.rejects(fs.access(path.join(project, '.claude', 'skills', 'open-vibecoding-router', 'SKILL.md')), {code:'ENOENT'});
+  assert.match(await fs.readFile(path.join(project,'CLAUDE.md'),'utf8'), /@AGENTS\.md/);
   assert.ok(codexSkill.includes('不要求五域全部经过'));
-  assert.ok(claudeSkill.includes('不要求五域全部经过'));
-  assert.match(claudeSkill, /user-invocable: false/);
   assert.match(codexSkill, /adapter=shared/);
 
   const codexCommand = await fs.readFile(path.join(project, '.codex', 'prompts', 'open-vibecoding-standards.md'), 'utf8');
@@ -151,7 +133,7 @@ test('shared methods are preserved while visibility and commands remain platform
   assert.equal(protocol.schema, 'openprd.adapter-protocol.v1');
   assert.equal(protocol.protocolVersion, 1);
   assert.match(protocol.contractDigest, /^[a-f0-9]{64}$/);
-  assert.deepEqual(protocol.generatedContent.sharedSkillConsumers, ['codex', 'claude']);
+  assert.deepEqual(protocol.generatedContent.sharedSkillConsumers, ['codex', 'claude', 'cursor', 'gemini']);
   assert.deepEqual(protocol.clients.map((client) => client.client), ['codex', 'claude', 'cursor']);
   const claude = protocol.clients.find((client) => client.client === 'claude');
   assert.ok(claude.capabilityGaps.some((gap) => gap.capability === 'hooks' && gap.status === 'unsupported'));

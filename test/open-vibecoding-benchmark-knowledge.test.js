@@ -145,7 +145,7 @@ test('benchmark add/list/approve/verify and update generated benchmark guidance'
   assert.ok(indexMd.includes(addResult.source.id));
 
   await updateAgentIntegrationWorkspace(project, { tools: 'codex' });
-  const generatedBenchmarkSkill = await fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-benchmark-router', 'SKILL.md'), 'utf8');
+  const generatedBenchmarkSkill = await fs.readFile(path.join(project, '.agents', 'internal-skills', 'open-vibecoding-benchmark-router', 'SKILL.md'), 'utf8');
   assert.ok(generatedBenchmarkSkill.includes('## Project Benchmark Registry'));
   assert.ok(generatedBenchmarkSkill.includes(addResult.source.id));
   assert.ok(generatedBenchmarkSkill.includes(addResult.source.repo));
@@ -153,7 +153,7 @@ test('benchmark add/list/approve/verify and update generated benchmark guidance'
   assert.ok(generatedBenchmarkSkill.includes('merge recommendation'));
   assert.ok(generatedBenchmarkSkill.includes('change lifecycle'));
   assert.ok(generatedBenchmarkSkill.includes('mandatory skill routing'));
-  const iconSource = await fs.readFile(path.join(project, '.open-vibecoding/harness/internal-skills/open-vibecoding-icon-source/references/sources.md'), 'utf8');
+  const iconSource = await fs.readFile(path.join(project, '.agents/internal-skills/open-vibecoding-icon-source/references/sources.md'), 'utf8');
   assert.match(iconSource, /Phosphor/);
 });
 
@@ -434,8 +434,8 @@ test('knowledge candidate lifecycle list reject archive restore and quality coun
   const pending = await writeCandidate('candidate-pending', 'pending-review', 'Pending candidate');
   await writeCandidate('candidate-noise', 'pending-review', 'Noise candidate');
   await writeCandidate('candidate-merged', 'pending-review', 'Merged candidate');
-  await fs.mkdir(path.join(project, '.open-vibecoding', 'knowledge', 'skills', 'existing-skill'), { recursive: true });
-  await fs.writeFile(path.join(project, '.open-vibecoding', 'knowledge', 'skills', 'existing-skill', 'SKILL.md'), '---\nname: existing-skill\ndescription: existing\n---\n\n# Existing\n');
+  await fs.mkdir(path.join(project, '.agents', 'skills', 'existing-skill'), { recursive: true });
+  await fs.writeFile(path.join(project, '.agents', 'skills', 'existing-skill', 'SKILL.md'), '---\nname: existing-skill\ndescription: existing\n---\n\n# Existing\n');
   await fs.writeFile(path.join(project, '.open-vibecoding', 'knowledge', 'index.json'), `${JSON.stringify({
     version: 1,
     updatedAt: '2026-05-30 10:00:00',
@@ -444,7 +444,7 @@ test('knowledge candidate lifecycle list reject archive restore and quality coun
     skills: [
       {
         skillName: 'existing-skill',
-        path: path.join(project, '.open-vibecoding', 'knowledge', 'skills', 'existing-skill', 'SKILL.md'),
+        path: '.agents/skills/existing-skill/SKILL.md',
         sourceKind: 'manual',
         sourceRef: 'existing',
       },

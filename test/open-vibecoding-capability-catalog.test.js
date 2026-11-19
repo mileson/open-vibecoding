@@ -142,7 +142,7 @@ test('data analysis scenes are independently discoverable without external provi
 test('project contribution is discoverable by CLI without changing built-ins', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'open-vibecoding-capabilities-'));
   try {
-    const skillDir = path.join(root, 'skills', 'example-content-audit');
+    const skillDir = path.join(root, '.agents', 'skills', 'example-content-audit');
     await mkdir(skillDir, { recursive: true });
     await writeFile(path.join(skillDir, 'SKILL.md'), '---\nname: example-content-audit\ndescription: 内容检查。\n---\n\n# 内容检查\n');
     await writeFile(path.join(root, 'open-vibecoding.capabilities.json'), JSON.stringify({
@@ -156,15 +156,15 @@ test('project contribution is discoverable by CLI without changing built-ins', a
     const listed = spawnSync(process.execPath, [BRANDED_CLI, 'capabilities', 'list', '--path', root], { encoding: 'utf8' });
     assert.equal(listed.status, 0, listed.stderr);
     assert.equal(JSON.parse(listed.stdout).scenarios.some((item) => item.id === 'content-audit'), true);
-    const initialized = spawnSync(process.execPath, [BRANDED_CLI, 'init', root, '--tools', 'codex,claude'], { encoding: 'utf8' });
+    const initialized = spawnSync(process.execPath, [BRANDED_CLI, 'init', root, '--tools', 'codex,claude'], { encoding: 'utf8', env: {...process.env, OPEN_VIBECODING_CODEX_HOME:path.join(root,'codex-home'), OPEN_VIBECODING_HOME:path.join(root,'registry')} });
     assert.equal(initialized.status, 0, initialized.stderr);
     assert.equal(existsSync(path.join(root, '.openprd')), false);
     const manifest = JSON.parse(readFileSync(path.join(root, '.open-vibecoding', 'harness', 'install-manifest.json'), 'utf8'));
     assert.equal(existsSync(manifest.cliEntry), true);
     assert.equal(path.basename(manifest.cliEntry), 'open-vibecoding.js');
-    assert.equal(existsSync(path.join(root, '.codex', 'skills', 'example-content-audit', 'SKILL.md')), true);
-    assert.equal(existsSync(path.join(root, '.claude', 'skills', 'example-content-audit', 'SKILL.md')), true);
-    for (const tool of ['.codex', '.claude']) {
+    assert.equal(existsSync(path.join(root, '.agents', 'skills', 'example-content-audit', 'SKILL.md')), true);
+    assert.equal(existsSync(path.join(root, '.claude', 'skills', 'example-content-audit', 'SKILL.md')), false);
+    for (const tool of ['.agents']) {
       for (const skill of ['open-vibecoding-test-strategy', 'open-vibecoding-unit-test-generation', 'open-vibecoding-unit-test-run-and-repair',
         'open-vibecoding-ui-interaction-review', 'open-vibecoding-ui-review-and-repair',
         'open-vibecoding-audio-evidence', 'open-vibecoding-audio-evidence', 'open-vibecoding-icon-system',

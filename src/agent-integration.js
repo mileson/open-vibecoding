@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { CANONICAL_COMMANDS, CANONICAL_SKILLS, renderCommandCatalog } from './agent-canonical-content.js';
 import { buildCapabilityCatalog, loadProjectCapabilityCatalog } from './capability-catalog.js';
-import { skillPresentation, installedSkillPath, renderSkillInterface } from './skill-presentation.js';
+import { skillPresentation, installedSkillPath, renderSkillInterface, PROJECT_SKILLS_DIR } from './skill-presentation.js';
+import { migrateProjectSkills, projectSkillPath, skillMetadata, validSkillName, LEGACY_SKILL_ROOTS } from './project-skill-layout.js';
+import { initProjectQuality } from './project-quality.js';
 import { renderApprovedBenchmarkRegistrySection } from './benchmark.js';
 import { timestamp } from './time.js';
 import { upsertWorkspaceRegistryEntry } from './workspace-registry.js';
@@ -27,7 +29,7 @@ import {
 } from './adapters/install-safety.js';
 
 const PACKAGE_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-const OPEN_VIBECODING_AGENT_TOOLS = ['codex', 'claude', 'cursor'];
+const OPEN_VIBECODING_AGENT_TOOLS = ['codex', 'claude', 'cursor', 'gemini'];
 const OPEN_VIBECODING_EVENTS = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop'];
 const OPEN_VIBECODING_HOOK_PROFILES = {
   lite: ['UserPromptSubmit', 'PreToolUse', 'Stop'],
@@ -178,7 +180,7 @@ const PLATFORM_CAPABILITY_PACK_REGISTRY = [
         id: 'claude-code-hooks',
         name: 'Claude Code hooks 与 agent_type / agent_id 识别',
         status: 'installed-when-tool-enabled',
-        evidence: ['.claude/skills', '.mcp.json', 'hook.agent_type', 'hook.agent_id'],
+        evidence: ['CLAUDE.md', '.agents/skills', '.mcp.json', 'hook.agent_type', 'hook.agent_id'],
       },
       {
         id: 'claude-code-child-session',
@@ -423,7 +425,8 @@ function renderGeneratedFile(params) {
     if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
       throw new Error(`Open VibeCoding JSON generated files require an object root: ${params.source}`);
     }
-    return `${JSON.stringify({ ...parsed, $comment: marker }, null, 2)}\n`;
+    const jsonMarker = generatedMarker({ ...params, body: JSON.stringify(parsed, null, 2) });
+    return `${JSON.stringify({ ...parsed, $comment: jsonMarker }, null, 2)}\n`;
   }
   if (params.commentStyle === 'js') {
     return `${marker}\n\n${body}\n`;
@@ -490,36 +493,35 @@ async function writeProjectCommandCatalog(projectRoot, options, changes) {
   );
 }
 
-function agentContractBody(tools = OPEN_VIBECODING_AGENT_TOOLS, projectQuality) {
-  const entries = [];
-  if (tools.includes('codex')) entries.push(`Codex：\`${installedSkillPath('open-vibecoding-router')}\``);
-  if (tools.includes('claude')) entries.push('Claude：`.claude/skills/open-vibecoding-router/SKILL.md`');
-  if (tools.includes('cursor')) entries.push(`Cursor：读取当前工具的路由源文件 \`${cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-router', 'SKILL.md')}\``);
+function agentContractBody(projectQuality, projectSkills = []) {
   return [
     '## Open VibeCoding',
     '',
-    '用户直接描述任务。Agent 自主理解、拆解、执行和验证；Open VibeCoding 只按场景提供能力和非阻断提醒，不规定固定流程。',
+    '用户直接描述任务。Agent 自主理解、拆解、执行和验证。',
     '',
-    '### 场景入口',
+    '### 项目 Skill',
     '',
-    `- 按当前客户端读取项目内入口：${entries.join('；')}。路径相对于本文件所在项目，不相对于终端当前目录。具体 CLI 查本项目的 \`.open-vibecoding/harness/command-catalog.md\`。`,
+    `- 先按任务查看 \`${PROJECT_SKILLS_DIR}/<name>/SKILL.md\` 中的项目 Skill；直接读取其中的业务规则和验证命令。所有路径相对于项目根目录。`,
+    ...projectSkills.map(({ name, description }) =>
+      `- ${name}：${description} [读取 Skill](${projectSkillPath(name)})`),
     ...(projectQuality ? [
-      `- 涉及本项目代码或验收时，先查项目质量 [Skill](${projectQuality.skill}) 和 [索引](${projectQuality.index})，沿业务规则找到相关检查与实际运行记录。`,
+      `- 涉及本项目代码或验收时，查项目质量 [Skill](${projectQuality.skill}) 和 [索引](${projectQuality.index})，沿业务规则找到相关检查与实际运行记录。`,
     ] : []),
+    `- Open VibeCoding 的通用路由入口是 \`${installedSkillPath('open-vibecoding-router')}\`。命令见 \`.open-vibecoding/harness/command-catalog.md\`。`,
     '- 开始任务或目标改变时，按用户目标判断相关场景，读取所选子能力后落实其中适用的方法。已有上下文足够时复用；不要求重复读文件。需要时用一句业务语言说明采用的方法，交付说明实际验证与缺口。',
-    `- 当前安装的 CLI：\`node "${cjoin(PACKAGE_ROOT, 'bin', 'open-vibecoding.js')}"\`；未安装全局命令时使用此入口，不调用旧版命令。`,
+    '- 使用项目安装的 `open-vibecoding` 命令。仓库自带 CLI 时可以用 `node ./bin/open-vibecoding.js`。',
     '- 产品、交互、研发、测试和工具增强各有独立场景 Skill；按用户意图和现有证据选择，不用固定关键词匹配。场景目录见 `open-vibecoding capabilities list`。',
-    `- 为已有产品设计界面或生成效果图前，即使只画一个弹窗且不写代码，也先读取内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-design-context') : tools.includes('claude') ? installedSkillPath('open-vibecoding-design-context', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-design-context', 'SKILL.md')}\`，主动查看目标界面、相关截图与样式组件；将参考带入生成并在交付前自查，不等用户提醒。`,
-    `- 设计、实现或审查界面时，按实际视觉问题读取内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-visual-refinement') : tools.includes('claude') ? installedSkillPath('open-vibecoding-visual-refinement', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-visual-refinement', 'SKILL.md')}\`，整理层级、对齐、空间、字体、色彩与图标，核对业务含义和实际尺寸；继承项目风格，不固定主题或像素门槛。`,
-    `- 创建或修改用户可见的界面、效果图、文案或导出内容时，读取内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-public-content-boundary') : tools.includes('claude') ? installedSkillPath('open-vibecoding-public-content-boundary', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-public-content-boundary', 'SKILL.md')}\`，将制作过程、实现说明与内部规则隔离在成品之外；用户明确要求时才写入指定文档。交付前检查实际结果并修正源头，保留必要业务反馈，不按禁词表判断。`,
+    `- 为已有产品设计界面或生成效果图前，即使只画一个弹窗且不写代码，也先读取内部能力 \`${installedSkillPath('open-vibecoding-design-context')}\`，主动查看目标界面、相关截图与样式组件；将参考带入生成并在交付前自查，不等用户提醒。`,
+    `- 设计、实现或审查界面时，按实际视觉问题读取内部能力 \`${installedSkillPath('open-vibecoding-visual-refinement')}\`，整理层级、对齐、空间、字体、色彩与图标，核对业务含义和实际尺寸；继承项目风格，不固定主题或像素门槛。`,
+    `- 创建或修改用户可见的界面、效果图、文案或导出内容时，读取内部能力 \`${installedSkillPath('open-vibecoding-public-content-boundary')}\`，将制作过程、实现说明与内部规则隔离在成品之外；用户明确要求时才写入指定文档。交付前检查实际结果并修正源头，保留必要业务反馈，不按禁词表判断。`,
     '- 研发复杂度提醒用 `$open-vibecoding-requirement-intake`，验证策略用 `$open-vibecoding-test-strategy`；需要外部事实时用 `$open-vibecoding-benchmark-router`。',
-    `- 已授权代码变更按实现行为、整理质量、工程收尾三个研发阶段推进；主动读取内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-code-quality') : tools.includes('claude') ? installedSkillPath('open-vibecoding-code-quality', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-code-quality', 'SKILL.md')}\`，组合 Crapper、Dryer、Mutator 独立检查能力；保留真实用户验收，不生成阶段文档或逐步操作日志。`,
-    `- 用户无特殊要求时采用最小足够资源方案；实现、构建、测试或部署涉及环境、缓存、镜像与产物时，主动读取内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-resource-efficiency') : tools.includes('claude') ? installedSkillPath('open-vibecoding-resource-efficiency', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-resource-efficiency', 'SKILL.md')}\`，检查复用、保留边界和安全收尾；不默认过度冗余，不把精简原则当删除授权。`,
-    `- 功能会消耗有限资源或改变使用权益时，主动读取内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-resource-entitlement-design') : tools.includes('claude') ? installedSkillPath('open-vibecoding-resource-entitlement-design', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-resource-entitlement-design', 'SKILL.md')}\`，检查资源来源、消费恢复、运营配套与用户反馈；复用已有机制，不默认收费或新建后台。`,
-    `- 故障修复或性能优化主动检查复发时的诊断盲区；方法见内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-diagnostic-readiness') : tools.includes('claude') ? installedSkillPath('open-vibecoding-diagnostic-readiness', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-diagnostic-readiness', 'SKILL.md')}\`。现有证据够用则复用，不机械加日志；测试读回验证，不自动开启长期监控。`,
+    `- 已授权代码变更按实现行为、整理质量、工程收尾三个研发阶段推进；主动读取内部能力 \`${installedSkillPath('open-vibecoding-code-quality')}\`，组合 Crapper、Dryer、Mutator 独立检查能力；保留真实用户验收，不生成阶段文档或逐步操作日志。`,
+    `- 用户无特殊要求时采用最小足够资源方案；实现、构建、测试或部署涉及环境、缓存、镜像与产物时，主动读取内部能力 \`${installedSkillPath('open-vibecoding-resource-efficiency')}\`，检查复用、保留边界和安全收尾；不默认过度冗余，不把精简原则当删除授权。`,
+    `- 功能会消耗有限资源或改变使用权益时，主动读取内部能力 \`${installedSkillPath('open-vibecoding-resource-entitlement-design')}\`，检查资源来源、消费恢复、运营配套与用户反馈；复用已有机制，不默认收费或新建后台。`,
+    `- 故障修复或性能优化主动检查复发时的诊断盲区；方法见内部能力 \`${installedSkillPath('open-vibecoding-diagnostic-readiness')}\`。现有证据够用则复用，不机械加日志；测试读回验证，不自动开启长期监控。`,
     '- 音频与语音证据用 `$open-vibecoding-audio-evidence`；图标主动获取与统一风格用 `$open-vibecoding-icon-system`。两者归属增强能力，按需由研发、交互与测试复用。',
-    `- 图片或界面需要精确定位、对齐、添加或局部调整时，主动读取内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-visual-localization') : tools.includes('claude') ? installedSkillPath('open-vibecoding-visual-localization', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-visual-localization', 'SKILL.md')}\`，用红色坐标网格与局部放大核对，并区分图片、预览与屏幕坐标；需要圈选说明时组合图片标注能力。普通看图不强制网格，最终检查无网格结果。`,
-    `- 界面视觉审查、修改与复查结束时，落实内部能力 \`${tools.includes('codex') ? installedSkillPath('open-vibecoding-visual-evidence-delivery') : tools.includes('claude') ? installedSkillPath('open-vibecoding-visual-evidence-delivery', 'claude') : cjoin(PACKAGE_ROOT, 'skills', 'open-vibecoding-visual-evidence-delivery', 'SKILL.md')}\`：最终回复直接展示本轮实际截图；有确认参考时展示参考与实现，无参考时也展示最终实际界面。只给路径或文字不算展示，无法取图则明确视觉未验证。`,
+    `- 图片或界面需要精确定位、对齐、添加或局部调整时，主动读取内部能力 \`${installedSkillPath('open-vibecoding-visual-localization')}\`，用红色坐标网格与局部放大核对，并区分图片、预览与屏幕坐标；需要圈选说明时组合图片标注能力。普通看图不强制网格，最终检查无网格结果。`,
+    `- 界面视觉审查、修改与复查结束时，落实内部能力 \`${installedSkillPath('open-vibecoding-visual-evidence-delivery')}\`：最终回复直接展示本轮实际截图；有确认参考时展示参考与实现，无参考时也展示最终实际界面。只给路径或文字不算展示，无法取图则明确视觉未验证。`,
     '- 收款后需要业务通知时，按场景读取内部 `$open-vibecoding-payment-notification`，提供可选卡片模板，用户选定后复制到目标项目；项目配置和发送实现独立维护，不自动启用通知。',
     '- 横向最佳实践用 `$open-vibecoding-best-practices` 按项目条件选择；iOS 多语言用 `$open-vibecoding-ios-localization`，资源格式与调用 API 分别判断兼容性。',
     '- `$open-vibecoding-shared` 提供安全、语言、浏览器、小程序与文案规则；`$open-vibecoding-harness` 提供按需工具说明。用户需要 HTML 评审时，读取 harness 的 `references/review-handoff.md`，统一复制当前评审结果、左侧图标与反馈状态，并采用结论先行和业务案例；普通任务不因此生成评审页面。',
@@ -572,26 +574,27 @@ async function loadSourceSkill(skill) {
   };
 }
 
-async function renderSkill(skill, projectRoot, adapter = 'codex') {
+async function renderSkill(skill, projectRoot) {
   const source = await loadSourceSkill(skill);
   const presentation = skillPresentation(skill.id);
   // Keep full discovery scope; short menu copy belongs only in interface metadata.
   const description = source.description ?? presentation.description;
-  const body = source.body.replaceAll('Open VibeCoding', 'Open VibeCoding').replaceAll('open-vibecoding ', 'open-vibecoding ');
+  const builtinIds = new Set(CANONICAL_SKILLS.map(item => item.id));
+  const body = source.body.replace(/(?<![\w./])skills\/(open-vibecoding-[a-z0-9-]+)\//g, (match, id) =>
+    builtinIds.has(id) ? path.posix.dirname(installedSkillPath(id)) + '/' : match);
   const sections = [
     '---',
     `name: ${skill.id}`,
     `description: ${description}`,
-    ...(adapter === 'claude' && !presentation.userFacing ? ['user-invocable: false'] : []),
     '---',
     '',
     body,
   ];
   if (skill.id === 'open-vibecoding-router') {
     sections.push('', '## 内部能力读取入口', '',
-      '以下能力由 Agent 按场景读取，不要求用户调用；路径相对于项目根目录。用户入口仍在当前客户端的 skills 目录。', '',
+      '以下能力由 Agent 按场景读取，不要求用户调用；路径相对于项目根目录。业务 Skill 统一位于 .agents/skills。', '',
       ...CANONICAL_SKILLS.filter((item) => !skillPresentation(item.id).userFacing)
-        .map((item) => `- \`${item.id}\`：\`${installedSkillPath(item.id, adapter)}\``));
+        .map((item) => `- \`${item.id}\`：\`${installedSkillPath(item.id)}\``));
   }
   if (skill.id === 'open-vibecoding-benchmark-router' && projectRoot) {
     sections.push('', await renderApprovedBenchmarkRegistrySection(projectRoot).catch(() => ''));
@@ -625,14 +628,22 @@ async function writeSourceSkillReferences(projectRoot, skill, destinationDir, ve
   for (const filePath of files) {
     const relative = path.relative(sourceDir, filePath).split(path.sep).join('/');
     const body = await readText(filePath);
+    const destination = cjoin(destinationDir, 'references', relative);
+    const current = await readText(destination).catch(() => null);
+    const source = `${skill.id}:reference:${relative}`;
+    const commentStyle = path.extname(relative).toLowerCase() === '.json' ? 'json' : 'html';
+    if (!pristineGeneratedSkill(current, source, commentStyle, body)) {
+      changes.push({ path: normalizedRelativePath(projectRoot, destination), status: 'preserved-custom-skill-reference' });
+      continue;
+    }
     await writeGeneratedFile(
-      cjoin(destinationDir, 'references', relative),
+      destination,
       {
         adapter: 'shared',
-        source: `${skill.id}:reference:${relative}`,
+        source,
         version,
         body,
-        commentStyle: path.extname(relative).toLowerCase() === '.json' ? 'json' : 'html',
+        commentStyle,
       },
       options,
       changes,
@@ -674,7 +685,7 @@ function renderCursorRule() {
     '',
     '# Open VibeCoding Harness',
     '',
-    agentContractBody(['cursor']),
+    '按项目根目录的 `AGENTS.md` 查找适用的业务规则和共享 Skill。',
   ].join('\n');
 }
 
@@ -853,49 +864,91 @@ async function writeCodexHooksJson(projectRoot, options, changes) {
   });
 }
 
-async function listInstallableSkills(projectRoot) {
-  const builtinScenarios = new Set(buildCapabilityCatalog().scenarios.map((scenario) => scenario.id));
-  const builtinSkills = new Set(CANONICAL_SKILLS.map((skill) => skill.id));
-  const catalog = await loadProjectCapabilityCatalog(projectRoot);
-  const extensions = catalog.scenarios
-    .filter((scenario) => !builtinScenarios.has(scenario.id))
-    .map((scenario) => {
-      if (builtinSkills.has(scenario.skill)) {
-        throw new Error(`扩展场景 ${scenario.id} 不可复用内置 Skill: ${scenario.skill}`);
-      }
-      return { id: scenario.skill, sourceSkill: scenario.skill, sourceRoot: projectRoot };
-    });
-  return [...CANONICAL_SKILLS, ...extensions];
+async function validateProjectExtensions(projectRoot) {
+  await loadProjectCapabilityCatalog(projectRoot);
 }
 
-async function writeCodexAdapter(projectRoot, options, changes, skills) {
-  const version = await packageVersion();
-  for (const skill of skills) {
-    const body = await renderSkill(skill, projectRoot, 'codex');
-    const skillDir = path.dirname(cjoin(projectRoot, installedSkillPath(skill.id)));
-    if (!skillPresentation(skill.id).userFacing) {
-      const previousDir = cjoin(projectRoot, '.codex', 'skills', skill.id);
-      if (await exists(previousDir)) {
-        const previous = await readText(cjoin(previousDir, 'SKILL.md'));
-        if (!previous.includes(OPEN_VIBECODING_GENERATED_MARKER)) throw new Error(`Unmanaged internal skill preserved: ${previousDir}`);
-        await safeEnsureDirectory(previousDir, options);
-        await safeEnsureDirectory(path.dirname(skillDir), options);
-        if (!(await exists(skillDir))) await fs.rename(previousDir, skillDir);
-        else throw new Error(`Both native and internal skill locations exist: ${skill.id}`);
-        changes.push({ path: normalizedRelativePath(projectRoot, previousDir), status: 'moved-to-internal-library' });
-      }
+async function listProjectSkills(projectRoot) {
+  const builtins = new Set(CANONICAL_SKILLS.map(skill => skill.id));
+  const folders = await fs.readdir(cjoin(projectRoot, PROJECT_SKILLS_DIR), { withFileTypes: true })
+    .catch(error => {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    });
+  const skills = [];
+  for (const entry of folders.sort((left, right) => left.name.localeCompare(right.name))) {
+    if (!entry.isDirectory() || !validSkillName(entry.name) || builtins.has(entry.name) || entry.name === 'project-quality') continue;
+    const skill = skillMetadata(await readText(cjoin(projectRoot, projectSkillPath(entry.name))).catch(() => ''));
+    if (skill.name === entry.name && typeof skill.description === 'string') {
+      skills.push({ name: entry.name, description: skill.description.replace(/\s+/g, ' ').slice(0, 120) });
     }
-    await writeGeneratedFile(
-      cjoin(skillDir, 'SKILL.md'),
-      { adapter: 'shared', source: skill.id, version, body },
-      options,
-      changes,
-    );
-    await writeSourceSkillReferences(projectRoot, skill, skillDir, version, options, changes);
-    const ui = renderSkillInterface(skill.id);
-    if (ui) await writeGeneratedFile(cjoin(skillDir, 'agents', 'openai.yaml'),
-      { adapter: 'codex', source: `${skill.id}:interface`, version, body: ui, commentStyle: 'yaml' }, options, changes);
   }
+  return skills;
+}
+
+function pristineGeneratedSkill(text, source, style = 'html', sourceBody) {
+  if (text == null) return true;
+  if (style === 'json') {
+    try {
+      const { $comment, ...body } = JSON.parse(text);
+      if (typeof $comment !== 'string' || !$comment.startsWith(`${OPEN_VIBECODING_GENERATED_MARKER}\n`)
+          || !$comment.includes(`\nsource=${source}\n`)) return false;
+      if (`${JSON.stringify({ ...body, $comment }, null, 2)}\n` !== text) return false;
+      const stored = /\nchecksum=([a-f0-9]{16})$/.exec($comment)?.[1];
+      const serialized = JSON.stringify(body, null, 2);
+      if ([serialized, `${serialized}\n`].some(value => checksum(value) === stored)) return true;
+      return checksum(sourceBody) === stored && JSON.stringify(JSON.parse(sourceBody), null, 2) === serialized;
+    } catch {
+      return false;
+    }
+  }
+  if (style === 'yaml') {
+    const header = /^# OPEN_VIBECODING:GENERATED\n# source=([^\n]+)\n# checksum=([a-f0-9]{16})\n/.exec(text);
+    if (header?.[1] !== source) return false;
+    const body = text.slice(header[0].length);
+    return [body, body.trimEnd()].some(value => checksum(value) === header[2]);
+  }
+  const markerPattern = /\n?<!-- OPEN_VIBECODING:GENERATED\n[\s\S]*?\n-->\n/;
+  const marker = markerPattern.exec(text)?.[0];
+  if (!marker?.includes('\nsource=' + source + '\n')) return false;
+  const stored = /\nchecksum=([a-f0-9]{16})\n/.exec(marker)?.[1];
+  const body = text.replace(markerPattern, '');
+  const stripped = (text.startsWith('<!--') ? body.replace(/^\n/, '') : body).trimEnd();
+  return [stripped, stripped + '\n', stripped + '\n\n'].some(value => checksum(value) === stored);
+}
+
+async function writeSharedSkills(projectRoot, options, changes) {
+  const version = await packageVersion();
+  for (const skill of CANONICAL_SKILLS) {
+    const body = await renderSkill(skill, projectRoot);
+    const destination = cjoin(projectRoot, installedSkillPath(skill.id));
+    const skillDir = path.dirname(destination);
+    await safeEnsureDirectory(skillDir, options);
+    const current = await readText(destination).catch(() => null);
+    if (!pristineGeneratedSkill(current, skill.id) && current !== renderGeneratedFile({ adapter: 'shared', source: skill.id, version, body })) {
+      changes.push({ path: installedSkillPath(skill.id), status: 'preserved-custom-skill' });
+      continue;
+    }
+    const preserveOptions = { ...options, force: false };
+    await writeGeneratedFile(destination, { adapter: 'shared', source: skill.id, version, body }, preserveOptions, changes);
+    await writeSourceSkillReferences(projectRoot, skill, skillDir, version, preserveOptions, changes);
+    const ui = renderSkillInterface(skill.id);
+    if (!ui) continue;
+    const interfacePath = cjoin(skillDir, 'agents', 'openai.yaml');
+    const interfaceSource = `${skill.id}:interface`;
+    const currentInterface = await readText(interfacePath).catch(() => null);
+    if (!pristineGeneratedSkill(currentInterface, interfaceSource, 'yaml')) {
+      changes.push({ path: normalizedRelativePath(projectRoot, interfacePath), status: 'preserved-custom-skill-interface' });
+      continue;
+    }
+    await writeGeneratedFile(interfacePath,
+      { adapter: 'codex', source: interfaceSource, version, body: ui, commentStyle: 'yaml' },
+      preserveOptions, changes);
+  }
+}
+
+async function writeCodexAdapter(projectRoot, options, changes) {
+  const version = await packageVersion();
   for (const command of CANONICAL_COMMANDS) {
     await writeGeneratedFile(
       cjoin(projectRoot, '.codex', 'prompts', `open-vibecoding-${command.id}.md`),
@@ -919,20 +972,9 @@ async function writeCodexAdapter(projectRoot, options, changes, skills) {
   }
 }
 
-async function writeClaudeAdapter(projectRoot, options, changes, skills) {
+async function writeClaudeAdapter(projectRoot, options, changes) {
   const version = await packageVersion();
-  await upsertTextBlockFile(cjoin(projectRoot, 'CLAUDE.md'), 'CLAUDE', agentContractBody(['claude']), options, changes);
-  for (const skill of skills) {
-    const body = await renderSkill(skill, projectRoot, 'claude');
-    const skillDir = cjoin(projectRoot, '.claude', 'skills', skill.id);
-    await writeGeneratedFile(
-      cjoin(skillDir, 'SKILL.md'),
-      { adapter: 'shared', source: skill.id, version, body },
-      options,
-      changes,
-    );
-    await writeSourceSkillReferences(projectRoot, skill, skillDir, version, options, changes);
-  }
+  await upsertTextBlockFile(cjoin(projectRoot, 'CLAUDE.md'), 'CLAUDE', '@AGENTS.md', options, changes);
   for (const command of CANONICAL_COMMANDS) {
     await writeGeneratedFile(
       cjoin(projectRoot, '.claude', 'commands', 'open-vibecoding', `${command.id}.md`),
@@ -1093,7 +1135,7 @@ function capabilityGapsForEnvelope(envelope) {
 }
 
 function buildAdapterProtocol(tools) {
-  const clients = normalizeTools(tools).map((client) => {
+  const clients = normalizeTools(tools).filter(client => client !== 'gemini').map((client) => {
     const capabilityEnvelope = describeCapabilities(client);
     return {
       client,
@@ -1113,9 +1155,7 @@ function buildAdapterProtocol(tools) {
     generatedContent: {
       version: 1,
       sharedSkillMarker: 'shared',
-      sharedSkillConsumers: clients
-        .map((entry) => entry.client)
-        .filter((client) => client === 'codex' || client === 'claude'),
+      sharedSkillConsumers: normalizeTools(tools),
       platformSpecificKinds: ['command', 'hook', 'rule', 'config'],
     },
     clients,
@@ -1175,8 +1215,8 @@ async function writeInstallManifest(projectRoot, options, changes, tools, option
     managedFiles,
     skillEntries: CANONICAL_SKILLS.map(({ id }) => ({
       id, ...skillPresentation(id),
-      paths: Object.fromEntries(tools.filter((tool) => tool !== 'cursor')
-        .map((tool) => [tool, installedSkillPath(id, tool)])),
+      path: installedSkillPath(id),
+      paths: Object.fromEntries(tools.map(tool => [tool, installedSkillPath(id)])),
     })),
     hooks: {
       profile: hookProfile,
@@ -1289,7 +1329,6 @@ async function computeDriftReport(projectRoot, tools, options = {}) {
 
 export async function setupOpenPrdAgentIntegration(projectRoot, options = {}) {
   const tools = normalizeTools(options.tools);
-  const installableSkills = await listInstallableSkills(projectRoot);
   const hookProfile = normalizeHookProfile(options.hookProfile);
   const changes = [];
   const managedFiles = [];
@@ -1308,20 +1347,23 @@ export async function setupOpenPrdAgentIntegration(projectRoot, options = {}) {
     symlinkStrategy: normalizeSymlinkStrategy(options.symlinkStrategy),
   };
 
+  changes.push(...(options.skillMigration ?? await migrateProjectSkills(projectRoot)));
+  await validateProjectExtensions(projectRoot);
   await ensureHarnessState(projectRoot, normalizedOptions);
+  await writeSharedSkills(projectRoot, normalizedOptions, changes);
   await writeProjectCommandCatalog(projectRoot, normalizedOptions, changes);
-  const projectQuality = options.projectQuality ?? (
-    await exists(cjoin(projectRoot, '.open-vibecoding', 'quality', 'SKILL.md'))
-      ? { skill: '.open-vibecoding/quality/SKILL.md', index: '.open-vibecoding/quality/project-index.json' }
-      : null
-  );
-  await upsertTextBlockFile(cjoin(projectRoot, 'AGENTS.md'), 'AGENTS', agentContractBody(tools, projectQuality), normalizedOptions, changes);
+  const projectQuality = options.projectQuality ?? await initProjectQuality(projectRoot);
+  await upsertTextBlockFile(cjoin(projectRoot, 'AGENTS.md'), 'AGENTS',
+    agentContractBody(projectQuality, await listProjectSkills(projectRoot)), normalizedOptions, changes);
 
   if (tools.includes('codex')) {
-    await writeCodexAdapter(projectRoot, normalizedOptions, changes, installableSkills);
+    await writeCodexAdapter(projectRoot, normalizedOptions, changes);
   }
   if (tools.includes('claude')) {
-    await writeClaudeAdapter(projectRoot, normalizedOptions, changes, installableSkills);
+    await writeClaudeAdapter(projectRoot, normalizedOptions, changes);
+  }
+  if (tools.includes('gemini')) {
+    await upsertTextBlockFile(cjoin(projectRoot, 'GEMINI.md'), 'GEMINI', '@./AGENTS.md', normalizedOptions, changes);
   }
   if (tools.includes('cursor')) {
     await writeCursorAdapter(projectRoot, normalizedOptions, changes);
@@ -1379,7 +1421,7 @@ export async function setupWorkspaceCapabilityEntry(workspaceRoot, projectRoots)
     }
     const router = cjoin(projectRoot, installedSkillPath('open-vibecoding-router'));
     if (!(await exists(router))) throw new Error(`Missing installed capability entry: ${router}`);
-    entries.push(`- 项目 \`${relative}\`：先读 \`${path.relative(root, router)}\`，再按目标选择该项目的子能力。`);
+    entries.push(`- 项目 \`${relative}\`：先读 \`${normalizedRelativePath(root, router)}\`，再按目标选择该项目的子能力。`);
   }
   if (!entries.length) throw new Error('A workspace capability entry needs at least one installed project.');
   const changes = [];
@@ -1545,9 +1587,8 @@ async function smokeTestCodexHook(projectRoot, options = {}) {
 export async function doctorOpenPrdAgentIntegration(projectRoot, options = {}) {
   const tools = normalizeTools(options.tools);
   const checks = [];
-  let installableSkills = CANONICAL_SKILLS;
   try {
-    installableSkills = await listInstallableSkills(projectRoot);
+    await validateProjectExtensions(projectRoot);
   } catch (error) {
     checks.push({ path: 'open-vibecoding.capabilities.json', ok: false, message: error.message });
   }
@@ -1567,7 +1608,8 @@ export async function doctorOpenPrdAgentIntegration(projectRoot, options = {}) {
   const platformCapabilityPacks = manifest?.platformCapabilityPacks ?? buildPlatformCapabilityPacks(tools, optionalCapabilities);
   const runtimeEnvironment = await readRuntimeEnvironment(projectRoot);
 
-  await collectDoctorCheck(projectRoot, checks, 'AGENTS.md', (file) => fileHas(file, 'OPEN_VIBECODING:AGENTS:START'), 'Missing Open VibeCoding managed AGENTS block.');
+  await collectDoctorCheck(projectRoot, checks, 'AGENTS.md', (file) =>
+    fileHas(file, installedSkillPath('open-vibecoding-router')), 'Missing Open VibeCoding shared AGENTS entry.');
   await collectDoctorCheck(projectRoot, checks, OPEN_VIBECODING_HARNESS_MANIFEST, (file) => fileHas(file, '"managedFiles"'), 'Missing Open VibeCoding install manifest.');
   await collectDoctorCheck(projectRoot, checks, OPEN_VIBECODING_HARNESS_HOOK_STATE, (file) => fileHas(file, '"version"'), 'Missing Open VibeCoding hook state.');
   await collectDoctorCheck(projectRoot, checks, OPEN_VIBECODING_HARNESS_RUNTIME_ENVIRONMENT, (file) => fileHas(file, '"runtimeDetection"'), 'Missing Open VibeCoding runtime environment state.');
@@ -1591,9 +1633,6 @@ export async function doctorOpenPrdAgentIntegration(projectRoot, options = {}) {
     await collectDoctorCheck(projectRoot, checks, '.codex/hooks/open-vibecoding-hook.mjs', (file) => fileHas(file, 'recordRunHook'), 'Codex hook runner is missing.');
     const smoke = await smokeTestCodexHook(projectRoot, { hookProfile });
     checks.push({ path: '.codex/hooks/open-vibecoding-hook.mjs:smoke', ok: smoke.ok, message: smoke.message });
-    for (const skill of installableSkills) {
-      await collectGeneratedDoctorCheck(projectRoot, checks, installedSkillPath(skill.id), `Codex ${skill.id} skill`);
-    }
     if (options.enableUserCodexConfig) {
       const userConfigPath = cjoin(resolveCodexHome(options), 'config.toml');
       if (await exists(userConfigPath)) {
@@ -1606,10 +1645,29 @@ export async function doctorOpenPrdAgentIntegration(projectRoot, options = {}) {
     }
   }
   if (tools.includes('claude')) {
-    await collectDoctorCheck(projectRoot, checks, 'CLAUDE.md', (file) => fileHas(file, 'OPEN_VIBECODING:CLAUDE:START'), 'Missing Open VibeCoding managed CLAUDE block.');
-    for (const skill of installableSkills) {
-      await collectGeneratedDoctorCheck(projectRoot, checks, `.claude/skills/${skill.id}/SKILL.md`, `Claude ${skill.id} skill`);
+    await collectDoctorCheck(projectRoot, checks, 'CLAUDE.md', (file) => fileHas(file, '@AGENTS.md'), 'Missing Open VibeCoding managed CLAUDE block.');
+  }
+  if (tools.includes('gemini')) {
+    await collectDoctorCheck(projectRoot, checks, 'GEMINI.md', (file) => fileHas(file, '@./AGENTS.md'), 'Missing shared project instructions for Gemini CLI.');
+  }
+  for (const { id } of [...CANONICAL_SKILLS, { id: 'project-quality' }]) {
+    await collectDoctorCheck(projectRoot, checks, installedSkillPath(id), async file => {
+      const metadata = skillMetadata(await readText(file).catch(() => ''));
+      return metadata.name === id && typeof metadata.description === 'string' && !!metadata.description.trim();
+    }, `Missing or invalid shared ${id} Skill.`);
+  }
+  for (const [, legacy] of LEGACY_SKILL_ROOTS) {
+    const folders = await fs.readdir(cjoin(projectRoot, legacy), { withFileTypes: true }).catch(() => []);
+    const remaining = [];
+    for (const folder of folders) {
+      if (folder.isSymbolicLink() || (folder.isDirectory() && await exists(cjoin(projectRoot, legacy, folder.name, 'SKILL.md')))) remaining.push(folder.name);
     }
+    if (remaining.length) checks.push({ path: legacy, ok: false, reason: 'legacy-project-skills',
+      message: 'Legacy Skills need migration: ' + remaining.join(', ') });
+  }
+  if (await exists(cjoin(projectRoot, '.open-vibecoding/quality/SKILL.md'))) {
+    checks.push({ path: '.open-vibecoding/quality/SKILL.md', ok: false, reason: 'legacy-project-skills',
+      message: 'Legacy project quality Skill needs migration.' });
   }
   if (tools.includes('cursor')) {
     await collectGeneratedDoctorCheck(projectRoot, checks, '.cursor/rules/open-vibecoding.mdc', 'Cursor Open VibeCoding rule');

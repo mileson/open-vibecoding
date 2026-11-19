@@ -41,10 +41,12 @@ export function skillPresentation(id) {
   return entry ? { userFacing: true, ...entry } : { userFacing: !INTERNAL_SKILLS.has(id) };
 }
 
-export function installedSkillPath(id, adapter = 'codex') {
-  return adapter === 'codex' && !skillPresentation(id).userFacing
-    ? `.open-vibecoding/harness/internal-skills/${id}/SKILL.md`
-    : `.${adapter}/skills/${id}/SKILL.md`;
+export const PROJECT_SKILLS_DIR = '.agents/skills';
+export const INTERNAL_SKILLS_DIR = '.agents/internal-skills';
+
+export function installedSkillPath(id) {
+  const root = skillPresentation(id).userFacing ? PROJECT_SKILLS_DIR : INTERNAL_SKILLS_DIR;
+  return `${root}/${id}/SKILL.md`;
 }
 
 export function renderSkillInterface(id) {
