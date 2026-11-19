@@ -1,31 +1,44 @@
 <a id="open-vibecoding"></a>
 
-<div align="center">
+# Open VibeCoding
 
-# Open VibeCoding · Agent 协作能力框架
+**让编码 Agent 从理解需求到交付验证，按任务选用产品、设计、研发和测试能力。**
 
-**按任务组合产品、设计、研发与测试能力。**
+在现有项目中接入 Codex、Claude Code、Cursor 或 Gemini CLI。你描述想解决的问题，Agent 结合仓库和已绑定的资料选择 Skill，给出方案、落实改动并交付验证结果。
 
-产品判断 · 交互设计 · 研发测试 · 视觉辅助
+[快速开始](#quick-start) · [使用场景](#use-cases) · [能力画册](./docs/capability-gallery.md) · [版本发布](https://github.com/mileson/open-vibecoding/releases) · [English](./README_EN.md)
 
-[![中文说明](https://img.shields.io/badge/%E8%AF%B4%E6%98%8E-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-059669)](#readme-detail-audience)
-[![项目类型](https://img.shields.io/badge/%E9%A1%B9%E7%9B%AE-Skill-6366f1)](#readme-detail-audience)
+![从一句任务描述出发，Agent 按需组合产品、设计、研发、测试能力，交付改动和验证结果。](./docs/assets/open-vibecoding-hero.webp)
 
-[✅ 适用场景](#readme-detail-audience) · [🧩 模块速查](#readme-detail-18) · [📁 能力结构](#readme-detail-8) · [📖 本地使用](#readme-detail-10) · [🤖 让 Agent 看准位置、圈清问题](#readme-detail-12) · [💡 工作原则](#readme-detail-14)
+<a id="quick-start"></a>
 
-</div>
+## 快速开始
 
----
+需要 Node.js 20.19 或更高版本，以及你平时使用的编码 Agent。在项目目录运行：
 
-Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe Coding 增强能力。用户直接描述目标；Agent 根据代码、会话与必要证据判断该用哪些能力。它不要求固定的起手命令，也不把五个领域排成必须依次完成的流程。
+```sh
+npm install -g https://github.com/mileson/open-vibecoding/releases/download/v0.4.7/open-vibecoding-0.4.7.tgz
+open-vibecoding init .
+```
 
+用原来的 Agent 进入该项目，直接交给它一件具体的事：
+
+> 给设置页加一个深色模式开关。先看现有主题和设置项，再实现并验证切换与重启后的表现。
+
+Agent 会从项目指引找到适用的能力。已有 Open VibeCoding 的项目，安装新版本后执行 `open-vibecoding update .`。想核对安装状态，运行 `open-vibecoding doctor .`。
+
+<a id="use-cases"></a>
 <a id="readme-detail-audience"></a>
 
-`open-vibecoding init` 可为项目生成质量索引和 Skill。用 `project-quality run` 执行项目检查并保留证据。 [项目质量检查](docs/project-quality.md)
+## 使用场景
 
-## ✅ 适用场景
-
-适合希望增强 Agent 项目协作能力的开发者。
+| 你想做什么 | 可以交付什么 |
+| --- | --- |
+| 判断注册流程哪里值得先改 | 用户问题、判断依据和可验证的改进方向 |
+| 给已有产品增加一个界面 | 沿用项目视觉语言的设计或实现，以及对照截图 |
+| 实现功能或排查故障 | 代码改动、关键取舍与验证结果 |
+| 验收菜单、表单或跨端流程 | 测试用例、实跑结果和可追溯证据 |
+| 让 Agent 参考已有项目规范 | 带本地行号或飞书原文链接的知识引用 |
 
 <a id="readme-section-1"></a>
 
@@ -48,9 +61,23 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 
 业务 Skill 和核验后晋级的项目经验统一保存在 `.agents/skills/<name>/SKILL.md`，随仓库管理。Claude Code 由 `CLAUDE.md` 引入 `AGENTS.md` 读取同一正文，Gemini CLI 同时使用自己的项目说明入口。老项目执行 `open-vibecoding update` 迁移，遇同名不同内容时，保留当前生效版本，并在 `.agents/skill-conflicts/` 保存另一份供人工核对。经验候选和历史证据仍保存在 `.open-vibecoding/`。
 
+给功能改动准备测试时，可以直接说「按改动风险帮我生成测试用例」。Agent 会选择适合的测试层，为每条用例写清数据、步骤、预期和断言。 [制定策略并生成用例](skills/open-vibecoding-test-case-generation/SKILL.md)
+
 单元测试可以直接说「给这个模块补单元测试」「跑现有测试，给我报告」或「跑测试，修复能稳定复现的问题并回归」。Agent 沿用项目的测试入口。修复报告包含修复前的失败、同用例复测和相关回归结果。 [生成单元测试](skills/open-vibecoding-unit-test-generation/SKILL.md) · [运行、报告与修复](skills/open-vibecoding-unit-test-run-and-repair/SKILL.md)
 
-用 `test-report` 将用例和执行结果生成独立 HTML。支持单元、组件、接口／集成与 UI／端到端四份模板。 [命令和 JSON 示例](docs/test-report.md)
+用 `test-report` 将用例和执行结果生成独立 HTML。用 `test-report e2e` 按清单执行 Playwright 或 Maestro，记录功能验收、运行环境、重试和失败证据。 [命令和 JSON 示例](docs/test-report.md)
+
+用 `open-vibecoding init` 登记项目现有检查，再用 `project-quality run` 执行并保留每次证据。项目可以把产品规则连到用例、提交前快检和 PR 必过项。 [项目质量检查接入](docs/project-quality.md)
+
+选用 Playwright CLI 探索网页时，`open-vibecoding tools ensure playwright-cli` 会复用项目、环境或管理缓存中可用的版本，缺失时按需安装。只检查时用 `tools check playwright-cli`。CLI 返回的 `installation.command` 和 `installation.args` 可直接作为后续调用入口。 [Playwright CLI 官方文档](https://playwright.dev/agent-cli/introduction)
+
+原生端到端测试使用 `open-vibecoding tools ensure maestro` 准备执行器。macOS 和 Linux 缺少兼容的 Maestro CLI 时会安装固定版本。Java 及指定 iOS 模拟器的状态分别返回。 [Maestro CLI 官方文档](https://docs.maestro.dev/maestro-cli)
+
+用 `aso-report` 将 App Store 关键词研究、区域对比和已校验的元数据方案生成独立 HTML。 [命令和 JSON 字段](docs/aso-report.md)
+
+明确要求编写或更新 PRD 时，可用内置 PRD Skill 梳理需求。需要 HTML 时，用 `prd template` 导出 JSON 样例，再用 `prd render` 生成可离线打开的文件。 [PRD Skill](skills/open-vibecoding-prd/SKILL.md) · [命令和 JSON 字段](docs/prd-html.md)
+
+用 `social-listening` 按产品名准备社媒采集，从现有采集产物生成跨平台口碑、情绪与评论报告。 [平台配置和报告命令](docs/social-report.md)
 
 <a id="readme-section-2"></a>
 
@@ -61,7 +88,6 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 ## 📖 本地使用
 
 ```bash
-open-vibecoding init .
 open-vibecoding capabilities list
 open-vibecoding doctor .
 open-vibecoding run . --verify
@@ -168,3 +194,22 @@ Agent 的开发过程、制作说明和内部规则用于指导工作，不应�
 | [`skills/`](skills/) | Agent 技能模块 | 查找具体场景对应的技能入口 |
 | [`src/`](src/) | 应用或服务实现 | 定位应用界面与业务实现 |
 | [`test/`](test/) | 自动化测试 | 为修改选择对应的回归检查 |
+
+### 绑定产品、研发和测试知识库
+
+新项目的 `.open-vibecoding/knowledge/bindings.json` 默认为空。指定自己的目录后，Agent 会在需要业务规则、技术决策或验收依据时按需查询，并附原文出处。
+
+```sh
+# 项目内相对目录，配置可随仓库共享
+open-vibecoding knowledge bind --scope project --domain engineering --id architecture --type markdown --source docs/architecture
+# 跨项目使用的本地目录
+open-vibecoding knowledge bind --scope global --domain testing --id regression --type markdown --source "/path/to/qa-standards"
+# 查看、检查和检索
+open-vibecoding knowledge bindings
+open-vibecoding knowledge check
+open-vibecoding knowledge search "回归范围" --domain testing --json
+```
+
+三个板块分别为 `product`、`engineering` 和 `testing`。全局绑定保存在 `${OPEN_VIBECODING_HOME:-~/.open-vibecoding}/knowledge/bindings.json`。项目的绝对路径和飞书绑定也写入本机配置，通过 `knowledge bindings` 查看实际文件。修改文件即可调整或移除绑定。
+
+绑定飞书时使用 `--type feishu --source <Wiki节点链接> --profile <已配置的lark-cli身份> --as user`。飞书查询只读绑定子目录中的文档，按标题选择有限的候选，再读相关正文。目录过大时查询会提示覆盖有限。首次绑定需要本地目录可读或飞书身份已有相应权限。

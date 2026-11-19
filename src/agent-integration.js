@@ -13,6 +13,7 @@ import { initProjectQuality } from './project-quality.js';
 import { renderApprovedBenchmarkRegistrySection } from './benchmark.js';
 import { timestamp } from './time.js';
 import { upsertWorkspaceRegistryEntry } from './workspace-registry.js';
+import { EMPTY_BINDINGS, PROJECT_BINDINGS } from './knowledge-sources/config.js';
 import { readOperationalGitignoreStatus } from './workspace-core.js';
 import {
   ADAPTER_CONTRACT_VERSION,
@@ -23,6 +24,7 @@ import {
 import {
   INSTALL_SAFETY_PROTOCOL_VERSION,
   normalizeSymlinkStrategy,
+  prepareManagedWriteTarget,
   safeAppendText,
   safeEnsureDirectory,
   safeWriteText,
@@ -510,6 +512,7 @@ function agentContractBody(projectQuality, projectSkills = []) {
     `- Open VibeCoding 的通用路由入口是 \`${installedSkillPath('open-vibecoding-router')}\`。命令见 \`.open-vibecoding/harness/command-catalog.md\`。`,
     '- 开始任务或目标改变时，按用户目标判断相关场景，读取所选子能力后落实其中适用的方法。已有上下文足够时复用；不要求重复读文件。需要时用一句业务语言说明采用的方法，交付说明实际验证与缺口。',
     '- 使用项目安装的 `open-vibecoding` 命令。仓库自带 CLI 时可以用 `node ./bin/open-vibecoding.js`。',
+    '- 任务涉及业务规则、架构决策、验收或历史经验时，主动按经验复用能力查询已绑定的产品、研发或测试知识库。缺少本次需要的绑定时，请用户指定目录或飞书 Wiki 节点，继续能完成的工作。引用时附原文链接或路径和行号。',
     '- 产品、交互、研发、测试和工具增强各有独立场景 Skill；按用户意图和现有证据选择，不用固定关键词匹配。场景目录见 `open-vibecoding capabilities list`。',
     `- 为已有产品设计界面或生成效果图前，即使只画一个弹窗且不写代码，也先读取内部能力 \`${installedSkillPath('open-vibecoding-design-context')}\`，主动查看目标界面、相关截图与样式组件；将参考带入生成并在交付前自查，不等用户提醒。`,
     `- 设计、实现或审查界面时，按实际视觉问题读取内部能力 \`${installedSkillPath('open-vibecoding-visual-refinement')}\`，整理层级、对齐、空间、字体、色彩与图标，核对业务含义和实际尺寸；继承项目风格，不固定主题或像素门槛。`,
@@ -1350,6 +1353,16 @@ export async function setupOpenPrdAgentIntegration(projectRoot, options = {}) {
   changes.push(...(options.skillMigration ?? await migrateProjectSkills(projectRoot)));
   await validateProjectExtensions(projectRoot);
   await ensureHarnessState(projectRoot, normalizedOptions);
+  const knowledgeBindingsPath = cjoin(projectRoot, PROJECT_BINDINGS);
+  if (!(await exists(knowledgeBindingsPath))) {
+    await safeEnsureDirectory(path.dirname(knowledgeBindingsPath), normalizedOptions);
+    await prepareManagedWriteTarget(knowledgeBindingsPath, { ...normalizedOptions, managedWriteTargetType: 'file' });
+    try {
+      await fs.writeFile(knowledgeBindingsPath, `${JSON.stringify(EMPTY_BINDINGS, null, 2)}\n`, { flag: 'wx' });
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+    }
+  }
   await writeSharedSkills(projectRoot, normalizedOptions, changes);
   await writeProjectCommandCatalog(projectRoot, normalizedOptions, changes);
   const projectQuality = options.projectQuality ?? await initProjectQuality(projectRoot);

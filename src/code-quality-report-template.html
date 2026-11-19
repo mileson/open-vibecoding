@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{QUALITY_TITLE}}</title>
+<style>
+:root {
+  color-scheme: light;
+  --canvas: #f3f4f6;
+  --paper: #fff;
+  --ink: #202329;
+  --muted: #555f6d;
+  --line: #e5e8ed;
+  --wash: #f3f6fb;
+  --blue: #155eaa;
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+* { box-sizing: border-box }
+body { margin: 0; background: var(--canvas); color: var(--ink); overflow-wrap: anywhere }
+main { max-width: 1120px; margin: auto; padding: 16px 20px 36px; display: grid; grid-template-columns: 132px minmax(0, 1fr); align-items: start; gap: 14px }
+.report-content { min-width: 0 }
+h1, h2, h3, p { margin: 0 }
+h1 { font-size: clamp(22px, 3.6vw, 34px); line-height: 1.2; letter-spacing: -.025em }
+h2 { font-size: 19px; line-height: 1.35 }
+h3 { font-size: 15px }
+a { color: var(--blue) }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 17px 20px; margin-bottom: 12px; box-shadow: 0 2px 8px #252c3b08 }
+.report-kicker { margin-bottom: 4px; color: var(--blue); font-size: 13px; font-weight: 700 }
+.report-scope { display: flex; flex-wrap: wrap; gap: 0 8px; margin: 7px 0 0; font-size: 13px }
+.report-scope dt { color: var(--ink); font-weight: 650 }
+.report-scope dd { margin: 0; color: var(--muted) }
+.overview-metrics { width: 100%; border-collapse: separate; border-spacing: 0; margin: 10px 0; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; font-size: 13px; text-align: center; font-variant-numeric: tabular-nums }
+.overview-metrics :is(th, td) { padding: 7px; border-bottom: 1px solid var(--line) }
+.overview-metrics thead { background: var(--wash); color: var(--muted) }
+.overview-metrics tr:last-child > * { border-bottom: 0 }
+.overview-metrics thead tr > * { border-bottom: 1px solid var(--line) }
+.overview-metrics th:first-child { text-align: left }
+.overview-metrics tbody td { font-size: 16px; font-weight: 650 }
+.overview-metrics a { text-decoration: none }
+.overview-metrics a:hover { text-decoration: underline }
+.number-pass { color: #216345 }
+.number-fail { color: #902b37 }
+.number-pending { color: #4b5563 }
+.review-pending { background: #eef0f2; color: #4b5563 }
+.lead { display: flex; align-items: baseline; gap: 8px; margin: 10px 0; padding: 8px 10px; border-radius: 9px; background: var(--wash); color: #273746; font-size: 15px; font-weight: 650 }
+.quote-mark { color: #a5bbd5; font: 700 27px/.7 Georgia, serif }
+.section-links { position: sticky; top: 12px; display: grid; gap: 2px; max-height: calc(100vh - 24px); overflow: auto; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper) }
+.section-links a { display: block; padding: 5px 8px; border-radius: 7px; color: var(--muted); font-size: 13px; text-decoration: none }
+.section-links a:is(:hover, :focus-visible, [aria-current]) { color: var(--blue); background: var(--wash) }
+.report-content > [id] { scroll-margin-top: 12px }
+.report-content > :target { border-color: #9ab8dc }
+.dimension-summary { margin-top: 6px; color: #303b48 }
+[hidden] { display: none !important }
+.result-filters { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px }
+.result-filters button { border: 0; border-radius: 6px; background: transparent; color: var(--muted); padding: 5px 8px; font: inherit; font-size: 13px; cursor: pointer }
+.result-filters button:is(:hover, [aria-pressed="true"]) { background: var(--wash); color: var(--blue) }
+.result-filters button span { margin-left: 2px; font-variant-numeric: tabular-nums }
+.empty-result { padding: 9px 0; color: var(--muted); font-size: 13px }
+.evidence { margin-top: 8px }
+details > summary { width: fit-content; padding: 3px 0; color: var(--blue); font-size: 13px; font-weight: 650; cursor: pointer }
+.entries { list-style: none; padding: 0; margin: 7px 0 0 }
+.entry { border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; margin-bottom: 6px; font-size: 14px }
+.entry-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 9px; margin-bottom: 4px }
+.metadata { color: var(--muted); font-size: 13px; margin-bottom: 3px }
+.status { display: inline-block; white-space: nowrap; padding: 1px 7px; border-radius: 6px; font-size: 12px; font-weight: 650 }
+.open { background: #fff3d6; color: #744e12 }
+.risk { background: #fcebec; color: #902b37 }
+.clear { background: #e6f4ec; color: #216345 }
+.neutral { background: var(--wash); color: #384b63 }
+.finding-details { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 12px; margin: 8px 0 0 }
+.finding-details dt { color: var(--muted) }
+.finding-details dd { margin: 0 }
+.locations { padding: 0; margin: 0; list-style: none }
+.locations code { color: #23456f }
+.run-list { list-style: none; margin: 8px 0 0; padding: 0 }
+.run-list li { padding: 7px 0; border-top: 1px solid var(--line) }
+.run-list p { margin-top: 3px }
+@media (max-width: 560px) {
+  main { grid-template-columns: 1fr; padding: 10px 9px 24px }
+  .section-links { position: static; max-height: none; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)) }
+  .card { padding: 12px }
+}
+@media print { main { display: block } .section-links { display: none } }
+</style>
+</head>
+<body>
+<main>
+  <nav class="section-links" aria-label="报告目录">{{QUALITY_NAV}}</nav>
+  <div class="report-content">{{QUALITY_CONTENT}}</div>
+</main>
+<script>
+  const navLinks = [...document.querySelectorAll('.section-links a')];
+  function updateNavigation() {
+    const target = document.getElementById(location.hash.slice(1));
+    const section = target?.closest('.review-dimension');
+    if (target?.hidden && section) section.querySelector('[data-filter="all"]').click();
+    const check = target?.querySelector('details.check-details');
+    if (check) {
+      check.open = true;
+      target.scrollIntoView();
+    }
+    const sectionId = target?.closest('.report-content > [id]')?.id ?? 'overview';
+    const current = navLinks.find(link => link.hash === '#' + sectionId);
+    for (const link of navLinks) {
+      if (link === current) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    }
+  }
+  for (const section of document.querySelectorAll('.review-dimension')) {
+    const groups = [...section.querySelectorAll('[data-results]')];
+    const buttons = [...section.querySelectorAll('[data-filter]')];
+    const empty = section.querySelector('.empty-result');
+    for (const button of buttons) {
+      button.addEventListener('click', () => {
+        for (const choice of buttons) choice.setAttribute('aria-pressed', String(choice === button));
+        const filter = button.dataset.filter;
+        for (const group of groups) {
+          for (const row of group.children) {
+            row.hidden = filter !== 'all' && row.dataset.result !== filter;
+          }
+          group.hidden = [...group.children].every(row => row.hidden);
+        }
+        empty.hidden = groups.some(group => !group.hidden);
+      });
+    }
+  }
+  window.addEventListener('hashchange', updateNavigation);
+  updateNavigation();
+</script>
+</body>
+</html>

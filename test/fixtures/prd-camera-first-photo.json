@@ -1,0 +1,353 @@
+{
+  "product": "轻拍相机",
+  "title": "首次拍照",
+  "revision": {
+    "version": "1.3",
+    "date": "2026-11-18",
+    "summary": "补充 ToC 用户画像、首拍场景与需求和验收之间的关联。",
+    "author": "产品需求维护"
+  },
+  "goal": "让新用户从首页找到拍照入口，拍下第一张照片并看到预览。",
+  "business": {
+    "goal": "提高新用户的首拍预览成功率，并识别用户在哪一步退出。",
+    "metrics": [
+      {
+        "name": "新用户首拍预览成功率",
+        "definition": "首拍预览成功（照片拍摄成功且预览首次显示）的新用户数 ÷ 首次打开 App 的新用户数。按匿名安装 ID 去重，取首次打开后 24 小时内按顺序完成的事件。",
+        "window": "拟对比新旧版本各 7 个完整自然日的首次打开人群，每位新用户跟踪 24 小时。",
+        "baseline": null,
+        "target": null,
+        "confirmationRole": "产品负责人、数据分析"
+      },
+      {
+        "name": "首拍各步流失率",
+        "definition": "分别计算打开 App → 取景可用、取景可用 → 首拍预览成功的流失率。公式为 1 − 完成下一步的新用户数 ÷ 完成上一步的新用户数，分母为 0 时留空。",
+        "window": "同一批新用户，按首次打开后 24 小时统计。",
+        "baseline": null,
+        "target": null,
+        "confirmationRole": "产品负责人、数据分析"
+      }
+    ]
+  },
+  "personas": [
+    {
+      "id": "CAM-USER-01",
+      "type": "ToC",
+      "name": "首次使用、还不熟悉入口的用户",
+      "characteristics": "首次打开轻拍相机。",
+      "goal": "拍下第一张照片并看到预览。",
+      "barriers": "不熟悉拍照入口和授权流程。"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "CAM-S01",
+      "title": "首次进入首页，想快速拍一张",
+      "personaId": "CAM-USER-01",
+      "context": "第一次打开 App，停在首页。",
+      "task": "找到拍照入口，按需授权并拍照。",
+      "outcome": "看到刚拍下的照片。"
+    },
+    {
+      "id": "CAM-S02",
+      "title": "暂未授权，想了解如何继续",
+      "personaId": "CAM-USER-01",
+      "context": "拒绝授权，或打开相机时权限仍关闭。",
+      "task": "找到开启权限或返回首页的入口。",
+      "outcome": "开启权限后重新取景，或返回首页。"
+    }
+  ],
+  "scope": {
+    "in": [
+      "首页拍照入口",
+      "首次相机授权与拒绝后的引导",
+      "快门与拍照后的预览"
+    ],
+    "out": [
+      "预览后的照片编辑、保存与分享"
+    ]
+  },
+  "flow": {
+    "steps": [
+      "打开 App 进入首页",
+      "点击拍照入口",
+      "检查相机权限"
+    ],
+    "paths": [
+      {
+        "label": "已授权",
+        "steps": [
+          "直接进入取景",
+          "点击快门",
+          "首拍预览成功，首次显示本次拍摄的照片"
+        ],
+        "scenarioIds": [
+          "CAM-S01"
+        ]
+      },
+      {
+        "label": "首次授权 · 允许",
+        "steps": [
+          "系统请求相机权限",
+          "用户允许，进入取景",
+          "点击快门",
+          "首拍预览成功，首次显示本次拍摄的照片"
+        ],
+        "scenarioIds": [
+          "CAM-S01"
+        ]
+      },
+      {
+        "label": "首次拒绝或权限已关闭",
+        "steps": [
+          "显示权限提示"
+        ],
+        "choices": [
+          {
+            "label": "返回",
+            "steps": [
+              "回到首页"
+            ]
+          },
+          {
+            "label": "前往设置",
+            "steps": [
+              "打开系统设置并开启相机权限",
+              "回到 App，从首页再次进入取景"
+            ]
+          }
+        ],
+        "scenarioIds": [
+          "CAM-S02"
+        ]
+      }
+    ],
+    "decisionLabel": "相机权限结果"
+  },
+  "acceptance": [
+    {
+      "scenario": "首次找到拍照入口",
+      "requirementIds": [
+        "CAM-01",
+        "CAM-02"
+      ],
+      "given": "新安装并首次打开 App。",
+      "when": "在首页点击拍照入口。",
+      "then": "进入相机流程，系统请求相机权限。",
+      "scenarioIds": [
+        "CAM-S01"
+      ]
+    },
+    {
+      "scenario": "授权后拍下第一张照片",
+      "requirementIds": [
+        "CAM-02",
+        "CAM-03"
+      ],
+      "given": "系统正在请求相机权限。",
+      "when": "允许权限，取景画面出现后点击快门。",
+      "then": "进入照片预览，画面与刚拍下的照片一致。首次显示后只记录一次首拍预览成功。",
+      "scenarioIds": [
+        "CAM-S01"
+      ]
+    },
+    {
+      "scenario": "拒绝授权后返回首页",
+      "requirementIds": [
+        "CAM-02"
+      ],
+      "given": "系统正在请求相机权限。",
+      "when": "拒绝授权，然后点击返回首页。",
+      "then": "拒绝后可看到如何开启权限。点击返回后回到首页。",
+      "scenarioIds": [
+        "CAM-S02"
+      ]
+    },
+    {
+      "scenario": "在设置开启权限后重新取景",
+      "requirementIds": [
+        "CAM-02"
+      ],
+      "given": "相机权限已关闭，当前显示权限提示。",
+      "when": "前往系统设置开启相机权限，回到 App 后从首页再次点击拍照入口。",
+      "then": "进入取景画面，快门可用。",
+      "scenarioIds": [
+        "CAM-S02"
+      ]
+    },
+    {
+      "scenario": "已授权时直接取景",
+      "requirementIds": [
+        "CAM-02"
+      ],
+      "given": "相机权限已开启，当前在首页。",
+      "when": "再次点击拍照入口。",
+      "then": "直接看到取景画面，快门可用。",
+      "scenarioIds": [
+        "CAM-S01"
+      ]
+    },
+    {
+      "scenario": "拍摄失败后重新拍摄",
+      "requirementIds": [
+        "CAM-03"
+      ],
+      "given": "取景可用，本次拍摄会失败。",
+      "when": "点击快门，收到失败提示后重试。",
+      "then": "拍摄失败时停留在取景界面，快门恢复可用。失败尝试不上报 capture_completed，重试成功并首次显示预览时上报一次。",
+      "scenarioIds": [
+        "CAM-S01"
+      ]
+    },
+    {
+      "scenario": "预览加载失败后重试或返回",
+      "requirementIds": [
+        "CAM-03"
+      ],
+      "given": "照片已拍摄成功，首次加载预览会失败。",
+      "when": "查看失败提示，分别选择「重试预览」和「返回拍摄」核对两条路径。",
+      "then": "失败时不上报 capture_completed。重试加载的是同一张照片，重试成功后只上报一次。返回拍摄时恢复取景和快门。",
+      "scenarioIds": [
+        "CAM-S01"
+      ]
+    },
+    {
+      "scenario": "连续快门只触发一次拍摄",
+      "requirementIds": [
+        "CAM-03"
+      ],
+      "given": "取景可用，可观察到拍摄或预览生成中的状态。",
+      "when": "在处理完成前连续点击快门。",
+      "then": "处理期间快门不可再次触发。只拍摄一次、显示一张预览，并只上报一次 capture_completed。",
+      "scenarioIds": [
+        "CAM-S01"
+      ]
+    }
+  ],
+  "observation": [
+    "上线前核对新旧版本的事件名和触发时机。仅比较口径一致且已经过完整 24 小时观察的新用户。"
+  ],
+  "background": "首拍流程有两个需要处理的地方。首页要让拍照入口一眼可见，用户拒绝相机权限后也能看到开启方法或返回首页。",
+  "requirements": [
+    {
+      "id": "CAM-01",
+      "name": "首页拍照入口",
+      "priority": "P0",
+      "precondition": "首页已显示。",
+      "behavior": "点击首页拍照入口后进入相机权限流程。",
+      "feedback": "已授权时显示取景画面。首次使用时弹出系统授权请求。",
+      "scenarioIds": [
+        "CAM-S01",
+        "CAM-S02"
+      ]
+    },
+    {
+      "id": "CAM-02",
+      "name": "权限处理",
+      "priority": "P0",
+      "precondition": "用户已点击首页拍照入口。",
+      "behavior": "按权限状态分流。从设置回到 App 后再次点击拍照入口时，重新检查权限。",
+      "feedback": "允许后显示取景画面。权限关闭时提示开启方法，并提供返回首页和前往系统设置的入口。",
+      "scenarioIds": [
+        "CAM-S01",
+        "CAM-S02"
+      ]
+    },
+    {
+      "id": "CAM-03",
+      "name": "拍照预览",
+      "priority": "P0",
+      "precondition": "相机权限已开启，取景画面可用。",
+      "behavior": "点击快门拍照。拍摄及预览生成期间仅处理第一次快门操作。失败后按异常类型恢复。",
+      "feedback": "处理期间显示进度并禁用快门。首拍预览成功时显示刚拍摄的照片。",
+      "scenarioIds": [
+        "CAM-S01"
+      ]
+    }
+  ],
+  "exceptions": [
+    {
+      "requirementIds": [
+        "CAM-03"
+      ],
+      "trigger": "拍摄失败",
+      "message": "拍照失败，请重试。",
+      "recovery": "留在取景界面并恢复快门，用户可重新拍摄。"
+    },
+    {
+      "requirementIds": [
+        "CAM-03"
+      ],
+      "trigger": "拍摄成功后预览加载失败",
+      "message": "照片预览加载失败，可重试预览或返回拍摄。",
+      "recovery": "重试加载本次已拍照片。选择返回拍摄时回到取景，可重新拍摄。"
+    },
+    {
+      "requirementIds": [
+        "CAM-03"
+      ],
+      "trigger": "拍摄或预览生成期间连续点击快门",
+      "message": "快门暂不可用，保留正在处理的反馈。",
+      "recovery": "继续处理首次点击。成功后显示一张照片，失败时进入对应的恢复路径。"
+    }
+  ],
+  "tracking": [
+    {
+      "event": "app_opened",
+      "trigger": "新安装后首次进入首页且可操作。",
+      "attributes": "匿名安装 ID、事件 ID、事件时间、App 版本",
+      "deduplication": "重传沿用同一事件 ID。每个安装 ID 只取首次打开。",
+      "purpose": "确定首拍漏斗的起点和版本分组。"
+    },
+    {
+      "event": "camera_opened",
+      "trigger": "从首页进入相机后，取景画面首次可用。",
+      "attributes": "匿名安装 ID、事件 ID、事件时间、App 版本、入口、授权路径",
+      "deduplication": "重传沿用同一事件 ID。每个安装 ID 只取观察窗口内首次有效取景。",
+      "purpose": "计算进入相机的转化，比较不同授权路径。"
+    },
+    {
+      "event": "capture_completed",
+      "trigger": "首拍预览成功时上报，须同时满足照片拍摄成功且预览首次显示本次照片。仅点击快门、拍摄失败或预览失败均不上报。",
+      "attributes": "匿名安装 ID、事件 ID、事件时间、App 版本、入口、匿名拍摄 ID",
+      "deduplication": "每个安装 ID 只记录首次预览成功。重试上报沿用同一事件 ID 和拍摄 ID。漏斗只纳入首次取景后、观察窗口内的成功事件。",
+      "purpose": "计算新用户首拍预览成功率。"
+    }
+  ],
+  "nonFunctional": [
+    {
+      "area": "隐私",
+      "requirement": "相机权限由系统申请。行为埋点只记录操作事件，不包含照片内容。",
+      "verification": "检查权限弹窗和埋点上报内容。"
+    },
+    {
+      "area": "性能",
+      "requirement": "取景画面可用后才允许拍照。照片预览生成期间显示进度并防止重复触发快门。",
+      "verification": "用支持范围内规格最低的 iPhone 真机走一次连续快门用例，核对按键状态、预览结果和事件次数。"
+    },
+    {
+      "area": "兼容性",
+      "requirement": "支持的 iOS 版本均覆盖首次授权、已授权和拒绝授权三种状态。",
+      "verification": "在项目支持的最低和当前 iOS 版本分别走一遍三种权限状态。"
+    }
+  ],
+  "performance": [
+    {
+      "name": "快门到首拍预览成功耗时（P95）",
+      "window": "从首次有效点击快门开始，到本次照片预览首次显示结束。发布前在同一批验收中分别测对照版本和候选版本。",
+      "devices": "使用项目支持范围内规格最低的一台 iPhone 真机及当前主测的一台 iPhone 真机。记录具体机型、iOS 和 App 版本。",
+      "verification": "相同光线和授权状态下逐次记录起止时刻，按设备和版本分别统计 P95。失败尝试单列。用录屏或本地时间戳核对预览首次显示。",
+      "baseline": null,
+      "target": null,
+      "confirmationRole": "iOS 研发、测试负责人"
+    }
+  ],
+  "openItems": [
+    {
+      "question": "支持设备上的首拍预览耗时目标定为多少？",
+      "proposal": "先取得各验收设备的对照版本 P95，再根据候选版表现确定目标。",
+      "impact": "目标确认后才能据此判定首拍性能是否通过。",
+      "confirmationRole": "产品负责人、iOS 研发、测试负责人"
+    }
+  ]
+}

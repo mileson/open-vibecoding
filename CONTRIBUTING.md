@@ -23,8 +23,9 @@ Please make sure:
 - tests pass with `npm test`
 - new CLI behavior is covered by tests
 - README or skill references are updated when user-facing behavior changes
+- Changes to the public README follow the [README and visuals guide](./docs/readme-guide.md)
 - sensitive values are not committed
 
 ## Scope Guidance
 
-Open VibeCoding is a PRD harness, not a full project management platform. Contributions that add heavy orchestration or premature complexity may be declined even if technically correct.
+Open VibeCoding adds product, design, engineering, and testing capabilities to coding agents. Prefer changes that help users complete a concrete task with less setup or clearer evidence.

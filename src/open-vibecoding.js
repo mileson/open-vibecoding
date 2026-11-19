@@ -31,6 +31,7 @@ import { doctorOpenPrdAgentIntegration, setupOpenPrdAgentIntegration, updateOpen
 import { timestamp } from './time.js';
 import { parseCommandArgs, usage } from './cli/args.js';
 import { runQualityCommand } from './cli/quality-commands.js';
+import { KNOWLEDGE_SOURCE_COMMANDS, runKnowledgeSourcesCommand } from './cli/knowledge-sources-command.js';
 import { printAcceptedSpecsResult, printAgentIntegrationResult, printBenchmarkResult, printBrainstormResult, printCanvasResult, printDiagramResult, printDiffResult, printDoctorResult, printFleetResult, printHistoryResult, printInitResult, printLearningResult, printOpenPrdChangesResult, printOpenSpecChangeValidationResult, printOpenSpecTaskResult, printReleaseResult, printRunResult, printSelfUpdateResult, printStatus, printUpgradeResult, printValidation } from './cli/print.js';
 import { cjoin, exists, readJson, writeJson, writeText, writeYaml } from './fs-utils.js';
 import { diagramWorkspace } from './diagram-workspace.js';
@@ -76,6 +77,12 @@ import { migrateProjectSkills } from './project-skill-layout.js';
 import { initProjectQuality, runProjectQualityCommand } from './project-quality.js';
 import { runTestReportCommand } from './cli/test-report-command.js';
 import { runToolDependenciesCommand } from './cli/tool-dependencies-command.js';
+import { runCodeQualityReportCommand } from './cli/code-quality-report-command.js';
+import { runAppStoreCommand } from './cli/app-store-command.js';
+import { runAsoReportCommand } from './cli/aso-report-command.js';
+import { runFunnelReportCommand } from './cli/funnel-report-command.js';
+import { runPrdCommand } from './cli/prd-command.js';
+import { runSocialListeningCommand } from './cli/social-listening-command.js';
 
 function buildInitTemplatePackGuidance(templatePack, options = {}) {
   const label = formatTemplatePackDisplay(templatePack, { fallback: '通用产品或工程场景' });
@@ -473,9 +480,16 @@ export async function main(argv = process.argv.slice(2)) {
     return 0;
   }
 
+  if (command === 'knowledge' && KNOWLEDGE_SOURCE_COMMANDS.includes(rest[0])) return runKnowledgeSourcesCommand(rest);
   if (command === 'project-quality') return runProjectQualityCommand(rest);
   if (command === 'test-report') return runTestReportCommand(rest);
   if (command === 'tools') return runToolDependenciesCommand(rest);
+  if (command === 'code-quality-report') return runCodeQualityReportCommand(rest);
+  if (command === 'app-store') return runAppStoreCommand(rest);
+  if (command === 'aso-report') return runAsoReportCommand(rest);
+  if (command === 'funnel-report') return runFunnelReportCommand(rest);
+  if (command === 'prd') return runPrdCommand(rest);
+  if (command === 'social-listening') return runSocialListeningCommand(rest);
 
   const { flags, positionals } = parseCommandArgs(rest);
   if (positionals.includes('--help') || positionals.includes('-h')) {

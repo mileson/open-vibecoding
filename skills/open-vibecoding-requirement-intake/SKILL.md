@@ -18,4 +18,6 @@ description: Open VibeCoding 研发入口提醒。产品目标明确后，按影
 
 不运行 `capture -> classify -> synthesize -> review -> change -> tasks`，不要求生成 requirement、PRD、review.html、change 或 tasks 文件。用户明确要求产品文档时，按需求产出相应文档；这是用户交付物，不是每次研发任务的前置凭证。既有历史资料仅作为参考，不回填、覆盖或推断其状态。
 
+用户明确要求交付或更新 PRD 时，调用 `$open-vibecoding-prd`。
+
 任务涉及界面时再读 `$open-vibecoding-interaction-design` 和 `$open-vibecoding-frontend-design`；涉及验证时读 `$open-vibecoding-test-strategy`。可保留真正不可从代码还原的证据，如视觉参照/对比、风险验证结果和外部动作读回。

@@ -1,5 +1,5 @@
 # dependencies
-node_modules/
+node_modules
 
 # macOS
 .DS_Store
@@ -27,3 +27,17 @@ coverage/
 
 # Sibling fork workspace, managed separately
 openloop/
+.open-vibecoding/quality/project-index.json
+.open-vibecoding/quality/project-index.json.lock
+
+.open-vibecoding/state/current.json
+.open-vibecoding/state/events.jsonl
+.open-vibecoding/ledger/events.jsonl
+.open-vibecoding/growth/ledger.json
+.open-vibecoding/knowledge/index.json
+
+.open-vibecoding/manifest.json
+.open-vibecoding/ledger/heads/
+.open-vibecoding/knowledge/skills/
+.open-vibecoding/growth/accepted.json
+.open-vibecoding/growth/rejected.json
