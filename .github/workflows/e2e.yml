@@ -49,6 +49,7 @@ jobs:
       engine: playwright
       manifest: docs/examples/photo-selection-e2e/manifest.json
       run-id: playwright-fixed
+      project-check: web.photo-selection
       verify-photo-selection: true
       setup-script: scripts/ci-e2e-photo-selection.sh
 
@@ -62,6 +63,7 @@ jobs:
       engine: maestro
       manifest: docs/examples/photo-selection-e2e/manifest.json
       run-id: maestro-fixed
+      project-check: ios.photo-selection
       verify-photo-selection: true
       setup-script: scripts/ci-e2e-photo-selection.sh
       cleanup-script: scripts/ci-e2e-photo-selection.sh

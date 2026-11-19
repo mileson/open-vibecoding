@@ -24,6 +24,9 @@ on:
       cli-script:
         type: string
         default: bin/open-vibecoding.js
+      project-check:
+        type: string
+        default: ''
       verify-photo-selection:
         type: boolean
         default: false
@@ -46,6 +49,7 @@ jobs:
       E2E_SETUP: ${{ inputs.setup-script }}
       E2E_CLEANUP: ${{ inputs.cleanup-script }}
       E2E_CLI: ${{ inputs.cli-script }}
+      E2E_PROJECT_CHECK: ${{ inputs.project-check }}
       E2E_ALLOW_RETRY: ${{ inputs.allow-retry-recovery }}
       MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: 'true'
     steps:
@@ -94,7 +98,13 @@ jobs:
             args+=(--setup-error '环境准备失败，详见 setup.log')
           fi
           status=0
-          node "$E2E_CLI" test-report e2e --data "$E2E_MANIFEST" --run "$E2E_RUN_ID" --out "$report" "${args[@]}" || status=$?
+          if [[ -n "$E2E_PROJECT_CHECK" && "$E2E_SETUP_OUTCOME" == success ]]; then
+            node "$E2E_CLI" project-quality run --profile pr --check "$E2E_PROJECT_CHECK" > "$report/project-quality.json" || status=$?
+            evidence="$(jq -r '.results[0].evidence.directory // empty' "$report/project-quality.json")"
+            if [[ -n "$evidence" ]]; then cp -a "$evidence/." "$report/"; fi
+          else
+            node "$E2E_CLI" test-report e2e --data "$E2E_MANIFEST" --run "$E2E_RUN_ID" --out "$report" "${args[@]}" || status=$?
+          fi
           if ! test -f "$report/results.json"; then
             echo 'E2E environment error: no machine-readable result.' >> "$GITHUB_STEP_SUMMARY"
             exit 1
@@ -125,12 +135,28 @@ jobs:
           run_sample defect-count 0 --run "$E2E_ENGINE-defect-count"
           run_sample defect-identity 1 --run "$E2E_ENGINE-defect-identity"
           if [[ "$E2E_ENGINE" == playwright ]]; then
-            PHOTO_FIXTURE_OMIT_ID=P10 run_sample missing-photo 1 --run "$E2E_RUN_ID"
+            if [[ -n "$E2E_PROJECT_CHECK" ]]; then
+              missing="$report/missing-photo"
+              mkdir -p "$missing"
+              status=0
+              PHOTO_FIXTURE_OMIT_ID=P10 node "$E2E_CLI" project-quality run --profile pr --check "$E2E_PROJECT_CHECK" > "$missing/project-quality.json" || status=$?
+              [[ "$status" == 1 ]]
+              evidence="$(jq -er '.results[0] | select(.status == "blocked") | .evidence.directory' "$missing/project-quality.json")"
+              cp -a "$evidence/." "$missing/"
+            else
+              PHOTO_FIXTURE_OMIT_ID=P10 run_sample missing-photo 1 --run "$E2E_RUN_ID"
+            fi
           fi
           node scripts/ci-e2e-photo-selection-eval.mjs "$report" "$E2E_ENGINE" "$E2E_RUN_ID" \
             | tee "$report/eval.json"
           printf 'Tested candidate: `%s` (`%s`)\n' "$GITHUB_SHA" "$GITHUB_REF" >> "$GITHUB_STEP_SUMMARY"
           cat "$report/eval.json" >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain the project quality index
+        if: ${{ always() && inputs.project-check != '' }}
+        shell: bash
+        run: |
+          index=.open-vibecoding/quality/project-index.json
+          if [[ -f "$index" ]]; then cp "$index" "$RUNNER_TEMP/feature-acceptance/project-index.json"; fi
       - name: Release task resources
         timeout-minutes: 2
         if: ${{ always() && inputs.cleanup-script != '' }}

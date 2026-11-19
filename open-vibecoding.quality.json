@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "checks": [
+    {
+      "id": "web.photo-selection",
+      "layer": "e2e",
+      "paths": [
+        "docs/test-report.md",
+        "docs/examples/photo-selection-e2e",
+        "src/test-report-e2e.js",
+        "src/test-report-data-preparation.js",
+        "src/project-quality.js"
+      ],
+      "required": [
+        "pr"
+      ],
+      "timeoutMs": 240000,
+      "reportRuns": [
+        "playwright-fixed"
+      ],
+      "argv": [
+        "node",
+        "bin/open-vibecoding.js",
+        "test-report",
+        "e2e",
+        "--root",
+        ".",
+        "--data",
+        "docs/examples/photo-selection-e2e/manifest.json",
+        "--out",
+        "{artifacts}",
+        "--run",
+        "playwright-fixed"
+      ]
+    },
+    {
+      "id": "ios.photo-selection",
+      "layer": "e2e",
+      "paths": [
+        "docs/test-report.md",
+        "docs/examples/photo-selection-e2e",
+        "src/test-report-e2e.js",
+        "src/test-report-data-preparation.js",
+        "src/project-quality.js"
+      ],
+      "required": [
+        "pr"
+      ],
+      "timeoutMs": 720000,
+      "reportRuns": [
+        "maestro-fixed"
+      ],
+      "argv": [
+        "node",
+        "bin/open-vibecoding.js",
+        "test-report",
+        "e2e",
+        "--root",
+        ".",
+        "--data",
+        "docs/examples/photo-selection-e2e/manifest.json",
+        "--out",
+        "{artifacts}",
+        "--run",
+        "maestro-fixed"
+      ]
+    },
+    {
+      "id": "web.defect-count",
+      "layer": "e2e",
+      "paths": [
+        "docs/test-report.md",
+        "docs/examples/photo-selection-e2e",
+        "src/test-report-e2e.js",
+        "src/test-report-data-preparation.js",
+        "src/project-quality.js"
+      ],
+      "required": [],
+      "timeoutMs": 240000,
+      "reportRuns": [
+        "playwright-defect-count"
+      ],
+      "argv": [
+        "node",
+        "bin/open-vibecoding.js",
+        "test-report",
+        "e2e",
+        "--root",
+        ".",
+        "--data",
+        "docs/examples/photo-selection-e2e/manifest.json",
+        "--out",
+        "{artifacts}",
+        "--run",
+        "playwright-defect-count"
+      ]
+    },
+    {
+      "id": "web.defect-identity",
+      "layer": "e2e",
+      "paths": [
+        "docs/test-report.md",
+        "docs/examples/photo-selection-e2e",
+        "src/test-report-e2e.js",
+        "src/test-report-data-preparation.js",
+        "src/project-quality.js"
+      ],
+      "required": [],
+      "timeoutMs": 240000,
+      "reportRuns": [
+        "playwright-defect-identity"
+      ],
+      "argv": [
+        "node",
+        "bin/open-vibecoding.js",
+        "test-report",
+        "e2e",
+        "--root",
+        ".",
+        "--data",
+        "docs/examples/photo-selection-e2e/manifest.json",
+        "--out",
+        "{artifacts}",
+        "--run",
+        "playwright-defect-identity"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "PHOTO-09",
+      "title": "最多选 9 张照片，从相册切到搜索时继续遵守",
+      "source": "docs/test-report.md#最多选-9-张照片",
+      "cases": [
+        {
+          "id": "count",
+          "checks": [
+            "web.photo-selection",
+            "ios.photo-selection"
+          ]
+        },
+        {
+          "id": "blocked",
+          "checks": [
+            "web.photo-selection",
+            "ios.photo-selection"
+          ]
+        },
+        {
+          "id": "selection",
+          "checks": [
+            "web.photo-selection",
+            "ios.photo-selection"
+          ]
+        },
+        {
+          "id": "returned",
+          "checks": [
+            "web.photo-selection",
+            "ios.photo-selection"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -20,7 +20,7 @@ case "$event" in
       case "$file" in
         docs/examples/photo-selection-e2e/web/*) web=true ;;
         docs/examples/photo-selection-e2e/ios/*) ios=true ;;
-        docs/examples/photo-selection-e2e/*|src/*|bin/*|package.json|package-lock.json|\
+        docs/examples/photo-selection-e2e/*|src/*|bin/*|package.json|package-lock.json|open-vibecoding.quality.json|\
         scripts/ci-e2e-*|.github/workflows/e2e*.yml|skills/open-vibecoding-test-strategy/*)
           web=true
           ios=true

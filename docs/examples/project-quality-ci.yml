@@ -1,0 +1,37 @@
+# Copy to .github/workflows/project-quality.yml in the target project.
+# Replace the setup step and required IDs with that project's approved commands.
+name: Project quality
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+    types: [checks_requested]
+permissions:
+  contents: read
+jobs:
+  quality:
+    name: Project Quality Required
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Prepare the project and Open VibeCoding CLI
+        run: npm ci
+      - name: Run required checks on the candidate
+        run: node bin/open-vibecoding.js project-quality run --profile pr --expect web.unit
+      - name: Upload check records and evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: project-quality-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .open-vibecoding/artifacts/project-quality
+            .open-vibecoding/quality/project-index.json
+          if-no-files-found: ignore
+          include-hidden-files: true
