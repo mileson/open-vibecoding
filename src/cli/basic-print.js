@@ -234,6 +234,9 @@ function printInitResult(result, json) {
   if (result.standards) {
     console.log(`标准化文档: ${result.standards.docsRoot}`);
   }
+  if (result.projectQuality) {
+    console.log(`项目质量索引 ${result.projectQuality.index}（${result.projectQuality.checks} 项检查）`);
+  }
   if (result.agentIntegration) {
     console.log(`Agent 引导: ${result.agentIntegration.ok ? '已启用' : '需修复'} (${result.agentIntegration.tools.join(', ')})`);
     if (result.agentIntegration.hookProfile) {

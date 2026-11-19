@@ -21,6 +21,8 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 
 <a id="readme-detail-audience"></a>
 
+`open-vibecoding init` 可为项目生成质量索引和 Skill。用 `project-quality run` 执行项目检查并保留证据。 [项目质量检查](docs/project-quality.md)
+
 ## ✅ 适用场景
 
 适合希望增强 Agent 项目协作能力的开发者。

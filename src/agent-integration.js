@@ -490,7 +490,7 @@ async function writeProjectCommandCatalog(projectRoot, options, changes) {
   );
 }
 
-function agentContractBody(tools = OPEN_VIBECODING_AGENT_TOOLS) {
+function agentContractBody(tools = OPEN_VIBECODING_AGENT_TOOLS, projectQuality) {
   const entries = [];
   if (tools.includes('codex')) entries.push(`Codex：\`${installedSkillPath('open-vibecoding-router')}\``);
   if (tools.includes('claude')) entries.push('Claude：`.claude/skills/open-vibecoding-router/SKILL.md`');
@@ -503,6 +503,9 @@ function agentContractBody(tools = OPEN_VIBECODING_AGENT_TOOLS) {
     '### 场景入口',
     '',
     `- 按当前客户端读取项目内入口：${entries.join('；')}。路径相对于本文件所在项目，不相对于终端当前目录。具体 CLI 查本项目的 \`.open-vibecoding/harness/command-catalog.md\`。`,
+    ...(projectQuality ? [
+      `- 涉及本项目代码或验收时，先查项目质量 [Skill](${projectQuality.skill}) 和 [索引](${projectQuality.index})，沿业务规则找到相关检查与实际运行记录。`,
+    ] : []),
     '- 开始任务或目标改变时，按用户目标判断相关场景，读取所选子能力后落实其中适用的方法。已有上下文足够时复用；不要求重复读文件。需要时用一句业务语言说明采用的方法，交付说明实际验证与缺口。',
     `- 当前安装的 CLI：\`node "${cjoin(PACKAGE_ROOT, 'bin', 'open-vibecoding.js')}"\`；未安装全局命令时使用此入口，不调用旧版命令。`,
     '- 产品、交互、研发、测试和工具增强各有独立场景 Skill；按用户意图和现有证据选择，不用固定关键词匹配。场景目录见 `open-vibecoding capabilities list`。',
@@ -1307,7 +1310,12 @@ export async function setupOpenPrdAgentIntegration(projectRoot, options = {}) {
 
   await ensureHarnessState(projectRoot, normalizedOptions);
   await writeProjectCommandCatalog(projectRoot, normalizedOptions, changes);
-  await upsertTextBlockFile(cjoin(projectRoot, 'AGENTS.md'), 'AGENTS', agentContractBody(tools), normalizedOptions, changes);
+  const projectQuality = options.projectQuality ?? (
+    await exists(cjoin(projectRoot, '.open-vibecoding', 'quality', 'SKILL.md'))
+      ? { skill: '.open-vibecoding/quality/SKILL.md', index: '.open-vibecoding/quality/project-index.json' }
+      : null
+  );
+  await upsertTextBlockFile(cjoin(projectRoot, 'AGENTS.md'), 'AGENTS', agentContractBody(tools, projectQuality), normalizedOptions, changes);
 
   if (tools.includes('codex')) {
     await writeCodexAdapter(projectRoot, normalizedOptions, changes, installableSkills);

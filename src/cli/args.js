@@ -658,6 +658,7 @@ function usage() {
     '',
     'Usage:',
     '  open-vibecoding capabilities <list|get <id>|contract> [--path <project>]  # 独立场景与项目扩展发现；JSON 输出',
+    '  open-vibecoding project-quality <refresh|run> --help  # 查找、执行并记录项目检查',
     '  open-vibecoding test-report <render|record|import|plan|run|e2e> --help  # 生成报告、导入结果或执行测试',
     '  open-vibecoding tools <check|ensure> <playwright-cli|maestro> [--root <project-dir>] [--device <iOS-UDID>]  # 检测或按需安装工具',
     '  open-vibecoding init [path] [--template-pack <base|consumer|b2b|agent>] [--tools <all|codex,claude,cursor>] [--hook-profile <lite|guarded|full>] [--symlink-strategy <block|materialize>] [--install-safety-backup-root <path>] [--force]',

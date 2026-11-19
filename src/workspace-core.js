@@ -239,6 +239,8 @@ const ACTIVE_DESIGN_TEMPLATE_FILES = {
 const OPERATIONAL_GITIGNORE_ENTRIES = [
   '.open-vibecoding/harness/',
   '.open-vibecoding/learning/',
+  '.open-vibecoding/quality/project-index.json',
+  '.open-vibecoding/quality/project-index.json.lock',
   '.open-vibecoding/quality/reports/',
 ];
 
