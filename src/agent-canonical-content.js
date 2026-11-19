@@ -15,6 +15,7 @@ export const CANONICAL_SKILLS = [
     id: 'open-vibecoding-test-strategy',
     sourceSkill: 'open-vibecoding-test-strategy',
   },
+  { id: 'open-vibecoding-test-case-generation', sourceSkill: 'open-vibecoding-test-case-generation' },
   { id: 'open-vibecoding-unit-test-generation', sourceSkill: 'open-vibecoding-unit-test-generation' },
   { id: 'open-vibecoding-unit-test-run-and-repair', sourceSkill: 'open-vibecoding-unit-test-run-and-repair' },
   {
@@ -39,6 +40,8 @@ export const CANONICAL_SKILLS = [
   { id: 'open-vibecoding-test-strength-review', sourceSkill: 'open-vibecoding-test-strength-review' },
   { id: 'open-vibecoding-ios-localization', sourceSkill: 'open-vibecoding-ios-localization' },
   { id: 'open-vibecoding-product-data-analysis', sourceSkill: 'open-vibecoding-product-data-analysis' },
+  { id: 'open-vibecoding-app-store-aso-research', sourceSkill: 'open-vibecoding-app-store-aso-research' },
+  { id: 'open-vibecoding-product-social-listening', sourceSkill: 'open-vibecoding-product-social-listening' },
   { id: 'open-vibecoding-production-anomaly-analysis', sourceSkill: 'open-vibecoding-production-anomaly-analysis' },
   {
     id: 'open-vibecoding-requirement-intake',
@@ -68,6 +71,7 @@ export const CANONICAL_SKILLS = [
     id: 'open-vibecoding-product-document',
     sourceSkill: 'open-vibecoding-product-document',
   },
+  { id: 'open-vibecoding-prd', sourceSkill: 'open-vibecoding-prd' },
   {
     id: 'open-vibecoding-interaction-design',
     sourceSkill: 'open-vibecoding-interaction-design',
@@ -84,6 +88,11 @@ export const CANONICAL_SKILLS = [
   {
     id: 'open-vibecoding-feature-implementation',
     sourceSkill: 'open-vibecoding-feature-implementation',
+  },
+  { id: 'open-vibecoding-backend-fastapi-endpoint-creator', sourceSkill: 'open-vibecoding-backend-fastapi-endpoint-creator' },
+  {
+    id: 'open-vibecoding-ios-feature-scaffolder',
+    sourceSkill: 'open-vibecoding-ios-feature-scaffolder',
   },
   {
     id: 'open-vibecoding-debugging',
@@ -331,6 +340,21 @@ export const CANONICAL_SKILLS = [
 
 export const CANONICAL_COMMANDS = [
   {
+    id: 'test-case-generation',
+    title: '制定策略并生成用例',
+    body: '使用 $open-vibecoding-test-case-generation。Codex 和 Claude 读取项目内已安装的 Skill。Cursor 从项目引导注明的路由源文件定位同一 skills 目录下的 open-vibecoding-test-case-generation/SKILL.md。',
+  },
+  {
+    id: 'backend-fastapi-endpoint-creator',
+    title: '实现 FastAPI 端点',
+    body: '使用 $open-vibecoding-backend-fastapi-endpoint-creator。Codex 和 Claude 读取项目内已安装的 Skill。Cursor 从项目引导注明的路由源文件定位同一 skills 目录下的 open-vibecoding-backend-fastapi-endpoint-creator/SKILL.md。',
+  },
+  {
+    id: 'ios-feature-scaffolder',
+    title: '搭建 iOS 功能骨架',
+    body: '读取 $open-vibecoding-ios-feature-scaffolder。Codex 和 Claude 使用项目内安装的 Skill。Cursor 根据项目引导中的路由源文件，定位同一 skills 目录下的 open-vibecoding-ios-feature-scaffolder/SKILL.md。以同类模块为参照，沿用项目目录、架构与 Target 约定搭建骨架。',
+  },
+  {
     id: 'standards',
     title: 'Open VibeCoding Standards',
     body: [
@@ -439,8 +463,19 @@ export function renderCommandCatalog() {
     '用户直接描述任务；本目录只供 Agent 按场景发现工具，不规定执行顺序或任务状态。',
     '',
     '- `open-vibecoding capabilities list|get|contract [--path <project>]`：查看五个执行域、横向最佳实践、独立场景及项目扩展。',
+    '- `open-vibecoding-ios-feature-scaffolder` Skill：参考 iOS 项目中的同类模块，沿用现有目录、架构与 Target 约定搭建代码骨架。',
+    '- `open-vibecoding-backend-fastapi-endpoint-creator` Skill：根据接口约定实现 FastAPI 端点，沿用项目权限与数据访问规则。',
     '- `open-vibecoding project-quality <refresh|run|pre-push|observe-push> --help`：发现项目检查、按变更执行并保留实跑证据。',
     '- `open-vibecoding test-report render|record --help`：用 JSON 生成独立测试 HTML，或按用例 ID 追加结果并刷新报告。',
+    '- `open-vibecoding test-report render --kind cases --data cases.json --out cases.html`：校验用例 JSON 并生成离线测试用例清单。',
+    '- `open-vibecoding test-report e2e --help`：按清单运行 Playwright 或 Maestro，输出功能验收、环境和失败证据。',
+    '- `open-vibecoding code-quality-report render --help`：将代码质量结论、证据和验证状态写入可离线打开的 HTML。',
+    '- `open-vibecoding app-store reviews --help`：按 App ID 和地区采集公开评论，供 ASO 和产品社媒分析报告共用。',
+    '- `open-vibecoding aso-report template|render --help`：复制或生成 ASO HTML。渲染时可按地区重复传入 `--app-store-reviews`。',
+    '- `open-vibecoding funnel-report template|render --help`：按问题组合漏斗、趋势、分组对照与同期群留存。',
+    '- `open-vibecoding prd template|render --help`：导出 PRD 样例，或校验并生成离线 HTML。',
+    '- `open-vibecoding prd design validate|merge --help`：检查交互设计清单与编号，或把设计项合入 PRD。',
+    '- `open-vibecoding social-listening check|run|import|template|render --help`：核对社媒平台配置、生成采集计划或渲染产品社媒分析报告。',
     '- `open-vibecoding guide .`：查看非线性的场景指引。',
     '- `open-vibecoding benchmark ...`：按需收集和核验外部证据。',
     '- `open-vibecoding visual-prepare ...` / `visual-compare ...`：保留视觉参照和实现对比。',

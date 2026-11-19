@@ -17,6 +17,8 @@
  * 维护规则
  * 新增 flag 时必须同步默认值、解析分支、usage、测试和 docs/basic/backend-structure.md。
  */
+import { KNOWLEDGE_SOURCE_USAGE } from './knowledge-sources-command.js';
+
 function parseCommandArgs(argv) {
   const args = [...argv];
   const flags = { json: false, force: false, fix: false, open: false, append: false, init: false, check: false, review: false, reject: false, resume: false, advance: false, verify: false, evidenceRequired: false, next: false, generate: false, validate: false, apply: false, archive: false, activate: false, close: false, keep: false, write: false, dryRun: false, repairAgent: false, allowDirtyMain: false, fleet: false, updateOpenprd: false, backfillWorkUnits: false, syncRegistry: false, setupMissing: false, doctor: false, recordHook: false, plan: false, prompt: false, loopRun: false, finish: false, commit: false, html: false, template: false, failOnViolation: false, noExternalFacts: false, noBrandAssets: false, noRealImages: false, daemon: false, stop: false, bridgeOutbox: false, bridgeSent: false, bridgeFailed: false, mark: null, direction: null, autoRefactor: null, type: 'architecture', mode: 'auto', input: null, field: null, value: null, set: null, jsonFile: null, artifactMarkdown: null, contentJson: null, presentation: null, source: null, reference: null, actual: null, before: null, after: null, referenceBox: null, actualBox: null, beforeBox: null, afterBox: null, focusLabel: null, focusReason: null, board: null, grid: null, boxes: null, out: null, format: null, quality: null, maxPanelWidth: null, referenceLabel: null, actualLabel: null, locale: null, classifyExternal: null, maxIterations: null, maxDepth: null, include: null, exclude: null, report: null, item: null, id: null, status: null, claim: null, notes: null, reason: null, confidence: null, threshold: null, change: null, starter: null, sections: null, brief: null, tools: 'all', hookProfile: null, templatePack: null, target: 'open-vibecoding', targetRoot: null, path: null, productType: null, title: null, owner: null, problem: null, whyNow: null, evidence: null, from: null, to: null, version: null, digest: null, workUnit: null, event: null, risk: null, outcome: null, preview: null, learn: null, genre: null, style: null, topic: null, enable: false, disable: false, agent: 'codex', agentCommand: null, worktree: null, branch: null, message: null, thread: null, threadTitle: null, conversationTitle: null, session: null, sessionTitle: null, host: null, port: null, openTarget: 'auto', runtimeAction: null, lane: null, task: null, claimId: null, client: null, leaseMs: null, expectedRevision: null, expectedLaneRevision: null, writeSet: null, baseCommit: null, gateId: null, approvalId: null, symlinkStrategy: null, installSafetyBackupRoot: null };
@@ -661,6 +663,12 @@ function usage() {
     '  open-vibecoding project-quality <refresh|run|pre-push|observe-push> --help  # 查找、执行并记录项目检查',
     '  open-vibecoding test-report <render|record|import|plan|run|e2e> --help  # 生成报告、导入结果或执行测试',
     '  open-vibecoding tools <check|ensure> <playwright-cli|maestro> [--root <project-dir>] [--device <iOS-UDID>]  # 检测或按需安装工具',
+    '  open-vibecoding code-quality-report render --help  # 从评审证据生成独立 HTML',
+    '  open-vibecoding app-store reviews --help  # 采集指定地区的 App Store 公开评论',
+    '  open-vibecoding aso-report <markets|template|render> --help  # 查看地区、复制模板或生成 ASO 报告',
+    '  open-vibecoding funnel-report <template|render> --help  # 导出模板或组合漏斗、趋势、对照与留存报告',
+    '  open-vibecoding prd <template|render> --help  # 导出 JSON 样例或生成独立 PRD',
+    '  open-vibecoding prd design <validate|merge> --help  # 校验交互设计清单或按编号合入 PRD',
     '  open-vibecoding init [path] [--template-pack <base|consumer|b2b|agent>] [--tools <all|codex,claude,cursor,gemini>] [--hook-profile <lite|guarded|full>] [--symlink-strategy <block|materialize>] [--install-safety-backup-root <path>] [--force]',
     '  open-vibecoding setup [path] [--tools <all|codex,claude,cursor,gemini>] [--hook-profile <lite|guarded|full>] [--symlink-strategy <block|materialize>] [--install-safety-backup-root <path>] [--force] [--json]',
     '  open-vibecoding update [path] [--tools <all|codex,claude,cursor,gemini>] [--hook-profile <lite|guarded|full>] [--symlink-strategy <block|materialize>] [--install-safety-backup-root <path>] [--force] [--json]',
@@ -677,6 +685,7 @@ function usage() {
     '  open-vibecoding brainstorm [path] [--topic <text>] [--open] [--json]',
     '  open-vibecoding learn [path] [--topic <text>] [--genre <internet-product|scientific|fairy-tale|web-novel|xianxia>] [--style <substyle>] [--source <workspace|docs|loop|all>] [--content-json <file>] [--open] [--enable|--disable] [--json]',
     '  open-vibecoding quality [path] [--init|--verify|--learn [--review] --from <legacy-report-or-diagnostics-or-turn-state>] [--fail-on-violation] [--force] [--json]',
+    ...KNOWLEDGE_SOURCE_USAGE.map(line => '  ' + line),
     '  open-vibecoding knowledge <candidates|reject|archive|restore> [path-or-id] [--status <pending-review|all|rejected|archived|promoted|merged>] [--id <candidate-id>] [--reason <text>] [--json]',
     '  open-vibecoding icon-cutout --source <image> --out <new.png> [--key-color <#RRGGBB>] [--tolerance <0..255>] [--feather <0..255>]  # 本地透明化；JSON 输出',
     '  open-vibecoding visual-grid --source <image> --out <new.png> [--step 100] [--json-file <mapping.json>]  # 坐标网格与显式缩放/裁切换算',

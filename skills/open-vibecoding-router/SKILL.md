@@ -11,16 +11,22 @@ description: Open VibeCoding 入口路由。按用户目标组合五个执行能
 |---|---|
 | 解释竞品在特定市场为何增长、如何获客与促成付费；按关注清单比较跨次变化 | `$open-vibecoding-competitor-growth-analysis`、`$open-vibecoding-competitor-tracking`，按需复用内部 `$open-vibecoding-competitive-evidence`；持续跟踪须授权并使用宿主调度，不自动创建任务 |
 | 定位产品问题属于哪一层；了解用户与市场；对比替代方案；明确要求文档交付 | `$open-vibecoding-product-diagnosis`、`$open-vibecoding-product-research`、`$open-vibecoding-competitor-analysis`、`$open-vibecoding-product-document` |
+| 用户明确要求编写或更新 PRD | `$open-vibecoding-prd`，按产品类型连接目标角色、场景、功能与验收，按需生成离线 HTML |
 | 根据真实使用数据解释转化、留存或功能使用变化，判断下一步优化 | `$open-vibecoding-product-data-analysis`，属于产品分析，不替代用户与市场调研 |
+| 根据产品名采集和比较小红书、抖音、视频号等平台评价，分析用户口碑 | `$open-vibecoding-product-social-listening`，输出跨平台产品社媒分析报告 |
+| 为 iOS App 研究中美区等目标市场的 App Store 名称、副标题、描述或关键词，提高商店搜索覆盖 | `$open-vibecoding-app-store-aso-research`，属于产品域；如需解释实际曝光、转化或留存，按需组合产品使用数据分析 |
 | 判断上线后的崩溃和错误影响、版本变化，复查修复后是否再发生 | `$open-vibecoding-production-anomaly-analysis`，属于线上质量分析，不自动修复或启动监控 |
 | 设计任务流程与状态；生成单张界面效果图或比较多个方向（包括仅生图、不写代码）；按参考实施并视觉验收 | `$open-vibecoding-interaction-design`、`$open-vibecoding-visual-direction-review`、`$open-vibecoding-frontend-design` |
 | 为已有产品设计新界面、弹窗、组件或效果图，需要融入项目原有风格 | 内部 `$open-vibecoding-design-context`；主动查看目标界面和样式组件，把实际参考带入生成，交付前自查，不等用户提醒 |
 | 界面或效果图显得杂乱、层级不清，或需要判断视觉调整是否帮助用户理解与操作 | 内部 `$open-vibecoding-visual-refinement`；继承项目风格，按问题整理层级、对齐、空间、字体、色彩与图标，核对业务含义和实际结果 |
 | 生成或修改用户会看到的界面、效果图、文案与导出内容 | 内部 `$open-vibecoding-public-content-boundary`；隔离制作过程与内部规则，生成前约束、交付前查看实际结果，保留必要业务反馈 |
 | 实现明确目标；定位并修复故障；在保持行为下改善结构 | `$open-vibecoding-feature-implementation`、`$open-vibecoding-debugging`、`$open-vibecoding-refactoring` |
-| 已授权代码变更需要把功能做对、整理代码质量并完成工程收尾 | 内部 `$open-vibecoding-code-quality`；独立组合 `$open-vibecoding-code-complexity-review`、`$open-vibecoding-code-duplication-review`、`$open-vibecoding-test-strength-review`，不要求用户主动调用或逐步留痕 |
+| 在已有 FastAPI 服务中按接口约定新增或扩展端点，沿用现有权限与数据访问规则 | `$open-vibecoding-backend-fastapi-endpoint-creator` |
+| 以现有 iOS 模块为参照，按项目目录和架构搭建新功能或复用组件的代码骨架 | `$open-vibecoding-ios-feature-scaffolder`，需要继续实现业务行为时按需组合功能实现 |
+| 已授权代码变更需要质量检查与工程收尾，或用户要求独立代码质量评审 | 内部 `$open-vibecoding-code-quality`；按范围组合 `$open-vibecoding-code-complexity-review`、`$open-vibecoding-code-duplication-review`、`$open-vibecoding-test-strength-review`。需要独立报告时用 `code-quality-report render` |
 | 功能会消耗有限资源或改变使用权益，需要兼顾消费、恢复、运营与用户反馈 | 内部 `$open-vibecoding-resource-entitlement-design`，研发主责，产品、交互与测试按需复用；不默认收费或新建后台 |
 | 修复故障或优化性能时，让再次发生的问题仍可继续深入定位 | `$open-vibecoding-diagnostic-readiness`，内部研发能力；主动评估盲区，按需补强并验证诊断证据，不自动开启监控 |
+| 根据功能需求、改动或缺陷制定策略并生成测试用例 | `$open-vibecoding-test-case-generation`，按风险选择测试层并交付用例 |
 | 从测试用户的真实入口验证业务结果，选择可用操作工具；实际验收与回归 | `$open-vibecoding-test-strategy`、`$open-vibecoding-acceptance-verification` |
 | 为目标模块补充单元测试 | `$open-vibecoding-unit-test-generation`。只补测试时交付用例和执行入口 |
 | 执行单元测试并报告；明确要求时修复可复现的问题 | `$open-vibecoding-unit-test-run-and-repair`。需要先补用例时组合生成能力 |

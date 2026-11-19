@@ -19,9 +19,32 @@ description: 运行项目单元测试并输出实际报告。明确要求修复�
 
 ## 报告字段
 
-需要 HTML 报告时，用 `open-vibecoding test-report render|record --help`。按项目与验证层选择独立模板，把用例和实际结果写入 JSON，交由 CLI 生成 HTML。保留稳定的用例 ID，每次执行使用独立的 runId；重试写入时复用同一个 runId。测试命令、结果和错误原因来自真实执行记录。
+需要 HTML 报告时，用 `open-vibecoding test-report --help`。按项目与验证层选择独立模板，把用例和实际结果写入 JSON，交由 CLI 生成 HTML。保留稳定的用例 ID，每次执行使用独立的 runId；重试写入时复用同一个 runId。测试命令、结果和错误原因来自真实执行记录。
 
 - 项目与模块、测试类型、环境、运行命令、目标范围和原始证据位置。
 - 各次运行的退出状态及实际通过、失败、跳过、取消数量。没有执行时写明原因，缺失统计写未知。
 - 每个失败的预期、实际、分类与依据。修复模式另记修改位置、修复前结果、同用例复测及相关回归结果。
 - 尚未覆盖的范围和未解决问题。保留脱敏证据，敏感内容从日志摘要和可分享报告中剔除。
+
+## 导入框架结果
+
+沿用项目现有执行命令和测试目标，给同一次执行分配一个 `runId`。能导出结构化结果时，将下列选项加到项目已有测试入口，并保留原始结果与日志。
+
+| 项目 | 原始结果 |
+| --- | --- |
+| iOS XCTest / Swift Testing | 使用已有 `xcodebuild test` 配置及 `-resultBundlePath <path.xcresult>`，复用已核实的目标与测试环境 |
+| Vitest | `--reporter=json --outputFile <path.json>` |
+| Jest | `--json --outputFile <path.json>`，需要定位时加 `--testLocationInResults` |
+| Python / FastAPI pytest | `--junitxml <path.xml>` |
+
+用 `open-vibecoding test-report import --kind unit --format <xcresult|vitest|jest|pytest> --data <cases.json> --result <artifact> --run-id <id> --out <report.html>` 追加结果。Web 结果如果来自不同项目根目录，用 `--root` 指明执行时的根目录。通过 `--meta` 提供本次命令（`command`）、退出码（`exitCode`）、版本（`version`、`runnerVersion`）、环境（`environment`）和日志位置（`evidence`）。
+
+用 `testIds` 按格式匹配。Xcode 用结果节点的测试标识 URL，Web 用 `相对路径::fullName`，pytest 用 `classname::name` 并保留参数后缀。核对匹配结果，处理未匹配或重复标识。没有运行结果的用例保留待测试；跳过、取消、阻塞、未知及不支持按事实记录。没有可读结果文件时，可按实际证据用 `record` 记录已知的单条状态。实际采集覆盖率时单列。复测使用新 `runId` 并保留前次记录，重试同一次导入沿用原 `runId`。
+
+## 分组执行与补测
+
+对复杂改动，使用生成 Skill 准备的 `testPlan`。先核对项目当前分支、工具版本、资源归属、目标选择、已准备的数据和预期断言，再用 `test-report plan` 校验。计划只使用当前项目已有的测试命令、配置与框架结果格式，逐组验证参数和数据隔离后再执行。
+
+用 `test-report run --data cases.json --root <project-dir> --out report.html` 调用计划。独立、轻量且资源许可的组可通过 `--jobs` 限并发，共用同名资源的组串行。Apple 测试遵循宿主的模拟器约束，并核实原生命令自身的并发设置。用重复的 `--group <id>` 定向复测，CLI 会补上该组声明的前置组。命令参数、原始结果和日志按组保存，按用例标识匹配；未匹配、失败和受阻按实际保留。
+
+复盘依次核对规则有没有用例、用例有没有执行、改动的代码分支是否覆盖，以及断言能否抓住关键错误。只有取得覆盖报告、断言评审或受控变异证据，才在 `findings` 记录代码或断言缺口。覆盖率按实际采集呈现，可由原生工具归并其原始数据；单独的分片百分比不能直接平均。补用例或断言后定向复测，并保留前次记录。验证确实能发现原问题后再关闭对应缺口。

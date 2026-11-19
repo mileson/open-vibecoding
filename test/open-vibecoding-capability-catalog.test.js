@@ -91,6 +91,30 @@ test('unit test generation and execution are independently discoverable', () => 
   assert.ok(execution.uses.includes('debugging'));
 });
 
+test('test case generation exposes strategy and unit-test reuse through one public capability', () => {
+  const catalog = buildCapabilityCatalog();
+  const scenario = getCapability(catalog, 'test-case-generation');
+  assert.equal(scenario.skill, 'open-vibecoding-test-case-generation');
+  assert.equal(scenario.userFacing, true);
+  assert.deepEqual(scenario.domains, ['testing']);
+  assert.deepEqual(scenario.uses, ['test-strategy', 'unit-test-generation']);
+  const selected = spawnSync(process.execPath, [BRANDED_CLI, 'capabilities', 'get', scenario.id], { encoding: 'utf8' });
+  assert.equal(selected.status, 0, selected.stderr);
+  assert.deepEqual(JSON.parse(selected.stdout).capability, scenario);
+});
+
+test('App Store ASO is a distinct product scenario routed through its installed skill', () => {
+  const scenario = getCapability(buildCapabilityCatalog(), 'app-store-aso-research');
+  assert.deepEqual(scenario.domains, ['product']);
+  assert.equal(scenario.skill, 'open-vibecoding-app-store-aso-research');
+  assert.deepEqual(scenario.tools, ['aso-report', 'app-store']);
+  const skill = readFileSync(new URL('../skills/open-vibecoding-app-store-aso-research/SKILL.md', import.meta.url), 'utf8');
+  assert.match(skill, /\$app-store-aso-research\b/);
+  assert.match(skill, /aso-report render/);
+  const router = readFileSync(new URL('../skills/open-vibecoding-router/SKILL.md', import.meta.url), 'utf8');
+  assert.match(router, /App Store[^\n]*关键词[^\n]*\$open-vibecoding-app-store-aso-research/);
+});
+
 test('each built-in scenario has a distinct, installable child skill', () => {
   const catalog = buildCapabilityCatalog();
   const ids = catalog.scenarios.map((scenario) => scenario.skill);
@@ -123,16 +147,16 @@ test('diagnostic readiness is internal and reused across development and accepta
   assert.equal(catalog.scenarios.filter(s => s.skill === capability.skill).length, 1);
 });
 
-test('data analysis scenes are independently discoverable without external providers', () => {
+test('data analysis scenes are independently discoverable with optional built-in reporting', () => {
   const catalog = buildCapabilityCatalog();
-  for (const [id, domain] of [
-    ['product-data-analysis', 'product'],
-    ['production-anomaly-analysis', 'testing'],
+  for (const [id, domain, tools] of [
+    ['product-data-analysis', 'product', ['funnel-report']],
+    ['production-anomaly-analysis', 'testing', undefined],
   ]) {
     const scenario = getCapability(catalog, id);
     assert.deepEqual(scenario.domains, [domain]);
     assert.deepEqual(scenario.uses, ['tool-selection']);
-    assert.equal(scenario.tools, undefined);
+    assert.deepEqual(scenario.tools, tools);
     const selected = spawnSync(process.execPath, [BRANDED_CLI, 'capabilities', 'get', id], { encoding: 'utf8' });
     assert.equal(selected.status, 0, selected.stderr);
     assert.deepEqual(JSON.parse(selected.stdout).capability, scenario);
@@ -162,6 +186,13 @@ test('project contribution is discoverable by CLI without changing built-ins', a
     const manifest = JSON.parse(readFileSync(path.join(root, '.open-vibecoding', 'harness', 'install-manifest.json'), 'utf8'));
     assert.equal(existsSync(manifest.cliEntry), true);
     assert.equal(path.basename(manifest.cliEntry), 'open-vibecoding.js');
+    const prd = manifest.skillEntries.find(({ id }) => id === 'open-vibecoding-prd');
+    assert.ok(prd);
+    const commandCatalog = readFileSync(path.join(root, '.open-vibecoding', 'harness', 'command-catalog.md'), 'utf8');
+    assert.match(commandCatalog, /open-vibecoding prd template\|render --help/);
+    for (const name of ['open-vibecoding-prd', 'open-vibecoding-ios-feature-scaffolder', 'open-vibecoding-backend-fastapi-endpoint-creator', 'open-vibecoding-app-store-aso-research']) {
+      assert.ok(readFileSync(path.join(root, installedSkillPath(name)), 'utf8').includes(name));
+    }
     assert.equal(existsSync(path.join(root, '.agents', 'skills', 'example-content-audit', 'SKILL.md')), true);
     assert.equal(existsSync(path.join(root, '.claude', 'skills', 'example-content-audit', 'SKILL.md')), false);
     for (const tool of ['.agents']) {
@@ -233,6 +264,12 @@ test('capabilities CLI exposes registered scenes and structured not-found errors
   const selected = spawnSync(process.execPath, [CLI, 'capabilities', 'get', 'product-diagnosis'], { encoding: 'utf8' });
   assert.equal(selected.status, 0, selected.stderr);
   assert.equal(JSON.parse(selected.stdout).capability.skill, 'open-vibecoding-product-diagnosis');
+
+  const prd = spawnSync(process.execPath, [CLI, 'capabilities', 'get', 'prd'], { encoding: 'utf8' });
+  assert.equal(prd.status, 0, prd.stderr);
+  const prdCapability = JSON.parse(prd.stdout).capability;
+  assert.equal(prdCapability.skill, 'open-vibecoding-prd');
+  assert.deepEqual(prdCapability.tools, ['prd']);
 
   const composite = spawnSync(process.execPath, [CLI, 'capabilities', 'get', 'ui-review-and-repair'], { encoding: 'utf8' });
   assert.equal(composite.status, 0, composite.stderr);

@@ -1,0 +1,142 @@
+{
+  "schemaVersion": "open-vibecoding.code-quality-report.v1",
+  "id": "photo-selection-limit",
+  "revision": "3",
+  "title": "相册和搜索最多选 9 张",
+  "conclusion": "名额按已选列表计算，上限提示有两处重复，仍需验证第 10 张拦截与补选。",
+  "scope": "Swift 选图规则与相关测试",
+  "priorities": [
+    {
+      "id": "trace-shared-rule",
+      "title": "核对两个入口的规则来源",
+      "action": "沿调用查找上限判断。如果同一规则分开维护，再考虑共用。"
+    },
+    {
+      "id": "verify-test-assertion",
+      "title": "验证选图上限改错能被发现",
+      "action": "先跑通原用例，再把上限改为 10，检查拦截断言是否失败。"
+    }
+  ],
+  "dimensions": {
+    "complexity": {
+      "label": "复杂度评审",
+      "summary": "找出分支多、难验证的选图逻辑。顺着选中、取消和再选，检查剩余名额是否始终按当前已选列表计算。",
+      "checks": [
+        {
+          "id": "selection-branches",
+          "title": "取消和补选共用已选状态",
+          "method": "源码审查",
+          "scope": "选图 ViewModel 的多选分支",
+          "status": "no_findings",
+          "detail": "已选数量直接取 selectedAssetIDs.count。取消时移除照片，再选时先检查当前容量，再写入同一集合。代码见 PhotoSelectorViewModel.swift 第 80–89 行和第 448–465 行。"
+        },
+        {
+          "id": "swift-coverage",
+          "title": "复杂度和测试覆盖",
+          "method": "Crapper",
+          "scope": "Swift 选图代码",
+          "status": "unsupported",
+          "detail": "已核验版本不支持 Swift。项目原生覆盖率未采集，分支复杂度、覆盖率和 CRAP 均无测量结果。"
+        }
+      ],
+      "findings": []
+    },
+    "duplication": {
+      "label": "重复逻辑评审",
+      "summary": "核对上限判断和提示是否共用，并追踪相册、搜索两个入口。",
+      "checks": [
+        {
+          "id": "check-limit-message",
+          "title": "达到上限时的提示是否共用",
+          "method": "源码审查",
+          "scope": "点击选图、拍照后加入已选",
+          "status": "findings",
+          "detail": "点击选图和拍照加入都用 isMaxSelectionReached 判断名额，各自拼接相同的上限提示并返回。"
+        },
+        {
+          "id": "compare-entries",
+          "title": "追踪两个入口的上限判断",
+          "method": "源码审查",
+          "scope": "相册与搜索的选图调用链",
+          "status": "not_run",
+          "detail": "对照两条调用链的最终判断及状态来源。如果是两处实现，保留两处实际文件和行号，再判断它们是否应共享策略。源码位置及是否重复均待核对。"
+        },
+        {
+          "id": "swift-similarity",
+          "title": "结构相似候选",
+          "method": "Dryer",
+          "scope": "Swift 选图代码",
+          "status": "unsupported",
+          "detail": "已核验版本不支持 Swift，本次无扫描结果。"
+        }
+      ],
+      "findings": [
+        {
+          "id": "duplicated-limit-message",
+          "title": "两条路径重复设置上限提示",
+          "checkId": "check-limit-message",
+          "severity": "low",
+          "evidence": "在点击选图与拍照加入分支，均从配置取最大数量、设置同一句错误提示，然后退出当前处理。",
+          "impact": "改提示文案时要维护两处，容易导致不同入口提示不一致。",
+          "recommendation": "沿用共享的上限判断，把提示处理收敛到一处。",
+          "locations": [
+            {
+              "path": "PoseCam/Components/PhotoSelector/ViewModels/PhotoSelectorViewModel.swift",
+              "line": 455,
+              "endLine": 460
+            },
+            {
+              "path": "PoseCam/Components/PhotoSelector/ViewModels/PhotoSelectorViewModel.swift",
+              "line": 654,
+              "endLine": 659
+            }
+          ],
+          "verification": {
+            "status": "pending",
+            "detail": "建议调整后核对点击选图和拍照加入的提示，再执行选图边界用例。"
+          }
+        }
+      ]
+    },
+    "testStrength": {
+      "label": "边界控制评审",
+      "summary": "核对上限改错后，测试能否发现第 10 张被放行。",
+      "checks": [
+        {
+          "id": "swift-mutation",
+          "title": "自动变异检查",
+          "method": "Mutator",
+          "scope": "Swift 选图上限",
+          "status": "unsupported",
+          "detail": "已核验版本不支持 Swift，本次无变异工具结果。"
+        },
+        {
+          "id": "limit-change",
+          "title": "从 9 改为 10 后复测",
+          "method": "项目 Swift 测试与定向改动",
+          "scope": "两个入口的第 10 张拦截用例",
+          "status": "not_run",
+          "detail": "在隔离副本里前后运行同一用例。编译失败、超时和预期断言失败分别记录。",
+          "runs": [
+            {
+              "title": "基线｜上限为 9",
+              "status": "not_run",
+              "detail": "先确认两个入口的第 10 张拦截用例都通过。"
+            },
+            {
+              "title": "改错｜上限改为 10",
+              "status": "not_run",
+              "detail": "仅将上限改为 10，重跑同一用例。若拦截断言因第 10 张被放行而失败，说明测试抓住了错改。若用例仍通过，核对该代码是否执行、断言是否有效。"
+            },
+            {
+              "title": "恢复｜上限还原为 9",
+              "status": "not_run",
+              "detail": "恢复原规则并重跑原用例，确认结果恢复。"
+            }
+          ]
+        }
+      ],
+      "findings": []
+    }
+  }
+}

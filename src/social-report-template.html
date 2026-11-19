@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{SOCIAL_TITLE}}</title>
+<style>
+:root{color-scheme:light;--scroll-thumb:#b1bac4;scrollbar-color:var(--scroll-thumb) transparent;--bg:#f3f4f6;--ink:#202329;--muted:#59616d;--line:#e5e8ed;--paper:#fff;--action:#155eaa;--action-tint:#f2f7fd;--pos:#218c58;--neu:#818995;--neg:#d24657;--pos-ink:#14623c;--neu-ink:#49515e;--neg-ink:#9f2339;--pos-tint:#edf8f1;--neu-tint:#f0f2f5;--neg-tint:#fdf0f2}
+*{box-sizing:border-box;scrollbar-width:thin}
+@supports not (scrollbar-color:auto){::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent;margin:5px}::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:999px}}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:1320px;margin:auto;padding:28px 34px 56px}a{color:inherit}button{font:inherit;color:inherit;cursor:pointer;text-align:left}a:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid var(--action);outline-offset:3px}
+
+h1,h2,p{margin:0}h1{font-size:clamp(25px,4vw,39px);letter-spacing:-.045em;line-height:1.2}h2{font-size:21px;line-height:1.25}.muted{color:var(--muted);font-size:13px}
+.overview{display:grid;grid-template-columns:minmax(0,1.95fr) minmax(0,1fr);gap:14px}.panel{border:1px solid var(--line);border-radius:17px;background:var(--paper);box-shadow:0 2px 8px #252c3b08}.bar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:#edf0f3}.bar span+span{margin-left:2px}.pos{background:var(--pos)}.neu{background:var(--neu)}.neg{background:var(--neg)}[data-emotion="积极"],[data-e="积极"] .emotion-tag{--emotion-ink:var(--pos-ink);--emotion-tint:var(--pos-tint)}[data-emotion="中立"],[data-e="中立"] .emotion-tag{--emotion-ink:var(--neu-ink);--emotion-tint:var(--neu-tint)}[data-emotion="消极"],[data-e="消极"] .emotion-tag{--emotion-ink:var(--neg-ink);--emotion-tint:var(--neg-tint)}.emotion-tag{display:inline-block;margin-left:7px;padding:0 7px;border-radius:999px;background:var(--emotion-tint);color:var(--emotion-ink);font-weight:600}
+.platform-icon{display:block;width:24px;height:24px;flex:0 0 auto;object-fit:contain;border-radius:6px}.platform-heading{display:inline-flex;align-items:center;gap:6px}.platform-heading .platform-icon{width:17px;height:17px;border-radius:4px}
+.matrix{padding:18px 20px;margin-top:18px}.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}.table-scroll{overflow:auto;padding-bottom:7px}table{border-collapse:separate;border-spacing:0 5px;width:100%;min-width:510px}th{text-align:left;font-size:13px}thead th{color:var(--muted);padding:2px 7px}tbody th{width:21%;padding:5px 7px}td{width:26%;padding:2px 5px}.matrix-cell{width:100%;border:1px solid #e8ebef;border-radius:9px;background:#f7f8fa;padding:5px 9px}
+
+.word-cloud{display:flex;flex-direction:column;padding:17px 20px;min-width:0}
+.word-cloud h2{font-size:17px}
+.cloud-words{position:relative;min-height:190px;margin-top:5px;isolation:isolate}
+.cloud-words::before{content:"";position:absolute;inset:5px 5%;border-radius:50%;z-index:-1;background:radial-gradient(ellipse,#eef4fb 0%,#f7f9fc 62%,transparent 75%)}
+.cloud-words .cloud-word{font-size:var(--word-size,17px);font-weight:var(--word-weight,600);line-height:1.15;white-space:nowrap;border:0;border-radius:6px;background:transparent;color:var(--word-color,#62718a);padding:2px 3px}
+.cloud-words [data-tier="high"]{--word-color:#0966cc;--word-weight:800}
+.cloud-words [data-tier="mid"]{--word-color:#416b9b;--word-weight:700}
+.cloud-words [data-tier="low"]{--word-color:#62718a;--word-weight:600}
+
+.cloud-words.is-positioned .cloud-word{position:absolute}
+.cloud-words.is-flowing{display:flex;flex-wrap:wrap;align-content:center;align-items:baseline;justify-content:center;gap:9px}
+
+
+.lead{padding:21px 24px}
+.lead h2,.word-cloud h2{font-size:16px}
+.lead-statement{position:relative;margin-top:10px;padding:15px 17px 15px 47px;border-radius:10px;background:#f3f6fb}
+.lead-statement p{position:relative;font-size:clamp(15px,1.4vw,18px);line-height:1.6;color:#273746}
+.quote-mark{position:absolute;top:3px;left:12px;font:700 54px/1 Georgia,serif;color:#c9d8eb;pointer-events:none}
+@media(max-width:520px){.lead-statement{padding:12px 12px 12px 37px}.quote-mark{left:8px;font-size:45px}}
+.attention{border-top:1px solid var(--line);margin-top:17px;padding-top:12px}
+.highlights{border-top:1px solid var(--line);margin-top:10px;padding-top:12px}
+.attention h3{margin:0;font-size:16px;line-height:1.4}
+.highlight-list{display:grid;gap:8px;margin-top:8px}
+.highlight-list>div{border-radius:9px;background:#f5f8f6;padding:9px 11px}
+.highlight-list strong{color:var(--pos-ink)}
+.highlight-list p{color:var(--muted);font-size:13px;margin:3px 0 0}
+.matrix-cell{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 9px;font-size:13px;min-height:40px}
+.matrix table{table-layout:fixed}.cell-summary{display:flex;align-items:center;gap:7px;flex:1;min-width:0}.cell-text{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell-summary::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--neu);flex:0 0 auto}
+.cell-summary.support::before{background:var(--pos)}.cell-summary.concern::before{background:var(--neg)}
+@media(max-width:960px){.overview{grid-template-columns:minmax(0,1.65fr) minmax(0,1fr)}}
+@media(max-width:740px){.lead{padding:16px}.word-cloud{grid-column:auto}main{padding:17px 14px 32px}.overview{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column;gap:4px}}
+
+.evidence{margin-top:18px;border-radius:16px;box-shadow:0 7px 20px #263c5611}
+.evidence-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px 11px}
+.evidence-title{display:flex;align-items:center;gap:10px}
+.evidence-title h2{font-size:19px}
+.match-count{font-size:12px;color:var(--muted);background:#f0f2f5;border-radius:999px;padding:2px 7px;white-space:nowrap}
+.controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:0 18px 13px}
+.reset-filters{border:0;background:transparent;color:var(--action);font-size:12px;padding:4px 6px}
+.reset-filters:hover{text-decoration:underline}
+.message-stream{border-radius:0 0 15px 15px;max-height:405px;overflow:auto;scrollbar-gutter:stable;border-top:1px solid var(--line);background:#f5f6f8;padding:11px 13px 11px 14px;outline-offset:-3px}
+.quotes{--card-gap:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,max(195px,calc((100% - 4 * var(--card-gap)) / 5))),1fr));gap:var(--card-gap);list-style:none;margin:0;padding:0}
+.quotes li{min-width:0}
+.message{display:flex;flex-direction:column;gap:6px;height:100%;min-height:96px;padding:9px 10px;background:#fff;border:1px solid #e4e9f0;border-radius:9px}
+.message-head,.message-platform{display:flex;align-items:center;min-width:0}
+.message-head{justify-content:space-between;gap:5px;font-size:12px}
+.message-platform{gap:5px;white-space:nowrap}
+.message-platform strong{font-weight:650}
+.message-icon{display:grid;place-items:center;width:21px;height:21px;flex:0 0 auto;border-radius:6px;background:#f6f7f9}
+.message-icon .platform-icon{width:18px;height:18px;border-radius:4px}
+.message-meta{display:flex;align-items:baseline;gap:5px;color:var(--muted);font-size:11px;line-height:1.4;margin-top:auto;min-width:0}
+.message-meta>span:first-child{flex:0 0 auto;white-space:nowrap}
+.quote-source{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quote-source::before{content:"·";margin-right:5px;color:#8a909b}
+.message blockquote{margin:0;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.message .emotion-tag{display:inline-flex;align-items:center;gap:3px;padding:1px 6px 1px 3px;margin:0;flex-shrink:0;white-space:nowrap;font-size:11px}
+.message .emotion-avatar{width:17px;height:17px}
+.message-empty{padding:20px 10px;text-align:center;color:var(--muted);font-size:13px}
+#comments{scroll-margin-top:14px}
+@media(max-width:520px){.evidence-top{padding-inline:11px}.controls{padding-inline:11px}.message-stream{padding-inline:7px}}
+
+.mood-section{padding:15px 18px 16px;margin-bottom:18px;scroll-margin-top:14px}
+.mood-overall{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px;align-items:center}
+.mood-overall h2{font-size:18px}
+.mood-scope{display:block;margin-top:4px;color:var(--muted);font-size:12px;font-weight:500}
+.mood-overview,.mood-platforms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mood-overview .mood-tile,.mood-splits .mood-tile{border:1px solid transparent;border-radius:8px;background:var(--emotion-tint);color:var(--emotion-ink);white-space:nowrap}
+.mood-overview .mood-tile{display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:14px;font-weight:650}
+.mood-overview b{margin-left:auto;font-size:19px;font-variant-numeric:tabular-nums}
+.mood-section h3{font-size:13px;margin:12px 0 7px;color:var(--muted)}
+.mood-platform{padding:9px 11px;border:1px solid #e9ebef;border-radius:9px;background:#fafbfc;min-width:0}
+.mood-platform h4{font-size:13px;margin:0}
+.mood-platform p{font-size:12px;color:var(--muted);margin:2px 0 5px}
+.mood-platform .bar{height:5px;margin-bottom:5px}
+.mood-splits{display:flex;flex-wrap:wrap;gap:4px}
+.mood-splits .mood-tile{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px}
+.mood-splits b{font-variant-numeric:tabular-nums}
+@media(max-width:740px){.mood-overall{grid-template-columns:1fr;gap:6px}.mood-platforms{grid-template-columns:1fr}.mood-overview .mood-tile{gap:3px;padding:4px 5px;font-size:12px}.mood-overview b{font-size:14px}.mood-avatar{width:30px;height:30px;margin-inline:-1px}}
+
+.mood-avatar{display:block;width:48px;height:48px;object-fit:contain;flex:0 0 auto}
+.export{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:5px 2px;border-radius:5px;color:var(--muted);font-size:12px;font-weight:500;text-decoration:none;white-space:nowrap}
+.export:is(:hover,:focus-visible){color:var(--action)}.export:is(:hover,:focus-visible)>span:last-child{text-decoration:underline;text-underline-offset:3px}
+.export-icon{position:relative;display:grid;place-items:center;width:14px;height:14px;font-weight:600;font-size:13px;line-height:1}
+.export-icon::after{content:"";position:absolute;bottom:0;left:3px;right:3px;border-bottom:1px solid currentColor}
+.filter{position:relative;min-width:0}
+.filter-trigger{display:flex;align-items:center;gap:8px;min-height:36px;border:1px solid #e0e5ec;border-radius:8px;background:#f8f9fb;padding:5px 9px;font-size:12px;white-space:nowrap}
+.filter-trigger:hover,.filter-trigger[aria-expanded="true"]{border-color:#b7cbe3;background:#f1f6fc}
+.filter-trigger:focus-visible,.filter-option:focus-visible{outline:2px solid #5588c1;outline-offset:1px}
+.filter-name{color:var(--muted);padding-right:7px;border-right:1px solid #e1e5eb}
+.filter-value{font-weight:650;max-width:108px;overflow:hidden;text-overflow:ellipsis}
+.filter-chevron{border-right:1.4px solid currentColor;border-bottom:1.4px solid currentColor;width:6px;height:6px;transform:translateY(-2px) rotate(45deg);margin:0 2px 0 1px;color:#627287}
+.filter-trigger[aria-expanded="true"] .filter-chevron{transform:translateY(1px) rotate(225deg)}
+.filter.is-active .filter-trigger{background:#eef5fd;border-color:#b9cfea;color:#184d84}
+.filter-menu{position:absolute;z-index:4;top:calc(100% + 8px);left:0;min-width:max(100%,154px);max-width:calc(100vw - 24px);padding:6px;background:#fff;border:1px solid #e0e6ee;border-radius:10px;box-shadow:0 9px 22px #25344e24}
+.filter-option{display:flex;align-items:center;gap:8px;width:100%;border:0;border-radius:6px;background:#fff;padding:6px 8px;min-height:35px;font-size:13px;white-space:nowrap}
+.filter-option:is(:hover,:focus-visible){background:#f0f4f9}
+.filter-option[aria-selected="true"]{background:#eaf2fc;color:#194e84;font-weight:650}
+.filter-option[aria-selected="true"]::after{content:"✓";margin-left:auto;padding-left:8px;color:var(--action)}
+.filter-option img{display:block;width:19px;height:19px;object-fit:contain;border-radius:4px}
+@media(max-width:740px){.mood-avatar{width:30px;height:30px;margin-inline:-1px}}
+@media(max-width:400px){.filter-trigger{gap:4px;padding-inline:5px}.filter-value{max-width:72px}.filter-name{padding-right:4px}}
+
+.emotion-avatar{display:block;width:20px;height:20px;flex:0 0 auto;object-fit:contain}
+
+.report-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 18px;padding:20px 24px}
+.report-header h1{display:flex;align-items:center;gap:12px;overflow-wrap:anywhere}
+.product-icon{width:52px;height:52px;border-radius:12px;object-fit:cover;flex:none}
+.report-date{align-self:flex-end}
+.platform-placeholder{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;background:#eef1f6;color:var(--muted);font-size:11px}
+.source-status{color:var(--muted);font-size:11px;margin-left:6px}
+.quote-source a{text-decoration:none;color:var(--action)}.quote-source a:hover{text-decoration:underline}
+[data-e="未分类"] .emotion-tag{--emotion-ink:var(--neu-ink);--emotion-tint:var(--neu-tint)}
+.report-kind{font-size:14px;font-weight:550;color:var(--muted);margin:0 0 6px}
+.report-header h1{font-size:clamp(28px,4vw,42px)}
+.report-date{margin:0;display:flex;align-items:baseline;gap:8px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.report-date dd{margin:0;white-space:nowrap}
+@media(max-width:480px){.report-header{align-items:flex-start;flex-direction:column;gap:9px;padding:15px 16px}.report-date{align-self:flex-start;font-size:12px}.product-icon{width:40px;height:40px;border-radius:9px}}
+
+.filter-menu:has(.filter-search){min-width:max(100%,166px)}
+.filter-search{padding:2px 2px 8px}
+.filter-search input{width:100%;min-height:29px;border:1px solid var(--line);border-radius:6px;padding:4px 7px;font:inherit;font-size:12px;color:var(--ink);background:#f7f9fc}
+.filter-search input:focus{outline:2px solid #91b6de;outline-offset:0;border-color:transparent}
+.filter-options{display:flex;flex-direction:column;gap:4px;max-height:min(224px,var(--menu-list-height,224px));overflow:auto;padding:1px 2px}
+.filter-option{flex:0 0 auto}
+.filter-option:focus-visible{outline-offset:-2px}
+.filter-menu.opens-up{top:auto;bottom:calc(100% + 8px)}
+.filter-option[hidden]{display:none}
+.filter-empty{padding:7px;color:var(--muted);font-size:12px}
+
+.attention-list{list-style:none;margin:4px 0 0;padding:0}
+.attention-list li{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:start;gap:10px;padding:9px 0}
+.attention-list li+li{border-top:1px solid #edf0f3}
+.attention-list li:last-child{padding-bottom:0}
+.attention-topic{justify-self:start;color:var(--muted);background:#f0f2f5;border-radius:5px;padding:1px 5px;font-size:12px;white-space:nowrap}
+.attention-list h4{font-size:14px;margin:0;line-height:1.35}
+.attention-list p{color:var(--muted);font-size:13px;line-height:1.5;margin-top:3px}
+</style></head>
+<body><main>
+{{SOCIAL_CONTENT}}
+</main>
+<script type="application/json" id="word-cloud-data">{{SOCIAL_WORDS}}</script>
+<script>
+const platform = document.querySelector('#platform');
+const topic = document.querySelector('#topic');
+const emotion = document.querySelector('#emotion');
+const keyword = document.querySelector('#keyword');
+const filters = [platform, topic, emotion, keyword];
+const stream = document.querySelector('#message-stream');
+const resetFilters = document.querySelector('#reset-filters');
+const emptyMessage = document.querySelector('#message-empty');
+const quotes = Array.from(document.querySelectorAll('.quotes li'));
+const cloud = document.querySelector('#cloud-words');
+const cloudData = JSON.parse(document.querySelector('#word-cloud-data').textContent);
+const words = [...cloudData.terms].sort((a, b) => b.ratio - a.ratio);
+const rowsByWord = new Map(words.map(entry => [entry.word, new Set(entry.commentRows)]));
+const maxRatio = words[0]?.ratio || 1;
+const tierSizes = {high:32, mid:21, low:15};
+const percent = new Intl.NumberFormat('zh-CN', {style:'percent', maximumFractionDigits:1});
+
+for (const entry of words) {
+  keyword.add(new Option(entry.word, entry.word));
+  const word = document.createElement('span');
+  word.className = 'cloud-word';
+  word.textContent = entry.word;
+  word.title = entry.commentRows.length + ' 条评论提及 · ' + percent.format(entry.ratio);
+  const relativeRatio = entry.ratio / maxRatio;
+  word.dataset.tier = relativeRatio >= 2 / 3 ? 'high' : relativeRatio >= 1 / 3 ? 'mid' : 'low';
+  cloud.append(word);
+}
+if (words.length === 0) cloud.textContent = '暂无可显示的关键词';
+
+function fitWordCloud() {
+  if (!words.length) return;
+  const width = cloud.clientWidth;
+  const height = cloud.clientHeight;
+  const labels = [...cloud.querySelectorAll('.cloud-word')];
+  cloud.classList.remove('is-flowing');
+  cloud.classList.add('is-positioned');
+
+  for (const scale of [1, .9, .8, .7]) {
+    for (const label of labels) {
+      const size = tierSizes[label.dataset.tier] * scale;
+      label.style.setProperty('--word-size', Math.max(12, size).toFixed(2) + 'px');
+    }
+    const sizes = labels.map(label => [label.offsetWidth, label.offsetHeight]);
+    const placed = [];
+    for (const [index, [w, h]] of sizes.entries()) {
+      for (let step = 0; step < 1800; step += 1) {
+        const angle = step * .51;
+        const radius = 5 * Math.sqrt(step);
+        const dx = Math.cos(angle) * radius * width / height;
+        const dy = Math.sin(angle) * radius;
+        if (((Math.abs(dx) + w / 2 + 3) / (width / 2)) ** 2 +
+            ((Math.abs(dy) + h / 2 + 3) / (height / 2)) ** 2 > 1) continue;
+        const x = width / 2 + dx - w / 2;
+        const y = height / 2 + dy - h / 2;
+        if (placed.some(rect => x < rect.x + rect.w + 5 && x + w + 5 > rect.x &&
+                               y < rect.y + rect.h + 5 && y + h + 5 > rect.y)) continue;
+        placed.push({x,y,w,h});
+        labels[index].style.left = x + 'px';
+        labels[index].style.top = y + 'px';
+        break;
+      }
+      if (placed.length !== index + 1) break;
+    }
+    if (placed.length === words.length) return;
+  }
+  cloud.classList.remove('is-positioned');
+  cloud.classList.add('is-flowing');
+}
+document.fonts.ready.then(fitWordCloud);
+new ResizeObserver(fitWordCloud).observe(cloud);
+const filterPickers = new Map();
+const platformIcons = new Map([...document.querySelectorAll('.mood-platform h4')].map(
+  heading => [heading.dataset.label, heading.querySelector('img')]
+));
+const emotionIcons = new Map([...document.querySelectorAll('.mood-overview .mood-tile')].map(
+  tile => [tile.dataset.emotion, tile.querySelector('img')]
+));
+for (const quote of quotes) {
+  const icon = emotionIcons.get(quote.dataset.e);
+  const badge = quote.querySelector('.emotion-tag');
+  if (!icon || !badge) continue;
+  const avatar = icon.cloneNode();
+  avatar.className = 'emotion-avatar';
+  badge.prepend(avatar);
+}
+let openPicker = null;
+
+function closePicker(restoreFocus = false) {
+  if (!openPicker) return;
+  const {trigger, menu} = openPicker;
+  openPicker = null;
+  menu.hidden = true;
+  trigger.setAttribute('aria-expanded', 'false');
+  if (restoreFocus) trigger.focus({preventScroll:true});
+}
+
+function selectedValues(control) {
+  return [...control.selectedOptions].map(option => option.value).filter(Boolean);
+}
+
+function normalizeSearch(text) {
+  return text.normalize('NFKC').toLowerCase().replace(/\s+/gu, '');
+}
+
+function matchesOption(text, query) {
+  if (!query) return true;
+  const chars = [...query];
+  let matched = 0;
+  for (const char of normalizeSearch(text)) {
+    if (char === chars[matched]) matched += 1;
+    if (matched === chars.length) return true;
+  }
+  return false;
+}
+
+function filterOptions(picker) {
+  const query = normalizeSearch(picker.search.value);
+  let found = false;
+  for (const item of picker.options) {
+    item.hidden = Boolean(query) && (!item.dataset.value || !matchesOption(item.textContent, query));
+    found ||= !item.hidden;
+  }
+  picker.empty.hidden = found;
+}
+
+function showPicker(picker, focusLast = false) {
+  closePicker();
+  const {trigger, menu, options, search} = picker;
+  openPicker = picker;
+  menu.hidden = false;
+  trigger.setAttribute('aria-expanded', 'true');
+  menu.style.left = '0';
+  menu.style.removeProperty('--menu-list-height');
+  menu.classList.remove('opens-up');
+  const triggerBox = trigger.getBoundingClientRect();
+  const below = document.documentElement.clientHeight - triggerBox.bottom - 16;
+  const above = triggerBox.top - 16;
+  const opensUp = menu.offsetHeight > below && above > below;
+  menu.classList.toggle('opens-up', opensUp);
+  const list = menu.querySelector('.filter-options');
+  const chrome = menu.offsetHeight - list.offsetHeight;
+  menu.style.setProperty('--menu-list-height', Math.max(64, (opensUp ? above : below) - chrome) + 'px');
+  const overflow = menu.getBoundingClientRect().right - document.documentElement.clientWidth + 8;
+  if (overflow > 0) menu.style.left = -overflow + 'px';
+  if (search) {
+    search.value = '';
+    filterOptions(picker);
+    search.focus({preventScroll:true});
+    return;
+  }
+  const selected = focusLast ? options.at(-1) :
+    options.find(item => item.dataset.value && item.getAttribute('aria-selected') === 'true') || options[0];
+  selected.focus({preventScroll:true});
+  selected.scrollIntoView({block:'nearest'});
+}
+
+for (const control of filters) {
+  const wrapper = control.closest('.filter');
+  const trigger = wrapper.querySelector('.filter-trigger');
+  const menu = wrapper.querySelector('.filter-menu');
+  const list = menu.querySelector('.filter-options');
+  const search = menu.querySelector('input[type="search"]');
+  const empty = menu.querySelector('.filter-empty');
+  const options = [...control.options].map(option => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.tabIndex = -1;
+    item.className = 'filter-option';
+    item.setAttribute('role', 'option');
+    item.dataset.value = option.value;
+    const icon = (control === platform ? platformIcons : control === emotion ? emotionIcons : null)?.get(option.value);
+    if (icon) item.append(icon.cloneNode());
+    item.append(option.text);
+    list.append(item);
+    item.addEventListener('click', () => {
+      if (!control.multiple || !option.value) control.value = option.value;
+      else {
+        control.options[0].selected = false;
+        option.selected = !option.selected;
+      }
+      filterComments();
+      if (!control.multiple) closePicker(true);
+    });
+    return item;
+  });
+  const picker = {control, wrapper, trigger, menu, options, search, empty};
+  filterPickers.set(control, picker);
+
+  if (search) search.addEventListener('input', () => filterOptions(picker));
+  trigger.addEventListener('click', () => {
+    if (openPicker === picker) closePicker(true);
+    else showPicker(picker);
+  });
+  trigger.addEventListener('keydown', event => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      showPicker(picker, event.key === 'ArrowUp');
+    }
+  });
+  menu.addEventListener('keydown', event => {
+    if (event.isComposing) return;
+    if (event.key === 'Tab') {
+      closePicker(true);
+      return;
+    }
+    const visible = options.filter(item => !item.hidden);
+    const focus = document.activeElement;
+    if (search && focus === search) {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        (event.key === 'ArrowDown' ? visible[0] : visible.at(-1))?.focus();
+      } else if (event.key === 'Enter' && search.value) {
+        event.preventDefault();
+        visible[0]?.click();
+      }
+      return;
+    }
+    const index = visible.indexOf(focus);
+    const last = visible.length - 1;
+    if (search && index === 0 && event.key === 'ArrowUp') {
+      event.preventDefault();
+      search.focus();
+      return;
+    }
+    const next = {ArrowDown:Math.min(last, index+1), ArrowUp:Math.max(0,index-1), Home:0, End:last}[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    visible[next]?.focus();
+  });
+}
+document.addEventListener('pointerdown', event => {
+  if (openPicker && !openPicker.wrapper.contains(event.target)) closePicker();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && openPicker && !event.isComposing) {
+    event.preventDefault();
+    closePicker(true);
+  }
+});
+
+function updateFilterPickers() {
+  for (const [control, {wrapper, trigger, options}] of filterPickers) {
+    const values = selectedValues(control);
+    const selected = new Set(values);
+    const labels = [...control.selectedOptions].filter(option => option.value).map(option => option.text);
+    const fullLabel = labels.join('、') || '全部';
+    const name = trigger.querySelector('.filter-name').textContent;
+    wrapper.classList.toggle('is-active', values.length > 0);
+    trigger.querySelector('.filter-value').textContent = labels.length > 1 ? labels.length + ' 项' : fullLabel;
+    trigger.setAttribute('aria-label', name + '：' + fullLabel);
+    trigger.title = fullLabel;
+    for (const option of options) {
+      const value = option.dataset.value;
+      option.setAttribute('aria-selected', String(value ? selected.has(value) : !selected.size));
+    }
+  }
+}
+updateFilterPickers();
+
+function filterComments() {
+  const selectedPlatforms = new Set(selectedValues(platform));
+  const selectedEmotions = new Set(selectedValues(emotion));
+  const matchingKeywordRows = keyword.value ? rowsByWord.get(keyword.value) : null;
+  let visible = 0;
+  for (const [index, quote] of quotes.entries()) {
+    const matchesPlatform = !selectedPlatforms.size || selectedPlatforms.has(quote.dataset.p);
+    const matchesTopic = !topic.value || quote.dataset.t === topic.value;
+    const matchesEmotion = !selectedEmotions.size || selectedEmotions.has(quote.dataset.e);
+    const matchesKeyword = !keyword.value || matchingKeywordRows?.has(index + 1);
+    quote.hidden = !(matchesPlatform && matchesTopic && matchesEmotion && matchesKeyword);
+    if (!quote.hidden) visible += 1;
+  }
+  document.querySelector('#match-count').textContent = visible + ' 条评论';
+  emptyMessage.hidden = visible > 0;
+  resetFilters.hidden = filters.every(control => !selectedValues(control).length);
+  updateFilterPickers();
+  stream.scrollTop = 0;
+}
+for (const control of filters) control.addEventListener('change', filterComments);
+resetFilters.addEventListener('click', () => {
+  for (const control of filters) control.value = '';
+  filterPickers.get(platform).trigger.focus({preventScroll:true});
+  filterComments();
+});
+</script></body></html>

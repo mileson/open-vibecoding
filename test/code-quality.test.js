@@ -13,6 +13,7 @@ test('engineering discipline composes independently discoverable internal qualit
   const catalog = buildCapabilityCatalog();
   for (const id of helpers) assert.equal(getCapability(catalog, id).userFacing, false);
   assert.deepEqual(getCapability(catalog, 'code-quality').uses, helpers.slice(1));
+  assert.ok(getCapability(catalog, 'code-quality').tools.includes('code-quality-report'));
   for (const id of ['feature-implementation', 'debugging', 'refactoring']) {
     assert.ok(getCapability(catalog, id).uses.includes('code-quality'));
   }
@@ -39,7 +40,7 @@ test('updating an existing project distributes the quality guides without instal
     const source = (await fs.readFile(new URL(`../skills/${name}/SKILL.md`, import.meta.url), 'utf8')).replace(/^---\n[\s\S]*?\n---\n/, '').trim();
     assert.ok(actual.includes(source));
   }
-  for (const file of ['principles.md', 'quality-tools.md']) {
+  for (const file of ['principles.md', 'quality-tools.md', 'report-input.md']) {
     const relative = path.join(path.dirname(installedSkillPath('open-vibecoding-code-quality')), 'references', file);
     const installed = (await fs.readFile(path.join(root, relative), 'utf8')).replace(/^<!--[\s\S]*?-->\s*/, '').trim();
     assert.equal(installed, (await fs.readFile(new URL(`../skills/open-vibecoding-code-quality/references/${file}`, import.meta.url), 'utf8')).trim());

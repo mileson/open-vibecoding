@@ -1,0 +1,512 @@
+<!doctype html>
+<!-- ASO_MARKET_MATRIX -->
+<!-- ASO_COMPETITOR_SWITCH -->
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ASO_TITLE}}</title>
+  <style id="aso-rating-styles">
+    .aso-review-rating { --star-image: url("{{ASO_RATING_STAR}}"); display: inline-flex; gap: 2px; vertical-align: middle; }
+    .aso-review-star { position: relative; display: block; flex: none; width: 18px; height: 18px; }
+    .aso-review-star::before, .aso-review-star::after {
+      content: ""; position: absolute; inset: 0; mask: var(--star-image) center/contain no-repeat; print-color-adjust: exact;
+    }
+    .aso-review-star::before { background-color: #dce0e5; }
+    .aso-review-star::after { background-color: #f6b830; clip-path: inset(0 calc(100% - var(--filled)) 0 0); }
+  </style>
+  <style>
+    :root {
+      color-scheme: light;
+      --canvas: #f4f5f7;
+      --paper: #fff;
+      --surface: #f7f8fa;
+      --summary-surface: #f3f6fb;
+      --ink: #192331;
+      --muted: #536174;
+      --line: #e2e6ec;
+      --scroll-thumb: #b1bac4;
+      --blue: #234d9c;
+      --blue-wash: #edf3fe;
+      --green: #166044;
+      --green-wash: #e6f4eb;
+      --shadow: 0 1px 2px #13213c08, 0 14px 42px -30px #172c5133;
+      font: 15px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      scrollbar-color: var(--scroll-thumb) transparent;
+    }
+    * { box-sizing: border-box; scrollbar-width: thin; }
+    @supports not (scrollbar-color: auto) {
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 999px; }
+    }
+    body { margin: 0; background: var(--canvas); color: var(--ink); overflow-wrap: anywhere; }
+    main { width: min(1200px, calc(100% - 64px)); margin: 32px auto 64px; }
+    h1, h2, h3, p, dl, dd { margin: 0; }
+    a { color: var(--blue); text-underline-offset: 3px; }
+    :focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+
+    .report-header, .report-nav, .report-section {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+    .report-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px 40px;
+      padding: 25px 32px 27px;
+      margin-bottom: 20px;
+    }
+    .report-header:has(.comparison-apps) { flex-wrap: wrap; }
+    .report-kind { display: flex; align-items: center; gap: 10px; color: var(--blue); font-size: 13px; font-weight: 650; }
+    .report-kind .source-icon { width: 28px; height: 28px; }
+    h1 { margin-top: 8px; font-size: clamp(32px, 4vw, 46px); line-height: 1.16; letter-spacing: -.045em; font-weight: 680; }
+    h1:has(.report-app-icon) { display: flex; align-items: center; gap: 14px; }
+    .report-app-icon { width: 32px; height: 32px; flex: none; object-fit: cover; border-radius: 8px; }
+    h1 .report-app-icon { width: 54px; height: 54px; border-radius: 13px; }
+    .comparison-apps {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 14px;
+      width: 100%;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .comparison-apps > p { color: var(--muted); font-size: 12px; font-weight: 650; }
+    .comparison-apps ul { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+    .comparison-app {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 9px 4px 4px;
+      border-radius: 10px;
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .comparison-app:hover { background: var(--surface); }
+    .comparison-app-name { font-size: 13px; font-weight: 650; }
+    .comparison-app-option { display: inline-flex; align-items: center; }
+    button.comparison-app { border: 1px solid var(--line); background: var(--paper); font: inherit; cursor: pointer; }
+    button.comparison-app[aria-pressed="true"] { border-color: #9fc8b2; background: var(--green-wash); color: var(--green); }
+    .competitor-store-link { padding: 5px 7px; color: var(--muted); font-size: 13px; text-decoration: none; }
+    .competitor-store-link:hover { color: var(--blue); }
+    .meta { display: flex; flex-direction: column; align-items: flex-end; min-width: 0; gap: 4px; font-size: 13px; font-variant-numeric: tabular-nums; }
+    .meta div { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+    .meta dt { color: var(--muted); }
+    .meta dd { font-weight: 580; }
+
+    .report-layout { display: grid; grid-template-columns: 184px minmax(0, 1fr); align-items: start; gap: 20px; }
+    .report-nav { padding: 16px 12px 13px; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow: auto; }
+    .report-nav p { color: var(--muted); font-size: 12px; font-weight: 650; margin: 0 10px 7px; }
+    .review-filters { margin-top: 14px; }
+    .review-filters > p { color: var(--muted); font-size: 13px; font-weight: 650; margin-bottom: 6px; }
+    .review-filters .market-filters:not([hidden]) { flex-wrap: wrap; margin: 0; padding: 2px; gap: 6px; overflow: visible; }
+    .review-filters .market-filters button { padding: 4px 9px; }
+    .review-filters .market-filters .market-select-all { position: static; min-width: 0; }
+    .review-market + .review-market:not([hidden]) { margin-top: 18px; }
+    .report-nav ul { margin: 0; padding: 0; list-style: none; }
+    .report-nav a { display: block; border-radius: 7px; padding: 7px 10px; color: var(--ink); font-size: 13px; text-decoration: none; }
+    .report-nav a:hover, .report-nav a:focus-visible { background: var(--blue-wash); color: var(--blue); }
+    .report-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .report-section { min-width: 0; padding: 22px 24px 24px; scroll-margin-top: 20px; }
+    .report-section:target { border-color: #95b0df; }
+    h2 { font-size: 18px; font-weight: 680; line-height: 1.35; letter-spacing: -.015em; }
+    .report-section > p { color: #384658; margin-top: 10px; white-space: pre-wrap; }
+    .report-section > .market-empty { color: var(--muted); font-size: 13px; }
+    .report-section > ul { margin: 10px 0 0; padding-inline-start: 20px; }
+    .report-section li + li { margin-top: 4px; }
+    .report-section .source-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+    .report-section .source-links li { margin: 0; }
+    .source-link { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 9px; height: 100%; padding: 10px 12px; border-radius: 9px; background: var(--surface); color: var(--ink); text-decoration: none; }
+    .source-link:hover, .source-link:focus-visible { background: var(--blue-wash); }
+    .source-link-copy { display: grid; min-width: 0; gap: 1px; }
+    .source-link-title { font-size: 13px; font-weight: 650; }
+    .source-link-host { color: var(--muted); font-size: 11px; }
+    .source-link-arrow { flex: none; color: var(--blue); font-size: 15px; line-height: 1; }
+    .report-section .source-checklist { display: flex; flex-wrap: wrap; gap: 8px 12px; margin: 13px 0 0; padding: 0; list-style: none; }
+    .source-checklist .source-item { display: flex; align-items: center; gap: 7px; margin: 0; padding: 3px 5px 3px 0; color: var(--muted); font-size: 13px; }
+    .source-icon { display: block; flex: none; border-radius: 50%; object-fit: contain; }
+    .source-icon[data-source="app-store"] { padding: 2px; }
+    .source-icon[data-source="qimai"] { padding: 3px; background: #eaf7f4; }
+    .source-link .source-icon { width: 24px; height: 24px; }
+    .source-link-generic { position: relative; width: 22px; height: 22px; border: 1px solid #8796a8; border-radius: 50%; }
+    .source-link-generic::before { content: ''; position: absolute; inset: -1px 5px; border: 1px solid #8796a8; border-radius: 50%; }
+    .source-link-generic::after { content: ''; position: absolute; inset: 50% 0 auto; border-top: 1px solid #8796a8; }
+    .source-inclusion { flex: none; padding: 1px 6px; border-radius: 999px; background: #eef0f3; color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .source-item[data-included="true"] .source-inclusion { background: var(--green-wash); color: var(--green); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .summary-statement { position: relative; margin-top: 10px; padding: 15px 17px 15px 47px; border-radius: 10px; background: var(--summary-surface); }
+    .summary-statement p { color: #273746; font-size: clamp(15px, 1.4vw, 18px); line-height: 1.6; white-space: pre-wrap; }
+    .summary-quote { position: absolute; top: 3px; left: 12px; color: #c9d8eb; font: 700 54px/1 Georgia, serif; pointer-events: none; }
+    .keyword-advice { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .keyword-advice h3 { font-size: 14px; }
+    .keyword-advice-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+      gap: 8px;
+      margin: 8px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .keyword-advice .keyword-advice-cards > li { margin: 0; }
+    .keyword-advice-cards > li, .keyword-advice-note { padding: 9px 11px; border-radius: 9px; background: var(--summary-surface); }
+    .keyword-advice-cards h4 { margin: 0 0 3px; color: #333; font-size: 13px; }
+    .keyword-advice-cards p, .keyword-advice-note { color: var(--muted); font-size: 13px; white-space: pre-wrap; }
+    .keyword-advice-note { margin-top: 8px; }
+
+    #markets { scroll-margin-top: 20px; }
+    .market-filters:not([hidden]) { display: flex; gap: 8px; overflow-x: auto; padding: 4px 4px 13px; margin: 8px -4px 0; }
+    .market-filters button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: none;
+      max-width: 100%;
+      padding: 5px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      color: var(--muted);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      overflow-wrap: anywhere;
+    }
+    .market-filters button:hover { border-color: #aab6a9; }
+    .market-filters button[hidden] { display: none; }
+    .market-filters .market-select-all {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      min-width: 82px;
+      justify-content: center;
+      color: var(--ink);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .market-filters button[aria-pressed="true"] { border-color: #9fc8b2; background: var(--green-wash); color: var(--green); font-weight: 650; }
+    .market-filters button:focus-visible { outline-color: var(--green); outline-offset: 1px; }
+    .market-flag { display: block; flex: none; object-fit: cover; border-radius: 50%; box-shadow: 0 0 0 1px #19233112; }
+    .market-selection-empty { margin-top: 12px; color: var(--muted); font-size: 13px; }
+    .markets {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 100%;
+      gap: 14px;
+      overflow-x: auto;
+      padding: 2px 0 14px;
+      margin-top: 10px;
+    }
+    .markets[hidden] { display: none; }
+    .markets > .report-section:target, #evidence:target { border-color: var(--line); }
+    .markets:has(> :not([hidden]) ~ :not([hidden])) { grid-auto-columns: max(260px, calc((100% - 14px) / 2)); }
+    :is(.markets, .market-raw) h3 { display: flex; align-items: center; gap: 8px; font-size: 18px; line-height: 1.35; }
+    :is(.markets, .market-raw) h3 .market-flag { width: 20px; height: 20px; }
+    .market-matrix {
+      margin-top: 8px;
+      padding-bottom: 10px;
+      overflow: auto;
+      max-height: 65vh;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--paper);
+    }
+    .market-matrix table { border-collapse: separate; border-spacing: 0; }
+    .market-matrix th, .market-matrix td { padding: 11px 13px; border-bottom: 1px solid var(--line); }
+    .market-matrix thead th { position: sticky; top: 0; z-index: 2; background: var(--surface); }
+    .market-matrix td { min-width: 160px; }
+    .market-matrix tr > :first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      min-width: 120px;
+      max-width: 160px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      border-right: 1px solid var(--line);
+    }
+    .market-matrix tbody th { text-align: left; background: var(--paper); color: var(--ink); }
+    .market-matrix thead th:first-child { z-index: 3; }
+    .market-matrix tbody tr:last-child > * { border-bottom: 0; }
+    .market-matrix th button {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0;
+      border: 0;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+    }
+    .market-matrix th button:hover .market-detail-arrow { color: var(--blue); }
+    .market-detail-arrow, .market-missing, .market-ranks { color: var(--muted); }
+    .market-detail-arrow { font-size: 12px; }
+    .market-ranks { font-size: 11px; }
+    .market-term, .market-ranks b { color: #3569b0; }
+    .market-term { display: block; font-weight: 600; }
+    .market-ranks { display: flex; gap: 12px; margin-top: 3px; }
+    .market-ranks b { padding-left: 2px; }
+    .market-result + .market-result { margin-top: 8px; }
+    .market-ranking-empty { margin-top: 10px; color: var(--muted); font-size: 13px; }
+    .market-dialog {
+      width: min(720px, calc(100% - 32px));
+      max-height: 85vh;
+      padding: 0;
+      border: 0;
+      border-radius: 16px;
+      color: var(--ink);
+      background: var(--paper);
+      box-shadow: 0 18px 56px #19233138;
+    }
+    .market-dialog::backdrop { background: #19233166; }
+    .market-dialog[open] { overflow: hidden; }
+    .market-dialog[open] .market-raw { max-height: inherit; overflow: auto; }
+    .market-dialog[open] .market-raw .report-section { border: 0; }
+    .market-dialog[open] .market-raw h3 { min-height: 36px; padding-right: 40px; }
+    .market-dialog form { position: absolute; top: 22px; right: 24px; z-index: 1; }
+    .market-close {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: var(--paper);
+      color: var(--muted);
+      font: 24px/1 system-ui, sans-serif;
+      cursor: pointer;
+    }
+    .market-close:hover { background: var(--surface); color: var(--ink); }
+    .market-raw .report-section { box-shadow: none; }
+    .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 345px), 1fr)); gap: 14px; }
+    .table { overflow-x: auto; margin-top: 12px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; font-variant-numeric: tabular-nums; }
+    caption { text-align: left; font-weight: 540; padding: 0 0 8px; color: var(--muted); }
+    th, td { padding: 8px 10px; vertical-align: top; overflow-wrap: normal; }
+    th { color: var(--muted); font-weight: 650; background: var(--surface); white-space: nowrap; }
+    td { border-bottom: 1px solid var(--line); }
+    td:first-child { overflow-wrap: anywhere; min-width: 6em; }
+    tbody tr:last-child td { border-bottom: 0; }
+
+    .plan-tabs:not([hidden]) { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
+    .plan-tabs button { display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+    .plan-tabs button span { color: var(--muted); font-size: 12px; }
+    .plan-tabs button[aria-selected="true"] { background: var(--blue-wash); border-color: #cbdaf3; color: var(--blue); font-weight: 650; }
+    .plan-tabs button[aria-selected="true"] span { color: inherit; }
+    .plan-panel-title { margin-top: 14px; font-size: 15px; }
+    .plan-description { margin-top: 9px; color: var(--muted); font-size: 13px; }
+    #plans[data-tabbed] .plan-panel-title { display: none; }
+    .plans { margin-top: 12px; align-items: stretch; }
+    .plan { border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+    .plan-top { padding: 12px 16px; background: var(--surface); border-radius: 11px 11px 0 0; border-bottom: 1px solid var(--line); }
+    .plan-top h3 { font-size: 15px; font-weight: 680; }
+    .plan dl { padding: 1px 16px 12px; }
+    .plan-field { padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .plan-field:last-child { border-bottom: 0; padding-bottom: 0; }
+    .plan-field dt { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 630; color: var(--muted); }
+    .field-usage { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 7px; }
+    .field-warning { color: #983538; }
+    .plan-field dd { margin-top: 3px; font-size: 14px; white-space: pre-wrap; }
+    .plan-field .keyword-list { margin-top: 7px; font-size: 0; white-space: normal; }
+    .keyword-pill { display: inline-block; margin: 0 6px 5px 0; max-width: calc(100% - 6px); padding: 3px 8px; border-radius: 999px; color: var(--blue); background: var(--blue-wash); font-size: 11px; line-height: 1.45; white-space: pre-wrap; }
+    .keyword-delimiter { font-size: 0; }
+    .field-meter {
+      --meter-fill: #e0eafc;
+      min-width: 86px;
+      padding: 1px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--meter-fill) var(--fill), var(--surface) var(--fill));
+      color: var(--muted);
+      text-align: center;
+      white-space: nowrap;
+      font-size: 11px;
+      line-height: 1.4;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+    .field-meter[data-outside="true"] { --meter-fill: #fce8e9; color: #983538; border-color: #f4d2d3; }
+
+    @media (max-width: 820px) {
+      main { width: calc(100% - 36px); margin-top: 18px; }
+      .report-layout { grid-template-columns: minmax(0, 1fr); }
+      .report-nav { display: none; }
+    }
+    @media (max-width: 530px) {
+      main { width: calc(100% - 24px); margin-top: 12px; }
+      .report-header { align-items: flex-start; flex-direction: column; gap: 13px; padding: 18px; margin-bottom: 12px; }
+      h1 .report-app-icon { width: 44px; height: 44px; border-radius: 11px; }
+      .meta { align-items: flex-start; }
+      .report-section { padding: 17px 15px; }
+      .summary-statement { padding: 12px 12px 12px 37px; }
+      .summary-quote { left: 8px; font-size: 45px; }
+      .report-header, .report-section { border-radius: 12px; }
+      .report-body, .markets, .plans { gap: 12px; }
+      .markets:has(> :not([hidden]) ~ :not([hidden])) { grid-auto-columns: 88%; }
+      .market-matrix tr > :first-child { min-width: 100px; max-width: 120px; }
+      .market-dialog form { top: 17px; right: 15px; }
+    }
+    @media print {
+      body { background: white; }
+      main { width: 100%; margin: 0; }
+      .report-layout { display: block; }
+      .report-nav { display: none; }
+      .report-header, .report-section { box-shadow: none; }
+      .report-header, .plan, tr { break-inside: avoid; }
+      h2 { break-after: avoid; }
+      .table { overflow: visible; }
+      th { white-space: normal; }
+      #markets .market-filters, #markets .market-selection-empty, .review-filters { display: none; }
+      #markets .markets { display: block; overflow: visible; }
+      #markets .markets > .report-section { display: block; margin-bottom: 10px; }
+      #markets .market-matrix, #markets .market-ranking-empty, #market-details form { display: none; }
+      #market-details { display: block; position: static; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; box-shadow: none; }
+      #market-details .report-section { display: block; margin-bottom: 10px; }
+      #plans .plan-tabs { display: none; }
+      #plans .plan-panel[hidden], #plans[data-tabbed] .plan-panel-title { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <main>{{ASO_CONTENT}}</main>
+  <script>
+    {
+      const apps = document.querySelector('.comparison-apps');
+      if (apps) {
+        const buttons = [...apps.querySelectorAll('[data-competitor-index]')];
+        const ranks = Array.from(document.querySelectorAll('[data-competitor-ranks]'), cell => [
+          cell, JSON.parse(cell.dataset.competitorRanks),
+        ]);
+        apps.addEventListener('click', event => {
+          const choice = event.target.closest('[data-competitor-index]');
+          if (!choice || choice.getAttribute('aria-pressed') === 'true') return;
+          const index = Number(choice.dataset.competitorIndex);
+          buttons.forEach(button => button.setAttribute('aria-pressed', String(button === choice)));
+          ranks.forEach(([cell, values]) => { cell.textContent = values[index] ?? '—'; });
+        });
+      }
+    }
+    {
+      const comparison = document.querySelector('#markets');
+      const filters = comparison?.querySelector('.market-filters');
+      const matrix = comparison?.querySelector('.market-matrix');
+      if (matrix) {
+        const dialog = comparison.querySelector('.market-dialog');
+        const panels = [...dialog.querySelectorAll('.market-raw > section')];
+        const showMarket = id => {
+          panels.forEach(panel => { panel.hidden = panel.id !== id; });
+          if (!dialog.open) dialog.showModal();
+        };
+        matrix.addEventListener('click', event => {
+          const button = event.target.closest('[data-market-details]');
+          if (button) showMarket(button.dataset.marketDetails);
+        });
+        const targetMarket = location.hash.slice(1);
+        if (panels.some(panel => panel.id === targetMarket)) showMarket(targetMarket);
+      }
+      if (filters) {
+        const view = matrix ?? comparison.querySelector('.markets');
+        const empty = comparison.querySelector('.market-selection-empty');
+        const bulk = filters.querySelector('.market-select-all');
+        const regions = [...filters.querySelectorAll('button[aria-pressed]')];
+        const rows = matrix ? [...matrix.querySelectorAll('tbody tr')] : [];
+        const cells = matrix ? matrix.querySelectorAll('[data-market-column]') : [];
+        const rankingEmpty = comparison.querySelector('.market-ranking-empty');
+        const isSelected = button => button.getAttribute('aria-pressed') === 'true';
+        const updateView = () => {
+          const selected = new Set(regions.filter(isSelected).map(button => button.getAttribute('aria-controls')));
+          view.hidden = selected.size === 0;
+          empty.hidden = !view.hidden;
+          bulk.textContent = selected.size === regions.length ? '取消全选' : '全选';
+          if (!matrix) {
+            regions.forEach(button => {
+              document.getElementById(button.getAttribute('aria-controls')).hidden = !isSelected(button);
+            });
+            return;
+          }
+          cells.forEach(cell => { cell.hidden = !selected.has(`column-${cell.dataset.marketColumn}`); });
+          rows.forEach(row => { row.hidden = !row.querySelector('[data-market-result]:not([hidden])'); });
+          rankingEmpty.hidden = view.hidden || rows.some(row => !row.hidden);
+        };
+        filters.addEventListener('click', event => {
+          const button = event.target.closest('button');
+          if (!button) return;
+          if (button === bulk) {
+            const next = String(!regions.every(isSelected));
+            regions.forEach(region => region.setAttribute('aria-pressed', next));
+          } else {
+            button.setAttribute('aria-pressed', String(!isSelected(button)));
+          }
+          updateView();
+        });
+        bulk.hidden = false;
+        filters.hidden = false;
+      }
+    }
+    {
+      const filters = document.querySelector('.review-filters');
+      if (filters) {
+        const regions = [...filters.querySelectorAll('button[aria-pressed]')];
+        const bulk = filters.querySelector('.market-select-all');
+        const empty = document.querySelector('#review-markets .market-selection-empty');
+        const isSelected = region => region.getAttribute('aria-pressed') === 'true';
+        filters.addEventListener('click', event => {
+          const button = event.target.closest('button');
+          if (!button) return;
+          const changed = button === bulk ? regions : [button];
+          const selected = !changed.every(isSelected);
+          changed.forEach(region => {
+            region.setAttribute('aria-pressed', String(selected));
+            document.getElementById(region.getAttribute('aria-controls')).hidden = !selected;
+          });
+          empty.hidden = regions.some(isSelected);
+          if (bulk) bulk.textContent = regions.every(isSelected) ? '取消全选' : '全选';
+        });
+        filters.hidden = false;
+      }
+    }
+    {
+      const section = document.querySelector('#plans');
+      const tabList = section?.querySelector('.plan-tabs');
+      if (tabList) {
+        const tabs = [...tabList.querySelectorAll('[role="tab"]')];
+        const panels = tabs.map(tab => document.getElementById(tab.getAttribute('aria-controls')));
+        const select = active => {
+          tabs.forEach((tab, index) => {
+            const selected = tab === active;
+            tab.setAttribute('aria-selected', String(selected));
+            tab.tabIndex = selected ? 0 : -1;
+            panels[index].hidden = !selected;
+          });
+        };
+        panels.forEach((panel, index) => {
+          panel.setAttribute('role', 'tabpanel');
+          panel.setAttribute('aria-labelledby', tabs[index].id);
+          panel.tabIndex = 0;
+        });
+        tabList.addEventListener('click', event => {
+          const tab = event.target.closest('[role="tab"]');
+          if (tab) select(tab);
+        });
+        tabList.addEventListener('keydown', event => {
+          const index = tabs.indexOf(event.target);
+          const targets = { ArrowLeft: (index + tabs.length - 1) % tabs.length, ArrowRight: (index + 1) % tabs.length, Home: 0, End: tabs.length - 1 };
+          if (index < 0 || !Object.hasOwn(targets, event.key)) return;
+          event.preventDefault();
+          const tab = tabs[targets[event.key]];
+          select(tab);
+          tab.focus();
+        });
+        select(tabs[0]);
+        section.dataset.tabbed = '';
+        tabList.hidden = false;
+      }
+    }
+  </script>
+</body>
+</html>

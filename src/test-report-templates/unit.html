@@ -5,82 +5,138 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>单元测试报告</title>
 <style>
-:root{--ink:#222;--muted:#666;--line:#ecebed;--paper:#fff;--wash:#faf9fa;--rose:#c71940;--rose-bg:#fff0f3;--green:#18623d;--green-bg:#edf8ef;--amber:#88570e;--amber-bg:#fff5e2}
+:root{--canvas:#f3f4f6;--paper:#fff;--ink:#202329;--muted:#555f6d;--line:#e5e8ed;--wash:#f3f6fb;--blue:#155eaa;--rose:#902b37;--green:#216345;--amber:#744e12}
 *{box-sizing:border-box}
-body{margin:0;color:var(--ink);background:var(--paper);font:15px/1.55 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
-main{max-width:1200px;margin:auto;padding:42px 32px 56px}
-h1,h2,h3,p,dl,dd{margin:0}
-header{padding-bottom:23px;border-bottom:1px solid var(--line)}
-.eyebrow{font-size:13px;color:#6b7280;font-weight:700}
-.environment{margin-top:4px}
-h1{font-size:clamp(28px,5vw,44px);line-height:1.18;letter-spacing:-.035em;margin:5px 0 10px}
+body{margin:0;color:var(--ink);background:var(--canvas);font:15px/1.5 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;overflow-wrap:anywhere}
+main{max-width:1120px;margin:auto;padding:16px 20px 36px}
+h1,h2,h3,p,dl,dd,blockquote{margin:0}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:15px 19px;margin-bottom:12px;box-shadow:0 2px 8px #252c3b08}
+.eyebrow{color:var(--blue);font-size:13px;font-weight:700}
+h1{font-size:clamp(22px,3.6vw,34px);line-height:1.2;letter-spacing:-.025em;margin:3px 0 6px}
+h2{font-size:17px;margin-bottom:7px}
 .meta,.source,dt{color:var(--muted);font-size:13px}
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:12px;margin:23px 0 27px}
-.metric,.case{border:1px solid var(--line);border-radius:14px}
-.metric{background:var(--wash);padding:13px 16px}
-.metric dd{font-size:29px;line-height:1.25;font-weight:750;font-variant-numeric:tabular-nums}
-.metric.passed dd{color:var(--green)}.metric.failed dd{color:var(--rose)}
-.section-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
-h2{font-size:21px}
-.filters{display:flex;flex-wrap:wrap;gap:7px}
-button{font:inherit;font-size:13px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer}
-button[aria-pressed="true"]{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}
-button:focus-visible{outline:2px solid #1d4ed8;outline-offset:3px}
-summary:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
-.cases{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr));gap:12px;align-items:start}
-.case{min-width:0;padding:15px 16px;background:var(--paper)}
-.case[data-status="failed"]{border-color:#efc2cd}
-.case-head{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}
-.case h3{font-size:16px;line-height:1.4;overflow-wrap:anywhere}
-.source{margin:7px 0;overflow-wrap:anywhere}
-.badge{font-size:12px;font-weight:700;border-radius:99px;padding:2px 8px;white-space:nowrap;background:#f2f1f2;color:var(--muted)}
-.badge.passed{background:var(--green-bg);color:var(--green)}.badge.failed{background:var(--rose-bg);color:var(--rose)}
-.badge.blocked{background:var(--amber-bg);color:var(--amber)}
-.conditions{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:5px 8px;margin-top:10px}
-.conditions dd,.reason{font-size:13px;overflow-wrap:anywhere}
-.conditions dd{white-space:pre-wrap}
-.reason{background:var(--rose-bg);color:#8a1634;margin-top:9px;padding:8px 10px;border-radius:8px;white-space:pre-wrap}
-details{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;font-size:13px}
-summary{cursor:pointer;color:var(--muted)}
-.history{padding-left:20px;margin:7px 0 0}
+.report-facts{display:flex;flex-wrap:wrap;gap:2px 16px;margin-bottom:5px}
+.scope{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:0 8px;font-size:13px}
+.scope dt{font-weight:650;color:var(--ink)}
+.scope dd{color:var(--muted)}
+.lead{display:flex;align-items:baseline;gap:8px;margin-top:9px;padding:7px 10px;border-radius:9px;background:var(--wash);color:#273746;font-weight:650}
+.lead span{color:#6885aa;font:700 25px/.8 Georgia,serif}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:5px;margin-top:8px}
+button{font:inherit;cursor:pointer}
+.filter{display:grid;justify-items:center;align-content:center;min-height:47px;padding:3px 6px;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:8px;font-size:12px}
+.filter strong{color:var(--ink);font-size:17px;line-height:1.15;font-variant-numeric:tabular-nums}
+.filter[data-status="passed"] strong{color:var(--green)}
+.filter[data-status="failed"] strong{color:var(--rose)}
+.filter:is(:hover,[aria-pressed="true"]){background:var(--wash);border-color:#9ab8dc;color:var(--blue)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.case-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
+.case-table th,.case-table td{padding:5px 7px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.case-table thead th{background:var(--wash);color:var(--muted)}
+.case-table th:nth-child(1){width:18%}
+.case-table th:nth-child(2){width:33%}
+.case-table th:nth-child(3){width:16%}
+.case-table tbody td:first-child{vertical-align:middle}
+.case-table tr > :nth-child(3){text-align:center;vertical-align:middle}
+.case-table tbody tr:last-child>*{border-bottom:0}
+.case-table .case-title{font-weight:650}
+.case-table .case-note{color:var(--muted)}
+.case-table tr[data-status="failed"] .case-note{color:var(--rose)}
+.rule-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;margin:10px 0 0}
+.rule-metric{display:grid;justify-items:center;align-content:center;min-height:42px;padding:3px 6px;border:1px solid var(--line);border-radius:8px;background:#f8fafc;color:var(--muted);font-size:12px}
+.rule-metric strong{font-size:19px;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--ink)}
+.rule-metric.total{background:var(--wash)}
+.rule-metric.total strong{color:var(--blue)}
+.rule-metric.passed strong{color:var(--green)}
+.rule-metric.failed strong{color:var(--rose)}
+.rule-metric.attention strong{color:var(--amber)}
+.rule-table th:nth-child(2){width:27%}
+.rule-table tbody :is(th,td){vertical-align:middle}
+.rule-table .rule-findings{margin:0 0 5px}
+.rule-table .rule-findings p{margin:0 0 4px;font-size:12px}
+.rule-table .conditions{grid-template-columns:max-content minmax(0,1fr)}
+.rule-toggle{border:0;padding:0;background:transparent;color:var(--blue);font-weight:650}
+.rule-toggle::before{content:"▸";margin-right:4px}
+.rule-toggle[aria-expanded="true"]::before{content:"▾"}
+.rule-table .rule-detail-cell{padding:10px 7px}
+.rule-case-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:8px}
+.rule-case{min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#f8fafc}
+.rule-case-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;color:var(--ink)}
+.rule-case-fields{display:grid;gap:6px;margin:7px 0 0}
+.rule-case-field{padding-top:6px;border-top:1px solid var(--line)}
+.rule-case-field dt{font-size:11px;font-weight:650;color:var(--muted)}
+.rule-case-field dd{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+.rule-case-record{margin-top:8px}
+.source{margin:4px 0}
+.badge{font-size:12px;font-weight:650;border-radius:6px;padding:1px 7px;white-space:nowrap;background:var(--wash);color:#384b63}
+.badge.passed{background:#e6f4ec;color:var(--green)}.badge.failed{background:#fcebec;color:var(--rose)}
+.badge.blocked{background:#fff3d6;color:var(--amber)}
+.conditions{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3px 8px;margin:6px 0}
+.conditions dd,.reason{font-size:13px;white-space:pre-wrap}
+.reason{color:var(--rose);margin:4px 0}
+details{margin-top:3px;font-size:13px}
+summary{width:fit-content;cursor:pointer;color:var(--blue);font-weight:650}
+.history{padding-left:20px;margin:6px 0}
 .history li+li{margin-top:7px}
-.history p{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:2px}
-#empty{display:grid;place-content:center;justify-items:center;gap:2px;min-height:218px;padding:20px;background:#f5f6f7;border-radius:14px;color:var(--muted);text-align:center}
-#empty img{display:block;width:126px;height:126px}
+.history p{white-space:pre-wrap;margin-top:2px}
+#imports{margin-top:10px}
+.import-detail{padding:7px 0;border-bottom:1px solid var(--line)}
+#empty{display:grid;place-content:center;justify-items:center;min-height:160px;color:var(--muted);text-align:center}
+#empty img{display:block;width:108px;height:108px}
 [hidden]{display:none!important}
-@media(max-width:580px){main{padding:24px 16px 36px}.metrics{gap:7px;margin:17px 0 22px}.metric{padding:9px 11px}.metric dd{font-size:24px}}
-@media print{main{padding:0}.filters{display:none}.case{break-inside:avoid}}
+@media(max-width:560px){main{padding:10px 10px 20px}.panel{padding:10px 12px;margin-bottom:8px}.lead{font-size:14px}.filter{min-height:40px}}
+@media(max-height:480px){main{padding-top:10px;padding-bottom:12px}.panel{padding-top:11px;padding-bottom:11px;margin-bottom:8px}.case-table th,.case-table td{padding-block:4px}.filter{min-height:42px}}
+@media print{main{padding:0}.case{break-inside:avoid}}
 </style>
 </head>
 <body>
 <main>
-  <header>
+  <header class="panel">
     <p class="eyebrow">单元测试报告</p>
     <h1 id="project">用例清单</h1>
-    <p class="meta" id="meta"></p>
-    <p class="meta environment">测试环境 · <span id="report-environment"></span></p>
-  </header>
-  <dl class="metrics" id="metrics" aria-label="用例汇总"></dl>
-  <section aria-labelledby="heading">
-    <div class="section-head">
-      <h2 id="heading">用例清单</h2>
-      <div class="filters" id="filters" aria-label="按状态筛选"></div>
+    <div class="report-facts">
+      <dl class="scope" id="report-scope" hidden><dt>测试范围</dt><dd></dd></dl>
+      <dl class="scope" id="report-environment"><dt>测试环境</dt><dd></dd></dl>
+      <dl class="scope" id="report-version" hidden><dt>被测版本</dt><dd></dd></dl>
     </div>
-    <div id="cases" class="cases"></div>
+    <p class="meta" id="meta" hidden></p>
+    <blockquote class="lead"><span aria-hidden="true">“</span><p id="conclusion"></p></blockquote>
+    <div class="rule-overview" id="rule-overview" hidden></div>
+    <div class="filters" id="filters" role="group" aria-label="用例计数与状态筛选" aria-controls="cases"></div>
+  </header>
+  <section class="panel" id="rule-coverage" aria-labelledby="rules-heading" hidden>
+    <h2 id="rules-heading">测试条件验证结果</h2>
+    <table class="case-table rule-table">
+      <thead><tr><th scope="col">功能组</th><th scope="col">测试条件</th><th scope="col">状态</th><th scope="col">测试用例与说明</th></tr></thead>
+      <tbody id="rule-results"></tbody>
+    </table>
+  </section>
+  <section class="panel" id="case-panel" aria-labelledby="heading">
+    <h2 id="heading">测试用例</h2>
+    <table class="case-table">
+      <thead><tr><th scope="col">功能</th><th scope="col">用例</th><th scope="col">结果</th><th scope="col">备注</th></tr></thead>
+      <tbody id="cases"></tbody>
+    </table>
     <div id="empty" role="status" hidden>
-      <img src="empty-cases.webp" alt="" width="126" height="126">
+      <img src="empty-cases.webp" alt="" width="108" height="108">
       <p>暂无用例</p>
     </div>
   </section>
+  <section class="panel" id="coverage" aria-labelledby="coverage-heading" hidden>
+    <h2 id="coverage-heading">代码覆盖率</h2>
+  </section>
+  <details class="panel" id="import-panel" hidden>
+    <summary>运行异常</summary>
+    <div id="imports"></div>
+  </details>
 </main>
 <script id="report-data" type="application/json">{"project":"项目名称","meta":"","scope":"","cases":[]}</script>
 <script>
 const data = JSON.parse(document.getElementById('report-data').textContent)
-const states = {passed:'通过', failed:'失败', pending:'待测试', skipped:'跳过', cancelled:'取消', blocked:'阻塞'}
-const marks = {passed:'✓', failed:'×', pending:'○', skipped:'–', cancelled:'–', blocked:'!'}
+const states = {passed:'通过', failed:'失败', pending:'待测试', skipped:'跳过', cancelled:'取消', blocked:'阻塞', unknown:'未知', unsupported:'不支持'}
+const marks = {passed:'✓', failed:'×', pending:'○', skipped:'–', cancelled:'–', blocked:'!', unknown:'?', unsupported:'–'}
 const element = (tag, text, className) => {
   const node = document.createElement(tag)
-  if (text) node.textContent = text
+  if (text !== undefined) node.textContent = text
   if (className) node.className = className
   return node
 }
@@ -100,13 +156,14 @@ function executionDetails(execution) {
     execution.executedAt && '执行时间 · ' + execution.executedAt,
     execution.durationMs !== undefined && '耗时 · ' + execution.durationMs + ' ms',
     execution.command && '执行命令 · ' + execution.command,
-    execution.evidence && '证据 · ' + execution.evidence,
+    execution.exitCode !== undefined && '命令退出码 · ' + execution.exitCode,
+    execution.evidence && '原始证据 · ' + execution.evidence,
   ].filter(Boolean)
 }
 function reportEnvironment(report) {
   const fallback = environmentText(report.environment)
-  const observations = report.cases.flatMap(item =>
-    (item.runs || []).map(run => environmentText(run.environment ?? report.environment)))
+  const observations = headerRuns.map(run => environmentText(run.environment ?? report.environment))
+  for (const batch of headerImports) observations.push(environmentText(batch.environment ?? report.environment))
   const known = [...new Set(observations.filter(Boolean))]
   if (known.length > 1) return '多个环境，详见用例的执行记录'
   if (known.length === 1) return known[0] + (observations.includes('') ? ' · 部分执行未记录' : '')
@@ -114,7 +171,7 @@ function reportEnvironment(report) {
 }
 function caseConditions(item) {
   const block = element('dl', '', 'conditions')
-  const fields = [['输入', item.input], ['预期输出', item.expected], ['断言', item.assertion]]
+  const fields = [['准备数据', item.input], ['执行动作', item.action], ['预期结果', item.expected], ['断言', item.assertion]]
   for (const [label, value] of fields) {
     if (value) block.append(element('dt', label), element('dd', value))
   }
@@ -124,79 +181,285 @@ function caseConditions(item) {
 
 const counts = Object.fromEntries(Object.keys(states).map(status => [status, 0]))
 const cards = []
-const ids = new Set()
+const imports = data.imports || []
+const headerRuns = data.cases.flatMap(item => data.testPlan ? (item.runs || []).slice(-1) : (item.runs || []))
+const headerImports = data.testPlan
+  ? [...new Map(imports.map(batch => [batch.metadata?.groupId || batch.runId, batch])).values()]
+  : imports
+const importIssues = new Set(headerImports.filter(batch => batch.unmatched.length || batch.issues.length ||
+  (!batch.matched && ['failed', 'blocked', 'cancelled', 'unknown', 'unsupported'].includes(batch.status))))
 document.title = data.project + ' · 单元测试报告'
 document.getElementById('project').textContent = data.project
+if (data.scope) {
+  const scope = document.getElementById('report-scope')
+  scope.querySelector('dd').textContent = data.scope
+  scope.hidden = false
+}
+document.querySelector('#report-environment dd').textContent = reportEnvironment(data)
+const versions = new Set([
+  ...headerRuns.map(run => run.version ?? data.version),
+  ...headerImports.map(batch => batch.version ?? data.version),
+].filter(Boolean))
+if (!versions.size && data.version) versions.add(data.version)
+if (versions.size) {
+  const version = document.getElementById('report-version')
+  version.querySelector('dd').textContent = versions.size === 1 ? [...versions][0] : '多个版本，详见用例记录'
+  version.hidden = false
+}
 const dateLine = document.getElementById('meta')
 dateLine.textContent = (data.meta || '').split(' · ').filter(part => !/^Node(?:\.js)?\s+v?\d/i.test(part.trim())).join(' · ')
 dateLine.hidden = !dateLine.textContent
-document.getElementById('report-environment').textContent = reportEnvironment(data)
 
-for (const item of data.cases) {
-  if (!item.id || ids.has(item.id)) throw new Error('Each case needs a unique ID')
-  ids.add(item.id)
-  const runs = item.runs || []
-  const latest = runs.at(-1)
-  const status = statusOf(latest)
-  counts[status] += 1
-
-  const card = element('article', '', 'case')
-  card.dataset.status = status
-  card.dataset.caseId = item.id
-  const heading = element('div', '', 'case-head')
-  heading.append(element('h3', item.title), badge(status))
-  card.append(heading)
-  card.append(caseConditions(item))
-  if (status === 'failed' || status === 'blocked') {
-    card.append(element('p', '原因 · ' + (latest.reason || '待定位'), 'reason'))
+function appendRun(container, run, report) {
+  const runEnvironment = environmentText(run.environment ?? report?.environment)
+  if (runEnvironment) container.append(element('p', '环境 · ' + runEnvironment))
+  for (const entry of executionDetails(run)) container.append(element('p', entry))
+  const fields = [['实际', run.actual], ['断言预期', run.matcherExpected], ['失败位置', run.location], ['原因', run.reason]]
+  for (const [label, value] of fields) {
+    if (value) container.append(element('p', label + ' · ' + value, label === '原因' ? 'reason' : ''))
   }
-  if (runs.length || item.name || item.target) {
-    const details = element('details')
+  if (run.notes) container.append(element('p', run.notes, 'source'))
+}
+
+function renderRules(plan) {
+  const casesByRule = Map.groupBy(data.cases, item => item.ruleId)
+  const findingsByRule = Map.groupBy(plan.findings || [], item => item.ruleId)
+  const body = document.getElementById('rule-results')
+  const rows = []
+  for (const group of plan.groups) {
+    for (const rule of group.rules) {
+      const cases = casesByRule.get(rule.id) || []
+      const findings = findingsByRule.get(rule.id) || []
+      const statuses = cases.map(item => statusOf(item.runs?.at(-1)))
+      const openFinding = findings.find(finding => finding.status !== 'resolved')
+      const failed = statuses.includes('failed')
+      const passed = statuses.length > 0 && statuses.every(status => status === 'passed')
+      const label = !cases.length ? '缺用例' : failed ? '不通过' : statuses.includes('blocked') ? '受阻' :
+        openFinding ? (openFinding.kind === 'assertion' ? '待补断言' : '代码未覆盖') :
+        passed ? '通过' : statuses.every(status => status === 'pending') ? '未执行' : '结果不全'
+
+      const row = element('tr')
+      const title = element('th', rule.title)
+      title.scope = 'row'
+      const status = element('td')
+      status.append(element('span', label, 'badge ' + (label === '通过' ? 'passed' : failed ? 'failed' : 'blocked')))
+      const notes = element('td', '', 'case-note')
+      if (findings.length) {
+        const reasons = element('div', '', 'rule-findings')
+        for (const finding of findings) {
+          const reason = element('p', finding.detail)
+          reason.title = finding.evidence
+          reasons.append(reason)
+        }
+        notes.append(reasons)
+      }
+      if (failed && !findings.length) {
+        const reason = cases.map(item => item.runs?.at(-1)).find(run => run?.status === 'failed' && run.reason)?.reason
+        if (reason) notes.append(element('div', reason))
+      }
+      const detail = cases.length ? ruleDetails(rule.id, cases, notes) : undefined
+      if (!notes.childElementCount) notes.textContent = '—'
+      row.append(element('td', group.title), title, status, notes)
+      rows.push({ row, detail, label, priority: failed ? 0 : label === '通过' ? 2 : 1 })
+    }
+  }
+  const overview = document.getElementById('rule-overview')
+  const totals = new Map()
+  for (const { row, detail, label } of rows.sort((a, b) => a.priority - b.priority)) {
+    body.append(row)
+    if (detail) body.append(detail)
+    totals.set(label, (totals.get(label) || 0) + 1)
+  }
+  const tones = { '测试条件总数': 'total', '通过': 'passed', '不通过': 'failed' }
+  for (const [label, count] of [['测试条件总数', rows.length], ...totals]) {
+    const card = element('div', '', 'rule-metric ' + (tones[label] || 'attention'))
+    card.append(element('strong', String(count)), element('span', label))
+    overview.append(card)
+  }
+  overview.hidden = false
+  document.getElementById('rule-coverage').hidden = false
+  document.getElementById('case-panel').hidden = true
+}
+
+function ruleDetails(id, cases, notes) {
+  const row = element('tr')
+  row.id = 'rule-detail-' + id
+  row.hidden = true
+  const cell = element('td', '', 'rule-detail-cell')
+  cell.colSpan = 4
+  const grid = element('div', '', 'rule-case-grid')
+  for (const item of cases) grid.append(ruleCase(item))
+  cell.append(grid)
+  row.append(cell)
+
+  const toggle = element('button', '查看用例', 'rule-toggle')
+  toggle.type = 'button'
+  toggle.setAttribute('aria-controls', row.id)
+  toggle.setAttribute('aria-expanded', 'false')
+  toggle.addEventListener('click', () => {
+    row.hidden = !row.hidden
+    toggle.setAttribute('aria-expanded', String(!row.hidden))
+    toggle.textContent = row.hidden ? '查看用例' : '收起用例'
+  })
+  notes.append(toggle)
+  return row
+}
+
+function ruleCase(item) {
+  const entry = element('div', '', 'rule-case')
+  const heading = element('div', '', 'rule-case-heading')
+  const latest = item.runs?.at(-1)
+  const status = statusOf(latest)
+  heading.append(element('strong', item.title), badge(status))
+  entry.append(heading)
+
+  const fields = element('dl', '', 'rule-case-fields')
+  const result = latest?.actual || latest?.reason || (status === 'passed' ? '本次断言均通过。' : states[status])
+  for (const [label, value] of [
+    ['准备数据', item.input], ['执行步骤', item.action],
+    ['断言', item.assertion], ['实际结果', result],
+  ]) {
+    const field = element('div', '', 'rule-case-field')
+    field.append(element('dt', label), element('dd', value))
+    fields.append(field)
+  }
+  entry.append(fields)
+
+  const record = element('details', '', 'rule-case-record')
+  record.append(element('summary', '执行记录'))
+  appendCaseHistory(record, item)
+  if (record.childElementCount > 1) entry.append(record)
+  return entry
+}
+
+function appendCaseDetails(details, item) {
+  const conditions = caseConditions(item)
+  if (conditions.childElementCount) details.append(conditions)
+  appendCaseHistory(details, item)
+}
+
+function appendCaseHistory(details, item) {
+  const runs = item.runs || []
+  if (item.name) details.append(element('p', (data.sourceLabel || '对应测试用例') + ' · ' + item.name, 'source'))
+  if (item.target) details.append(element('p', '被测代码 · ' + item.target, 'source'))
+  if (runs.length) {
     const history = element('ol', '', 'history')
-    details.append(element('summary', runs.length ? '执行记录（' + runs.length + '）' : '定位信息'))
-    if (item.name) details.append(element('p', (data.sourceLabel || '对应测试用例') + ' · ' + item.name, 'source'))
-    if (item.target) details.append(element('p', '被测代码 · ' + item.target, 'source'))
     for (const run of runs) {
       const line = element('li')
       line.append(element('strong', (run.phase || '测试执行') + ' · ' + states[statusOf(run)]))
-      const runEnvironment = environmentText(run.environment ?? data.environment)
-      if (runEnvironment) line.append(element('p', '测试环境 · ' + runEnvironment))
-      for (const entry of executionDetails(run)) line.append(element('p', entry))
-      if (run.actual) line.append(element('p', '实际 · ' + run.actual))
-      if (run.reason) line.append(element('p', '原因 · ' + run.reason))
+      appendRun(line, run, data)
       history.append(line)
     }
-    if (runs.length) details.append(history)
-    card.append(details)
+    details.append(history)
   }
-  document.getElementById('cases').append(card)
+}
+
+const caseList = document.getElementById('cases')
+for (const item of data.cases) {
+  const runs = item.runs || []
+  const status = statusOf(runs.at(-1))
+  counts[status] += 1
+  const card = element('tr', undefined, 'case')
+  card.dataset.status = status
+  card.dataset.caseId = item.id
+  const feature = element('td', item.feature || '—')
+  const heading = element('th', undefined, 'case-title')
+  heading.scope = 'row'
+  heading.append(element('span', item.title))
+  const result = element('td')
+  result.append(badge(status))
+  const latest = runs.at(-1)
+  const notes = element('td', latest?.reason || '—', 'case-note')
+  const details = element('details')
+  details.append(element('summary', runs.length > 1 ? '详情与复测（' + runs.length + ' 次）' : '查看详情'))
+  appendCaseDetails(details, item)
+  if (details.childElementCount > 1) heading.append(details)
+  card.append(feature, heading, result, notes)
+  caseList.append(card)
   cards.push(card)
 }
 
-const totals = [['total', '用例总数', cards.length], ...Object.entries(states).map(([key, label]) => [key, label, counts[key]])]
-for (const [key, label, value] of totals) {
-  if ((key === 'skipped' || key === 'cancelled' || key === 'blocked') && value === 0) continue
-  const metric = element('div', '', 'metric ' + key)
-  metric.append(element('dt', label), element('dd', String(value)))
-  document.getElementById('metrics').append(metric)
+function conclusion() {
+  const latestRuns = data.cases.map(item => item.runs?.at(-1))
+  const concern = latestRuns.find(run => run?.status === 'failed' && run.reason?.trim())
+    ?? latestRuns.find(run => run?.status === 'blocked' && run.reason?.trim())
+  if (concern) return concern.reason.trim()
+
+  if (importIssues.size) {
+    return '请核对运行异常中的执行状态和未匹配用例。'
+  }
+  const finding = data.testPlan?.findings?.find(item => item.status !== 'resolved')
+  if (finding) return finding.detail
+  const planned = new Set(data.cases.map(item => item.ruleId))
+  const uncovered = data.testPlan?.groups.flatMap(group => group.rules).find(rule => !planned.has(rule.id))
+  if (uncovered) return '仍需补测「' + uncovered.title + '」。'
+  if (!cards.length) return '当前范围尚未登记测试用例。'
+  if (counts.pending === cards.length) return '当前用例尚未执行，等待测试结果。'
+  if (counts.passed === cards.length) return '本次测试覆盖的行为均符合预期。'
+  return '请先确认尚无结果的用例是否需要补测。'
 }
+document.getElementById('conclusion').textContent = conclusion()
+if (data.testPlan) renderRules(data.testPlan)
+
 const filters = document.getElementById('filters')
+filters.hidden = Boolean(data.testPlan)
 const empty = document.getElementById('empty')
 function filterCases(status) {
   for (const card of cards) card.hidden = status !== 'all' && card.dataset.status !== status
   for (const button of filters.children) button.setAttribute('aria-pressed', String(button.dataset.status === status))
   empty.hidden = cards.some(card => !card.hidden)
+  empty.querySelector('p').textContent = status === 'all' ? '暂无用例' : '此状态暂无用例'
 }
-for (const [key, label] of [['all','全部'], ...Object.entries(states)]) {
-  if ((key === 'skipped' || key === 'cancelled' || key === 'blocked') && !counts[key]) continue
+const visibleStates = Object.entries(states).filter(([key]) => ['passed','failed','pending'].includes(key) || counts[key])
+for (const [key, label] of [['all','全部'], ...visibleStates]) {
   const quantity = key === 'all' ? cards.length : counts[key]
-  const filter = element('button', label + '（' + quantity + '）')
+  const filter = element('button', undefined, 'filter')
+  filter.append(element('strong', String(quantity)), element('span', label))
   filter.type = 'button'
   filter.dataset.status = key
+  filter.setAttribute('aria-label', label + '（' + quantity + '）')
   filter.addEventListener('click', () => filterCases(key))
   filters.append(filter)
 }
 filterCases('all')
+
+const importPanel = document.getElementById('import-panel')
+importPanel.hidden = !importIssues.size
+const importList = document.getElementById('imports')
+const coverage = document.getElementById('coverage')
+const metricLabels = {lines:'行', statements:'语句', functions:'函数', branches:'分支'}
+const matchLabels = {'missing-id':'缺少测试标识', ambiguous:'测试标识重复', unmapped:'未匹配到用例', 'outside-kind':'属于 UI 测试'}
+const groupTitles = new Map((data.testPlan?.groups || []).map(group => [group.id, group.title]))
+for (const batch of imports) {
+  const group = groupTitles.get(batch.metadata?.groupId)
+  const label = group || batch.metadata?.phase || batch.format || '测试运行'
+  for (const [name, { covered, total }] of Object.entries(batch.coverage || {})) {
+    if (!metricLabels[name] || total <= 0) continue
+    coverage.hidden = false
+    coverage.append(element('p', label + ' · ' + metricLabels[name] + ' ' +
+      (covered / total * 100).toFixed(1) + '%（' + covered + '/' + total + '）', 'source'))
+  }
+  if (batch.coverageSource) coverage.append(element('p', '覆盖率证据 · ' + batch.coverageSource, 'source'))
+  if (!importIssues.has(batch)) continue
+  const detail = element('details', '', 'import-detail')
+  detail.append(element('summary', [label, states[batch.status], '匹配 ' + batch.matched + ' 项',
+    batch.unmatched.length ? '未匹配 ' + batch.unmatched.length + ' 项' : ''].filter(Boolean).join(' · ')))
+  detail.append(element('p', '运行编号 · ' + batch.runId, 'source'))
+  if (batch.metadata?.runnerVersion) detail.append(element('p', '测试工具 · ' + batch.metadata.runnerVersion, 'source'))
+  if (batch.metadata?.status) detail.append(element('p', '记录的执行状态 · ' + states[batch.metadata.status], 'source'))
+  appendRun(detail, batch)
+  for (const issue of batch.issues) detail.append(element('p', states[issue.status] + ' · ' + issue.detail, 'source'))
+  const observations = element('ul', undefined, 'history')
+  for (const row of batch.unmatched) {
+    const entry = element('li')
+    entry.append(element('strong', matchLabels[row.match] + ' · ' + (row.testId || row.title || '未知用例')))
+    entry.append(element('p', states[row.status]))
+    appendRun(entry, row)
+    observations.append(entry)
+  }
+  if (observations.childElementCount) detail.append(observations)
+  importList.append(detail)
+}
 </script>
 </body>
 </html>
