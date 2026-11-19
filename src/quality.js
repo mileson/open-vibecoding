@@ -1,3 +1,5 @@
+import { projectSkillPath, validSkillName, assertProjectSkillParents } from './project-skill-layout.js';
+import { PROJECT_SKILLS_DIR } from './skill-presentation.js';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -36,6 +38,8 @@ const HISTORICAL_TASK_METADATA_VALUES = new Set([...HISTORICAL_LIFECYCLE_STATUSE
 
 const IGNORE_DIRS = new Set([
   '.git',
+  '.agents',
+  '.gemini',
   '.codex',
   '.claude',
   '.cursor',
@@ -258,7 +262,7 @@ function defaultQualityConfig() {
     knowledge: {
       enabled: true,
       skillGenerationRequiredFor: ['repeated-issue', 'high-impact-fix', 'hidden-debug-knowledge', 'agent-misjudgment'],
-      skillDir: '.open-vibecoding/knowledge/skills',
+      skillDir: PROJECT_SKILLS_DIR,
       candidateDir: '.open-vibecoding/knowledge/candidates',
       draftDir: '.open-vibecoding/knowledge/drafts',
       abstractionRequired: true,
@@ -1547,17 +1551,22 @@ async function listKnowledgeFiles(projectRoot) {
     }
   }
   await walk(knowledgeRoot);
+  const skills = await fs.readdir(cjoin(projectRoot, PROJECT_SKILLS_DIR), { withFileTypes: true }).catch(() => []);
+  for (const skill of skills) {
+    if (!skill.isDirectory() || !validSkillName(skill.name)) continue;
+    const file = projectSkillPath(skill.name);
+    if ((await fs.lstat(cjoin(projectRoot, file)).catch(() => null))?.isFile()) collected.push({ path: file });
+  }
   return collected;
 }
 
 function detectKnowledge({ config, knowledgeFiles, candidateState, knowledgeIndex }) {
-  const skillDir = config.knowledge.skillDir ?? '.open-vibecoding/knowledge/skills';
+  const skillDir = PROJECT_SKILLS_DIR;
   const candidateDir = config.knowledge.candidateDir ?? KNOWLEDGE_CANDIDATES_DIR;
   const draftDir = config.knowledge.draftDir ?? KNOWLEDGE_DRAFTS_DIR;
-  const skills = knowledgeFiles
-    .filter((file) => file.path.startsWith(skillDir.replace(/\//g, path.sep)) || file.path.startsWith(skillDir))
-    .filter((file) => file.path.endsWith('SKILL.md'))
-    .map((file) => file.path);
+  const expected = new Set((knowledgeIndex?.skills ?? []).filter(entry => !entry.migrationConflict && validSkillName(entry.skillName))
+    .map(entry => projectSkillPath(entry.skillName)));
+  const skills = knowledgeFiles.map(file => file.path).filter(file => expected.has(file));
   const candidateFiles = knowledgeFiles
     .filter((file) => file.path.startsWith(candidateDir.replace(/\//g, path.sep)) || file.path.startsWith(candidateDir))
     .filter((file) => file.path.endsWith('candidate.json'))
@@ -1947,8 +1956,32 @@ export async function learnQualityWorkspace(projectRoot, options = {}) {
   const { incidentId, patternId, skillName } = deriveKnowledgeNames(source, { stablePattern: true });
   const incidentPath = qualityPath(projectRoot, cjoin(KNOWLEDGE_DIR, 'incidents', `${incidentId}.json`));
   const patternPath = qualityPath(projectRoot, cjoin(KNOWLEDGE_DIR, 'patterns', `${patternId}.json`));
-  const skillDir = qualityPath(projectRoot, cjoin(KNOWLEDGE_DIR, 'skills', skillName));
-  const skillPath = cjoin(skillDir, 'SKILL.md');
+  const relativeSkill = projectSkillPath(skillName);
+  await assertProjectSkillParents(projectRoot, relativeSkill);
+  const skillPath = cjoin(projectRoot, relativeSkill);
+  const existingStat = await fs.lstat(skillPath).catch(error => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  if (existingStat && !existingStat.isFile()) {
+    return { ok: false, action: 'quality-learn', projectRoot, errors: ['Existing Skill is not a regular file.'] };
+  }
+  const skillBody = renderExperienceSkill({ skillName, source });
+  const existingSkill = await readText(skillPath).catch(error => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  const checksumSkill = content => createHash('sha256').update(content).digest('hex');
+  const marker = /^<!-- OPEN_VIBECODING:EXPERIENCE ([a-f0-9]{64}) -->\n/m;
+  const markerMatch = marker.exec(existingSkill ?? '');
+  if (existingSkill !== null && existingSkill !== skillBody &&
+      (!markerMatch || checksumSkill(existingSkill.replace(marker, '')) !== markerMatch[1])) {
+    return { ok: false, action: 'quality-learn', projectRoot,
+      errors: [`现有项目 Skill 已保留，请审查合并差异：${relativeSkill}`] };
+  }
+  const generatedSkill = skillBody.replace(/\n---\n/, `\n---\n<!-- OPEN_VIBECODING:EXPERIENCE ${checksumSkill(skillBody)} -->\n`);
+  await fs.mkdir(path.dirname(skillPath), { recursive: true });
+  await fs.writeFile(skillPath, generatedSkill, { flag: existingSkill === null ? 'wx' : 'w' });
   await writeJson(incidentPath, {
     version: 1,
     incidentId,
@@ -1990,7 +2023,6 @@ export async function learnQualityWorkspace(projectRoot, options = {}) {
     verificationSteps: source.verificationSteps,
     updatedAt: timestamp(),
   });
-  await writeText(skillPath, renderExperienceSkill({ skillName, source }));
   const indexPath = qualityPath(projectRoot, KNOWLEDGE_INDEX);
   const index = await readJson(indexPath).catch(() => ({ version: 1, incidents: [], patterns: [], skills: [], candidates: [], drafts: [] }));
   const upsert = (items, key, value) => [value, ...(Array.isArray(items) ? items.filter((item) => item[key] !== value[key]) : [])].slice(0, 200);
@@ -1999,14 +2031,14 @@ export async function learnQualityWorkspace(projectRoot, options = {}) {
     updatedAt: timestamp(),
     incidents: upsert(index.incidents, 'incidentId', { incidentId, path: incidentPath, sourceKind: source.kind, sourceRef: source.sourceId }),
     patterns: upsert(index.patterns, 'patternId', { patternId, path: patternPath, sourceKind: source.kind, sourceRef: source.sourceId }),
-    skills: upsert(index.skills, 'skillName', { skillName, path: skillPath, sourceKind: source.kind, sourceRef: source.sourceId }),
+    skills: upsert(index.skills, 'skillName', { skillName, path: relativeSkill, sourceKind: source.kind, sourceRef: source.sourceId }),
     candidates: Array.isArray(index.candidates) ? index.candidates : [],
     drafts: Array.isArray(index.drafts) ? index.drafts : [],
   });
   await markKnowledgeCandidatePromoted(projectRoot, {
     sourcePath: source.sourcePath,
     sourcePaths: source.sourcePaths,
-    skillPath,
+    skillPath: relativeSkill,
     incidentPath,
     patternPath,
   }).catch(() => null);

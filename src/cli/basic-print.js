@@ -239,6 +239,9 @@ function printInitResult(result, json) {
   }
   if (result.agentIntegration) {
     console.log(`Agent 引导: ${result.agentIntegration.ok ? '已启用' : '需修复'} (${result.agentIntegration.tools.join(', ')})`);
+    for (const change of result.agentIntegration.changes.filter(item => item.preservedAt)) {
+      console.log(`已保留 Skill 旧版本 ${change.from} → ${change.preservedAt}`);
+    }
     if (result.agentIntegration.hookProfile) {
       console.log(`Hook 模式: ${result.agentIntegration.hookProfile}`);
     }

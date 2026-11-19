@@ -42,7 +42,7 @@ test('internal payment practice and versioned assets update without changing ado
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const options = { tools: 'codex,claude,cursor', hookProfile: 'lite', enableUserCodexConfig: false, openprdHome: path.join(root, 'registry') };
   await fs.writeFile(path.join(root, 'AGENTS.md'), '# Keep business instructions\n');
-  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n');
+  await fs.writeFile(path.join(root, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n.open-vibecoding/quality/project-index.json\n.open-vibecoding/quality/project-index.json.lock\n');
   assert.equal((await setupOpenPrdAgentIntegration(root, options)).ok, true);
   const adopted = path.join(root, 'notifications/templates/feishu/payment-compact');
   await fs.mkdir(adopted, { recursive: true });
@@ -54,20 +54,16 @@ test('internal payment practice and versioned assets update without changing ado
   await fs.unlink(managed);
   assert.equal((await updateOpenPrdAgentIntegration(root, options)).ok, true);
   assert.equal(await fs.readFile(path.join(adopted, 'card.json'), 'utf8'), businessTemplate);
-  for (const adapter of ['codex', 'claude']) {
-    const folder = path.join(root, path.dirname(installedSkillPath(skill, adapter)));
-    const body = await fs.readFile(path.join(folder, 'SKILL.md'), 'utf8');
-    if (adapter === 'claude') assert.ok(body.includes('user-invocable: false'));
-    for (const file of ['card.json', 'fields.json', 'manifest.json']) {
-      const { $comment, ...actual } = await json(path.join(folder, relative, file));
-      assert.ok($comment.includes('OPEN_VIBECODING:GENERATED'));
-      assert.deepEqual(actual, await json(new URL(file, source)));
-    }
-    const router = await fs.readFile(path.join(root, installedSkillPath('open-vibecoding-router', adapter)), 'utf8');
-    assert.ok(router.includes(installedSkillPath(skill, adapter)));
-    await fs.access(path.join(folder, 'references/feishu-setup.md'));
-    await fs.access(path.join(folder, 'references/verification.md'));
+  const folder = path.join(root, path.dirname(installedSkillPath(skill)));
+  for (const file of ['card.json', 'fields.json', 'manifest.json']) {
+    const { $comment, ...actual } = await json(path.join(folder, relative, file));
+    assert.ok($comment.includes('OPEN_VIBECODING:GENERATED'));
+    assert.deepEqual(actual, await json(new URL(file, source)));
   }
-  await assert.rejects(fs.access(path.join(root, '.codex/skills', skill)));
+  const router = await fs.readFile(path.join(root, installedSkillPath('open-vibecoding-router')), 'utf8');
+  assert.ok(router.includes(installedSkillPath(skill)));
+  await fs.access(path.join(folder, 'references/feishu-setup.md'));
+  await fs.access(path.join(folder, 'references/verification.md'));
+  await assert.rejects(fs.access(path.join(root, '.agents/skills', skill)));
   assert.ok((await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')).startsWith('# Keep business instructions\n'));
 });

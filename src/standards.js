@@ -13,6 +13,8 @@ const SOURCE_IGNORE_DIRS = new Set([
   '.open-vibecoding',
   'open-vibecoding',
   '.openspec',
+  '.agents',
+  '.gemini',
   '.codex',
   '.claude',
   '.cursor',

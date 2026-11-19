@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 import sharp from 'sharp';
 import { designReviewWorkspace } from '../src/design-review.js';
 import { setupOpenPrdAgentIntegration } from '../src/agent-integration.js';
+import { installedSkillPath } from '../src/skill-presentation.js';
 
 const exec = promisify(execFile);
 async function fixture(t) {
@@ -94,12 +95,10 @@ test('CLI saves and selects with JSON protocol', async (t) => {
 test('installation includes review asset instructions and command discovery', async (t) => {
   const { root } = await fixture(t);
   await setupOpenPrdAgentIntegration(root, { tools: 'codex,claude,cursor', enableUserCodexConfig: false, openprdHome: path.join(root, 'registry') });
-  for (const client of ['.codex', '.claude']) {
-    const reference = path.join(root, client, 'skills/open-vibecoding-visual-direction-review/references/design-review.md');
-    await fs.access(reference);
-    const skill = await fs.readFile(path.join(root, client, 'skills/open-vibecoding-visual-direction-review/SKILL.md'), 'utf8');
-    assert.ok(skill.includes('references/design-review.md'));
-  }
+  const skillPath = path.join(root, installedSkillPath('open-vibecoding-visual-direction-review'));
+  await fs.access(path.join(path.dirname(skillPath), 'references/design-review.md'));
+  const skill = await fs.readFile(skillPath, 'utf8');
+  assert.ok(skill.includes('references/design-review.md'));
   const catalog = await fs.readFile(path.join(root, '.open-vibecoding/harness/command-catalog.md'), 'utf8');
   assert.ok(catalog.includes('design-review'));
 });

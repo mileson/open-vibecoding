@@ -108,7 +108,7 @@ test('CLI reads plans, exposes source-pixel mapping and reports failures without
 
 test('visual helpers install internally and remain discoverable from their consumers', async t => {
   const f = await fixture(t);
-  await fs.writeFile(path.join(f.dir, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n');
+  await fs.writeFile(path.join(f.dir, '.gitignore'), '.open-vibecoding/harness/\n.open-vibecoding/learning/\n.open-vibecoding/quality/reports/\n.open-vibecoding/quality/project-index.json\n.open-vibecoding/quality/project-index.json.lock\n');
   const result = await setupOpenPrdAgentIntegration(f.dir, { tools: 'codex,claude,cursor', enableUserCodexConfig: false, openprdHome: path.join(f.dir, 'registry') });
   assert.equal(result.ok, true);
   const catalog = buildCapabilityCatalog();
@@ -118,8 +118,8 @@ test('visual helpers install internally and remain discoverable from their consu
     const source = await fs.readFile(new URL(`../skills/${skill}/SKILL.md`, import.meta.url), 'utf8');
     const installed = await fs.readFile(path.join(f.dir, installedSkillPath(skill)), 'utf8');
     assert.ok(installed.includes(source.replace(/^---\n[\s\S]*?\n---\n/, '').trim()));
-    assert.ok(!(await fs.readdir(path.join(f.dir, '.codex/skills'))).includes(skill));
-    await fs.access(path.join(f.dir, '.claude/skills', skill, 'SKILL.md'));
+    assert.ok(!(await fs.readdir(path.join(f.dir, '.agents/skills'))).includes(skill));
+    await fs.access(path.join(f.dir, installedSkillPath(skill)));
   }
   assert.ok(getCapability(catalog, 'visual-implementation').uses.includes('visual-localization'));
   assert.ok(getCapability(catalog, 'acceptance-verification').uses.includes('image-annotation'));

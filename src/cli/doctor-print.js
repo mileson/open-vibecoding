@@ -47,7 +47,7 @@ function printAgentIntegrationResult(result, json) {
   console.log('变更:');
   for (const change of result.changes) {
     const detail = change.message ? ` (${change.message})` : '';
-    console.log(`- ${change.status}: ${change.path}${detail}`);
+    console.log(`- ${change.status}: ${change.path}${detail}${change.preservedAt ? ` → ${change.preservedAt}` : ''}`);
     if (change.repairHint) {
       console.log(`  修复建议: ${change.repairHint}`);
     }

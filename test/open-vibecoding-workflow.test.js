@@ -56,8 +56,8 @@ test('generated guidance and guide leave task decomposition to the Agent', async
     await setupAgentIntegrationWorkspace(project, { tools: 'codex' });
     const agents = await fs.readFile(path.join(project, 'AGENTS.md'), 'utf8');
     const catalog = await fs.readFile(path.join(project, '.open-vibecoding/harness/command-catalog.md'), 'utf8');
-    const intake = await fs.readFile(path.join(project, '.open-vibecoding/harness/internal-skills/open-vibecoding-requirement-intake/SKILL.md'), 'utf8');
-    const testing = await fs.readFile(path.join(project, '.open-vibecoding/harness/internal-skills/open-vibecoding-test-strategy/SKILL.md'), 'utf8');
+    const intake = await fs.readFile(path.join(project, '.agents/internal-skills/open-vibecoding-requirement-intake/SKILL.md'), 'utf8');
+    const testing = await fs.readFile(path.join(project, '.agents/internal-skills/open-vibecoding-test-strategy/SKILL.md'), 'utf8');
     assert.ok(agents.includes('Agent 自主理解、拆解、执行和验证'));
     assert.ok(agents.includes('不要求生成 requirement、PRD、review.html、change 或 tasks'));
     assert.ok(intake.includes('不运行 `capture -> classify -> synthesize -> review -> change -> tasks`'));
@@ -87,7 +87,7 @@ test('a complex prompt does not create a requirement gate or PRD state', async (
     assert.equal(result.status, 0, result.stderr);
     const response = JSON.parse(result.stdout);
     assert.equal(response.continue, true);
-    assert.ok(response.hookSpecificOutput.additionalContext.includes(path.join(project, '.open-vibecoding/harness/internal-skills/open-vibecoding-router/SKILL.md')));
+    assert.ok(response.hookSpecificOutput.additionalContext.includes('.agents/internal-skills/open-vibecoding-router/SKILL.md'));
     assert.ok(response.hookSpecificOutput.additionalContext.includes('真实用户业务结果'));
     await assert.rejects(fs.stat(path.join(project, '.open-vibecoding/harness/requirement-gates/complex-prompt-test.json')), { code: 'ENOENT' });
     await assert.rejects(fs.stat(path.join(project, '.open-vibecoding/state/versions')), { code: 'ENOENT' });
@@ -107,9 +107,9 @@ test('workspace entry resolves installed child skills and preserves custom rules
     const guidance = await fs.readFile(path.join(workspace, 'AGENTS.md'), 'utf8');
     assert.ok(guidance.startsWith('用户自定义规则'));
     assert.equal(guidance.split('OPEN_VIBECODING:WORKSPACE:START').length, 2);
-    assert.ok(guidance.includes('app/.open-vibecoding/harness/internal-skills/open-vibecoding-router/SKILL.md'));
+    assert.ok(guidance.includes('app/.agents/internal-skills/open-vibecoding-router/SKILL.md'));
     const agents = await fs.readFile(path.join(project, 'AGENTS.md'), 'utf8');
-    assert.ok(agents.includes('`.open-vibecoding/harness/internal-skills/open-vibecoding-router/SKILL.md`'));
+    assert.ok(agents.includes('`.agents/internal-skills/open-vibecoding-router/SKILL.md`'));
     assert.ok(!agents.includes('`skills/open-vibecoding-router/SKILL.md`'));
     await assert.rejects(setupWorkspaceCapabilityEntry(workspace, [path.dirname(workspace)]));
     await assert.rejects(fs.stat(path.join(workspace, '.open-vibecoding')), { code: 'ENOENT' });

@@ -50,7 +50,7 @@ test('init indexes mixed modules and candidate checks can fail, recover, skip, o
   });
   const initialized = await initWorkspace(root, { tools: 'codex', enableUserCodexConfig: false });
   const indexPath = initialized.projectQuality.index;
-  assert.match(await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8'), /quality\/SKILL\.md/);
+  assert.match(await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8'), /\.agents\/skills\/project-quality\/SKILL\.md/);
   assert.ok((await fs.readFile(path.join(root, '.gitignore'), 'utf8')).includes(indexPath));
   const inventory = await read(indexPath);
   assert.deepEqual(inventory.modules.flatMap(module => module.ecosystems).sort(), ['javascript', 'python']);

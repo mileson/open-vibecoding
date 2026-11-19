@@ -44,7 +44,9 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 | Vibe Coding 增强 | 视觉精确定位与图片标注、图标获取、音频证据、画布、工具选择与经验复用 |
 | 最佳实践（横向板块） | 根据项目条件选择适用实践；包括 iOS 多语言、收款通知与可选卡片模板 |
 
-每个场景是独立子能力，统筹层按用户意图组合它们，不靠固定关键词匹配。小任务可以只用一项；复杂任务可在领域之间往返。`skills/open-vibecoding-router/SKILL.md` 是 Agent 的入口，`open-vibecoding capabilities list|get|contract` 提供机器可读的能力目录。项目可用 `open-vibecoding.capabilities.json` 和对应的 repo-local Skill 增量扩展。
+每个场景是独立子能力，统筹层按用户意图组合它们，不靠固定关键词匹配。小任务可以只用一项；复杂任务可在领域之间往返。项目安装后的路由入口为 `.agents/internal-skills/open-vibecoding-router/SKILL.md`，`open-vibecoding capabilities list|get|contract` 提供机器可读的能力目录。项目可用 `open-vibecoding.capabilities.json` 和对应的 repo-local Skill 增量扩展。
+
+业务 Skill 和核验后晋级的项目经验统一保存在 `.agents/skills/<name>/SKILL.md`，随仓库管理。Claude Code 由 `CLAUDE.md` 引入 `AGENTS.md` 读取同一正文，Gemini CLI 同时使用自己的项目说明入口。老项目执行 `open-vibecoding update` 迁移，遇同名不同内容时，保留当前生效版本，并在 `.agents/skill-conflicts/` 保存另一份供人工核对。经验候选和历史证据仍保存在 `.open-vibecoding/`。
 
 单元测试可以直接说「给这个模块补单元测试」「跑现有测试，给我报告」或「跑测试，修复能稳定复现的问题并回归」。Agent 沿用项目的测试入口。修复报告包含修复前的失败、同用例复测和相关回归结果。 [生成单元测试](skills/open-vibecoding-unit-test-generation/SKILL.md) · [运行、报告与修复](skills/open-vibecoding-unit-test-run-and-repair/SKILL.md)
 

@@ -192,18 +192,18 @@ test('setup propagates audio evidence guidance and valid JSON schema across supp
   const project = await makeTempProject();
   const result = await setupAgentIntegrationWorkspace(project, { tools: 'all' });
   const skillPaths = [
-    '.open-vibecoding/harness/internal-skills/open-vibecoding-audio-evidence/SKILL.md',
-    '.claude/skills/open-vibecoding-audio-evidence/SKILL.md',
+    '.agents/internal-skills/open-vibecoding-audio-evidence/SKILL.md',
+    '.agents/internal-skills/open-vibecoding-audio-evidence/SKILL.md',
   ];
   const schemaPaths = [
-    '.open-vibecoding/harness/internal-skills/open-vibecoding-audio-evidence/references/media-evidence.schema.json',
-    '.claude/skills/open-vibecoding-audio-evidence/references/media-evidence.schema.json',
+    '.agents/internal-skills/open-vibecoding-audio-evidence/references/media-evidence.schema.json',
+    '.agents/internal-skills/open-vibecoding-audio-evidence/references/media-evidence.schema.json',
   ];
   const [codexSkill, claudeSkill] = await Promise.all(skillPaths.map((file) => fs.readFile(path.join(project, file), 'utf8')));
   const [codexSchemaText, claudeSchemaText] = await Promise.all(schemaPaths.map((file) => fs.readFile(path.join(project, file), 'utf8')));
   const normalize = text => text.replace('user-invocable: false\n', '').replace(/checksum=[a-f0-9]+/g, 'checksum=normalized');
   assert.equal(normalize(codexSkill), normalize(claudeSkill));
-  assert.match(claudeSkill, /user-invocable: false/);
+  assert.match(await fs.readFile(path.join(project, 'CLAUDE.md'), 'utf8'), /@AGENTS\.md/);
   assert.match(codexSkill, /adapter=shared/);
   assert.match(codexSkill, /source=open-vibecoding-audio-evidence/);
   assert.match(codexSkill, /最终交付媒体重新提取/);
@@ -214,14 +214,15 @@ test('setup propagates audio evidence guidance and valid JSON schema across supp
   assert.equal(generatedSchema.properties.schema.const, 'openprd.media-evidence.v1');
 
   const [codexRouter, claudeRouter, cursorRule] = await Promise.all([
-    fs.readFile(path.join(project, '.open-vibecoding', 'harness', 'internal-skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8'),
-    fs.readFile(path.join(project, '.claude', 'skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8'),
+    fs.readFile(path.join(project, '.agents', 'internal-skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8'),
+    fs.readFile(path.join(project, '.agents', 'internal-skills', 'open-vibecoding-router', 'SKILL.md'), 'utf8'),
     fs.readFile(path.join(project, '.cursor', 'rules', 'open-vibecoding.mdc'), 'utf8'),
   ]);
-  for (const artifact of [codexRouter, claudeRouter, cursorRule]) {
+  for (const artifact of [codexRouter, claudeRouter]) {
     assert.match(artifact, /open-vibecoding-audio-evidence/);
-    if (artifact !== cursorRule) assert.match(artifact, /纯字幕.*不.*触发|纯字幕.*不自动触发|纯字幕.*只走相关设计能力/);
+    assert.match(artifact, /纯字幕.*不.*触发|纯字幕.*不自动触发|纯字幕.*只走相关设计能力/);
   }
+  assert.match(cursorRule, /AGENTS\.md/);
   const managedPaths = new Set(result.manifest.managedFiles.map((entry) => entry.path));
   for (const file of [...skillPaths, ...schemaPaths]) {
     assert.equal(managedPaths.has(file), true, file);

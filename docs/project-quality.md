@@ -1,6 +1,6 @@
 # 项目质量检查
 
-`open-vibecoding init` 生成项目质量 Skill 和索引，并把入口写入 `AGENTS.md`。初始化登记项目已有命令、配置和文档入口，运行检查时由项目或 Agent 明确选择。项目可在根目录维护 `open-vibecoding.quality.json`，用 `project-quality refresh` 读回变更。质量索引由本地或 CI 生成，项目可提交 Skill 和配置，在新检出目录重建索引。
+`open-vibecoding init` 生成 `.agents/skills/project-quality/SKILL.md` 和项目质量索引，并把入口写入 `AGENTS.md`。初始化登记项目已有命令、配置和文档入口，运行检查时由项目或 Agent 明确选择。项目可在根目录维护 `open-vibecoding.quality.json`，用 `project-quality refresh` 读回变更。质量索引由本地或 CI 生成，项目可提交 Skill 和配置，在新检出目录重建索引。
 
 ## 登记一个业务规则
 
@@ -36,3 +36,31 @@
 每次实跑把检查 ID、模块、候选提交、暂存索引指纹、运行时间、状态、理由和证据写在 `.open-vibecoding/artifacts/project-quality/`。记录额外标记工作目录里的未暂存变化与未跟踪文件数量。索引保留各检查最后一次决策和最后一次实际执行，以及可用的 GitHub 运行链接。完整输出留在单次运行目录。上传前核对项目检查是否会输出凭证或私密数据。
 
 发现漏测或反复失败时，沿用项目原有经验候选机制。核验后用正常 PR 维护规则、用例和检查配置。
+
+## 推送前验证
+
+由项目选择是否启用。在项目质量配置将需要阻断推送的检查声明为 `"required": ["prepush"]`，再使用现有 hooks 管理器将以下调用接入原来的 `pre-push`。通过 `--expect` 固定项目要求的检查 ID，便于发现某项登记被误删。此命令读取 Git 提供的完整标准输入。如果现有 hook 也读取输入，可先保存一次，再将同一份内容分别送给原检查和 Open VibeCoding。原检查的非零退出仍应提前中止推送。
+
+```sh
+open-vibecoding project-quality pre-push --remote "$1" --expect web.unit
+```
+
+每个待更新的 ref 单独检查 Git 提供的对象；即使从当前分支推送别的分支，也检查后者指向的提交。新 ref 与已有 ref 同样执行该提交登记的全量必过项。删除 ref 没有待测提交，报告记为跳过。无法取出提交、含未准备的子模块、缺少必过项或执行失败时阻塞。未启用的项目在索引里可见当前 hook 状态。没有待推送更新时报告为跳过。
+
+检查在临时目录执行，不能依赖当前工作区才有的文件、依赖或运行状态。已有准备命令可登记在 `prepush.prepare.argv`，每个待测提交完成检出后执行，准备过程不得修改已跟踪文件。项目 CLI 可以来自已安装版本，候选配置和测试入口仍来自待推送提交。示例使用项目锁文件准备依赖。
+
+```json
+{
+  "prepush": {
+    "prepare": { "argv": ["npm", "ci", "--no-audit", "--no-fund"] }
+  }
+}
+```
+
+终端会给出推送前报告路径。报告记录本次本地结论与逐项证据。推送命令结束后，可读回本地报告指明的单一命名远端。读回会保留历次观测，确认目标 ref 当前指向哪个提交；对于直接使用 URL 或配置了多个推送地址的远端，请独立核对相应目标。
+
+```sh
+open-vibecoding project-quality observe-push --report .open-vibecoding/artifacts/project-quality/<attempt>/push.json
+```
+
+本地 hook 由项目成员的 Git 环境执行。项目的共享合并政策仍由现有 CI 和分支规则执行。 [Git pre-push 输入](https://git-scm.com/docs/githooks#_pre_push)

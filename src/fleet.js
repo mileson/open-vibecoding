@@ -22,6 +22,8 @@ const FLEET_IGNORE_DIRS = new Set([
 ]);
 const FLEET_PROJECT_MARKERS = [
   '.open-vibecoding',
+  '.agents',
+  '.gemini',
   '.codex',
   '.claude',
   '.cursor',
@@ -36,7 +38,7 @@ const FLEET_PROJECT_MARKERS = [
   'deno.json',
   'Makefile',
 ];
-const FLEET_AGENT_MARKERS = ['.codex', '.claude', '.cursor', 'AGENTS.md', 'CLAUDE.md'];
+const FLEET_AGENT_MARKERS = ['.agents', '.codex', '.claude', '.cursor', '.gemini', 'AGENTS.md', 'CLAUDE.md', 'GEMINI.md'];
 const FLEET_LEGACY_OPEN_VIBECODING_MARKER = 'open-vibecoding-legacy-artifacts';
 const FLEET_TRANSACTIONAL_ACTIONS = new Set(['update', 'setup']);
 

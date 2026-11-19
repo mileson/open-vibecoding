@@ -21,7 +21,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { CANONICAL_COMMANDS, CANONICAL_SKILLS } from '../agent-canonical-content.js';
+import { LEGACY_SKILL_ROOTS, validSkillName } from '../project-skill-layout.js';
+import { CANONICAL_COMMANDS } from '../agent-canonical-content.js';
 import { atomicWriteJson, atomicWriteText } from '../kernel/index.js';
 import { hasLegacyOpenPrdArtifacts } from '../openspec/migration.js';
 
@@ -30,10 +31,8 @@ const FLEET_TRANSACTION_VERSION = 1;
 const CHECKSUM_ALGORITHM = 'sha256';
 
 const OPEN_VIBECODING_AGENT_ARTIFACT_SCOPES = Object.freeze([
-  ...CANONICAL_SKILLS.flatMap((skill) => [
-    path.join('.codex', 'skills', skill.id),
-    path.join('.claude', 'skills', skill.id),
-  ]),
+  '.agents/skills', '.agents/internal-skills', '.agents/skill-conflicts',
+  ...LEGACY_SKILL_ROOTS.filter(([, root]) => !root.startsWith('.open-vibecoding/')).map(([, root]) => root),
   ...CANONICAL_COMMANDS.flatMap((command) => [
     path.join('.codex', 'prompts', `open-vibecoding-${command.id}.md`),
     path.join('.claude', 'commands', 'open-vibecoding', `${command.id}.md`),
@@ -44,6 +43,8 @@ const FLEET_MANAGED_SCOPES = Object.freeze([
   '.open-vibecoding',
   'AGENTS.md',
   'CLAUDE.md',
+  'GEMINI.md',
+  'open-vibecoding.capabilities.json',
   '.gitignore',
   path.join('.codex', 'config.toml'),
   path.join('.codex', 'hooks.json'),
@@ -63,6 +64,14 @@ const FLEET_PRESERVED_SCOPE_PATTERNS = Object.freeze([
 
 async function managedScopesForRoot(projectRoot) {
   const scopes = [...FLEET_MANAGED_SCOPES];
+  const extensionFile = path.join(projectRoot, 'open-vibecoding.capabilities.json');
+  const stat = await fs.lstat(extensionFile).catch(() => null);
+  if (stat?.isFile()) {
+    const config = JSON.parse(await fs.readFile(extensionFile, 'utf8'));
+    for (const item of (Array.isArray(config?.scenarios) ? config.scenarios : [])) {
+      if (validSkillName(item?.skill)) scopes.push(path.join('skills', item.skill));
+    }
+  }
   // `open-vibecoding/` is only managed when it is the legacy changes/specs tree. A
   // normal nested repository named `openprd` must never enter the transaction.
   if (await hasLegacyOpenPrdArtifacts(projectRoot)) scopes.push('open-vibecoding');

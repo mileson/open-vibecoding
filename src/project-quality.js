@@ -6,14 +6,16 @@ import path from 'node:path';
 import { parseArgs, promisify } from 'node:util';
 import { atomicWriteJson, atomicWriteText, readJsonIfExists, withFileLock } from './kernel/atomic-store.js';
 import { executeTestCommand } from './test-report-run.js';
+import { projectSkillPath, assertProjectSkillParents } from './project-skill-layout.js';
+import { handlePrePush, observePush } from './project-quality-push.js';
 
 const gitCommand = promisify(execFile);
 const settingsFile = 'open-vibecoding.quality.json';
 const indexFile = '.open-vibecoding/quality/project-index.json';
-const skillFile = '.open-vibecoding/quality/SKILL.md';
+const skillFile = projectSkillPath('project-quality');
 const skillMarker = '<!-- OPEN_VIBECODING:PROJECT_QUALITY -->';
 const runsDir = '.open-vibecoding/artifacts/project-quality';
-const profiles = ['precommit', 'pr'];
+const profiles = ['precommit', 'prepush', 'pr'];
 const excluded = new Set(['node_modules', 'vendor', 'dist', 'build', 'coverage', '__pycache__', 'venv']);
 const sourceFiles = ['package.json', 'pyproject.toml', 'requirements.txt', 'Makefile', 'Package.swift', 'pytest.ini'];
 const controlFiles = new Set([settingsFile, 'AGENTS.md', '.pre-commit-config.yaml', '.pre-commit-config.yml']);
@@ -154,12 +156,16 @@ async function loadInventory(root) {
     }
     ruleIds.add(rule.id);
   }
-  const hook = async () => {
-    const absolute = (await git(root, 'rev-parse', '--path-format=absolute', '--git-path', 'hooks/pre-commit')).trim();
-    return fs.access(absolute).then(() => absolute, () => null);
+  const hook = async (name) => {
+    const absolute = (await git(root, 'rev-parse', '--path-format=absolute', '--git-path', 'hooks/' + name)).trim();
+    return fs.access(absolute, fs.constants.X_OK).then(() => absolute, () => null);
   };
-  const hooks = { precommit: await hook().catch(() => null), configs: [] };
-  for (const file of ['.pre-commit-config.yaml', '.pre-commit-config.yml', '.husky/pre-commit', 'lefthook.yml']) {
+  const hooks = {
+    precommit: await hook('pre-commit').catch(() => null),
+    prepush: await hook('pre-push').catch(() => null),
+    configs: [],
+  };
+  for (const file of ['.pre-commit-config.yaml', '.pre-commit-config.yml', '.husky/pre-commit', '.husky/pre-push', 'lefthook.yml']) {
     if (await fs.access(path.join(root, file)).then(() => true, () => false)) hooks.configs.push(file);
   }
   const ci = (await entries(path.join(root, '.github/workflows')))
@@ -172,6 +178,9 @@ async function loadInventory(root) {
       : 'Locate the existing module test command or register a focused test for a documented business rule.' })));
   if (!hooks.precommit && !hooks.configs.length) advice.push({
     layer: 'precommit', action: 'Register a fast precommit profile and add its run command to a project-approved hook.',
+  });
+  if (!hooks.prepush) advice.push({
+    layer: 'prepush', action: 'Opt in through the existing hook manager, then validate the actual pushed refs with project-quality pre-push.',
   });
   return { version: 1, modules, documents, hooks, ci, rules, checks: [...registry.values()], advice };
 }
@@ -218,15 +227,23 @@ export async function initProjectQuality(root) {
     '索引缺失或改过项目配置时，使用 AGENTS.md 登记的 CLI 执行 `project-quality refresh --root .`。检查定义可在项目的 `' + settingsFile + '` 中增量维护。',
     '查到相关检查后执行 `project-quality run --root . --check <id>`，可重复传入 `--check`。查看返回记录及 index 中 latestExecuted 和 CI 链接。实际证据在记录目录，历史失败有独立记录。',
     '本地提交前沿用已有 hook，可接入 `project-quality run --root . --profile precommit`。合并候选执行 `project-quality run --root . --profile pr`，项目确认可按改动缩小范围时传 `--base <sha>`。失败、阻塞和漏跑的必过项会返回非零。',
+    '项目确认启用推送前检查后，按现有 hook 管理方式接入 `project-quality pre-push --remote "$1"`，并完整传递 Git 的标准输入。查看报告中的放行结果。推送后用 `project-quality observe-push` 读回远端，仅在核对目标 ref 后确认更新。',
     '按项目已有环境准备依赖，先解决环境阻塞。发现漏测或可复用经验，按 `open-vibecoding-experience-reuse` 的既有经验候选和项目评审流程处理，核验通过后更新规则或检查。',
     '',
   ].join('\n');
   const index = await writeIndex(root);
   const destination = path.join(root, skillFile);
-  const previous = await readText(destination);
-  if ((!previous || previous.includes(skillMarker)) && previous !== skill) {
-    await atomicWriteText(destination, skill);
-  }
+  await assertProjectSkillParents(root, skillFile);
+  const stat = await fs.lstat(destination).catch(error => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  const previous = stat?.isFile() ? await readText(destination) : '';
+  const digest = content => createHash('sha256').update(content).digest('hex');
+  const checksum = /^<!-- OPEN_VIBECODING:PROJECT_QUALITY_CHECKSUM ([a-f0-9]{64}) -->\n/m;
+  const pristine = checksum.exec(previous)?.[1] === digest(previous.replace(checksum, ''));
+  const generated = skill.replace(skillMarker, skillMarker + '\n<!-- OPEN_VIBECODING:PROJECT_QUALITY_CHECKSUM ' + digest(skill) + ' -->');
+  if ((!stat || pristine) && previous !== generated) await atomicWriteText(destination, generated);
   return { index: indexFile, skill: skillFile, modules: index.modules.length, checks: index.checks.length };
 }
 
@@ -300,7 +317,7 @@ async function e2eEvidence(root, evidence, expectedRuns) {
   return { status: 'passed', reason: null, links };
 }
 
-async function runChecks(root, values) {
+async function runChecks(root, values, context = {}) {
   const inventory = await loadInventory(root);
   const profile = values.profile;
   if (profile && !profiles.includes(profile)) throw new Error('Unknown profile: ' + profile);
@@ -318,12 +335,15 @@ async function runChecks(root, values) {
   }
   if (!selection.length) selection.push({ id: 'profile:' + profile, module: '.' });
 
-  const before = await snapshot(root);
+  if (profile === 'prepush' && !context.snapshot) throw new Error('Use project-quality pre-push with Git hook input.');
+  const outputRoot = context.outputRoot ?? root;
+  const inspectSnapshot = context.inspect ?? (() => snapshot(root));
+  const before = context.snapshot ?? await inspectSnapshot();
   const changed = await pathsChanged(root, profile, values.base, before);
   const outsideIndex = profile === 'precommit' && before.stagedSnapshot ? await pathsOutsideIndex(root) : [];
   const id = new Date().toISOString().replaceAll(':', '-') + '-' + randomUUID();
   const directory = path.posix.join(runsDir, id);
-  await fs.mkdir(path.join(root, directory), { recursive: true });
+  await fs.mkdir(path.join(outputRoot, directory), { recursive: true });
   const results = [];
   const ci = ciContext();
   const invalidCandidate = profile === 'pr' && process.env.GITHUB_ACTIONS === 'true' &&
@@ -352,34 +372,37 @@ async function runChecks(root, values) {
     } else if (profile === 'precommit' && outsideIndex.length && affects(check, outsideIndex)) {
       status = 'blocked';
       reason = 'Unstaged or untracked files overlap the check scope.';
+    } else if (context.push && (await inspectSnapshot()).changed) {
+      status = 'blocked';
+      reason = 'An earlier check modified tracked files in the pushed snapshot.';
     } else {
       const cwd = path.join(root, check.module);
-      const output = path.join(root, evidence);
+      const output = path.join(outputRoot, evidence);
       await fs.mkdir(output);
       log = path.posix.join(evidence, 'output.log');
-      const handle = await fs.open(path.join(root, log), 'wx');
+      const handle = await fs.open(path.join(outputRoot, log), 'wx');
       try {
         const realCwd = await fs.realpath(cwd);
         if (realCwd !== root && !realCwd.startsWith(root + path.sep)) throw new Error('Check module is outside the project');
         const [command, ...args] = check.argv.map(value => value.replaceAll('{artifacts}', () => output));
-        const result = await executeTestCommand(command, args, realCwd, handle, check.timeoutMs ?? 300_000);
+        const result = await executeTestCommand(command, args, realCwd, handle, check.timeoutMs ?? 300_000, context.env);
         exitCode = result.code;
         if (result.signal) {
           status = 'blocked';
           reason = 'Runner terminated by ' + result.signal + ' (interrupted or timed out).';
         } else if (check.reportRuns) {
-          const report = await e2eEvidence(root, evidence, check.reportRuns);
+          const report = await e2eEvidence(outputRoot, evidence, check.reportRuns);
           ({ status, reason, links } = report);
           if (status === 'passed' && exitCode !== 0) {
             status = 'blocked';
             reason = 'The E2E report passed but its runner exited with code ' + exitCode + '.';
           }
         } else if (exitCode !== 0) {
-          status = (command === 'python3' && /No module named (pytest|ruff)\b/.test(await readText(path.join(root, log)))) ||
+          status = (command === 'python3' && /No module named (pytest|ruff)\b/.test(await readText(path.join(outputRoot, log)))) ||
             exitCode === 126 || exitCode === 127 ? 'blocked' : 'failed';
           reason = 'Runner exited with code ' + exitCode + '.';
         }
-        const after = await snapshot(root);
+        const after = await inspectSnapshot();
         if (JSON.stringify(before) !== JSON.stringify(after) && status === 'passed') {
           status = 'blocked';
           reason = 'Checkout changed during the run. Verify the new state in a fresh run.';
@@ -394,14 +417,14 @@ async function runChecks(root, values) {
     const record = {
       version: 1, runId: id, checkId: check.id, module: check.module, source: check.source, profile: profile ?? null,
       environment: { platform: os.platform(), arch: os.arch(), release: os.release(), node: process.version },
-      snapshot: before, scope: check.paths ?? [], startedAt, finishedAt: new Date().toISOString(), durationMs: Math.round(performance.now() - start),
+      snapshot: before, ...(context.push && { push: context.push }), scope: check.paths ?? [], startedAt, finishedAt: new Date().toISOString(), durationMs: Math.round(performance.now() - start),
       status, exitCode, reason, evidence: log ? { directory: evidence, log, ...links } : null, ...(ci && { ci }),
     };
     const recordPath = evidence + '.json';
-    await atomicWriteJson(path.join(root, recordPath), record);
+    await atomicWriteJson(path.join(outputRoot, recordPath), record);
     results.push({ ...record, record: recordPath });
   }
-  await writeIndex(root);
+  if (!context.push) await writeIndex(root);
   return { reportDirectory: directory, results, ok: results.every(item => ['passed', 'skipped'].includes(item.status)) };
 }
 
@@ -409,6 +432,8 @@ export async function runProjectQualityCommand(args) {
   const [action, ...rest] = args;
   if (!action || action === '--help' || rest.includes('--help')) {
     console.log([
+      'open-vibecoding project-quality pre-push [--remote <name>] [--expect <required-id> ...] [--root <project>]   # reads Git hook stdin',
+      'open-vibecoding project-quality observe-push --report <report.json> [--root <project>]',
       'open-vibecoding project-quality refresh [--root <project>]',
       'open-vibecoding project-quality run --check <id> ... [--root <project>]',
       'open-vibecoding project-quality run --profile <precommit|pr> [--check <required-id> ...] [--expect <required-id> ...] [--base <sha>] [--root <project>]',
@@ -418,9 +443,23 @@ export async function runProjectQualityCommand(args) {
   try {
     const { values } = parseArgs({
       args: rest,
-      options: { root: { type: 'string' }, check: { type: 'string', multiple: true }, profile: { type: 'string' }, base: { type: 'string' }, expect: { type: 'string', multiple: true } },
+      options: { root: { type: 'string' }, check: { type: 'string', multiple: true }, profile: { type: 'string' }, base: { type: 'string' }, expect: { type: 'string', multiple: true },
+        remote: { type: 'string' }, report: { type: 'string' } },
     });
     const root = await fs.realpath(values.root ?? process.cwd());
+    if (action === 'pre-push' && !values.check && !values.profile && !values.base && !values.report) {
+      const result = await handlePrePush(root, values, { runChecks, writeIndex, runsDir });
+      console.log(JSON.stringify(result, null, 2));
+      console.error('Push check: ' + result.status + ' · ' + result.html);
+      return result.ok ? 0 : 1;
+    }
+    if (action === 'observe-push' && values.report && !values.check && !values.profile &&
+        !values.base && !values.expect && !values.remote) {
+      const result = await observePush(root, values.report, runsDir);
+      console.log(JSON.stringify(result, null, 2));
+      return 0;
+    }
+    if (values.remote || values.report) throw new Error('Unsupported options for ' + action);
     if (action === 'refresh' && !values.check && !values.profile && !values.base && !values.expect) {
       const index = await writeIndex(root);
       console.log(JSON.stringify(index, null, 2));

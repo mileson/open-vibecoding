@@ -439,7 +439,7 @@ export function renderCommandCatalog() {
     '用户直接描述任务；本目录只供 Agent 按场景发现工具，不规定执行顺序或任务状态。',
     '',
     '- `open-vibecoding capabilities list|get|contract [--path <project>]`：查看五个执行域、横向最佳实践、独立场景及项目扩展。',
-    '- `open-vibecoding project-quality <refresh|run> --help`：发现项目检查、按变更执行并保留实跑证据。',
+    '- `open-vibecoding project-quality <refresh|run|pre-push|observe-push> --help`：发现项目检查、按变更执行并保留实跑证据。',
     '- `open-vibecoding test-report render|record --help`：用 JSON 生成独立测试 HTML，或按用例 ID 追加结果并刷新报告。',
     '- `open-vibecoding guide .`：查看非线性的场景指引。',
     '- `open-vibecoding benchmark ...`：按需收集和核验外部证据。',
