@@ -66,7 +66,7 @@
     "test:perf:extreme": "node scripts/quality-perf-check.mjs --mode extreme --fixture test/fixtures/release-ledger-extreme.json"
   },
   "dependencies": {
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "yaml": "^2.8.2"
   }
 }
