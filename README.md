@@ -1,31 +1,44 @@
 <a id="open-vibecoding"></a>
 
-<div align="center">
+# Open VibeCoding
 
-# Open VibeCoding · Agent 协作能力框架
+**让编码 Agent 从理解需求到交付验证，按任务选用产品、设计、研发和测试能力。**
 
-**按任务组合产品、设计、研发与测试能力。**
+在现有项目中接入 Codex、Claude Code、Cursor 或 Gemini CLI。你描述想解决的问题，Agent 结合仓库和已绑定的资料选择 Skill，给出方案、落实改动并交付验证结果。
 
-产品判断 · 交互设计 · 研发测试 · 视觉辅助
+[快速开始](#quick-start) · [使用场景](#use-cases) · [能力画册](./docs/capability-gallery.md) · [版本发布](https://github.com/mileson/open-vibecoding/releases) · [English](./README_EN.md)
 
-[![中文说明](https://img.shields.io/badge/%E8%AF%B4%E6%98%8E-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-059669)](#readme-detail-audience)
-[![项目类型](https://img.shields.io/badge/%E9%A1%B9%E7%9B%AE-Skill-6366f1)](#readme-detail-audience)
+![从一句任务描述出发，Agent 按需组合产品、设计、研发、测试能力，交付改动和验证结果。](./docs/assets/open-vibecoding-hero.webp)
 
-[✅ 适用场景](#readme-detail-audience) · [🧩 模块速查](#readme-detail-18) · [📁 能力结构](#readme-detail-8) · [📖 本地使用](#readme-detail-10) · [🤖 让 Agent 看准位置、圈清问题](#readme-detail-12) · [💡 工作原则](#readme-detail-14)
+<a id="quick-start"></a>
 
-</div>
+## 快速开始
 
----
+需要 Node.js 20.19 或更高版本，以及你平时使用的编码 Agent。在项目目录运行：
 
-Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe Coding 增强能力。用户直接描述目标；Agent 根据代码、会话与必要证据判断该用哪些能力。它不要求固定的起手命令，也不把五个领域排成必须依次完成的流程。
+```sh
+npm install -g https://github.com/mileson/open-vibecoding/releases/download/v0.4.7/open-vibecoding-0.4.7.tgz
+open-vibecoding init .
+```
 
+用原来的 Agent 进入该项目，直接交给它一件具体的事：
+
+> 给设置页加一个深色模式开关。先看现有主题和设置项，再实现并验证切换与重启后的表现。
+
+Agent 会从项目指引找到适用的能力。已有 Open VibeCoding 的项目，安装新版本后执行 `open-vibecoding update .`。想核对安装状态，运行 `open-vibecoding doctor .`。
+
+<a id="use-cases"></a>
 <a id="readme-detail-audience"></a>
 
-`open-vibecoding init` 可为项目生成质量索引和 Skill。用 `project-quality run` 执行项目检查并保留证据。 [项目质量检查](docs/project-quality.md)
+## 使用场景
 
-## ✅ 适用场景
-
-适合希望增强 Agent 项目协作能力的开发者。
+| 你想做什么 | 可以交付什么 |
+| --- | --- |
+| 判断注册流程哪里值得先改 | 用户问题、判断依据和可验证的改进方向 |
+| 给已有产品增加一个界面 | 沿用项目视觉语言的设计或实现，以及对照截图 |
+| 实现功能或排查故障 | 代码改动、关键取舍与验证结果 |
+| 验收菜单、表单或跨端流程 | 测试用例、实跑结果和可追溯证据 |
+| 让 Agent 参考已有项目规范 | 带本地行号或飞书原文链接的知识引用 |
 
 <a id="readme-section-1"></a>
 
@@ -75,7 +88,6 @@ Open VibeCoding 为 Agent 提供产品、交互设计、研发、测试与 Vibe 
 ## 📖 本地使用
 
 ```bash
-open-vibecoding init .
 open-vibecoding capabilities list
 open-vibecoding doctor .
 open-vibecoding run . --verify

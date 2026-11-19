@@ -49,7 +49,10 @@
     ".open-vibecoding/README_EN.md",
     ".open-vibecoding/config.yaml",
     ".open-vibecoding/design",
-    ".open-vibecoding/standards"
+    ".open-vibecoding/standards",
+    "README_EN.md",
+    "docs/assets/open-vibecoding-hero.webp",
+    "docs/readme-guide.md"
   ],
   "engines": {
     "node": ">=20.19.0"
